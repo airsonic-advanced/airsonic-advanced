@@ -287,8 +287,20 @@ public class SettingsService {
         return home.contains("libresonic") ? "libresonic" : "airsonic";
     }
 
+    public static String getDefaultJDBCPath() {
+        return getAirsonicHome().toString() + "/db/" + getFileSystemAppName();
+    }
+
     public static String getDefaultJDBCUrl() {
-        return "jdbc:hsqldb:file:" + getAirsonicHome().toString() + "/db/" + getFileSystemAppName() + ";sql.enforce_size=false;sql.nulls_first=false";
+        return "jdbc:hsqldb:file:" + getDefaultJDBCPath() + ";sql.enforce_size=false;sql.nulls_first=false";
+    }
+
+    public static String getDefaultJDBCUsername() {
+        return "sa";
+    }
+
+    public static String getDefaultJDBCPassword() {
+        return "";
     }
 
     public static Path getLogFile() {

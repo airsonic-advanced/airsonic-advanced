@@ -1,5 +1,6 @@
 package org.airsonic.player;
 
+import org.airsonic.player.util.LegacyHsqlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.WebApplicationType;
@@ -7,9 +8,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.servlet.MultipartAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.context.ApplicationListener;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
@@ -23,6 +26,11 @@ public class Application extends SpringBootServletInitializer implements  WebSer
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
     private static SpringApplicationBuilder doConfigure(SpringApplicationBuilder application) {
+        // Handle HSQLDB database upgrades from 1.8 to 2.x before any beans are started.
+        application.application().addListeners((ApplicationListener<ApplicationEnvironmentPreparedEvent>) event -> {
+            LegacyHsqlUtil.upgradeHsqldbDatabaseSafely();
+        });
+
         // Customize the application or call application.sources(...) to add sources
         // Since our example is itself a @Configuration class (via @SpringBootApplication)
         // we actually don't need to override this method.
