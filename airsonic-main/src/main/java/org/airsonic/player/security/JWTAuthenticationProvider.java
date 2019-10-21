@@ -78,8 +78,21 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
                 return false;
             }
 
-            MapDifference<String, List<String>> difference = Maps.difference(expected.getQueryParams(),
-                    requested.getQueryParams());
+            Map<String, List<String>> left = new HashMap<>(expected.getQueryParams());
+            Map<String, List<String>> right = new HashMap<>(requested.getQueryParams());
+
+            /*
+                If the equality test uses the size parameter on the request, it is possible that the equality test will fail because Sonos
+                changes the size parameter according to the client.
+
+                All parameters should be removed, but this would require too much retrofit work throughout the code.
+
+                Translated with www.DeepL.com/Translator
+             */
+            left.remove("size");
+            right.remove("size");
+
+            MapDifference<String, List<String>> difference = Maps.difference(left, right);
 
             if (!difference.entriesDiffering().isEmpty() ||
                     !difference.entriesOnlyOnLeft().isEmpty() ||

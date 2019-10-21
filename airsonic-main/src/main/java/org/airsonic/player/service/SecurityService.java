@@ -22,6 +22,7 @@ package org.airsonic.player.service;
 import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.SonosLink;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserCredential.App;
@@ -29,6 +30,8 @@ import org.airsonic.player.security.GlobalSecurityConfig;
 import org.airsonic.player.security.PasswordDecoder;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.airsonic.player.service.sonos.SonosSoapFault;
+import org.airsonic.player.util.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,8 +39,12 @@ import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -60,6 +67,9 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.UUID;
+
+import static org.airsonic.player.domain.User.USERNAME_SONOS;
 
 /**
  * Provides security-related services for authentication and authorization.
@@ -74,8 +84,30 @@ public class SecurityService implements UserDetailsService {
 
     @Autowired
     private UserDao userDao;
+
+    @Autowired
+    private SonosLinkDao sonosLinkDao;
+
     @Autowired
     private SettingsService settingsService;
+
+    @Autowired
+    private JWTSecurityService jwtSecurityService;
+
+    /*
+        TODO This is initialized in GlobalSecurityConfig.
+
+        Something wrong here, some circular ref, maybe rebuild responsibilities...
+
+        We are :
+           - RESTRequestParameterProcessingFilter need SecurityService cause is UserDetailsService.
+           - But SecurityService need AuthenticationManager they create in GlobalSecurityConfig
+           - But GlobalSecurityConfig create RESTRequestParameterProcessingFilter
+
+           So GlobalSecurityConfig -> RESTRequestParameterProcessingFilter -> SecurityService -> AuthenticationManager (but create in GlobalSecurityConfig)
+     */
+    private AuthenticationManager authenticationManager;
+
 
     /**
      * Locates the user based on the username.
@@ -237,6 +269,17 @@ public class SecurityService implements UserDetailsService {
         String username = getCurrentUsername(request);
         return username == null ? null : getUserByName(username);
     }
+
+    public String getLoginUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.User){
+            return ((org.springframework.security.core.userdetails.User)authentication.getPrincipal()).getUsername();
+        }
+
+        return null;
+    }
+
 
     /**
      * Returns the name of the currently logged-in user.
@@ -482,12 +525,28 @@ public class SecurityService implements UserDetailsService {
                 || StringUtils.startsWithIgnoreCase(file, StringUtils.appendIfMissing(folder, "/"));
     }
 
-    public void setSettingsService(SettingsService settingsService) {
-        this.settingsService = settingsService;
+
+    // =======================================================================================================
+    // Utilities for Sonos link.
+
+    public Authentication authenticate(String username, String password){
+        UsernamePasswordAuthenticationToken authReq = new UsernamePasswordAuthenticationToken(username, password);
+        return authenticationManager.authenticate(authReq);
     }
 
-    public void setUserDao(UserDao userDao) {
-        this.userDao = userDao;
+    /**
+     * Generate a link code, and put in the cache for future use.
+     *
+     * @param householdId from sonos, represent a user on sonos
+
+     * @return The link code.
+     */
+    public String generateLinkCode(String householdId){
+        String linkCode = createLinkCode();
+
+        sonosLinkcodeCache.put(new Element(linkCode, householdId));
+
+        return linkCode;
     }
 
     public static class UserDetail extends org.springframework.security.core.userdetails.User {
@@ -512,5 +571,87 @@ public class SecurityService implements UserDetailsService {
             super.eraseCredentials();
             creds = null;
         }
+
+    public String getHousehold(String linkCode){
+        Element element = sonosLinkcodeCache.get(linkCode);
+
+        if(element != null){
+            return (String) element.getValue();
+        }
+
+        return  null;
     }
+
+    /**
+     * Insert the authorisation in sonoslink. Verify is the linkcode exist, and cannot be get again.
+     *
+     * @param username The username authorisation for sonos link
+     * @param householdId The id of entry in sonos controller
+     * @param linkcode The link code used between sonos and airsonic.
+     * @return true if the insert is ok, false if some entry exist with the linkcode
+     */
+    public boolean authoriseSonos(String username, String householdId, String linkcode) {
+        if(sonosLinkDao.findByLinkcode(linkcode) != null){
+            return false;
+        }
+
+        sonosLinkDao.create(new SonosLink(username, householdId, linkcode));
+        return true;
+    }
+
+    /**
+     * Find the user they have a linkCode for the householdId set, build the authToken and return it.
+     *
+     * @param householdId The householdId from Sonos
+     * @param linkCode The linkCode return it before
+     * @return The build authToken or null if didn't find any user with householdId and linkCode
+     */
+    public String getSonosAuthToken(String householdId, String linkCode){
+
+        SonosLink sonosLink = sonosLinkDao.findByLinkcode(linkCode);
+        if(sonosLink != null && householdId.equals(sonosLink.getHouseholdid())) {
+            return buildToken(sonosLink);
+        } else {
+            return null;
+        }
+    }
+
+    private String buildToken(SonosLink link) {
+        return jwtSecurityService.createSonosToken(link.getUsername(), link.getHouseholdid(), link.getLinkcode());
+    }
+
+    public SonosLink getSonosLink(String linkCode) {
+        return sonosLinkDao.findByLinkcode(linkCode);
+    }
+
+    public void authenticate(String sonosLinkToken) throws SonosSoapFault.LoginUnauthorized {
+        SonosLink sonosLink =jwtSecurityService.verifySonosLink(sonosLinkToken);
+
+        SonosLink saved = sonosLinkDao.findByLinkcode(sonosLink.getLinkcode());
+        if(saved != null && saved.identical(sonosLink)){
+            setUser(sonosLink.getUsername());
+        } else {
+            throw new SonosSoapFault.LoginUnauthorized();
+        }
+    }
+
+    public void authenticate() throws SonosSoapFault.LoginUnauthorized {
+        setUser(USERNAME_SONOS);
+    }
+
+    private void setUser(String username) throws SonosSoapFault.LoginUnauthorized {
+        User user = getUserByName(username, true);
+        Authentication authentication = authenticate(user.getUsername(), user.getPassword());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+        // The link code must be exactly 32 characters long
+    private String createLinkCode() {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    public void setAuthenticationManager(AuthenticationManager authenticationManager) {
+        this.authenticationManager = authenticationManager;
+    }
+
 }

@@ -149,6 +149,9 @@ public class SettingsService {
 
     public static final String KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS = "PropertiesFileRetainObsoleteKeys";
 
+    private static final String KEY_SONOS_CALLBACK_HOST_ADDRESS = "SonosCallbackHostAddress";
+    private static final String KEY_SONOS_LINK_METHOD = "SonosLinkMethod";
+
     // Default values.
     private static final String DEFAULT_JWT_KEY = null;
     private static final String DEFAULT_INDEX_STRING = "A B C D E F G H I J K L M N O P Q R S T U V W X-Z(XYZ)";
@@ -206,6 +209,7 @@ public class SettingsService {
     private static final boolean DEFAULT_SONOS_ENABLED = false;
     private static final String DEFAULT_SONOS_SERVICE_NAME = "Airsonic";
     private static final int DEFAULT_SONOS_SERVICE_ID = 242;
+    private static final String DEFAULT_SONOS_LINK_METHOD = SonosServiceRegistration.AuthenticationType.APPLICATION_LINK.name();
     private static final String DEFAULT_EXPORT_PLAYLIST_FORMAT = "m3u";
     private static final boolean DEFAULT_IGNORE_SYMLINKS = false;
     private static final String DEFAULT_EXCLUDE_PATTERN_STRING = null;
@@ -800,6 +804,7 @@ public class SettingsService {
     String getJukeboxCommand() {
         return getProperty(KEY_JUKEBOX_COMMAND, DEFAULT_JUKEBOX_COMMAND);
     }
+
     public String getVideoImageCommand() {
         return getProperty(KEY_VIDEO_IMAGE_COMMAND, DEFAULT_VIDEO_IMAGE_COMMAND);
     }
@@ -1057,7 +1062,7 @@ public class SettingsService {
     /**
      * Returns all music folders.
      *
-     * @param includeDisabled Whether to include disabled folders.
+     * @param includeDisabled    Whether to include disabled folders.
      * @param includeNonExisting Whether to include non-existing folders.
      * @return Possibly empty list of all music folders.
      */
@@ -1435,6 +1440,7 @@ public class SettingsService {
             return s;
         }
     }
+
     public void setSmtpPassword(String smtpPassword) {
         try {
             smtpPassword = StringUtil.utf8HexEncode(smtpPassword);
@@ -1596,5 +1602,26 @@ public class SettingsService {
 
     String getPlaylistExportFormat() {
         return getProperty(KEY_EXPORT_PLAYLIST_FORMAT, DEFAULT_EXPORT_PLAYLIST_FORMAT);
+    }
+
+
+    public String getSonosLinkMethod(){
+        return getString(KEY_SONOS_LINK_METHOD, DEFAULT_SONOS_LINK_METHOD);
+    }
+
+    public void setSonosLinkMethod(String linkMethod){
+        setString(KEY_SONOS_LINK_METHOD, linkMethod);
+    }
+
+    public String getSonosCallbackHostAddress() {
+        return getSonosCallbackHostAddress(null);
+    }
+
+    public String getSonosCallbackHostAddress(String def) {
+        return getString(KEY_SONOS_CALLBACK_HOST_ADDRESS, def);
+    }
+
+    public void setSonosCallbackHostAddress(String hostAddress) {
+        setString(KEY_SONOS_CALLBACK_HOST_ADDRESS, hostAddress);
     }
 }
