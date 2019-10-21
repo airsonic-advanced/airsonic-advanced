@@ -273,7 +273,7 @@ public class SecurityService implements UserDetailsService {
     public String getLoginUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.User){
+        if (authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.User) {
             return ((org.springframework.security.core.userdetails.User)authentication.getPrincipal()).getUsername();
         }
 
@@ -529,10 +529,26 @@ public class SecurityService implements UserDetailsService {
     // =======================================================================================================
     // Utilities for Sonos link.
 
-    public Authentication authenticate(String username, String password){
+    public Authentication authenticate(String username, String password) {
         UsernamePasswordAuthenticationToken authReq = new UsernamePasswordAuthenticationToken(username, password);
         return authenticationManager.authenticate(authReq);
     }
+
+    public void authenticate(String sonosLinkToken) throws SonosSoapFault.LoginUnauthorized {
+        SonosLink sonosLink = jwtSecurityService.verifySonosLink(sonosLinkToken);
+
+        SonosLink saved = sonosLinkDao.findByLinkcode(sonosLink.getLinkcode());
+        if (saved != null && saved.identical(sonosLink)) {
+            setUser(sonosLink.getUsername());
+        } else {
+            throw new SonosSoapFault.LoginUnauthorized();
+        }
+    }
+
+    public void authenticate() throws SonosSoapFault.LoginUnauthorized {
+        setUser(USERNAME_SONOS);
+    }
+
 
     /**
      * Generate a link code, and put in the cache for future use.
@@ -541,7 +557,7 @@ public class SecurityService implements UserDetailsService {
 
      * @return The link code.
      */
-    public String generateLinkCode(String householdId){
+    public String generateLinkCode(String householdId) {
         String linkCode = createLinkCode();
 
         sonosLinkcodeCache.put(new Element(linkCode, householdId));
@@ -572,10 +588,10 @@ public class SecurityService implements UserDetailsService {
             creds = null;
         }
 
-    public String getHousehold(String linkCode){
+    public String getHousehold(String linkCode) {
         Element element = sonosLinkcodeCache.get(linkCode);
 
-        if(element != null){
+        if (element != null) {
             return (String) element.getValue();
         }
 
@@ -591,7 +607,7 @@ public class SecurityService implements UserDetailsService {
      * @return true if the insert is ok, false if some entry exist with the linkcode
      */
     public boolean authoriseSonos(String username, String householdId, String linkcode) {
-        if(sonosLinkDao.findByLinkcode(linkcode) != null){
+        if (sonosLinkDao.findByLinkcode(linkcode) != null) {
             return false;
         }
 
@@ -606,10 +622,10 @@ public class SecurityService implements UserDetailsService {
      * @param linkCode The linkCode return it before
      * @return The build authToken or null if didn't find any user with householdId and linkCode
      */
-    public String getSonosAuthToken(String householdId, String linkCode){
+    public String getSonosAuthToken(String householdId, String linkCode) {
 
         SonosLink sonosLink = sonosLinkDao.findByLinkcode(linkCode);
-        if(sonosLink != null && householdId.equals(sonosLink.getHouseholdid())) {
+        if (sonosLink != null && householdId.equals(sonosLink.getHouseholdid())) {
             return buildToken(sonosLink);
         } else {
             return null;
@@ -622,21 +638,6 @@ public class SecurityService implements UserDetailsService {
 
     public SonosLink getSonosLink(String linkCode) {
         return sonosLinkDao.findByLinkcode(linkCode);
-    }
-
-    public void authenticate(String sonosLinkToken) throws SonosSoapFault.LoginUnauthorized {
-        SonosLink sonosLink =jwtSecurityService.verifySonosLink(sonosLinkToken);
-
-        SonosLink saved = sonosLinkDao.findByLinkcode(sonosLink.getLinkcode());
-        if(saved != null && saved.identical(sonosLink)){
-            setUser(sonosLink.getUsername());
-        } else {
-            throw new SonosSoapFault.LoginUnauthorized();
-        }
-    }
-
-    public void authenticate() throws SonosSoapFault.LoginUnauthorized {
-        setUser(USERNAME_SONOS);
     }
 
     private void setUser(String username) throws SonosSoapFault.LoginUnauthorized {
