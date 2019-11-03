@@ -38,7 +38,6 @@ public class LegacyHsqlDaoHelper extends GenericDaoHelper {
             LOG.debug("Database shutdown in progress...");
             JdbcTemplate jdbcTemplate = getJdbcTemplate();
             try (Connection conn = DataSourceUtils.getConnection(jdbcTemplate.getDataSource())) {
-                conn.setAutoCommit(true);
                 jdbcTemplate.execute("SHUTDOWN");
             }
             LOG.debug("Database shutdown complete.");
