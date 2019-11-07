@@ -44,24 +44,6 @@ public final class FileUtil {
     private FileUtil() {
     }
 
-    public static boolean isFile(final File file) {
-        return timed(new FileTask<Boolean>("isFile", file) {
-            @Override
-            public Boolean execute() {
-                return file.isFile();
-            }
-        });
-    }
-
-    public static boolean isDirectory(final File file) {
-        return timed(new FileTask<Boolean>("isDirectory", file) {
-            @Override
-            public Boolean execute() {
-                return file.isDirectory();
-            }
-        });
-    }
-
     public static boolean exists(final File file) {
         return timed(new FileTask<Boolean>("exists", file) {
             @Override
@@ -82,15 +64,6 @@ public final class FileUtil {
             LOG.warn("Could not get file modify date for {}", file.toString(), e);
             return Instant.now();
         }
-    }
-
-    public static long length(final File file) {
-        return timed(new FileTask<Long>("length", file) {
-            @Override
-            public Long execute() {
-                return file.length();
-            }
-        });
     }
     
     public static long size(final Path file) {
