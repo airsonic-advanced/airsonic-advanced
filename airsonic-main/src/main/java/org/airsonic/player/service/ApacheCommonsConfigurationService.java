@@ -10,8 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 
 @Service
@@ -27,10 +28,10 @@ public class ApacheCommonsConfigurationService {
                            + " Do not modify while application is running";
 
     public ApacheCommonsConfigurationService() {
-        File propertyFile = SettingsService.getPropertyFile();
-        if (!propertyFile.exists()) {
+        Path propertyFile = SettingsService.getPropertyFile();
+        if (!Files.exists(propertyFile)) {
             try {
-                FileUtils.touch(propertyFile);
+                FileUtils.touch(propertyFile.toFile());
             } catch (IOException e) {
                 throw new RuntimeException("Could not create new property file", e);
             }
@@ -41,7 +42,7 @@ public class ApacheCommonsConfigurationService {
         layout.setGlobalSeparator("=");
         builder = new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class).configure(
                 params.properties()
-                      .setFile(propertyFile)
+                      .setFile(propertyFile.toFile())
                       .setSynchronizer(new ReadWriteSynchronizer())
                       .setLayout(layout));
         try {

@@ -19,14 +19,14 @@
  */
 package org.airsonic.player.domain;
 
-import com.google.common.base.Function;
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
 
-import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Represents a top level directory in which music or other media is stored.
@@ -37,7 +37,7 @@ import java.util.List;
 public class MusicFolder implements Serializable {
 
     private Integer id;
-    private File path;
+    private Path path;
     private String name;
     private boolean isEnabled;
     private Instant changed;
@@ -51,7 +51,7 @@ public class MusicFolder implements Serializable {
      * @param enabled Whether the folder is enabled.
      * @param changed When the corresponding database entry was last changed.
      */
-    public MusicFolder(Integer id, File path, String name, boolean enabled, Instant changed) {
+    public MusicFolder(Integer id, Path path, String name, boolean enabled, Instant changed) {
         this.id = id;
         this.path = path;
         this.name = name;
@@ -67,7 +67,7 @@ public class MusicFolder implements Serializable {
      * @param enabled Whether the folder is enabled.
      * @param changed When the corresponding database entry was last changed.
      */
-    public MusicFolder(File path, String name, boolean enabled, Instant changed) {
+    public MusicFolder(Path path, String name, boolean enabled, Instant changed) {
         this(null, path, name, enabled, changed);
     }
 
@@ -85,7 +85,7 @@ public class MusicFolder implements Serializable {
      *
      * @return The path of the music folder.
      */
-    public File getPath() {
+    public Path getPath() {
         return path;
     }
 
@@ -94,7 +94,7 @@ public class MusicFolder implements Serializable {
      *
      * @param path The path of the music folder.
      */
-    public void setPath(File path) {
+    public void setPath(Path path) {
         this.path = path;
     }
 
@@ -170,11 +170,11 @@ public class MusicFolder implements Serializable {
 
 
     public static List<Integer> toIdList(List<MusicFolder> from) {
-        return Lists.transform(from, toId());
+        return from.stream().map(toId()).collect(Collectors.toList());
     }
 
     public static List<String> toPathList(List<MusicFolder> from) {
-        return Lists.transform(from, toPath());
+        return from.stream().map(toPath()).collect(Collectors.toList());
     }
 
     public static Function<MusicFolder, Integer> toId() {
@@ -182,6 +182,6 @@ public class MusicFolder implements Serializable {
     }
 
     public static Function<MusicFolder, String> toPath() {
-        return from -> from.getPath().getPath();
+        return from -> from.getPath().toString();
     }
 }

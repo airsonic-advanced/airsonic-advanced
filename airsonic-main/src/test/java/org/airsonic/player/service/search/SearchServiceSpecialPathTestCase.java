@@ -4,12 +4,14 @@ package org.airsonic.player.service.search;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.SearchService;
+import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,13 +41,13 @@ public class SearchServiceSpecialPathTestCase extends AbstractAirsonicHomeTest {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
 
-            File musicDir = new File(resolveBaseMediaPath.apply("Search/SpecialPath/accessible"));
+            Path musicDir = Paths.get(MusicFolderTestData.resolveBaseMediaPath()).resolve("Search").resolve("SpecialPath").resolve("accessible");
             musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, Instant.now()));
 
-            File music2Dir = new File(resolveBaseMediaPath.apply("Search/SpecialPath/accessible's"));
+            Path music2Dir = Paths.get(MusicFolderTestData.resolveBaseMediaPath()).resolve("Search").resolve("SpecialPath").resolve("accessible's");
             musicFolders.add(new MusicFolder(2, music2Dir, "accessible's", true, Instant.now()));
 
-            File music3Dir = new File(resolveBaseMediaPath.apply("Search/SpecialPath/accessible+s"));
+            Path music3Dir = Paths.get(MusicFolderTestData.resolveBaseMediaPath()).resolve("Search").resolve("SpecialPath").resolve("accessible+s");
             musicFolders.add(new MusicFolder(3, music3Dir, "accessible+s", true, Instant.now()));
         }
         return musicFolders;

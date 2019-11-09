@@ -97,7 +97,7 @@ public class UserSettingsController {
         }
         command.setUsers(securityService.getAllUsers());
         command.setTranscodingSupported(transcodingService.isDownsamplingSupported(null));
-        command.setTranscodeDirectory(transcodingService.getTranscodeDirectory().getPath());
+        command.setTranscodeDirectory(transcodingService.getTranscodeDirectory().toString());
         command.setTranscodeSchemes(TranscodeScheme.values());
         command.setLdapEnabled(settingsService.isLdapEnabled());
         command.setAllMusicFolders(settingsService.getAllMusicFolders());

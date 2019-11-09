@@ -30,7 +30,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -64,16 +65,16 @@ public class FFmpegParser extends MetaDataParser {
      * @return Meta data for the file.
      */
     @Override
-    public MetaData getRawMetaData(File file) {
+    public MetaData getRawMetaData(Path file) {
 
         MetaData metaData = new MetaData();
 
         try {
             // Use `ffprobe` in the transcode directory if it exists, otherwise let the system sort it out.
             String ffprobe;
-            File inTranscodeDirectory = new File(transcodingService.getTranscodeDirectory(), "ffprobe");
-            if (inTranscodeDirectory.exists()) {
-                ffprobe = inTranscodeDirectory.getAbsolutePath();
+            Path inTranscodeDirectory = transcodingService.getTranscodeDirectory().resolve("ffprobe");
+            if (Files.exists(inTranscodeDirectory)) {
+                ffprobe = inTranscodeDirectory.toString();
             } else {
                 ffprobe = "ffprobe";
             }
@@ -81,7 +82,7 @@ public class FFmpegParser extends MetaDataParser {
             List<String> command = new ArrayList<>();
             command.add(ffprobe);
             command.addAll(Arrays.asList(FFPROBE_OPTIONS));
-            command.add(file.getAbsolutePath());
+            command.add(file.toString());
 
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]));
             final JsonNode result = objectMapper.readTree(process.getInputStream());
@@ -132,13 +133,13 @@ public class FFmpegParser extends MetaDataParser {
     /**
      * Returns whether this parser is applicable to the given file.
      *
-     * @param file The file in question.
+     * @param path The path to file in question.
      * @return Whether this parser is applicable to the given file.
      */
     @Override
-    public boolean isApplicable(File file) {
-        String format = FilenameUtils.getExtension(file.getName()).toLowerCase();
-        return settingsService.getVideoFileTypesSet().contains(format.toLowerCase());
+    public boolean isApplicable(Path path) {
+        String format = FilenameUtils.getExtension(path.getFileName().toString()).toLowerCase();
+        return settingsService.getVideoFileTypesSet().contains(format);
     }
 
     public void setTranscodingService(TranscodingService transcodingService) {

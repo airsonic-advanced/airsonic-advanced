@@ -33,7 +33,8 @@ import org.junit.rules.TemporaryFolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +56,7 @@ public class IndexManagerTestCase extends AbstractAirsonicHomeTest {
     public List<MusicFolder> getMusicFolders() {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
-            File musicDir = new File(resolveBaseMediaPath.apply("Music"));
+            Path musicDir = Paths.get(resolveBaseMediaPath.apply("Music"));
             musicFolders.add(new MusicFolder(1, musicDir, "Music", true, Instant.now()));
         }
         return musicFolders;

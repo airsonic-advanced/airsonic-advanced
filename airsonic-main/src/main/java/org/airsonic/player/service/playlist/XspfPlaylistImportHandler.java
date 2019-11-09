@@ -10,8 +10,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,13 +39,13 @@ public class XspfPlaylistImportHandler implements PlaylistImportHandler {
                 if (sc instanceof Location) {
                     Location location = (Location) sc;
                     try {
-                        File file = new File(new URI(location.getText()));
+                        Path file = Paths.get(new URI(location.getText()));
                         mediaFile = mediaFileService.getMediaFile(file);
                     } catch (Exception ignored) {}
 
                     if (mediaFile == null) {
                         try {
-                            File file = new File(sc.getText());
+                            Path file = Paths.get(sc.getText());
                             mediaFile = mediaFileService.getMediaFile(file);
                         } catch (Exception ignored) {}
                     }

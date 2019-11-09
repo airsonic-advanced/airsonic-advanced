@@ -28,6 +28,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Miscellaneous file utility methods.
@@ -42,19 +45,6 @@ public final class FileUtil {
      * Disallow external instantiation.
      */
     private FileUtil() {
-    }
-
-    public static boolean exists(final File file) {
-        return timed(new FileTask<Boolean>("exists", file) {
-            @Override
-            public Boolean execute() {
-                return file.exists();
-            }
-        });
-    }
-
-    public static boolean exists(String path) {
-        return exists(new File(path));
     }
     
     public static Instant lastModified(final Path file) {
@@ -74,39 +64,48 @@ public final class FileUtil {
             return 0;
         }
     }
-
-    /**
-     * Similar to {@link File#listFiles()}, but never returns null.
-     * Instead a warning is logged, and an empty array is returned.
-     */
-    public static File[] listFiles(final File dir) {
-        File[] files = timed(new FileTask<File[]>("listFiles", dir) {
-            @Override
-            public File[] execute() {
-                return dir.listFiles();
-            }
-        });
-
-        if (files == null) {
-            LOG.warn("Failed to list children for " + dir.getPath());
-            return new File[0];
+    
+    public static boolean delete(Path fileOrFolder) {
+        try (Stream<Path> walk = Files.walk(fileOrFolder)) {
+            walk.sorted(Comparator.reverseOrder())
+                .forEach(uncheck(Files::deleteIfExists));
+            
+            return true;
+        } catch (Exception e) {
+            LOG.warn("Could not delete file/folder {}", fileOrFolder, e);
+            return false;
         }
-        return files;
+    }
+    
+    @FunctionalInterface
+    public interface ThrowingConsumer<T, E extends Exception> {
+        void accept(T t) throws E;
+    }
+    
+    public static <T, E extends Exception> Consumer<T> uncheck(ThrowingConsumer<T, E> throwingConsumer) {
+        return i -> {
+            try {
+                throwingConsumer.accept(i);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 
     /**
      * Returns a short path for the given file.  The path consists of the name
      * of the parent directory and the given file.
      */
-    public static String getShortPath(File file) {
+    public static String getShortPath(Path file) {
         if (file == null) {
             return null;
         }
-        File parent = file.getParentFile();
+        
+        Path parent = file.getParent();
         if (parent == null) {
-            return file.getName();
+            return file.getFileName().toString();
         }
-        return parent.getName() + File.separator + file.getName();
+        return parent.getFileName().toString() + File.separator + file.getFileName().toString();
     }
 
     /**
@@ -121,28 +120,6 @@ public final class FileUtil {
             } catch (IOException e) {
                 // Ignored
             }
-        }
-    }
-
-    private static <T> T timed(FileTask<T> task) {
-        return task.execute();
-    }
-
-    private abstract static class FileTask<T> {
-
-        private final String name;
-        private final File file;
-
-        public FileTask(String name, File file) {
-            this.name = name;
-            this.file = file;
-        }
-
-        public abstract T execute();
-
-        @Override
-        public String toString() {
-            return name + ", " + file;
         }
     }
 }

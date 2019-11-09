@@ -25,7 +25,6 @@ import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.spring.DataSourceConfigType;
-import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
@@ -36,9 +35,11 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,8 +58,8 @@ import java.util.stream.Stream;
 public class SettingsService {
 
     // Airsonic home directory.
-    private static final File AIRSONIC_HOME_WINDOWS = new File("c:/airsonic");
-    private static final File AIRSONIC_HOME_OTHER = new File("/var/airsonic");
+    private static final Path AIRSONIC_HOME_WINDOWS = Paths.get("c:/airsonic");
+    private static final Path AIRSONIC_HOME_OTHER = Paths.get("/var/airsonic");
 
     // Global settings.
     private static final String KEY_INDEX_STRING = "IndexString";
@@ -263,16 +264,16 @@ public class SettingsService {
 
     }
 
-    public static File getAirsonicHome() {
+    public static Path getAirsonicHome() {
 
-        File home;
+        Path home;
 
         String overrideHome = System.getProperty("airsonic.home");
         String oldHome = System.getProperty("libresonic.home");
         if (overrideHome != null) {
-            home = new File(overrideHome);
+            home = Paths.get(overrideHome);
         } else if (oldHome != null) {
-            home = new File(oldHome);
+            home = Paths.get(oldHome);
         } else {
             boolean isWindows = System.getProperty("os.name", "Windows").toLowerCase().startsWith("windows");
             home = isWindows ? AIRSONIC_HOME_WINDOWS : AIRSONIC_HOME_OTHER;
@@ -283,19 +284,17 @@ public class SettingsService {
     }
 
     private static String getFileSystemAppName() {
-        String home = getAirsonicHome().getPath();
+        String home = getAirsonicHome().toString();
         return home.contains("libresonic") ? "libresonic" : "airsonic";
     }
 
     public static String getDefaultJDBCUrl() {
-        return "jdbc:hsqldb:file:" + getAirsonicHome().getPath() + "/db/" + getFileSystemAppName();
+        return "jdbc:hsqldb:file:" + getAirsonicHome().toString() + "/db/" + getFileSystemAppName();
     }
 
-    public static File getLogFile() {
-        File airsonicHome = SettingsService.getAirsonicHome();
-        return new File(airsonicHome, getFileSystemAppName() + ".log");
+    public static Path getLogFile() {
+        return SettingsService.getAirsonicHome().resolve(getFileSystemAppName() + ".log");
     }
-
 
     /**
      * Register in service locator so that non-Spring objects can access me.
@@ -323,11 +322,13 @@ public class SettingsService {
         configurationService.save();
     }
 
-    private static void ensureDirectoryPresent(File home) {
+    private static void ensureDirectoryPresent(Path home) {
         // Attempt to create home directory if it doesn't exist.
-        if (!home.exists() || !home.isDirectory()) {
-            boolean success = home.mkdirs();
-            if (!success) {
+        if (!Files.exists(home) || !Files.isDirectory(home)) {
+            try {
+                Files.createDirectories(home);
+            } catch (Exception e) {
+                LOG.error("Could not create or see home directory {}", home, e);
                 String message = "The directory " + home + " does not exist. Please create it and make it writable. " +
                         "(You can override the directory location by specifying -Dairsonic.home=... when " +
                         "starting the servlet container.)";
@@ -336,9 +337,8 @@ public class SettingsService {
         }
     }
 
-    static File getPropertyFile() {
-        File propertyFile = getAirsonicHome();
-        return new File(propertyFile, getFileSystemAppName() + ".properties");
+    static Path getPropertyFile() {
+        return getAirsonicHome().resolve(getFileSystemAppName() + ".properties");
     }
 
     private int getInt(String key, int defaultValue) {
@@ -934,7 +934,7 @@ public class SettingsService {
         }
 
         return cachedMusicFolders.parallelStream()
-                .filter(folder -> (includeDisabled || folder.isEnabled()) && (includeNonExisting || FileUtil.exists(folder.getPath())))
+                .filter(folder -> (includeDisabled || folder.isEnabled()) && (includeNonExisting || Files.exists(folder.getPath())))
                 .collect(Collectors.toList());
     }
 

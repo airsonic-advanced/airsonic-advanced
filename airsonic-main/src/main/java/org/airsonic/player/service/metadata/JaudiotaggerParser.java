@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.service.metadata;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
 import org.apache.commons.io.FilenameUtils;
@@ -39,7 +41,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.logging.LogManager;
@@ -82,12 +86,12 @@ public class JaudiotaggerParser extends MetaDataParser {
      * @return Meta data for the file.
      */
     @Override
-    public MetaData getRawMetaData(File file) {
+    public MetaData getRawMetaData(Path file) {
 
         MetaData metaData = new MetaData();
 
         try {
-            AudioFile audioFile = AudioFileIO.read(file);
+            AudioFile audioFile = AudioFileIO.read(file.toFile());
             Tag tag = audioFile.getTag();
             if (tag != null) {
                 metaData.setAlbumName(getTagField(tag, FieldKey.ALBUM));
@@ -296,7 +300,7 @@ public class JaudiotaggerParser extends MetaDataParser {
     public void setMetaData(MediaFile file, MetaData metaData) {
 
         try {
-            AudioFile audioFile = AudioFileIO.read(file.getFile());
+            AudioFile audioFile = AudioFileIO.read(file.getFile().toFile());
             Tag tag = audioFile.getTagOrCreateAndSetDefault();
 
             tag.setField(FieldKey.ARTIST, StringUtils.trimToEmpty(metaData.getArtist()));
@@ -345,32 +349,18 @@ public class JaudiotaggerParser extends MetaDataParser {
     SettingsService getSettingsService() {
         return settingsService;
     }
+    
+    private static Set<String> applicableFormats = ImmutableSet.of("mp3", "m4a", "m4b", "aac", "ogg", "flac", "wav", "mpc", "mp+", "ape", "wma");
 
     /**
      * Returns whether this parser is applicable to the given file.
      *
-     * @param file The music file in question.
+     * @param path The path to music file in question.
      * @return Whether this parser is applicable to the given file.
      */
     @Override
-    public boolean isApplicable(File file) {
-        if (!file.isFile()) {
-            return false;
-        }
-
-        String format = FilenameUtils.getExtension(file.getName()).toLowerCase();
-
-        return "mp3".equals(format) ||
-               "m4a".equals(format) ||
-               "m4b".equals(format) ||
-               "aac".equals(format) ||
-               "ogg".equals(format) ||
-               "flac".equals(format) ||
-               "wav".equals(format) ||
-               "mpc".equals(format) ||
-               "mp+".equals(format) ||
-               "ape".equals(format) ||
-               "wma".equals(format);
+    public boolean isApplicable(Path path) {
+        return Files.isRegularFile(path) && applicableFormats.contains(FilenameUtils.getExtension(path.getFileName().toString()).toLowerCase());
     }
 
     /**
@@ -389,7 +379,7 @@ public class JaudiotaggerParser extends MetaDataParser {
     }
 
     public Artwork getArtwork(MediaFile file) throws Exception {
-        AudioFile audioFile = AudioFileIO.read(file.getFile());
+        AudioFile audioFile = AudioFileIO.read(file.getFile().toFile());
         Tag tag = audioFile.getTag();
         return tag == null ? null : tag.getFirstArtwork();
     }

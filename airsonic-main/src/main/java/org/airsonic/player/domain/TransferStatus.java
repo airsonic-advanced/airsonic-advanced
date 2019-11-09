@@ -21,7 +21,7 @@ package org.airsonic.player.domain;
 
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
-import java.io.File;
+import java.nio.file.Path;
 
 /**
  * Status for a single transfer (stream, download or upload).
@@ -34,7 +34,7 @@ public class TransferStatus {
     private static final long SAMPLE_INTERVAL_MILLIS = 5000;
 
     private Player player;
-    private File file;
+    private Path file;
     private long bytesTransfered;
     private long bytesSkipped;
     private long bytesTotal;
@@ -148,7 +148,7 @@ public class TransferStatus {
      *
      * @return The file that is currently being transferred.
      */
-    public synchronized File getFile() {
+    public synchronized Path getFile() {
         return file;
     }
 
@@ -157,7 +157,7 @@ public class TransferStatus {
      *
      * @param file The file that is currently being transferred.
      */
-    public synchronized void setFile(File file) {
+    public synchronized void setFile(Path file) {
         this.file = file;
     }
 

@@ -23,7 +23,7 @@ import junit.framework.TestCase;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
 
-import java.io.File;
+import java.nio.file.Path;
 
 /**
  * Unit test of {@link MetaDataParser}.
@@ -35,7 +35,7 @@ public class MetaDataParserTestCase extends TestCase {
     public void testRemoveTrackNumberFromTitle() {
 
         MetaDataParser parser = new MetaDataParser() {
-            public MetaData getRawMetaData(File file) {
+            public MetaData getRawMetaData(Path file) {
                 return null;
             }
 
@@ -51,7 +51,7 @@ public class MetaDataParserTestCase extends TestCase {
                 return null;
             }
 
-            public boolean isApplicable(File file) {
+            public boolean isApplicable(Path path) {
                 return false;
             }
         };

@@ -19,7 +19,7 @@
  */
 package org.airsonic.player.service.metadata;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -41,12 +41,7 @@ public class MetaDataParserFactory {
      * @param file The file in question.
      * @return An applicable parser, or <code>null</code> if no parser is found.
      */
-    public MetaDataParser getParser(File file) {
-        for (MetaDataParser parser : parsers) {
-            if (parser.isApplicable(file)) {
-                return parser;
-            }
-        }
-        return null;
+    public MetaDataParser getParser(Path path) {
+        return parsers.stream().filter(parser -> parser.isApplicable(path)).findFirst().orElse(null);
     }
 }

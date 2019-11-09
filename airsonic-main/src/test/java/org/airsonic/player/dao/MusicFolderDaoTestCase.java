@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.File;
+import java.nio.file.Paths;
 import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
@@ -46,7 +46,7 @@ public class MusicFolderDaoTestCase extends DaoTestCaseBean2 {
 
     @Test
     public void testCreateMusicFolder() {
-        MusicFolder musicFolder = new MusicFolder(new File("path"), "name", true, Instant.now());
+        MusicFolder musicFolder = new MusicFolder(Paths.get("path"), "name", true, Instant.now());
         musicFolderDao.createMusicFolder(musicFolder);
 
         MusicFolder newMusicFolder = musicFolderDao.getAllMusicFolders().get(0);
@@ -55,11 +55,11 @@ public class MusicFolderDaoTestCase extends DaoTestCaseBean2 {
 
     @Test
     public void testUpdateMusicFolder() {
-        MusicFolder musicFolder = new MusicFolder(new File("path"), "name", true, Instant.now());
+        MusicFolder musicFolder = new MusicFolder(Paths.get("path"), "name", true, Instant.now());
         musicFolderDao.createMusicFolder(musicFolder);
         musicFolder = musicFolderDao.getAllMusicFolders().get(0);
 
-        musicFolder.setPath(new File("newPath"));
+        musicFolder.setPath(Paths.get("newPath"));
         musicFolder.setName("newName");
         musicFolder.setEnabled(false);
         musicFolder.setChanged(Instant.ofEpochMilli(234234L));
@@ -73,10 +73,10 @@ public class MusicFolderDaoTestCase extends DaoTestCaseBean2 {
     public void testDeleteMusicFolder() {
         assertEquals("Wrong number of music folders.", 0, musicFolderDao.getAllMusicFolders().size());
 
-        musicFolderDao.createMusicFolder(new MusicFolder(new File("path"), "name", true, Instant.now()));
+        musicFolderDao.createMusicFolder(new MusicFolder(Paths.get("path"), "name", true, Instant.now()));
         assertEquals("Wrong number of music folders.", 1, musicFolderDao.getAllMusicFolders().size());
 
-        musicFolderDao.createMusicFolder(new MusicFolder(new File("path"), "name", true, Instant.now()));
+        musicFolderDao.createMusicFolder(new MusicFolder(Paths.get("path"), "name", true, Instant.now()));
         assertEquals("Wrong number of music folders.", 2, musicFolderDao.getAllMusicFolders().size());
 
         musicFolderDao.deleteMusicFolder(musicFolderDao.getAllMusicFolders().get(0).getId());

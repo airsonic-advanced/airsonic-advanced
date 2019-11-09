@@ -41,11 +41,15 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import java.util.zip.CRC32;
+import java.util.zip.CheckedInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -56,6 +60,8 @@ import java.util.zip.ZipOutputStream;
  *
  * @author Sindre Mehus
  */
+
+//TODO This entire class is ripe for a rewrite with the framework able to handle much of the custom code for supporting byte ranges
 @Controller
 @RequestMapping("/download")
 public class DownloadController implements LastModified {
@@ -102,11 +108,6 @@ public class DownloadController implements LastModified {
             Integer playerId = ServletRequestUtils.getIntParameter(request, "player");
             int[] indexes = request.getParameter("i") == null ? null : ServletRequestUtils.getIntParameters(request, "i");
 
-            if (mediaFile != null) {
-                response.setIntHeader("ETag", mediaFile.getId());
-                response.setHeader("Accept-Ranges", "bytes");
-            }
-
             HttpRange range = HttpRange.valueOf(request.getHeader("Range"));
             if (range != null) {
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
@@ -114,6 +115,9 @@ public class DownloadController implements LastModified {
             }
 
             if (mediaFile != null) {
+                response.setIntHeader("ETag", mediaFile.getId());
+                response.setHeader("Accept-Ranges", "bytes");
+                
                 if (!securityService.isFolderAccessAllowed(mediaFile, user.getUsername())) {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN,
                             "Access to file " + mediaFile.getId() + " is forbidden for user " + user.getUsername());
@@ -125,7 +129,7 @@ public class DownloadController implements LastModified {
                 } else {
                     List<MediaFile> children = mediaFileService.getChildrenOf(mediaFile, true, false, true);
                     String zipFileName = FilenameUtils.getBaseName(mediaFile.getPath()) + ".zip";
-                    File coverArtFile = indexes == null ? mediaFile.getCoverArtFile() : null;
+                    Path coverArtFile = indexes == null ? mediaFile.getCoverArtFile() : null;
                     downloadFiles(response, status, children, indexes, coverArtFile, range, zipFileName);
                 }
 
@@ -163,14 +167,14 @@ public class DownloadController implements LastModified {
      * @param range    The byte range, may be <code>null</code>.
      * @throws IOException If an I/O error occurs.
      */
-    private void downloadFile(HttpServletResponse response, TransferStatus status, File file, HttpRange range) throws IOException {
+    private void downloadFile(HttpServletResponse response, TransferStatus status, Path file, HttpRange range) throws IOException {
         LOG.info("Starting to download '" + FileUtil.getShortPath(file) + "' to " + status.getPlayer());
         status.setFile(file);
 
         response.setContentType("application/x-download");
-        response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + encodeAsRFC5987(file.getName()));
+        response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + encodeAsRFC5987(file.getFileName().toString()));
         if (range == null) {
-            Util.setContentLength(response, file.length());
+            Util.setContentLength(response, FileUtil.size(file));
         }
 
         copyFileToStream(file, RangeOutputStream.wrap(response.getOutputStream(), range), status, range);
@@ -206,7 +210,7 @@ public class DownloadController implements LastModified {
      * @param range        The byte range, may be <code>null</code>.
      * @param zipFileName  The name of the resulting zip file.   @throws IOException If an I/O error occurs.
      */
-    private void downloadFiles(HttpServletResponse response, TransferStatus status, List<MediaFile> files, int[] indexes, File coverArtFile, HttpRange range, String zipFileName) throws IOException {
+    private void downloadFiles(HttpServletResponse response, TransferStatus status, List<MediaFile> files, int[] indexes, Path coverArtFile, HttpRange range, String zipFileName) throws IOException {
         boolean cover_embedded = false;
 
         if (indexes != null && indexes.length == 1) {
@@ -234,14 +238,14 @@ public class DownloadController implements LastModified {
 
         for (MediaFile mediaFile : filesToDownload) {
             zip(out, mediaFile.getParentFile(), mediaFile.getFile(), status, range);
-            if (coverArtFile != null && coverArtFile.exists()) {
-                if (mediaFile.getFile().getCanonicalPath().equals(coverArtFile.getCanonicalPath())) {
+            if (coverArtFile != null && Files.exists(coverArtFile)) {
+                if (mediaFile.getFile().toAbsolutePath().toString().equals(coverArtFile.toAbsolutePath().toString())) {
                     cover_embedded = true;
                 }
             }
         }
-        if (coverArtFile != null && coverArtFile.exists() && !cover_embedded) {
-            zip(out, coverArtFile.getParentFile(), coverArtFile, status, range);
+        if (coverArtFile != null &&  Files.exists(coverArtFile) && !cover_embedded) {
+            zip(out, coverArtFile.getParent(), coverArtFile, status, range);
         }
 
 
@@ -258,11 +262,11 @@ public class DownloadController implements LastModified {
      * @param range  The byte range, may be <code>null</code>.
      * @throws IOException If an I/O error occurs.
      */
-    private void copyFileToStream(File file, OutputStream out, TransferStatus status, HttpRange range) throws IOException {
+    private void copyFileToStream(Path file, OutputStream out, TransferStatus status, HttpRange range) throws IOException {
         LOG.info("Downloading '" + FileUtil.getShortPath(file) + "' to " + status.getPlayer());
 
         final int bufferSize = 16 * 1024; // 16 Kbit
-        InputStream in = new BufferedInputStream(new FileInputStream(file), bufferSize);
+        InputStream in = new BufferedInputStream(Files.newInputStream(file), bufferSize);
 
         try {
             byte[] buf = new byte[bufferSize];
@@ -322,40 +326,33 @@ public class DownloadController implements LastModified {
      * @param range  The byte range, may be <code>null</code>.
      * @throws IOException If an I/O error occurs.
      */
-    private void zip(ZipOutputStream out, File root, File file, TransferStatus status, HttpRange range) throws IOException {
-
-        // Exclude all hidden files starting with a "."
-        if (file.getName().startsWith(".")) {
-            return;
-        }
-
-        String zipName = file.getCanonicalPath().substring(root.getCanonicalPath().length() + 1);
-
-        if (file.isFile()) {
-            status.setFile(file);
-
-            ZipEntry zipEntry = new ZipEntry(zipName);
-            zipEntry.setSize(file.length());
-            zipEntry.setCompressedSize(file.length());
-            zipEntry.setCrc(computeCrc(file));
-
-            out.putNextEntry(zipEntry);
-            copyFileToStream(file, out, status, range);
-            out.closeEntry();
-
-        } else {
-            ZipEntry zipEntry = new ZipEntry(zipName + '/');
-            zipEntry.setSize(0);
-            zipEntry.setCompressedSize(0);
-            zipEntry.setCrc(0);
-
-            out.putNextEntry(zipEntry);
-            out.closeEntry();
-
-            File[] children = FileUtil.listFiles(file);
-            for (File child : children) {
-                zip(out, root, child, status, range);
-            }
+    private void zip(ZipOutputStream out, Path root, Path file, TransferStatus status, HttpRange range) throws IOException {
+        try (Stream<Path> paths = Files.walk(file)) {
+            paths.filter(f -> !f.getFileName().toString().startsWith("."))
+                .forEach(FileUtil.uncheck(f -> {
+                    String zipName = f.relativize(root).toString();
+                    if (Files.isRegularFile(f)) {
+                        status.setFile(f);
+    
+                        ZipEntry zipEntry = new ZipEntry(zipName);
+                        long size = FileUtil.size(f);
+                        zipEntry.setSize(size);
+                        zipEntry.setCompressedSize(size);
+                        zipEntry.setCrc(computeCrc(f));
+    
+                        out.putNextEntry(zipEntry);
+                        copyFileToStream(f, out, status, range);
+                        out.closeEntry();
+                    } else {
+                        ZipEntry zipEntry = new ZipEntry(zipName + '/');
+                        zipEntry.setSize(0);
+                        zipEntry.setCompressedSize(0);
+                        zipEntry.setCrc(0);
+    
+                        out.putNextEntry(zipEntry);
+                        out.closeEntry();
+                    }
+                }));
         }
     }
 
@@ -366,21 +363,12 @@ public class DownloadController implements LastModified {
      * @return A CRC32 checksum.
      * @throws IOException If an I/O error occurs.
      */
-    private long computeCrc(File file) throws IOException {
-        CRC32 crc = new CRC32();
-
-        try (InputStream in = new FileInputStream(file)) {
-
+    private long computeCrc(Path file) throws IOException {
+        try (InputStream is = Files.newInputStream(file); BufferedInputStream bis = new BufferedInputStream(is); CheckedInputStream cis = new CheckedInputStream(bis, new CRC32())) {
             byte[] buf = new byte[8192];
-            int n = in.read(buf);
-            while (n != -1) {
-                crc.update(buf, 0, n);
-                n = in.read(buf);
-            }
-
+            for ( ; (cis.read(buf)) != -1; );
+            return cis.getChecksum().getValue();
         }
-
-        return crc.getValue();
     }
 
 }

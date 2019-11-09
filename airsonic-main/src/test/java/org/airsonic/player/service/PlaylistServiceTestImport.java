@@ -26,6 +26,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -93,7 +94,7 @@ public class PlaylistServiceTestImport {
         builder.append(mf2.getAbsolutePath()).append("\n");
         builder.append(mf3.getAbsolutePath()).append("\n");
         doAnswer(new PersistPlayList(23)).when(playlistDao).createPlaylist(any());
-        doAnswer(new MediaFileHasEverything()).when(mediaFileService).getMediaFile(any(File.class));
+        doAnswer(new MediaFileHasEverything()).when(mediaFileService).getMediaFile(any(Path.class));
         InputStream inputStream = new ByteArrayInputStream(builder.toString().getBytes(StandardCharsets.UTF_8));
         String path = "/path/to/" + playlistName + ".m3u";
         playlistService.importPlaylist(username, playlistName, path, inputStream, null);
@@ -127,7 +128,7 @@ public class PlaylistServiceTestImport {
         builder.append("File2=").append(mf2.getAbsolutePath()).append("\n");
         builder.append("File3=").append(mf3.getAbsolutePath()).append("\n");
         doAnswer(new PersistPlayList(23)).when(playlistDao).createPlaylist(any());
-        doAnswer(new MediaFileHasEverything()).when(mediaFileService).getMediaFile(any(File.class));
+        doAnswer(new MediaFileHasEverything()).when(mediaFileService).getMediaFile(any(Path.class));
         InputStream inputStream = new ByteArrayInputStream(builder.toString().getBytes(StandardCharsets.UTF_8));
         String path = "/path/to/" + playlistName + ".pls";
         playlistService.importPlaylist(username, playlistName, path, inputStream, null);
@@ -164,7 +165,7 @@ public class PlaylistServiceTestImport {
         builder.append("<track><location>file://").append(mf3.getAbsolutePath()).append("</location></track>\n");
         builder.append("    </trackList>\n" + "</playlist>\n");
         doAnswer(new PersistPlayList(23)).when(playlistDao).createPlaylist(any());
-        doAnswer(new MediaFileHasEverything()).when(mediaFileService).getMediaFile(any(File.class));
+        doAnswer(new MediaFileHasEverything()).when(mediaFileService).getMediaFile(any(Path.class));
         InputStream inputStream = new ByteArrayInputStream(builder.toString().getBytes(StandardCharsets.UTF_8));
         String path = "/path/to/" + playlistName + ".xspf";
         playlistService.importPlaylist(username, playlistName, path, inputStream, null);

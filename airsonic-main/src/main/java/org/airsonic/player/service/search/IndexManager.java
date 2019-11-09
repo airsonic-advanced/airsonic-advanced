@@ -27,7 +27,6 @@ import org.airsonic.player.domain.*;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.Util;
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
@@ -39,9 +38,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
@@ -50,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Function class that is strongly linked to the lucene index implementation.
@@ -84,13 +84,12 @@ public class IndexManager {
     /**
      * File for index directory.
      */
-    private File rootIndexDirectory = new File(SettingsService.getAirsonicHome(), INDEX_ROOT_DIR_NAME.concat(Integer.toString(INDEX_VERSION)));
+    private Path rootIndexDirectory = SettingsService.getAirsonicHome().resolve(INDEX_ROOT_DIR_NAME.concat(Integer.toString(INDEX_VERSION)));
 
     /**
      * Returns the directory of the specified index
      */
-    private Function<IndexType, File> getIndexDirectory = (indexType) ->
-        new File(rootIndexDirectory, indexType.toString().toLowerCase());
+    private Function<IndexType, Path> getIndexDirectory = (indexType) -> rootIndexDirectory.resolve(indexType.toString().toLowerCase());
 
     @Autowired
     private AnalyzerFactory analyzerFactory;
@@ -160,9 +159,9 @@ public class IndexManager {
     }
 
     private IndexWriter createIndexWriter(IndexType indexType) throws IOException {
-        File indexDirectory = getIndexDirectory.apply(indexType);
+        Path indexDirectory = getIndexDirectory.apply(indexType);
         IndexWriterConfig config = new IndexWriterConfig(analyzerFactory.getAnalyzer());
-        return new IndexWriter(FSDirectory.open(indexDirectory.toPath()), config);
+        return new IndexWriter(FSDirectory.open(indexDirectory), config);
     }
 
     public void expunge() {
@@ -293,12 +292,12 @@ public class IndexManager {
      */
     public @Nullable IndexSearcher getSearcher(IndexType indexType) {
         return Optional.ofNullable(searchers.computeIfAbsent(indexType, k -> {
-            File indexDirectory = getIndexDirectory.apply(k);
+            Path indexDirectory = getIndexDirectory.apply(k);
             try {
-                if (indexDirectory.exists()) {
-                    return new SearcherManager(FSDirectory.open(indexDirectory.toPath()), null);
+                if (Files.exists(indexDirectory)) {
+                    return new SearcherManager(FSDirectory.open(indexDirectory), null);
                 } else {
-                    LOG.warn("{} does not exist. Please run a scan.", indexDirectory.getAbsolutePath());
+                    LOG.warn("{} does not exist. Please run a scan.", indexDirectory.toString());
                 }
             } catch (IOException e) {
                 LOG.error("Failed to initialize SearcherManager for {}", k, e);
@@ -338,52 +337,41 @@ public class IndexManager {
         });
     }
 
+    private static Pattern legacyIndexPattern = Pattern.compile("^lucene\\d+$");
+    private static Pattern nonCurrentIndexPattern = Pattern.compile("^index\\d+$");
+    
     /**
      * Check the version of the index and clean it up if necessary.
      * Legacy type indexes (files or directories starting with lucene) are deleted.
      * If there is no index directory, initialize the directory.
      * If the index directory exists and is not the current version,
      * initialize the directory.
+     * @throws IOException 
      */
-    public void deleteOldIndexFiles() {
+    public void deleteOldIndexFiles() throws IOException {
 
         // Delete legacy files unconditionally
-        Arrays.stream(SettingsService.getAirsonicHome()
-                .listFiles((file, name) -> Pattern.compile("^lucene\\d+$").matcher(name).matches())).forEach(old -> {
-                    if (FileUtil.exists(old)) {
-                        LOG.info("Found legacy index file. Try to delete : {}", old.getAbsolutePath());
-                        try {
-                            if (old.isFile()) {
-                                FileUtils.deleteQuietly(old);
-                            } else {
-                                FileUtils.deleteDirectory(old);
-                            }
-                        } catch (IOException e) {
-                            // Log only if failed
-                            LOG.warn("Failed to delete the legacy Index : {}", old.getAbsolutePath(), e);
-                        }
-                    }
+        try (Stream<Path> files = Files.list(SettingsService.getAirsonicHome())) {
+            files
+                .filter(p -> legacyIndexPattern.matcher(p.getFileName().toString()).matches())
+                .forEach(p -> {
+                    LOG.info("Found legacy index file. Try to delete : {}", p);
+                    FileUtil.delete(p);
                 });
-
+            
+        }
+        
         // Delete if not old index version
-        Arrays.stream(SettingsService.getAirsonicHome()
-                .listFiles((file, name) -> Pattern.compile("^index\\d+$").matcher(name).matches()))
-                .filter(dir -> !dir.getName().equals(rootIndexDirectory.getName()))
-                .forEach(old -> {
-                    if (FileUtil.exists(old)) {
-                        LOG.info("Found old index file. Try to delete : {}", old.getAbsolutePath());
-                        try {
-                            if (old.isFile()) {
-                                FileUtils.deleteQuietly(old);
-                            } else {
-                                FileUtils.deleteDirectory(old);
-                            }
-                        } catch (IOException e) {
-                            // Log only if failed
-                            LOG.warn("Failed to delete the old Index : {}", old.getAbsolutePath(), e);
-                        }
-                    }
+        try (Stream<Path> files = Files.list(SettingsService.getAirsonicHome())) {
+            files
+                .filter(p -> nonCurrentIndexPattern.matcher(p.getFileName().toString()).matches())
+                .filter(p -> !p.equals(rootIndexDirectory))
+                .forEach(p -> {
+                    LOG.info("Found old index file. Try to delete : {}", p);
+                    FileUtil.delete(p);
                 });
+            
+        }
 
     }
 
@@ -392,14 +380,15 @@ public class IndexManager {
      */
     public void initializeIndexDirectory() {
         // Check if Index is current version
-        if (rootIndexDirectory.exists()) {
+        if (Files.exists(rootIndexDirectory)) {
             // Index of current version already exists
             LOG.info("Index was found (index version {}). ", INDEX_VERSION);
         } else {
-            if (rootIndexDirectory.mkdir()) {
+            try {
+                Files.createDirectories(rootIndexDirectory);
                 LOG.info("Index directory was created (index version {}). ", INDEX_VERSION);
-            } else {
-                LOG.warn("Failed to create index directory :  (index version {}). ", INDEX_VERSION);
+            } catch (IOException e) {
+                LOG.warn("Failed to create index directory :  (index version {}). ", INDEX_VERSION, e);
             }
         }
     }

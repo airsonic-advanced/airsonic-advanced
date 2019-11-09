@@ -33,7 +33,10 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -92,7 +95,7 @@ public class MediaScannerService {
         schedule();
     }
 
-    public void initNoSchedule() {
+    public void initNoSchedule() throws IOException {
         indexManager.deleteOldIndexFiles();
     }
 
@@ -205,8 +208,8 @@ public class MediaScannerService {
                         .collect(Collectors.toList()));
             
             // Scan podcast folder.
-            File podcastFolder = new File(settingsService.getPodcastFolder());
-            if (podcastFolder.exists()) {
+            Path podcastFolder = Paths.get(settingsService.getPodcastFolder());
+            if (Files.exists(podcastFolder)) {
                 ForkJoinTask.invokeAll(ForkJoinTask.adapt(() -> scanFile(mediaFileService.getMediaFile(podcastFolder), new MusicFolder(podcastFolder, null, true, null),
                          statistics, albumCount, artists, albums, genres, encountered, true)));
             }
@@ -278,8 +281,8 @@ public class MediaScannerService {
         LOG.trace("Scanning file {}", file.getPath());
 
         // Update the root folder if it has changed.
-        if (!musicFolder.getPath().getPath().equals(file.getFolder())) {
-            file.setFolder(musicFolder.getPath().getPath());
+        if (!musicFolder.getPath().toString().equals(file.getFolder())) {
+            file.setFolder(musicFolder.getPath().toString());
             mediaFileDao.createOrUpdateMediaFile(file);
         }
 
