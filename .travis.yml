@@ -9,10 +9,8 @@ if: tag is blank
 #services:
 #  - docker
 
-env:
-  global:
-    # GITHUB_OAUTH_TOKEN=<token>
-    - secure: "wiQ9KeD2WfFUrct+VdKjBi83K2S2muy8CT+MqbgpK/hDuIFluUBPz4lDCXBS8dtk1pwE7Zz9Zlu15QZO4SvEFH73QmzseTnaW8E51PCtzih/8AY9X34g1SYqkYZehixPMmDRknhHn+VocZjGJW9GhKqta34viz3WPi6MRqdtsMYR6gf3FXz8HBJbqVHJU0nOdeUzIM4MG674TFupm66t8QtilCLEWwWM0/aSvWAEMFLrHJUehJOe2IakRnMYD07BKIluBG46oUszZ11FXuWGHLKZTgz7FYavCiyT6HMjFI5p5Tpn42FLUz6GGFZ2xWYSc7oXT//eNWVy6lvGK8OvNmo6iPF2e5hfUqdVrPfKW72PwmCnSJqMyQRCWcfyop15sykiS4ThMXXBeo1QxAlVDU1+BMF/Dx9Ho+AEd3jOLnkpmfc/WWpODDrmrM0b2WvcVpIbMZV7dKVt9sV/LIV1f7TvWhUP6TfXhowPjGVN1SoQ6oWzI1e7ibxWkADMIX/sUIqWgC7FSgN+KIHBC3pFonx+peFesLDXZmu1aeXQZ8pC7GiWUhfNQlEz2Cyz70GGYQ2YN478pganfvyDo0ynPrc2fvsNEg/6TGCif9xAzIK+gRFY5qrOZpoAZ6yg9U8YWqX9EQRRK20WMiCAH+A90plnD0qYEWkvYeKHkYNFPD0="
+#env:
+#  global:
 #    - secure: "encrypted DOCKER_USERNAME=user"
 #    - secure: "encrypted DOCKER_PASSWORD=pass"
       
@@ -21,8 +19,8 @@ stages:
   - name: deploy_edge
     if: type = push && tag is blank
 
-script: skip
-  #- mvn verify -B -P integration-test
+script:
+  - mvn verify -B -P integration-test
 
 matrix:
   include:
@@ -47,7 +45,6 @@ matrix:
       - export TRAVIS_TAG=${TRAVIS_TAG:-$PROJECT_MAVEN_VERSION+$(date +'%Y%m%d%H%M%S')}
       - echo $TRAVIS_TAG
     script: skip
-      #- mvn package -DskipTests -Dcheckstyle.skip=true
       #- docker build -f install/docker/Dockerfile -t airsonic/airsonic:latest -t airsonic/airsonic:edge/$TRAVIS_TAG .
     before_deploy:
       # Set up git user name and tag this commit
@@ -62,8 +59,5 @@ matrix:
       skip_cleanup: true
       prerelease: true
       name: "Edge Release $TRAVIS_TAG"
-      #on:
-        #tags: false
-        #all_branches: true
     #- provider: script
     #  script: bash install/docker/dockerhub_push.sh
