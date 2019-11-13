@@ -2,11 +2,31 @@ language: java
 cache:
   directories:
     - $HOME/.m2
+
+# do not build on tagged commits to avoid infinite loops
+if: tag is blank
+
+#services:
+#  - docker
+
+env:
+  global:
+    # GITHUB_OAUTH_TOKEN=<token>
+    - secure: "wiQ9KeD2WfFUrct+VdKjBi83K2S2muy8CT+MqbgpK/hDuIFluUBPz4lDCXBS8dtk1pwE7Zz9Zlu15QZO4SvEFH73QmzseTnaW8E51PCtzih/8AY9X34g1SYqkYZehixPMmDRknhHn+VocZjGJW9GhKqta34viz3WPi6MRqdtsMYR6gf3FXz8HBJbqVHJU0nOdeUzIM4MG674TFupm66t8QtilCLEWwWM0/aSvWAEMFLrHJUehJOe2IakRnMYD07BKIluBG46oUszZ11FXuWGHLKZTgz7FYavCiyT6HMjFI5p5Tpn42FLUz6GGFZ2xWYSc7oXT//eNWVy6lvGK8OvNmo6iPF2e5hfUqdVrPfKW72PwmCnSJqMyQRCWcfyop15sykiS4ThMXXBeo1QxAlVDU1+BMF/Dx9Ho+AEd3jOLnkpmfc/WWpODDrmrM0b2WvcVpIbMZV7dKVt9sV/LIV1f7TvWhUP6TfXhowPjGVN1SoQ6oWzI1e7ibxWkADMIX/sUIqWgC7FSgN+KIHBC3pFonx+peFesLDXZmu1aeXQZ8pC7GiWUhfNQlEz2Cyz70GGYQ2YN478pganfvyDo0ynPrc2fvsNEg/6TGCif9xAzIK+gRFY5qrOZpoAZ6yg9U8YWqX9EQRRK20WMiCAH+A90plnD0qYEWkvYeKHkYNFPD0="
+#    - secure: "encrypted DOCKER_USERNAME=user"
+#    - secure: "encrypted DOCKER_PASSWORD=pass"
+      
+stages:
+  - name: deploy_edge
+    # deploy only on commits to master branch
+    if: branch = master && type = push && tag is blank
+
 script:
   - mvn verify -B -P integration-test
 
 matrix:
   include:
+  # tests
   - name: coverity
     script:
       - echo "coverity scan script"
@@ -15,9 +35,9 @@ matrix:
     addons:
       coverity_scan:
         project:
-          name: "airsonic/airsonic"
+          name: "airsonic-advanced/airsonic-advanced"
           description: "A Free and Open Source community driven media server"
-        notification_email: "airsonic@tutanota.com"
+        notification_email: "airsonicadvanced@gmail.com"
         build_command_prepend:
         build_command: mvn -B -q clean package -DskipTests=true
         branch_pattern: master
@@ -30,3 +50,32 @@ matrix:
   - jdk: openjdk11
   - jdk: openjdk12
   - jdk: openjdk13
+  
+  # deploys
+  - stage: deploy_edge
+    name: "Deploy Edge Release"
+    jdk: openjdk8
+    before_script:
+      - export PROJECT_MAVEN_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+      - export TRAVIS_TAG=${TRAVIS_TAG:-$PROJECT_MAVEN_VERSION+$(date +'%Y%m%d%H%M%S')-$TRAVIS_COMMIT}
+    script:
+      - mvn package -DskipTests -Dcheckstyle.skip=true
+      #- docker build -f install/docker/Dockerfile -t airsonic/airsonic:latest -t airsonic/airsonic:edge/$TRAVIS_TAG .
+    before_deploy:
+      # Set up git user name and tag this commit
+      - git config --local user.name "Airsonic Travis CI"
+      - git config --local user.email "builds@travis-ci.org"
+      - git tag $TRAVIS_TAG -a -m "Generated tag $TRAVIS_TAG from Travis CI for build $TRAVIS_BUILD_NUMBER"
+      - git push -q https://$GITHUB_OAUTH_TOKEN@github.com/airsonic-advanced/airsonic-advanced --tags
+    deploy:
+    - provider: releases
+      api_key: $GITHUB_OAUTH_TOKEN
+      file: airsonic-main/target/airsonic.war
+      skip_cleanup: true
+      options:
+        - prerelease: true
+        - name: "Edge Release $TRAVIS_TAG"
+      on:
+        tags: false
+    #- provider: script
+    #  script: bash install/docker/dockerhub_push.sh
