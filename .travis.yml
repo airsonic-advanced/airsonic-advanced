@@ -53,9 +53,7 @@ matrix:
       # Set up git user name and tag this commit
       - git config --local user.name "Airsonic Travis CI"
       - git config --local user.email "builds@travis-ci.org"
-      - echo $TRAVIS_TAG
-      - git tag $TRAVIS_TAG -a -m "Generated tag $TRAVIS_TAG from Travis CI for build $TRAVIS_BUILD_NUMBER"
-      - git push origin --tags
+      - git tag "$TRAVIS_TAG" -a -m "Generated tag $TRAVIS_TAG from Travis CI for build $TRAVIS_BUILD_NUMBER"
     deploy:
     - provider: releases
       api_key:
@@ -65,8 +63,8 @@ matrix:
       options:
         - prerelease: true
         - name: "Edge Release $TRAVIS_TAG"
-      on:
+      #on:
         #tags: false
-        all_branches: true
+        #all_branches: true
     #- provider: script
     #  script: bash install/docker/dockerhub_push.sh
