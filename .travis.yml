@@ -3,13 +3,13 @@ cache:
   directories:
     - $HOME/.m2
 
-services:
-  - docker
+#services:
+#  - docker
 
-env:
-  global:
-    - secure: "encrypted DOCKER_USERNAME=user"
-    - secure: "encrypted DOCKER_PASSWORD=pass"
+#env:
+#  global:
+#    - secure: "encrypted DOCKER_USERNAME=user"
+#    - secure: "encrypted DOCKER_PASSWORD=pass"
       
 stages:
   - name: deploy_edge
@@ -30,9 +30,9 @@ matrix:
     addons:
       coverity_scan:
         project:
-          name: "airsonic/airsonic"
+          name: "airsonic-advanced/airsonic-advanced"
           description: "A Free and Open Source community driven media server"
-        notification_email: "airsonic@tutanota.com"
+        notification_email: "airsonicadvanced@gmail.com"
         build_command_prepend:
         build_command: mvn -B -q clean package -DskipTests=true
         branch_pattern: master
@@ -55,16 +55,16 @@ matrix:
     - export TRAVIS_TAG=${TRAVIS_TAG:-$PROJECT_MAVEN_VERSION+$(date +'%Y%m%d%H%M%S')-$TRAVIS_COMMIT}
     script:
       - mvn package -DskipTests -Dcheckstyle.skip=true
-      - docker build -f install/docker/Dockerfile -t airsonic/airsonic:latest -t airsonic/airsonic:edge/$TRAVIS_TAG .
+      #- docker build -f install/docker/Dockerfile -t airsonic/airsonic:latest -t airsonic/airsonic:edge/$TRAVIS_TAG .
     before_deploy:
       # Set up git user name and tag this commit
-      - git config --local user.name "Airsonic Travis"
-      - git config --local user.email "airsonic@tutanota.com"
+      - git config --local user.name "Airsonic Travis CI"
+      - git config --local user.email "airsonicadvanced@gmail.com"
       - git tag $TRAVIS_TAG -m "Edge Release $TRAVIS_TAG"
     deploy:
     - provider: releases
       api_key:
-        secure: "encrypted GITHUB_OAUTH_TOKEN"
+        secure: "I0aBwJhFlCjXmsVFffUMbR38wHp+HrsTBkYKePxWn5+prYgq+9dSz0IjWpHEszUdnCDQcHEJR4nFS2YLEBdEzC4sqkWZVpJEnSVF/izEbxjxb1fNdLeCqZAPkuqw5/pta9JKwdwFMvBLKkV+lBaXscr/sLipAtOIESs+EV1zP5GU0636s4IWA85yfrhKEgE2cjQqtgpbcIZXJWbZN+MtmAhSgeKvUzYGTjOFmF/xfO3ksBAAUd3j0bmsAgA/9+I5XCsR/IRW/PLLdi2ocwsHY+VqdrH4p5kHN3EV2MrjtvhbrRYRFdRoYcux5EXupdTOIMz03GW4wbPJm90hKa2BbaWkzHF9hv6X5boPFrOP+7XqW01X7FVp9dGringEv8CPd+iNPqJLrISDjztnWVuRxpcoJbKEaObYR3DXNyQJ5nbGlrp8vmqRPC2nIJT6UqgE2Bqcap4a1NBVXVQ/zjCCJbDv44QGYWGCL0WIbxOvsWKWvd1otqHi07x8nOAhivoBI44q7UGIoGg0BTs8+EXbbpoAu4cNgLteipByEdtoXnYA7P+L3QLR7kBY5Qyc0bwI2UyE9JlxJMb/90701DMCcKuzvW14aEsVeu00j53UEUCV+i2lKMBZf67VIFQuUvgtUhzzJcvlMaElqh8OrPImRhUkMV9HMY2+qyrHc5CucDg="
       file: airsonic-main/target/airsonic.war
       skip_cleanup: true
       options:
@@ -72,5 +72,5 @@ matrix:
         - name: "Edge Release $TRAVIS_TAG"
       on:
         tags: true
-    - provider: script
-      script: bash install/docker/dockerhub_push.sh
+    #- provider: script
+    #  script: bash install/docker/dockerhub_push.sh
