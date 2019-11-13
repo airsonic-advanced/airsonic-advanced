@@ -19,8 +19,7 @@ env:
 stages:
   - test
   - name: deploy_edge
-    # deploy only on commits to master branch
-    if: branch = master && type = push && tag is blank
+    if: type = push && tag is blank
 
 script:
   - mvn verify -B -P integration-test
@@ -46,6 +45,7 @@ matrix:
     before_script:
       - export PROJECT_MAVEN_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
       - export TRAVIS_TAG=${TRAVIS_TAG:-$PROJECT_MAVEN_VERSION+$(date +'%Y%m%d%H%M%S')-$TRAVIS_COMMIT}
+      - echo $TRAVIS_TAG
     script:
       - mvn package -DskipTests -Dcheckstyle.skip=true
       #- docker build -f install/docker/Dockerfile -t airsonic/airsonic:latest -t airsonic/airsonic:edge/$TRAVIS_TAG .
@@ -58,7 +58,8 @@ matrix:
       - git push origin --tags
     deploy:
     - provider: releases
-      api_key: $GITHUB_OAUTH_TOKEN
+      api_key:
+        secure: "I0aBwJhFlCjXmsVFffUMbR38wHp+HrsTBkYKePxWn5+prYgq+9dSz0IjWpHEszUdnCDQcHEJR4nFS2YLEBdEzC4sqkWZVpJEnSVF/izEbxjxb1fNdLeCqZAPkuqw5/pta9JKwdwFMvBLKkV+lBaXscr/sLipAtOIESs+EV1zP5GU0636s4IWA85yfrhKEgE2cjQqtgpbcIZXJWbZN+MtmAhSgeKvUzYGTjOFmF/xfO3ksBAAUd3j0bmsAgA/9+I5XCsR/IRW/PLLdi2ocwsHY+VqdrH4p5kHN3EV2MrjtvhbrRYRFdRoYcux5EXupdTOIMz03GW4wbPJm90hKa2BbaWkzHF9hv6X5boPFrOP+7XqW01X7FVp9dGringEv8CPd+iNPqJLrISDjztnWVuRxpcoJbKEaObYR3DXNyQJ5nbGlrp8vmqRPC2nIJT6UqgE2Bqcap4a1NBVXVQ/zjCCJbDv44QGYWGCL0WIbxOvsWKWvd1otqHi07x8nOAhivoBI44q7UGIoGg0BTs8+EXbbpoAu4cNgLteipByEdtoXnYA7P+L3QLR7kBY5Qyc0bwI2UyE9JlxJMb/90701DMCcKuzvW14aEsVeu00j53UEUCV+i2lKMBZf67VIFQuUvgtUhzzJcvlMaElqh8OrPImRhUkMV9HMY2+qyrHc5CucDg="
       file: airsonic-main/target/airsonic.war
       skip_cleanup: true
       options:
