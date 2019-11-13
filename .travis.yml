@@ -50,9 +50,9 @@ matrix:
   - stage: deploy_edge
     name: "Deploy Edge Release"
     jdk: openjdk8
-  before_script:
-    - export PROJECT_MAVEN_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-    - export TRAVIS_TAG=${TRAVIS_TAG:-$PROJECT_MAVEN_VERSION+$(date +'%Y%m%d%H%M%S')-$TRAVIS_COMMIT}
+    before_script:
+      - export PROJECT_MAVEN_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+      - export TRAVIS_TAG=${TRAVIS_TAG:-$PROJECT_MAVEN_VERSION+$(date +'%Y%m%d%H%M%S')-$TRAVIS_COMMIT}
     script:
       - mvn package -DskipTests -Dcheckstyle.skip=true
       #- docker build -f install/docker/Dockerfile -t airsonic/airsonic:latest -t airsonic/airsonic:edge/$TRAVIS_TAG .
