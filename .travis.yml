@@ -21,8 +21,8 @@ stages:
   - name: deploy_edge
     if: type = push && tag is blank
 
-script:
-  - mvn verify -B -P integration-test
+script: skip
+  #- mvn verify -B -P integration-test
 
 matrix:
   include:
@@ -46,8 +46,8 @@ matrix:
       - export PROJECT_MAVEN_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
       - export TRAVIS_TAG=${TRAVIS_TAG:-$PROJECT_MAVEN_VERSION+$(date +'%Y%m%d%H%M%S')-$TRAVIS_COMMIT}
       - echo $TRAVIS_TAG
-    script:
-      - mvn package -DskipTests -Dcheckstyle.skip=true
+    script: skip
+      #- mvn package -DskipTests -Dcheckstyle.skip=true
       #- docker build -f install/docker/Dockerfile -t airsonic/airsonic:latest -t airsonic/airsonic:edge/$TRAVIS_TAG .
     before_deploy:
       # Set up git user name and tag this commit
@@ -66,7 +66,7 @@ matrix:
         - prerelease: true
         - name: "Edge Release $TRAVIS_TAG"
       on:
-        tags: false
+        #tags: false
         all_branches: true
     #- provider: script
     #  script: bash install/docker/dockerhub_push.sh
