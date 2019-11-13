@@ -19,8 +19,7 @@ env:
 stages:
   - test
   - name: deploy_edge
-    # deploy only on commits to master branch
-    if: branch = master && type = push && tag is blank
+    if: type = push && tag is blank
 
 script:
   - mvn verify -B -P integration-test
