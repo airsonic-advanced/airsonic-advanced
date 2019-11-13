@@ -53,8 +53,9 @@ matrix:
       # Set up git user name and tag this commit
       - git config --local user.name "Airsonic Travis CI"
       - git config --local user.email "builds@travis-ci.org"
+      - echo $TRAVIS_TAG
       - git tag $TRAVIS_TAG -a -m "Generated tag $TRAVIS_TAG from Travis CI for build $TRAVIS_BUILD_NUMBER"
-      - git push -q https://$GITHUB_OAUTH_TOKEN@github.com/airsonic-advanced/airsonic-advanced --tags
+      - git push origin --tags
     deploy:
     - provider: releases
       api_key: $GITHUB_OAUTH_TOKEN
