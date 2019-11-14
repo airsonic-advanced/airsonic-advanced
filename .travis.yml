@@ -66,6 +66,7 @@ matrix:
         - airsonic-main/target/artifacts-checksums.sha
       skip_cleanup: true
       prerelease: true
+      overwrite: true
       name: "Edge Release $TRAVIS_TAG"
     - provider: script
       script: bash install/docker/dockerhub_push.sh
