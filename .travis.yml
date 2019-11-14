@@ -19,6 +19,8 @@ stages:
   - name: deploy_edge
     if: type = push && tag is blank
 
+install: skip
+
 script:
   - mvn verify -B -P integration-test
 
@@ -48,15 +50,20 @@ matrix:
     script:
       - mvn package -P docker -DskipTests
     before_deploy:
-      # Tag the docker image
-      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge-$TRAVIS_TAG
-      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge-latest
-      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitcommit-$TRAVIS_COMMIT
-      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:travisbuild-$TRAVIS_BUILD_NUMBER
-      # Set up git user name and tag this commit
-      - git config --local user.name "Airsonic Travis CI"
-      - git config --local user.email "builds@travis-ci.org"
-      - git tag "$TRAVIS_TAG" -a -m "Generated tag $TRAVIS_TAG from Travis CI for build $TRAVIS_BUILD_NUMBER"
+      - >
+        if ! [ "$BEFORE_DEPLOY_RUN" ]; then
+          export BEFORE_DEPLOY_RUN=1;
+          
+          # Tag the docker image
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge-$TRAVIS_TAG;
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge-latest;
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitcommit-$TRAVIS_COMMIT;
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:travisbuild-$TRAVIS_BUILD_NUMBER;
+          # Set up git user name and tag this commit
+          git config --local user.name "Airsonic Travis CI";
+          git config --local user.email "builds@travis-ci.org";
+          git tag "$TRAVIS_TAG" -a -m "Generated tag $TRAVIS_TAG from Travis CI for build $TRAVIS_BUILD_NUMBER";
+        fi
     deploy:
     - provider: releases
       api_key:
@@ -68,5 +75,5 @@ matrix:
       prerelease: true
       overwrite: true
       name: "Edge Release $TRAVIS_TAG"
-    #- provider: script
-    #  script: bash install/docker/dockerhub_push.sh
+    - provider: script
+      script: bash install/docker/dockerhub_push.sh
