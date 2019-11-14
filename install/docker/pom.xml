@@ -37,8 +37,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <repository>airsonic/airsonic</repository>
-                    <tag>${project.version}</tag>
+                    <repository>airsonicadvanced/airsonic-advanced</repository>
+                    <tag>latest</tag>
                     <retryCount>0</retryCount>
                 </configuration>
             </plugin>
