@@ -6,13 +6,13 @@ cache:
 # do not build on tagged commits to avoid infinite loops
 if: tag is blank
 
-#services:
-#  - docker
+services:
+  - docker
 
-#env:
-#  global:
-#    - secure: "encrypted DOCKER_USERNAME=user"
-#    - secure: "encrypted DOCKER_PASSWORD=pass"
+env:
+  global:
+    - DOCKER_USERNAME=airsonicadvanced
+    - secure: "hAHh/Qnx4wx5Ntw4xMpuDvMcLTbaonesMhytxOlVBVTqpSD8X++XuGdAOSbpaAWAkpOiTzkPU+38ili9vSHYEIzmA+s22/3BVxLETjacDweKswBxZP/Esgpy3lZGXJepK4wBtJ4Cosqy1rxv7wzvSFFMNeD8arZrrwdmvreQSBkitngdSXqA1DmBG83KemXxc4hHmQtfvYzt4gf7GZXQ5ysYYp8gup5xIYCEDoEuNgrHw+1IYYO/w20Xeft42IYB5vHURwsKHFShth9/Wye8u5xW7WmdtRXSsYOU7ksOLDr8tE8fQB+/0aSna+0AXJLkBocw4hnK7LFDicIgrWt6Off0iJ10uoI9x0HvS1mjWTdnsD7kO57xV/f2n1cjp/8WDM/ym4blLuwWB0zmrUVAXGAg94O6Oq8NJuTmhVPus372vc+O8crHPopy9wyv+L664CF0nzEeYVerCYkOXj4fcuelXOGN+StpM2jYR3RjCxikgPQyEe/J8WO/1r6Ge6k5y4Cm9/P7woW5VUTJahd5spzuEP8xFKzd7XBWs6cHASJIFLvasZiEdl0HIeJFGC/z//IDMReWFvWdTFe61tsQ6mfjyuRtDUqCX57JbSul9vhshGkNgb8xsqVOB4ZYUOcU0m9/AR7pf7QIjY/4JEwMjDKJQg+qElI8OKwsi7CB/JU="
       
 stages:
   - test
@@ -44,9 +44,14 @@ matrix:
       - export PROJECT_MAVEN_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
       - export TRAVIS_TAG=${TRAVIS_TAG:-$PROJECT_MAVEN_VERSION+$(date +'%Y%m%d%H%M%S')}
       - echo $TRAVIS_TAG
-    script: skip
-      #- docker build -f install/docker/Dockerfile -t airsonic/airsonic:latest -t airsonic/airsonic:edge/$TRAVIS_TAG .
+    script:
+      - mvn package -P docker
     before_deploy:
+      # Tag the docker image
+      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge/$TRAVIS_TAG
+      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge/latest
+      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitcommit/$TRAVIS_COMMIT
+      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:travisbuild/$TRAVIS_BUILD_NUMBER
       # Set up git user name and tag this commit
       - git config --local user.name "Airsonic Travis CI"
       - git config --local user.email "builds@travis-ci.org"
@@ -55,9 +60,11 @@ matrix:
     - provider: releases
       api_key:
         secure: "I0aBwJhFlCjXmsVFffUMbR38wHp+HrsTBkYKePxWn5+prYgq+9dSz0IjWpHEszUdnCDQcHEJR4nFS2YLEBdEzC4sqkWZVpJEnSVF/izEbxjxb1fNdLeCqZAPkuqw5/pta9JKwdwFMvBLKkV+lBaXscr/sLipAtOIESs+EV1zP5GU0636s4IWA85yfrhKEgE2cjQqtgpbcIZXJWbZN+MtmAhSgeKvUzYGTjOFmF/xfO3ksBAAUd3j0bmsAgA/9+I5XCsR/IRW/PLLdi2ocwsHY+VqdrH4p5kHN3EV2MrjtvhbrRYRFdRoYcux5EXupdTOIMz03GW4wbPJm90hKa2BbaWkzHF9hv6X5boPFrOP+7XqW01X7FVp9dGringEv8CPd+iNPqJLrISDjztnWVuRxpcoJbKEaObYR3DXNyQJ5nbGlrp8vmqRPC2nIJT6UqgE2Bqcap4a1NBVXVQ/zjCCJbDv44QGYWGCL0WIbxOvsWKWvd1otqHi07x8nOAhivoBI44q7UGIoGg0BTs8+EXbbpoAu4cNgLteipByEdtoXnYA7P+L3QLR7kBY5Qyc0bwI2UyE9JlxJMb/90701DMCcKuzvW14aEsVeu00j53UEUCV+i2lKMBZf67VIFQuUvgtUhzzJcvlMaElqh8OrPImRhUkMV9HMY2+qyrHc5CucDg="
-      file: airsonic-main/target/airsonic.war
+      file: 
+        - airsonic-main/target/airsonic.war
+        - airsonic-main/target/artifacts-checksums.sha
       skip_cleanup: true
       prerelease: true
       name: "Edge Release $TRAVIS_TAG"
-    #- provider: script
-    #  script: bash install/docker/dockerhub_push.sh
+    - provider: script
+      script: bash install/docker/dockerhub_push.sh
