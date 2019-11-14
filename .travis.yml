@@ -45,13 +45,13 @@ matrix:
       - export TRAVIS_TAG=${TRAVIS_TAG:-$PROJECT_MAVEN_VERSION+$(date +'%Y%m%d%H%M%S')}
       - echo $TRAVIS_TAG
     script:
-      - mvn package -P docker
+      - mvn package -P docker -DskipTests
     before_deploy:
       # Tag the docker image
-      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge/$TRAVIS_TAG
-      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge/latest
-      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitcommit/$TRAVIS_COMMIT
-      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:travisbuild/$TRAVIS_BUILD_NUMBER
+      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge-$TRAVIS_TAG
+      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge-latest
+      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitcommit-$TRAVIS_COMMIT
+      - docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:travisbuild-$TRAVIS_BUILD_NUMBER
       # Set up git user name and tag this commit
       - git config --local user.name "Airsonic Travis CI"
       - git config --local user.email "builds@travis-ci.org"
