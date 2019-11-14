@@ -42,7 +42,8 @@ matrix:
     jdk: openjdk8
     before_script:
       - export PROJECT_MAVEN_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-      - export TRAVIS_TAG=${TRAVIS_TAG:-$PROJECT_MAVEN_VERSION+$(date +'%Y%m%d%H%M%S')}
+      # Note this doesn't completely follow semver because docker tags do not take a + sign
+      - export TRAVIS_TAG=${TRAVIS_TAG:-$PROJECT_MAVEN_VERSION.$(date +'%Y%m%d%H%M%S')}
       - echo $TRAVIS_TAG
     script:
       - mvn package -P docker -DskipTests
