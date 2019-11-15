@@ -32,7 +32,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +91,7 @@ public class InternetRadioSettingsController {
                 if (streamUrl == null) {
                     return "internetradiosettings.nourl";
                 }
-                settingsService.updateInternetRadio(new InternetRadio(id, name, streamUrl, homepageUrl, enabled, new Date()));
+                settingsService.updateInternetRadio(new InternetRadio(id, name, streamUrl, homepageUrl, enabled, Instant.now()));
             }
         }
 
@@ -107,7 +107,7 @@ public class InternetRadioSettingsController {
             if (streamUrl == null) {
                 return "internetradiosettings.nourl";
             }
-            settingsService.createInternetRadio(new InternetRadio(name, streamUrl, homepageUrl, enabled, new Date()));
+            settingsService.createInternetRadio(new InternetRadio(name, streamUrl, homepageUrl, enabled, Instant.now()));
         }
 
         return null;

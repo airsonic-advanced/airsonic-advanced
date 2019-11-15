@@ -25,7 +25,6 @@ import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.service.search.IndexManager;
 import org.apache.commons.lang.ObjectUtils;
-import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +33,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 
 import java.io.File;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -161,8 +161,8 @@ public class MediaScannerService {
     private void doScanLibrary() {
         LOG.info("Starting to scan media library.");
         MediaLibraryStatistics statistics = new MediaLibraryStatistics(
-                DateUtils.truncate(new Date(), Calendar.SECOND));
-        LOG.debug("New last scan date is " + statistics.getScanDate());
+                Instant.now().truncatedTo(ChronoUnit.SECONDS));
+        LOG.debug("New last scan date is {}", statistics.getScanDate());
 
         try {
 
@@ -276,7 +276,7 @@ public class MediaScannerService {
         }
     }
 
-    private void updateAlbum(MediaFile file, MusicFolder musicFolder, Date lastScanned, Map<String, Integer> albumCount) {
+    private void updateAlbum(MediaFile file, MusicFolder musicFolder, Instant lastScanned, Map<String, Integer> albumCount) {
         String artist = file.getAlbumArtist() != null ? file.getAlbumArtist() : file.getArtist();
         if (file.getAlbumName() == null || artist == null || file.getParentPath() == null || !file.isAudio()) {
             return;
@@ -332,7 +332,7 @@ public class MediaScannerService {
         }
     }
 
-    private void updateArtist(MediaFile file, MusicFolder musicFolder, Date lastScanned, Map<String, Integer> albumCount) {
+    private void updateArtist(MediaFile file, MusicFolder musicFolder, Instant lastScanned, Map<String, Integer> albumCount) {
         if (file.getAlbumArtist() == null || !file.isAudio()) {
             return;
         }

@@ -39,6 +39,7 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -1124,7 +1125,7 @@ public class SettingsService {
         settings.setListReloadDelay(60);
         settings.setLastFmUsername(null);
         settings.setLastFmPassword(null);
-        settings.setChanged(new Date());
+        settings.setChanged(Instant.now());
         settings.setPaginationSize(40);
 
         UserSettings.Visibility playlist = settings.getPlaylistVisibility();

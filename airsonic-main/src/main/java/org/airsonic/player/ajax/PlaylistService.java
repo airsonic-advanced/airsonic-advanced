@@ -36,7 +36,10 @@ import org.springframework.stereotype.Service;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.text.DateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.*;
 
 /**
@@ -98,15 +101,15 @@ public class PlaylistService {
     public List<Playlist> createEmptyPlaylist() {
         HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
         Locale locale = localeResolver.resolveLocale(request);
-        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale);
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(locale);
 
-        Date now = new Date();
+        Instant now = Instant.now();
         Playlist playlist = new Playlist();
         playlist.setUsername(securityService.getCurrentUsername(request));
         playlist.setCreated(now);
         playlist.setChanged(now);
         playlist.setShared(false);
-        playlist.setName(dateFormat.format(now));
+        playlist.setName(dateFormat.format(now.atZone(ZoneId.systemDefault())));
 
         playlistService.createPlaylist(playlist);
         return getReadablePlaylists();
@@ -117,15 +120,15 @@ public class PlaylistService {
         HttpServletResponse response = WebContextFactory.get().getHttpServletResponse();
         Player player = playerService.getPlayer(request, response);
         Locale locale = localeResolver.resolveLocale(request);
-        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale);
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(locale);
 
-        Date now = new Date();
+        Instant now = Instant.now();
         Playlist playlist = new Playlist();
         playlist.setUsername(securityService.getCurrentUsername(request));
         playlist.setCreated(now);
         playlist.setChanged(now);
         playlist.setShared(false);
-        playlist.setName(dateFormat.format(now));
+        playlist.setName(dateFormat.format(now.atZone(ZoneId.systemDefault())));
 
         playlistService.createPlaylist(playlist);
         playlistService.setFilesInPlaylist(playlist.getId(), player.getPlayQueue().getFiles());
@@ -136,9 +139,9 @@ public class PlaylistService {
     public int createPlaylistForStarredSongs() {
         HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
         Locale locale = localeResolver.resolveLocale(request);
-        DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale);
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(locale);
 
-        Date now = new Date();
+        Instant now = Instant.now();
         Playlist playlist = new Playlist();
         String username = securityService.getCurrentUsername(request);
         playlist.setUsername(username);
@@ -147,7 +150,7 @@ public class PlaylistService {
         playlist.setShared(false);
 
         ResourceBundle bundle = ResourceBundle.getBundle("org.airsonic.player.i18n.ResourceBundle", locale);
-        playlist.setName(bundle.getString("top.starred") + " " + dateFormat.format(now));
+        playlist.setName(bundle.getString("top.starred") + " " + dateFormat.format(now.atZone(ZoneId.systemDefault())));
 
         playlistService.createPlaylist(playlist);
         List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(username);

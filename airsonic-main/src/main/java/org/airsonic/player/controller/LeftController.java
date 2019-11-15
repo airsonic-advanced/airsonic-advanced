@@ -36,6 +36,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.File;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -48,11 +49,7 @@ import java.util.*;
 public class LeftController  {
 
     // Update this time if you want to force a refresh in clients.
-    private static final Calendar LAST_COMPATIBILITY_TIME = Calendar.getInstance();
-    static {
-        LAST_COMPATIBILITY_TIME.set(2012, Calendar.MARCH, 6, 0, 0, 0);
-        LAST_COMPATIBILITY_TIME.set(Calendar.MILLISECOND, 0);
-    }
+    private static final Instant LAST_COMPATIBILITY_TIME = Instant.parse("2012-03-06T00:00:00.00Z");
 
     @Autowired
     private MediaScannerService mediaScannerService;
@@ -78,7 +75,7 @@ public class LeftController  {
             return -1L;
         }
 
-        long lastModified = LAST_COMPATIBILITY_TIME.getTimeInMillis();
+        long lastModified = LAST_COMPATIBILITY_TIME.toEpochMilli();
         String username = securityService.getCurrentUsername(request);
 
         // When was settings last changed?
@@ -99,17 +96,17 @@ public class LeftController  {
 
         // When was music folder table last changed?
         for (MusicFolder musicFolder : allMusicFolders) {
-            lastModified = Math.max(lastModified, musicFolder.getChanged().getTime());
+            lastModified = Math.max(lastModified, musicFolder.getChanged().toEpochMilli());
         }
 
         // When was internet radio table last changed?
         for (InternetRadio internetRadio : settingsService.getAllInternetRadios()) {
-            lastModified = Math.max(lastModified, internetRadio.getChanged().getTime());
+            lastModified = Math.max(lastModified, internetRadio.getChanged().toEpochMilli());
         }
 
         // When was user settings last changed?
         UserSettings userSettings = settingsService.getUserSettings(username);
-        lastModified = Math.max(lastModified, userSettings.getChanged().getTime());
+        lastModified = Math.max(lastModified, userSettings.getChanged().toEpochMilli());
 
         return lastModified;
     }
