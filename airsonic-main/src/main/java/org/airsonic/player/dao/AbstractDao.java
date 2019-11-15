@@ -102,7 +102,7 @@ public class AbstractDao {
     protected int namedUpdate(String sql, Map<String, Object> args) {
         long t = System.nanoTime();
         LOG.trace("Executing query: [{}]", sql);
-        int result = getNamedParameterJdbcTemplate().update(sql, convertArgs(args));
+        int result = getNamedParameterJdbcTemplate().update(sql, convertToDBTypes(args));
         LOG.trace("Updated {} rows", result);
         log(sql, t);
         return result;
