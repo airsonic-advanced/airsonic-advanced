@@ -23,7 +23,7 @@ import java.util.Map;
 @Configuration
 @EnableTransactionManagement
 public class DatabaseConfiguration {
-    @Value("#{ systemProperties['DatabaseConfigEmbedUrl'] ?: T(org.airsonic.player.service.SettingsService).defaultJDBCUrl }")
+    @Value("${DatabaseConfigEmbedUrl:#{T(org.airsonic.player.service.SettingsService).getDefaultJDBCUrl()}}")
     private String url;
     @Value("${DatabaseConfigEmbedUsername:sa}")
     private String user;
