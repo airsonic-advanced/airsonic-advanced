@@ -81,7 +81,7 @@ public class MediaScannerService {
     private AlbumDao albumDao;
     
     @Autowired
-    @Value("#{ systemProperties['MEDIASCANNER_PARALLELISM'] ?: T(java.lang.Runtime).getRuntime().availableProcessors() + 1 }")
+    @Value("${MediaScannerParallelism:#{T(java.lang.Runtime).getRuntime().availableProcessors() + 1}}")
     private int scannerParallelism;
     
     private AtomicInteger scanCount = new AtomicInteger(0);
