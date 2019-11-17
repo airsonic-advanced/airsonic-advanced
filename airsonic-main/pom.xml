@@ -520,10 +520,6 @@
             <artifactId>jackson-datatype-jdk8</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jayway.jsonpath</groupId>
-            <artifactId>json-path</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.sun.mail</groupId>
             <artifactId>javax.mail</artifactId>
             <scope>runtime</scope>
@@ -622,23 +618,6 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>buildnumber-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>create</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <doCheck>false</doCheck>
-                    <doUpdate>false</doUpdate>
-                    <revisionOnScmFailure>Unversioned</revisionOnScmFailure>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
@@ -646,13 +625,8 @@
                         <phase>generate-resources</phase>
                         <configuration>
                             <target>
-                                <tstamp/>
                                 <copy file="${basedir}/src/main/resources/org/airsonic/player/i18n/ResourceBundle_en.properties"
                                       tofile="${project.build.directory}/classes/org/airsonic/player/i18n/ResourceBundle.properties"/>
-                                <echo file="${project.build.directory}/classes/build_number.txt">${buildNumber}</echo>
-                                <!--suppress MavenModelInspection -->
-                                <echo file="${project.build.directory}/classes/build_date.txt">${DSTAMP}</echo>
-                                <echo file="${project.build.directory}/classes/version.txt">${project.version}</echo>
                             </target>
                         </configuration>
                         <goals>
@@ -660,6 +634,25 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>buildnumber-maven-plugin</artifactId>
+              <executions>
+                <execution>
+                  <phase>generate-resources</phase>
+                  <goals>
+                    <goal>create-metadata</goal>
+                  </goals>
+                </execution>
+              </executions>
+              <configuration>
+                <timezone>UTC</timezone>
+                <timestampFormat>yyyyMMddHHmmss</timestampFormat>
+                <attach>true</attach>
+                <!--make it available for jar/war classpath resource -->
+                <addOutputDirectoryToResources>true</addOutputDirectoryToResources>
+              </configuration>
             </plugin>
             <plugin>
                 <groupId>org.owasp</groupId>
