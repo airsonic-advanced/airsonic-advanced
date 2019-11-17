@@ -69,7 +69,7 @@ public class VersionService {
     private String localBuildNumber;
     
     public VersionService() throws IOException {
-    	build = PropertiesLoaderUtils.loadAllProperties("build.properties");
+        build = PropertiesLoaderUtils.loadAllProperties("build.properties");
     }
 
     /**
@@ -208,25 +208,25 @@ public class VersionService {
     private static final String VERSION_URL = "https://api.github.com/repos/airsonic-advanced/airsonic-advanced/releases";
 
     private static ResponseHandler<List<Map<String, Object>>> respHandler = new AbstractResponseHandler<List<Map<String,Object>>>() {
-		@Override
-		public List<Map<String, Object>> handleEntity(HttpEntity entity) throws IOException {
-			try (InputStream is = entity.getContent(); InputStream bis = new BufferedInputStream(is)) {
-				return Util.getObjectMapper().readValue(bis, new TypeReference<List<Map<String, Object>>>() {});
-			}
-		}
-	};
-	
-	private static Function<Map<String,Object>, Version> releaseToVersionMapper = r -> 
-			new Version(
-					(String) r.get("tag_name"), 
-					(String) r.get("target_commitish"), 
-					(Boolean) r.get("draft") || (Boolean) r.get("prerelease"),
-					(String) r.get("html_url"),
-					Instant.parse((String) r.get("published_at")),
-					Instant.parse((String) r.get("created_at")),
-					(List<Map<String,Object>>) r.get("assets")
-					);
-	
+        @Override
+        public List<Map<String, Object>> handleEntity(HttpEntity entity) throws IOException {
+            try (InputStream is = entity.getContent(); InputStream bis = new BufferedInputStream(is)) {
+                return Util.getObjectMapper().readValue(bis, new TypeReference<List<Map<String, Object>>>() {});
+            }
+        }
+    };
+    
+    private static Function<Map<String,Object>, Version> releaseToVersionMapper = r -> 
+            new Version(
+                    (String) r.get("tag_name"), 
+                    (String) r.get("target_commitish"), 
+                    (Boolean) r.get("draft") || (Boolean) r.get("prerelease"),
+                    (String) r.get("html_url"),
+                    Instant.parse((String) r.get("published_at")),
+                    Instant.parse((String) r.get("created_at")),
+                    (List<Map<String,Object>>) r.get("assets")
+                    );
+    
     /**
      * Resolves the latest available Airsonic version by inspecting github.
      */
@@ -248,8 +248,8 @@ public class VersionService {
         }
         
         List<Map<String, Object>> releases = content.stream()
-        		.sorted(Comparator.<Map<String, Object>,Instant>comparing(r -> Instant.parse((String) r.get("published_at")), Comparator.reverseOrder()))
-        		.collect(Collectors.toList());
+                .sorted(Comparator.<Map<String, Object>,Instant>comparing(r -> Instant.parse((String) r.get("published_at")), Comparator.reverseOrder()))
+                .collect(Collectors.toList());
 
 
         Optional<Map<String, Object>> betaR = releases.stream().findFirst();

@@ -126,7 +126,7 @@ public final class Util {
             .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
     
     public static ObjectMapper getObjectMapper() {
-    	return objectMapper;
+        return objectMapper;
     }
 
     public static String debugObject(Object object) {
