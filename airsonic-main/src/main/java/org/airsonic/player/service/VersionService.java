@@ -19,31 +19,34 @@
  */
 package org.airsonic.player.service;
 
-import com.jayway.jsonpath.JsonPath;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.airsonic.player.domain.Version;
-import org.airsonic.player.util.FileUtil;
+import org.airsonic.player.util.Util;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntity;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.AbstractResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.time.LocalDate;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Provides version-related services, including functionality for determining whether a newer
@@ -53,15 +56,21 @@ import java.util.regex.Pattern;
  */
 @Service
 public class VersionService {
-
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final Logger LOG = LoggerFactory.getLogger(VersionService.class);
 
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.of("UTC"));
+    
+    private final Properties build;
+    
     private Version localVersion;
     private Version latestFinalVersion;
     private Version latestBetaVersion;
-    private LocalDate localBuildDate;
+    private Instant localBuildDate;
     private String localBuildNumber;
+    
+    public VersionService() throws IOException {
+    	build = PropertiesLoaderUtils.loadAllProperties("build.properties");
+    }
 
     /**
      * Time when latest version was fetched (in milliseconds).
@@ -78,11 +87,11 @@ public class VersionService {
      *
      * @return The version number for the locally installed Airsonic version.
      */
-    public synchronized Version getLocalVersion() {
+    public Version getLocalVersion() {
         if (localVersion == null) {
             try {
-                localVersion = new Version(readLineFromResource("/version.txt"));
-                LOG.info("Resolved local Airsonic version to: " + localVersion);
+                localVersion = new Version(build.getProperty("version") + "." + build.getProperty("timestamp"));
+                LOG.info("Resolved local Airsonic version to: {}", localVersion);
             } catch (Exception x) {
                 LOG.warn("Failed to resolve local Airsonic version.", x);
             }
@@ -118,11 +127,11 @@ public class VersionService {
      * @return The build date for the locally installed Airsonic version, or <code>null</code>
      *         if the build date can't be resolved.
      */
-    public synchronized LocalDate getLocalBuildDate() {
+    public Instant getLocalBuildDate() {
         if (localBuildDate == null) {
             try {
-                String date = readLineFromResource("/build_date.txt");
-                localBuildDate = LocalDate.parse(date, DATE_FORMAT);
+                String date = build.getProperty("timestamp");
+                localBuildDate = DATE_FORMAT.parse(date, Instant::from);
             } catch (Exception x) {
                 LOG.warn("Failed to resolve local Airsonic build date.", x);
             }
@@ -136,10 +145,10 @@ public class VersionService {
      * @return The build number for the locally installed Airsonic version, or <code>null</code>
      *         if the build number can't be resolved.
      */
-    public synchronized String getLocalBuildNumber() {
+    public String getLocalBuildNumber() {
         if (localBuildNumber == null) {
             try {
-                localBuildNumber = readLineFromResource("/build_number.txt");
+                localBuildNumber = build.getProperty("revision");
             } catch (Exception x) {
                 LOG.warn("Failed to resolve local Airsonic build number.", x);
             }
@@ -180,27 +189,6 @@ public class VersionService {
     }
 
     /**
-     * Reads the first line from the resource with the given name.
-     *
-     * @param resourceName The resource name.
-     * @return The first line of the resource.
-     */
-    private String readLineFromResource(@NonNull String resourceName) {
-        InputStream in = VersionService.class.getResourceAsStream(resourceName);
-        if (in == null) {
-            return null;
-        }
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-            return reader.readLine();
-        } catch (IOException x) {
-            return null;
-        } finally {
-            FileUtil.closeQuietly(in);
-        }
-    }
-
-    /**
      * Refreshes the latest final and beta versions.
      */
     private void refreshLatestVersion() {
@@ -217,10 +205,28 @@ public class VersionService {
         }
     }
 
-    private final static String JSON_PATH = "$..tag_name";
-    private final Pattern VERSION_REGEX = Pattern.compile("^v(.*)");
-    private static final String VERSION_URL = "https://api.github.com/repos/airsonic/airsonic/releases";
+    private static final String VERSION_URL = "https://api.github.com/repos/airsonic-advanced/airsonic-advanced/releases";
 
+    private static ResponseHandler<List<Map<String, Object>>> respHandler = new AbstractResponseHandler<List<Map<String,Object>>>() {
+		@Override
+		public List<Map<String, Object>> handleEntity(HttpEntity entity) throws IOException {
+			try (InputStream is = entity.getContent(); InputStream bis = new BufferedInputStream(is)) {
+				return Util.getObjectMapper().readValue(bis, new TypeReference<List<Map<String, Object>>>() {});
+			}
+		}
+	};
+	
+	private static Function<Map<String,Object>, Version> releaseToVersionMapper = r -> 
+			new Version(
+					(String) r.get("tag_name"), 
+					(String) r.get("target_commitish"), 
+					(Boolean) r.get("draft") || (Boolean) r.get("prerelease"),
+					(String) r.get("html_url"),
+					Instant.parse((String) r.get("published_at")),
+					Instant.parse((String) r.get("created_at")),
+					(List<Map<String,Object>>) r.get("assets")
+					);
+	
     /**
      * Resolves the latest available Airsonic version by inspecting github.
      */
@@ -231,36 +237,30 @@ public class VersionService {
                 .setConnectTimeout(10000)
                 .setSocketTimeout(10000)
                 .build();
-        HttpGet method = new HttpGet(VERSION_URL + "?v=" + getLocalVersion());
+        HttpGet method = new HttpGet(VERSION_URL);
         method.setConfig(requestConfig);
-        String content;
+        List<Map<String, Object>> content;
         try (CloseableHttpClient client = HttpClients.createDefault()) {
-            ResponseHandler<String> responseHandler = new BasicResponseHandler();
-            content = client.execute(method, responseHandler);
+            content = client.execute(method, respHandler);
         } catch (ConnectTimeoutException e) {
             LOG.warn("Got a timeout when trying to reach {}", VERSION_URL);
             return;
         }
+        
+        List<Map<String, Object>> releases = content.stream()
+        		.sorted(Comparator.<Map<String, Object>,Instant>comparing(r -> Instant.parse((String) r.get("published_at")), Comparator.reverseOrder()))
+        		.collect(Collectors.toList());
 
-        List<String> unsortedTags = JsonPath.read(content, JSON_PATH);
 
-        Function<String, Version> convertToVersion = s -> {
-            Matcher match = VERSION_REGEX.matcher(s);
-            if (!match.matches()) {
-                throw new RuntimeException("Unexpected tag format " + s);
-            }
-            return new Version(match.group(1));
-        };
+        Optional<Map<String, Object>> betaR = releases.stream().findFirst();
+        Optional<Map<String, Object>> finalR = releases.stream().filter(x -> !((Boolean)x.get("draft")) && !((Boolean)x.get("prerelease"))).findFirst();
+        Optional<Map<String,Object>> currentR = releases.stream().filter(x -> StringUtils.equals(build.getProperty("version") + "." + build.getProperty("timestamp"), (String) x.get("tag_name"))).findAny();
+        
+        LOG.debug("Got {} for beta version", betaR.map(x -> x.get("tag_name")).orElse(null));
+        LOG.debug("Got {} for final version", finalR.map(x -> x.get("tag_name")).orElse(null));
 
-        Predicate<Version> finalVersionPredicate = version -> !version.isPreview();
-
-        Optional<Version> betaV = unsortedTags.stream().map(convertToVersion).max(Comparator.naturalOrder());
-        Optional<Version> finalV = unsortedTags.stream().map(convertToVersion).sorted(Comparator.reverseOrder()).filter(finalVersionPredicate).findFirst();
-
-        LOG.debug("Got {} for beta version", betaV);
-        LOG.debug("Got {} for final version", finalV);
-
-        latestBetaVersion = betaV.get();
-        latestFinalVersion = finalV.get();
+        latestBetaVersion = betaR.map(releaseToVersionMapper).orElse(null);
+        latestFinalVersion = finalR.map(releaseToVersionMapper).orElse(null);
+        localVersion = currentR.map(releaseToVersionMapper).orElse(localVersion);
     }
 }

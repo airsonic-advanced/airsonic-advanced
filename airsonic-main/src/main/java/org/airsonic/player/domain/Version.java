@@ -19,6 +19,10 @@
  */
 package org.airsonic.player.domain;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
@@ -31,6 +35,12 @@ import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
  */
 public class Version implements Comparable<Version> {
     private final DefaultArtifactVersion internalVersion;
+    private String commit;
+    private Boolean preview;
+    private String url;
+    private Instant publishDate;
+    private Instant releaseCreateDate;
+    private List<Map<String,Object>> artifacts;
 
     /**
      * Creates a new version instance by parsing the given string.
@@ -40,7 +50,18 @@ public class Version implements Comparable<Version> {
         this.internalVersion = new DefaultArtifactVersion(version);
     }
 
-    public int getMajor() {
+    public Version(String version, String commit, Boolean preview, String url,
+			Instant publishDate, Instant releaseCreateDate, List<Map<String, Object>> artifacts) {
+		this(version);
+		this.commit = commit;
+		this.preview = preview;
+		this.url = url;
+		this.publishDate = publishDate;
+		this.releaseCreateDate = releaseCreateDate;
+		this.artifacts = artifacts;
+	}
+
+	public int getMajor() {
         return internalVersion.getMajorVersion();
     }
 
@@ -77,7 +98,31 @@ public class Version implements Comparable<Version> {
         return internalVersion.toString();
     }
 
-    /**
+    public String getCommit() {
+		return commit;
+	}
+
+	public Boolean getPreview() {
+		return preview;
+	}
+
+	public String getUrl() {
+		return url;
+	}
+
+	public Instant getPublishDate() {
+		return publishDate;
+	}
+
+	public Instant getReleaseCreateDate() {
+		return releaseCreateDate;
+	}
+
+	public List<Map<String, Object>> getArtifacts() {
+		return artifacts;
+	}
+
+	/**
      * Compares this object with the specified object for order.
      * @param version The object to compare to.
      * @return A negative integer, zero, or a positive integer as this object is less than, equal to, or
