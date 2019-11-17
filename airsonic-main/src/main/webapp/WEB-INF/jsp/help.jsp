@@ -12,7 +12,7 @@
         <fmt:message key="common.unknown" var="buildDateString"/>
     </c:when>
     <c:otherwise>
-        <javatime:format value="${model.buildDate}" style="L-" var="buildDateString"/>
+        <javatime:format value="${model.buildDate}" style="LL" var="buildDateString"/>
     </c:otherwise>
 </c:choose>
 
@@ -31,7 +31,7 @@
 </h1>
 
 <c:if test="${model.newVersionAvailable}">
-    <p class="warning"><fmt:message key="help.upgrade"><fmt:param value="${model.brand}"/><fmt:param value="${model.latestVersion}"/></fmt:message></p>
+    <p class="warning"><fmt:message key="help.upgrade"><fmt:param value="${model.brand}"/><fmt:param value="${model.latestVersion}"/><fmt:param value="${model.latestVersion.url}"/></fmt:message></p>
 </c:if>
 
 <table width="75%" class="ruleTable indent">
