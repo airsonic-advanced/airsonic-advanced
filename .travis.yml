@@ -49,11 +49,11 @@ matrix:
         if ! [ "$BEFORE_DEPLOY_RUN" ]; then
           export BEFORE_DEPLOY_RUN=1;
           # Create tag
-          ver=$(grep "version=" airsonic-main/target/generated/build-metadata/build.properties | cut -d"=" -f2)
-          ts=$(grep "timestamp=" airsonic-main/target/generated/build-metadata/build.properties | cut -d"=" -f2)
+          ver=$(grep "version=" airsonic-main/target/generated/build-metadata/build.properties | cut -d"=" -f2);
+          ts=$(grep "timestamp=" airsonic-main/target/generated/build-metadata/build.properties | cut -d"=" -f2);
           # Note this doesn't completely follow semver because docker tags do not take a + sign
-          export TRAVIS_TAG=${TRAVIS_TAG:-$ver\.$ts}
-          echo $TRAVIS_TAG
+          export TRAVIS_TAG=${TRAVIS_TAG:-$ver\.$ts};
+          echo $TRAVIS_TAG;
           
           # Tag the docker image
           docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge-$TRAVIS_TAG;
