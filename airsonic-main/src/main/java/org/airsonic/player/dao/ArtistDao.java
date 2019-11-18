@@ -161,13 +161,7 @@ public class ArtistDao extends AbstractDao {
     }
 
     public void markNonPresent(Instant lastScanned) {
-        int minId = queryForInt("select min(id) from artist where last_scanned < ? and present", 0, lastScanned);
-        int maxId = queryForInt("select max(id) from artist where last_scanned < ? and present", 0, lastScanned);
-
-        final int batchSize = 1000;
-        for (int id = minId; id <= maxId; id += batchSize) {
-            update("update artist set present=false where id between ? and ? and last_scanned < ? and present", id, id + batchSize, lastScanned);
-        }
+        update("update artist set present=false where last_scanned < ? and present", lastScanned);
     }
 
     public List<Integer> getExpungeCandidates() {
@@ -175,13 +169,7 @@ public class ArtistDao extends AbstractDao {
     }
 
     public void expunge() {
-        int minId = queryForInt("select min(id) from artist where not present", 0);
-        int maxId = queryForInt("select max(id) from artist where not present", 0);
-
-        final int batchSize = 1000;
-        for (int id = minId; id <= maxId; id += batchSize) {
-            update("delete from artist where id between ? and ? and not present", id, id + batchSize);
-        }
+        update("delete from artist where not present");
     }
 
     public void starArtist(int artistId, String username) {
