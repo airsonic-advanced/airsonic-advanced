@@ -19,10 +19,11 @@
  */
 package org.airsonic.player.domain;
 
-import javax.validation.constraints.NotNull;
-
 import java.time.Instant;
 import java.util.Objects;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Contains media libaray statistics, including the number of artists, albums and songs.
@@ -31,78 +32,86 @@ import java.util.Objects;
  * @version $Revision: 1.1 $ $Date: 2005/11/17 18:29:03 $
  */
 public class MediaLibraryStatistics {
+    private Instant scanDate = Instant.now();
+    private AtomicInteger artistCount = new AtomicInteger(0);
+    private AtomicInteger albumCount = new AtomicInteger(0);
+    private AtomicInteger songCount = new AtomicInteger(0);
+    private AtomicLong totalLengthInBytes = new AtomicLong(0);
+    private AtomicLong totalDurationInSeconds = new AtomicLong(0);
 
-    @NotNull
-    private Integer artistCount;
-    @NotNull
-    private Integer albumCount;
-    @NotNull
-    private Integer songCount;
-    @NotNull
-    private Long totalLengthInBytes;
-    @NotNull
-    private Long totalDurationInSeconds;
-    @NotNull
-    private Instant scanDate;
-
-    public MediaLibraryStatistics() {
-
-    }
-
-    public MediaLibraryStatistics(Instant scanDate) {
-        if (scanDate == null) {
-            throw new IllegalArgumentException();
-        }
+    public MediaLibraryStatistics() {}
+    
+    public void setScanDate(Instant scanDate) {
         this.scanDate = scanDate;
-        reset();
     }
 
-    protected void reset() {
-        artistCount = 0;
-        albumCount = 0;
-        songCount = 0;
-        totalLengthInBytes = 0L;
-        totalDurationInSeconds = 0L;
+    public void setArtistCount(int artistCount) {
+        this.artistCount.set(artistCount);
+    }
+
+    public void setAlbumCount(int albumCount) {
+        this.albumCount.set(albumCount);
+    }
+
+    public void setSongCount(int songCount) {
+        this.songCount.set(songCount);
+    }
+
+    public void setTotalLengthInBytes(long totalLengthInBytes) {
+        this.totalLengthInBytes.set(totalLengthInBytes);
+    }
+
+    public void setTotalDurationInSeconds(long totalDurationInSeconds) {
+        this.totalDurationInSeconds.set(totalDurationInSeconds);
+    }
+    
+    public void reset() {
+        artistCount.set(0);
+        albumCount.set(0);
+        songCount.set(0);
+        totalLengthInBytes.set(0);
+        totalDurationInSeconds.set(0);
+        scanDate = Instant.now();
     }
 
     public void incrementArtists(int n) {
-        artistCount += n;
+        artistCount.addAndGet(n);
     }
 
     public void incrementAlbums(int n) {
-        albumCount += n;
+        albumCount.addAndGet(n);
     }
 
     public void incrementSongs(int n) {
-        songCount += n;
+        songCount.addAndGet(n);
     }
 
     public void incrementTotalLengthInBytes(long n) {
-        totalLengthInBytes += n;
+        totalLengthInBytes.addAndGet(n);
     }
 
     public void incrementTotalDurationInSeconds(long n) {
-        totalDurationInSeconds += n;
+        totalDurationInSeconds.addAndGet(n);
     }
 
-    public Integer getArtistCount() {
-        return artistCount;
+    public int getArtistCount() {
+        return artistCount.get();
     }
 
-    public Integer getAlbumCount() {
-        return albumCount;
+    public int getAlbumCount() {
+        return albumCount.get();
     }
 
-    public Integer getSongCount() {
-        return songCount;
+    public int getSongCount() {
+        return songCount.get();
     }
 
-    public Long getTotalLengthInBytes() {
-        return totalLengthInBytes;
+    public long getTotalLengthInBytes() {
+        return totalLengthInBytes.get();
     }
 
-    public Long getTotalDurationInSeconds() {
-        return totalDurationInSeconds;
+    public long getTotalDurationInSeconds() {
+        return totalDurationInSeconds.get();
     }
 
     public Instant getScanDate() {
@@ -114,16 +123,16 @@ public class MediaLibraryStatistics {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MediaLibraryStatistics that = (MediaLibraryStatistics) o;
-        return Objects.equals(artistCount, that.artistCount) &&
-                Objects.equals(albumCount, that.albumCount) &&
-                Objects.equals(songCount, that.songCount) &&
-                Objects.equals(totalLengthInBytes, that.totalLengthInBytes) &&
-                Objects.equals(totalDurationInSeconds, that.totalDurationInSeconds) &&
+        return Objects.equals(artistCount.get(), that.artistCount.get()) &&
+                Objects.equals(albumCount.get(), that.albumCount.get()) &&
+                Objects.equals(songCount.get(), that.songCount.get()) &&
+                Objects.equals(totalLengthInBytes.get(), that.totalLengthInBytes.get()) &&
+                Objects.equals(totalDurationInSeconds.get(), that.totalDurationInSeconds.get()) &&
                 Objects.equals(scanDate, that.scanDate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(artistCount, albumCount, songCount, totalLengthInBytes, totalDurationInSeconds, scanDate);
+        return Objects.hash(artistCount.get(), albumCount.get(), songCount.get(), totalLengthInBytes.get(), totalDurationInSeconds.get(), scanDate);
     }
 }
