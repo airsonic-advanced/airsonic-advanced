@@ -118,9 +118,9 @@ public class PodcastService {
                 .flatMap(List::parallelStream)
                 .filter(e -> e.getStatus() == PodcastStatus.DOWNLOADING)
                 .forEach(e -> {
-                            deleteEpisode(e.getId(), false);
-                            LOG.info("Deleted Podcast episode '" + e.getTitle() + "' since download was interrupted.");
-                        });
+                    deleteEpisode(e.getId(), false);
+                    LOG.info("Deleted Podcast episode '" + e.getTitle() + "' since download was interrupted.");
+                });
             schedule();
         } catch (Throwable x) {
             LOG.error("Failed to initialize PodcastService: " + x, x);

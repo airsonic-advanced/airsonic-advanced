@@ -364,9 +364,14 @@ public class DownloadController implements LastModified {
      * @throws IOException If an I/O error occurs.
      */
     private long computeCrc(Path file) throws IOException {
-        try (InputStream is = Files.newInputStream(file); BufferedInputStream bis = new BufferedInputStream(is); CheckedInputStream cis = new CheckedInputStream(bis, new CRC32())) {
+        try (InputStream is = Files.newInputStream(file);
+                BufferedInputStream bis = new BufferedInputStream(is);
+                CheckedInputStream cis = new CheckedInputStream(bis, new CRC32())) {
             byte[] buf = new byte[8192];
-            for ( ; (cis.read(buf)) != -1; );
+            while ((cis.read(buf)) != -1) {
+                continue;
+            }
+            
             return cis.getChecksum().getValue();
         }
     }
