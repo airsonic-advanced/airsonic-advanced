@@ -239,7 +239,7 @@ public class DownloadController implements LastModified {
         for (MediaFile mediaFile : filesToDownload) {
             zip(out, mediaFile.getParentFile(), mediaFile.getFile(), status, range);
             if (coverArtFile != null && Files.exists(coverArtFile)) {
-                if (mediaFile.getFile().toAbsolutePath().toString().equals(coverArtFile.toAbsolutePath().toString())) {
+                if (mediaFile.getFile().toRealPath().equals(coverArtFile.toRealPath())) {
                     cover_embedded = true;
                 }
             }

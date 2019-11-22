@@ -127,7 +127,7 @@ public class CoverArtService {
                 while (true) {
                     Path coverFile = mediaFileService.getCoverArt(dir);
                     if (coverFile != null && !isMediaFile(coverFile) && !newCoverFile.equals(coverFile)) {
-                        Files.move(coverFile, Paths.get(coverFile.toAbsolutePath().toString() + ".old"), StandardCopyOption.REPLACE_EXISTING);
+                        Files.move(coverFile, Paths.get(coverFile.toRealPath().toString() + ".old"), StandardCopyOption.REPLACE_EXISTING);
                         LOG.info("Renamed old image file " + coverFile);
 
                         // Must refresh again.
