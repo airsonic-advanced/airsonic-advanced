@@ -43,13 +43,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * Provides services for scanning the music library.
@@ -150,7 +148,7 @@ public class MediaScannerService {
         return scanCount.get();
     }
     
-    private ForkJoinWorkerThreadFactory mediaScannerThreadFactory = new ForkJoinWorkerThreadFactory() {
+    private static ForkJoinWorkerThreadFactory mediaScannerThreadFactory = new ForkJoinWorkerThreadFactory() {
         @Override           
         public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
             final ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
@@ -198,17 +196,15 @@ public class MediaScannerService {
             indexManager.startIndexing();
 
             // Recurse through all files on disk.
-            ForkJoinTask.invokeAll(
-                    settingsService.getAllMusicFolders()
-                        .parallelStream()
-                        .map(musicFolder -> ForkJoinTask.adapt(() -> scanFile(mediaFileService.getMediaFile(musicFolder.getPath(), false), musicFolder, statistics, albumCount, artists, albums, genres, encountered, false)))
-                        .collect(Collectors.toList()));
+            settingsService.getAllMusicFolders()
+                .parallelStream()
+                .forEach(musicFolder -> scanFile(mediaFileService.getMediaFile(musicFolder.getPath(), false), musicFolder, statistics, albumCount, artists, albums, genres, encountered, false));
             
             // Scan podcast folder.
             File podcastFolder = new File(settingsService.getPodcastFolder());
             if (podcastFolder.exists()) {
-                ForkJoinTask.invokeAll(ForkJoinTask.adapt(() -> scanFile(mediaFileService.getMediaFile(podcastFolder), new MusicFolder(podcastFolder, null, true, null),
-                         statistics, albumCount, artists, albums, genres, encountered, true)));
+                scanFile(mediaFileService.getMediaFile(podcastFolder), new MusicFolder(podcastFolder, null, true, null),
+                         statistics, albumCount, artists, albums, genres, encountered, true);
             }
 
             LOG.info("Scanned media library with {} entries.", scanCount.get());
@@ -286,11 +282,9 @@ public class MediaScannerService {
         indexManager.index(file);
 
         if (file.isDirectory()) {
-            ForkJoinTask.invokeAll(
-                    mediaFileService.getChildrenOf(file, true, true, false, false)
-                        .parallelStream()
-                        .map(child -> ForkJoinTask.adapt(() -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, genres, encountered, isPodcast)))
-                        .collect(Collectors.toList()));
+            mediaFileService.getChildrenOf(file, true, true, false, false)
+                .parallelStream()
+                .forEach(child -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, genres, encountered, isPodcast));
         } else {
             if (!isPodcast) {
                 updateAlbum(file, musicFolder, statistics.getScanDate(), albumCount, albums);
