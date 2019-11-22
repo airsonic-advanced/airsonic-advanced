@@ -1,6 +1,7 @@
 package org.airsonic.player.api.jukebox;
 
 import org.airsonic.player.TestCaseUtils;
+import org.airsonic.player.controller.SubsonicRESTController;
 import org.airsonic.player.dao.*;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.service.MediaScannerService;
@@ -18,7 +19,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -38,7 +38,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     @ClassRule
@@ -174,10 +173,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].suffix").value(mediaFile.getFormat()).match(result);
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].duration").value(mediaFile.getDurationSeconds()).match(result);
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].bitRate").value(mediaFile.getBitRate()).match(result);
-
-            // The path is absolute, we remove the folder source with replace the folder with nothing
-            // and the "/" they stay with substring(1), must be a method in mediaFile for method to obtain the relative path is same every where.
-            jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].path").value(mediaFile.getPath().replace(mediaFile.getFolder(), "").substring(1)).match(result);
+            jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].path").value(SubsonicRESTController.getRelativePath(mediaFile, settingsService)).match(result);
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].isVideo").value(mediaFile.isVideo()).match(result);
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].playCount").isNumber().match(result);
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].created").value(convertInstantToString(mediaFile.getCreated())).match(result);

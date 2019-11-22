@@ -123,6 +123,10 @@ public final class Util {
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
             .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
+    
+    public static ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
 
     public static String debugObject(Object object) {
         try {

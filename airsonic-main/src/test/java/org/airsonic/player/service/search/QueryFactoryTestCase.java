@@ -4,19 +4,13 @@ package org.airsonic.player.service.search;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.RandomSearchCriteria;
 import org.airsonic.player.domain.SearchCriteria;
-import org.airsonic.player.util.HomeRule;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.lucene.search.Query;
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.rules.SpringClassRule;
-import org.springframework.test.context.junit4.rules.SpringMethodRule;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -31,29 +25,10 @@ import static org.junit.Assert.assertEquals;
  * These cases have the purpose of observing the current situation
  * and observing the impact of upgrading Lucene.
  */
-@ContextConfiguration(
-        locations = {
-                "/applicationContext-service.xml",
-                "/applicationContext-cache.xml",
-                "/applicationContext-testdb.xml",
-                "/applicationContext-mockSonos.xml" })
-@DirtiesContext(
-    classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+
+@RunWith(SpringRunner.class)
+@Import({ QueryFactory.class, AnalyzerFactory.class })
 public class QueryFactoryTestCase {
-
-    @ClassRule
-    public static final SpringClassRule classRule = new SpringClassRule() {
-        HomeRule homeRule = new HomeRule();
-
-        @Override
-        public Statement apply(Statement base, Description description) {
-            Statement spring = super.apply(base, description);
-            return homeRule.apply(spring, description);
-        }
-    };
-
-    @Rule
-    public final SpringMethodRule springMethodRule = new SpringMethodRule();
 
     @Autowired
     private QueryFactory queryFactory;

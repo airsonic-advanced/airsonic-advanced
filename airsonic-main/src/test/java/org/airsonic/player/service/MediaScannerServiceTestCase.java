@@ -3,6 +3,8 @@ package org.airsonic.player.service;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.google.common.io.Resources;
+
 import org.airsonic.player.TestCaseUtils;
 import org.airsonic.player.dao.*;
 import org.airsonic.player.domain.Album;
@@ -17,15 +19,11 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.rules.SpringClassRule;
-import org.springframework.test.context.junit4.rules.SpringMethodRule;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -51,27 +49,13 @@ import static org.junit.Assert.assertEquals;
  * At runtime, the subsonic_home dir is set to target/test-classes/org/airsonic/player/service/mediaScannerServiceTestCase.
  * An empty database is created on the fly.
  */
-@ContextConfiguration(locations = {
-        "/applicationContext-service.xml",
-        "/applicationContext-cache.xml",
-        "/applicationContext-testdb.xml",
-        "/applicationContext-mockSonos.xml"})
+@RunWith(SpringRunner.class)
+@SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class MediaScannerServiceTestCase {
 
     @ClassRule
-    public static final SpringClassRule classRule = new SpringClassRule() {
-        HomeRule airsonicRule = new HomeRule();
-
-        @Override
-        public Statement apply(Statement base, Description description) {
-            Statement spring = super.apply(base, description);
-            return airsonicRule.apply(spring, description);
-        }
-    };
-
-    @Rule
-    public final SpringMethodRule springMethodRule = new SpringMethodRule();
+    public static final HomeRule airsonicRule = new HomeRule();
 
     private final MetricRegistry metrics = new MetricRegistry();
 
@@ -101,9 +85,6 @@ public class MediaScannerServiceTestCase {
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-    @Autowired
-    ResourceLoader resourceLoader;
 
 
     @Before
@@ -171,12 +152,11 @@ public class MediaScannerServiceTestCase {
 
     @Test
     public void testSpecialCharactersInFilename() throws Exception {
-        Resource resource = resourceLoader.getResource("MEDIAS/piano.mp3");
         String directoryName = "Muff1nman\u2019s \uFF0FMusic";
         String fileName = "Muff1nman\u2019s\uFF0FPiano.mp3";
         Path artistDir = temporaryFolder.newFolder(directoryName).toPath();
         Path musicFile = artistDir.resolve(fileName);
-        Files.copy(resource.getInputStream(), musicFile);
+        Files.copy(Paths.get(Resources.getResource("MEDIAS/piano.mp3").toURI()), musicFile);
 
         MusicFolder musicFolder = new MusicFolder(1, temporaryFolder.getRoot().toPath(), "Music", true, Instant.now());
         musicFolderDao.createMusicFolder(musicFolder);
@@ -188,7 +168,6 @@ public class MediaScannerServiceTestCase {
 
     @Test
     public void testNeverScanned() {
-
         mediaScannerService.neverScanned();
     }
 
