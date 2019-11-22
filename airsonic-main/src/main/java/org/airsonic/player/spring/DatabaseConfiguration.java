@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -75,7 +74,7 @@ public class DatabaseConfiguration {
         SpringLiquibase springLiquibase = new SpringLiquibase();
         springLiquibase.setDataSource(dataSource);
         springLiquibase.setChangeLog("classpath:liquibase/db-changelog.xml");
-        springLiquibase.setRollbackFile(new File(SettingsService.getAirsonicHome(), "rollback.sql"));
+        springLiquibase.setRollbackFile(SettingsService.getAirsonicHome().resolve("rollback.sql").toFile());
         Map<String, String> parameters = new HashMap<>();
         parameters.put("defaultMusicFolder", Util.getDefaultMusicFolder());
         parameters.put("mysqlVarcharLimit", mysqlVarcharLimit);

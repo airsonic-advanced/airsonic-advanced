@@ -9,8 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -25,15 +25,15 @@ public class MetaDataFactoryTestCase {
     @ClassRule
     public static TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-    private static File someMp3;
-    private static File someFlv;
-    private static File someJunk;
+    private static Path someMp3;
+    private static Path someFlv;
+    private static Path someJunk;
 
     @BeforeClass
     public static void createTestFiles() throws IOException {
-        someMp3 = temporaryFolder.newFile("some.mp3");
-        someFlv = temporaryFolder.newFile("some.flv");
-        someJunk = temporaryFolder.newFile("some.junk");
+        someMp3 = temporaryFolder.newFile("some.mp3").toPath();
+        someFlv = temporaryFolder.newFile("some.flv").toPath();
+        someJunk = temporaryFolder.newFile("some.junk").toPath();
     }
 
     @Autowired
