@@ -12,7 +12,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +36,7 @@ public class SearchServiceStartWithStopwardsTestCase extends AbstractAirsonicHom
     public List<MusicFolder> getMusicFolders() {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
-            Path musicDir = Paths.get(MusicFolderTestData.resolveBaseMediaPath()).resolve("Search").resolve("StartWithStopwards");
+            Path musicDir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("StartWithStopwards");
             musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, Instant.now()));
         }
         return musicFolders;

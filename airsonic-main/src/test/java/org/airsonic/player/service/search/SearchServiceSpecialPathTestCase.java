@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,13 +40,13 @@ public class SearchServiceSpecialPathTestCase extends AbstractAirsonicHomeTest {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
 
-            Path musicDir = Paths.get(MusicFolderTestData.resolveBaseMediaPath()).resolve("Search").resolve("SpecialPath").resolve("accessible");
+            Path musicDir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible");
             musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, Instant.now()));
 
-            Path music2Dir = Paths.get(MusicFolderTestData.resolveBaseMediaPath()).resolve("Search").resolve("SpecialPath").resolve("accessible's");
+            Path music2Dir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible's");
             musicFolders.add(new MusicFolder(2, music2Dir, "accessible's", true, Instant.now()));
 
-            Path music3Dir = Paths.get(MusicFolderTestData.resolveBaseMediaPath()).resolve("Search").resolve("SpecialPath").resolve("accessible+s");
+            Path music3Dir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible+s");
             musicFolders.add(new MusicFolder(3, music3Dir, "accessible+s", true, Instant.now()));
         }
         return musicFolders;

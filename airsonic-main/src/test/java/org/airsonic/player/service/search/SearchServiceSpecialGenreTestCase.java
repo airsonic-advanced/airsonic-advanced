@@ -1,7 +1,6 @@
 
 package org.airsonic.player.service.search;
 
-import com.google.common.base.Function;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.RandomSearchCriteria;
@@ -13,10 +12,10 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
 
@@ -34,7 +33,7 @@ public class SearchServiceSpecialGenreTestCase extends AbstractAirsonicHomeTest 
     public List<MusicFolder> getMusicFolders() {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
-            Path musicDir = Paths.get(MusicFolderTestData.resolveBaseMediaPath()).resolve("Search").resolve("SpecialGenre");
+            Path musicDir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialGenre");
             musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, Instant.now()));
         }
         return musicFolders;
