@@ -78,7 +78,7 @@ public class FFmpegParser extends MetaDataParser {
             String ffprobe;
             Path inTranscodeDirectory = Util.isWindows() ? transcodingService.getTranscodeDirectory().resolve("ffprobe.exe") : transcodingService.getTranscodeDirectory().resolve("ffprobe");
             if (Files.exists(inTranscodeDirectory)) {
-                ffprobe = inTranscodeDirectory.toString();
+                ffprobe = inTranscodeDirectory.toAbsolutePath().toString();
             } else {
                 ffprobe = "ffprobe";
             }
@@ -86,7 +86,7 @@ public class FFmpegParser extends MetaDataParser {
             List<String> command = new ArrayList<>();
             command.add(ffprobe);
             command.addAll(Arrays.asList(FFPROBE_OPTIONS));
-            command.add(file.toString());
+            command.add(file.toAbsolutePath().toString());
 
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]));
             final JsonNode result = objectMapper.readTree(process.getInputStream());
