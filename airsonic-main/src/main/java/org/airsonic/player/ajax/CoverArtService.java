@@ -115,31 +115,31 @@ public class CoverArtService {
 
             // Write file.
             Files.copy(input, newCoverFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+        
+        MediaFile dir = mediaFileService.getMediaFile(path);
 
-            MediaFile dir = mediaFileService.getMediaFile(path);
+        // Refresh database.
+        mediaFileService.refreshMediaFile(dir);
+        dir = mediaFileService.getMediaFile(dir.getId());
 
-            // Refresh database.
-            mediaFileService.refreshMediaFile(dir);
-            dir = mediaFileService.getMediaFile(dir.getId());
+        // Rename existing cover files if new cover file is not the preferred.
+        try {
+            while (true) {
+                Path coverFile = mediaFileService.getCoverArt(dir);
+                if (coverFile != null && !isMediaFile(coverFile) && !newCoverFile.equals(coverFile)) {
+                    Files.move(coverFile, Paths.get(coverFile.toRealPath().toString() + ".old"), StandardCopyOption.REPLACE_EXISTING);
+                    LOG.info("Renamed old image file " + coverFile);
 
-            // Rename existing cover files if new cover file is not the preferred.
-            try {
-                while (true) {
-                    Path coverFile = mediaFileService.getCoverArt(dir);
-                    if (coverFile != null && !isMediaFile(coverFile) && !newCoverFile.equals(coverFile)) {
-                        Files.move(coverFile, Paths.get(coverFile.toRealPath().toString() + ".old"), StandardCopyOption.REPLACE_EXISTING);
-                        LOG.info("Renamed old image file " + coverFile);
-
-                        // Must refresh again.
-                        mediaFileService.refreshMediaFile(dir);
-                        dir = mediaFileService.getMediaFile(dir.getId());
-                    } else {
-                        break;
-                    }
+                    // Must refresh again.
+                    mediaFileService.refreshMediaFile(dir);
+                    dir = mediaFileService.getMediaFile(dir.getId());
+                } else {
+                    break;
                 }
-            } catch (Exception x) {
-                LOG.warn("Failed to rename existing cover file.", x);
             }
+        } catch (Exception x) {
+            LOG.warn("Failed to rename existing cover file.", x);
         }
     }
 

@@ -20,10 +20,10 @@
 package org.airsonic.player.service.metadata;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.MoreFiles;
 
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
@@ -362,7 +362,7 @@ public class JaudiotaggerParser extends MetaDataParser {
      */
     @Override
     public boolean isApplicable(Path path) {
-        return Files.isRegularFile(path) && applicableFormats.contains(FilenameUtils.getExtension(path.getFileName().toString()).toLowerCase());
+        return Files.isRegularFile(path) && applicableFormats.contains(MoreFiles.getFileExtension(path).toLowerCase());
     }
 
     /**

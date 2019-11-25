@@ -21,10 +21,11 @@ package org.airsonic.player.service.metadata;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.MoreFiles;
+
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
-import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -140,7 +141,7 @@ public class FFmpegParser extends MetaDataParser {
      */
     @Override
     public boolean isApplicable(Path path) {
-        String format = FilenameUtils.getExtension(path.getFileName().toString()).toLowerCase();
+        String format = MoreFiles.getFileExtension(path).toLowerCase();
         return settingsService.getVideoFileTypesSet().contains(format);
     }
 

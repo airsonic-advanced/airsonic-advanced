@@ -124,7 +124,7 @@ public class UploadController {
                     String fileName = item.getName();
                     if (!fileName.trim().isEmpty()) {
 
-                        Path targetFile = dir.resolve(fileName);
+                        Path targetFile = dir.resolve(Paths.get(fileName).getFileName());
 
                         if (!securityService.isUploadAllowed(targetFile)) {
                             throw new Exception("Permission denied: " + StringUtil.toHtml(targetFile.toString()));

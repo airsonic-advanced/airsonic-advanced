@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.controller;
 
+import com.google.common.io.MoreFiles;
+
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.ArtistDao;
 import org.airsonic.player.domain.*;
@@ -27,7 +29,6 @@ import org.airsonic.player.service.metadata.JaudiotaggerParser;
 import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jaudiotagger.tag.images.Artwork;
@@ -195,7 +196,7 @@ public class CoverArtController implements LastModified {
     }
 
     private void sendImage(Path file, HttpServletResponse response) throws IOException {
-        response.setContentType(StringUtil.getMimeType(FilenameUtils.getExtension(file.getFileName().toString())));
+        response.setContentType(StringUtil.getMimeType(MoreFiles.getFileExtension(file)));
         Files.copy(file, response.getOutputStream());
     }
 
@@ -285,7 +286,7 @@ public class CoverArtController implements LastModified {
             }
         } else {
             is =  new BufferedInputStream(Files.newInputStream(file));
-            mimeType = StringUtil.getMimeType(FilenameUtils.getExtension(file.getFileName().toString()));
+            mimeType = StringUtil.getMimeType(MoreFiles.getFileExtension(file));
         }
         return Pair.of(is, mimeType);
     }

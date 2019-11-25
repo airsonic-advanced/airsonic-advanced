@@ -19,13 +19,14 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.io.MoreFiles;
+
 import org.airsonic.player.controller.VideoPlayerController;
 import org.airsonic.player.dao.TranscodingDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.io.TranscodeInputStream;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -372,7 +373,7 @@ public class TranscodingService {
                 // Create temporary file, and feed this to the transcoder.
                 Path path = mediaFile.getFile().toAbsolutePath();
                 if (Util.isWindows() && !mediaFile.isVideo() && !StringUtils.isAsciiPrintable(path.toString())) {
-                    tmpFile = Files.createTempFile("airsonic", "." + FilenameUtils.getExtension(path.toString()));
+                    tmpFile = Files.createTempFile("airsonic", "." + MoreFiles.getFileExtension(path));
                     tmpFile.toFile().deleteOnExit();
                     Files.copy(path, tmpFile);
                     LOG.debug("Created tmp file: " + tmpFile);

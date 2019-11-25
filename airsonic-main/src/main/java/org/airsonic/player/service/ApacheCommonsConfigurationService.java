@@ -1,11 +1,12 @@
 package org.airsonic.player.service;
 
+import com.google.common.io.MoreFiles;
+
 import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.sync.ReadWriteSynchronizer;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,7 +32,7 @@ public class ApacheCommonsConfigurationService {
         Path propertyFile = SettingsService.getPropertyFile();
         if (!Files.exists(propertyFile)) {
             try {
-                FileUtils.touch(propertyFile.toFile());
+                MoreFiles.touch(propertyFile);
             } catch (IOException e) {
                 throw new RuntimeException("Could not create new property file", e);
             }
