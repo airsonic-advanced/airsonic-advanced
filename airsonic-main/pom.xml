@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.airsonic.player</groupId>
         <artifactId>airsonic</artifactId>
-        <version>10.5.0-SNAPSHOT</version>
+        <version>10.6.0-SNAPSHOT</version>
     </parent>
 
     <properties>
@@ -290,6 +290,11 @@
             <version>1.2.6</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+		    <groupId>net.sargue</groupId>
+		    <artifactId>java-time-jsptags</artifactId>
+		    <version>1.1.4</version>
+		</dependency>
 
         <dependency>
             <groupId>stax</groupId>
@@ -502,24 +507,6 @@
             <artifactId>tomcat-embed-jasper</artifactId>
             <scope>${tomcat.server.scope}</scope>
         </dependency>
-        <!-- Embedded Jetty -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jetty</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>apache-jsp</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Provided by the servlet container, but found by dependency:analyze even if used via reflection -->
-        <dependency>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-io</artifactId>
-          <scope>provided</scope>
-        </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -530,8 +517,12 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jayway.jsonpath</groupId>
-            <artifactId>json-path</artifactId>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
         </dependency>
         <dependency>
             <groupId>com.sun.mail</groupId>
@@ -581,14 +572,30 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <language>jsp</language>
+                    <rulesets>
+                        <ruleset>/category/jsp/codestyle.xml</ruleset>
+                        <ruleset>/category/jsp/errorprone.xml</ruleset>
+                    </rulesets>
+                    <includes>
+                        <include>**/*.jsp</include>
+                        <include>**/*.jspf</include>
+                    </includes>
+                    <compileSourceRoots>
+                        <compileSourceRoot>${basedir}/src/main/webapp/WEB-INF/jsp</compileSourceRoot>
+                    </compileSourceRoots>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>2.2.0.RELEASE</version>
                 <configuration>
                     <mainClass>org.airsonic.player.Application</mainClass>
                     <layout>WAR</layout>
-                    <excludeGroupIds>${boot.group.excludes}</excludeGroupIds>
-                    <excludeArtifactIds>${boot.artifact.excludes}</excludeArtifactIds>
                 </configuration>
                 <executions>
                     <execution>
@@ -606,23 +613,6 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>buildnumber-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>create</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <doCheck>false</doCheck>
-                    <doUpdate>false</doUpdate>
-                    <revisionOnScmFailure>Unversioned</revisionOnScmFailure>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
@@ -630,13 +620,8 @@
                         <phase>generate-resources</phase>
                         <configuration>
                             <target>
-                                <tstamp/>
                                 <copy file="${basedir}/src/main/resources/org/airsonic/player/i18n/ResourceBundle_en.properties"
                                       tofile="${project.build.directory}/classes/org/airsonic/player/i18n/ResourceBundle.properties"/>
-                                <echo file="${project.build.directory}/classes/build_number.txt">${buildNumber}</echo>
-                                <!--suppress MavenModelInspection -->
-                                <echo file="${project.build.directory}/classes/build_date.txt">${DSTAMP}</echo>
-                                <echo file="${project.build.directory}/classes/version.txt">${project.version}</echo>
                             </target>
                         </configuration>
                         <goals>
@@ -644,6 +629,25 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>buildnumber-maven-plugin</artifactId>
+              <executions>
+                <execution>
+                  <phase>generate-resources</phase>
+                  <goals>
+                    <goal>create-metadata</goal>
+                  </goals>
+                </execution>
+              </executions>
+              <configuration>
+                <timezone>UTC</timezone>
+                <timestampFormat>yyyyMMddHHmmss</timestampFormat>
+                <attach>true</attach>
+                <!--make it available for jar/war classpath resource -->
+                <addOutputDirectoryToResources>true</addOutputDirectoryToResources>
+              </configuration>
             </plugin>
             <plugin>
                 <groupId>org.owasp</groupId>
@@ -676,23 +680,21 @@
             </plugin>
         </plugins>
     </build>
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>3.0.0</version>
+            </plugin>
+        </plugins>
+    </reporting>
     <profiles>
         <profile>
             <id>tomcat-embed</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-            <properties>
-                <boot.group.excludes>org.eclipse.jetty,org.eclipse.jetty.websocket,org.mortbay.jasper,org.eclipse.jetty.toolchain,org.ow2.asm</boot.group.excludes>
-                <boot.artifact.excludes>spring-boot-starter-jetty</boot.artifact.excludes>
-            </properties>
-        </profile>
-        <profile>
-            <id>jetty-embed</id>
-            <properties>
-                <boot.group.excludes>org.apache.tomcat.embed</boot.group.excludes>
-                <boot.artifact.excludes>spring-boot-starter-tomcat</boot.artifact.excludes>
-            </properties>
         </profile>
         <profile>
             <id>ide-tomcat-embed</id>

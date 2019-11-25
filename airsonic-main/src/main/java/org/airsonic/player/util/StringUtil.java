@@ -42,7 +42,6 @@ import java.util.regex.Pattern;
 public final class StringUtil {
 
     public static final String ENCODING_UTF8 = "UTF-8";
-    private static final DateFormat ISO_8601_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
     private static final String[][] HTML_SUBSTITUTIONS = {
             {"&", "&amp;"},
@@ -117,25 +116,6 @@ public final class StringUtil {
             }
         }
         return s;
-    }
-
-
-    /**
-     * Formats the given date to a ISO-8601 date/time format, and UTC timezone.
-     * <p/>
-     * The returned date uses the following format: 2007-12-17T14:57:17
-     *
-     * @param date The date to format
-     * @return The corresponding ISO-8601 formatted string.
-     */
-    public static String toISO8601(Date date) {
-        if (date == null) {
-            return null;
-        }
-
-        synchronized (ISO_8601_DATE_FORMAT) {
-            return ISO_8601_DATE_FORMAT.format(date);
-        }
     }
 
     /**
@@ -226,19 +206,33 @@ public final class StringUtil {
     }
 
     /**
-     * Formats a duration with minutes and seconds, e.g., "93:45"
+     * Formats a duration with minutes and seconds, e.g., "4:34" or "93:45"
+     */
+    public static String formatDurationMSS(int seconds) {
+        if (seconds < 0) {
+            throw new IllegalArgumentException("seconds must be >= 0");
+        }
+        return String.format("%d:%02d", seconds / 60, seconds % 60);
+    }
+
+    /**
+     * Formats a duration with H:MM:SS, e.g., "1:33:45"
+     */
+    public static String formatDurationHMMSS(int seconds) {
+        int hours = seconds / 3600;
+        seconds -= hours * 3600;
+
+        return String.format("%d:%s%s", hours, seconds < 600 ? "0" : "", formatDurationMSS(seconds));
+    }
+
+    /**
+     * Formats a duration to M:SS or H:MM:SS
      */
     public static String formatDuration(int seconds) {
-        int minutes = seconds / 60;
-        int secs = seconds % 60;
-
-        StringBuilder builder = new StringBuilder(6);
-        builder.append(minutes).append(":");
-        if (secs < 10) {
-            builder.append("0");
+        if (seconds >= 3600) {
+            return formatDurationHMMSS(seconds);
         }
-        builder.append(secs);
-        return builder.toString();
+        return formatDurationMSS(seconds);
     }
 
     /**
@@ -279,10 +273,7 @@ public final class StringUtil {
      * @throws IOException If an I/O error occurs.
      */
     public static String[] readLines(InputStream in) throws IOException {
-        BufferedReader reader = null;
-
-        try {
-            reader = new BufferedReader(new InputStreamReader(in));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
             List<String> result = new ArrayList<String>();
             for (String line = reader.readLine(); line != null; line = reader.readLine()) {
                 line = line.trim();
@@ -294,7 +285,6 @@ public final class StringUtil {
 
         } finally {
             FileUtil.closeQuietly(in);
-            FileUtil.closeQuietly(reader);
         }
     }
 

@@ -13,8 +13,6 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.ViewResolver;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.handler.SimpleUrlHandlerMapping;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
@@ -25,7 +23,6 @@ import javax.servlet.Filter;
 import java.util.Properties;
 
 @Configuration
-@EnableWebMvc
 public class ServletConfiguration implements WebMvcConfigurer {
     /**
      * Registers the DWR servlet.
@@ -167,7 +164,7 @@ public class ServletConfiguration implements WebMvcConfigurer {
         SimpleUrlHandlerMapping mapping = new SimpleUrlHandlerMapping();
 
         // Default is intmax, so need to set a higher priority than
-        // ResourceHttpRequestHandler below (which is intmax-1). Otherwise, that will
+        // ResourceHttpRequestHandler/ResourceHandlerRegistry (which is intmax-1). Otherwise, that will
         // intercept every request before it gets here
         mapping.setOrder(Integer.MAX_VALUE - 2);
 
@@ -178,10 +175,5 @@ public class ServletConfiguration implements WebMvcConfigurer {
         mapping.setMappings(properties);
 
         return mapping;
-    }
-
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/**").addResourceLocations("/");
     }
 }

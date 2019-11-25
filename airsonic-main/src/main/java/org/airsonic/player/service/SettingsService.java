@@ -28,7 +28,7 @@ import org.airsonic.player.spring.DataSourceConfigType;
 import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,10 +39,13 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
@@ -96,10 +99,8 @@ public class SettingsService {
     private static final String KEY_LDAP_AUTO_SHADOWING = "LdapAutoShadowing";
     private static final String KEY_GETTING_STARTED_ENABLED = "GettingStartedEnabled";
     private static final String KEY_SETTINGS_CHANGED = "SettingsChanged";
-    private static final String KEY_LAST_SCANNED = "LastScanned";
     private static final String KEY_ORGANIZE_BY_FOLDER_STRUCTURE = "OrganizeByFolderStructure";
     private static final String KEY_SORT_ALBUMS_BY_YEAR = "SortAlbumsByYear";
-    private static final String KEY_MEDIA_LIBRARY_STATISTICS = "MediaLibraryStatistics";
     private static final String KEY_DLNA_ENABLED = "DlnaEnabled";
     private static final String KEY_DLNA_SERVER_NAME = "DlnaServerName";
     private static final String KEY_DLNA_BASE_LAN_URL = "DlnaBaseLANURL";
@@ -168,7 +169,6 @@ public class SettingsService {
     private static final int DEFAULT_PODCAST_EPISODE_DOWNLOAD_COUNT = 1;
     private static final long DEFAULT_DOWNLOAD_BITRATE_LIMIT = 0;
     private static final long DEFAULT_UPLOAD_BITRATE_LIMIT = 0;
-    private static final boolean DEFAULT_ENABLE_SEEK = true;
     private static final String DEFAULT_DOWNSAMPLING_COMMAND = "ffmpeg -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -";
     private static final String DEFAULT_HLS_COMMAND = "ffmpeg -ss %o -t %d -i %s -async 1 -b:v %bk -s %wx%h -ar 44100 -ac 2 -v 0 -f mpegts -c:v libx264 -preset superfast -c:a libmp3lame -threads 0 -";
     private static final String DEFAULT_JUKEBOX_COMMAND = "ffmpeg -ss %o -i %s -map 0:0 -v 0 -ar 44100 -ac 2 -f s16be -";
@@ -183,7 +183,6 @@ public class SettingsService {
     private static final long DEFAULT_SETTINGS_CHANGED = 0L;
     private static final boolean DEFAULT_ORGANIZE_BY_FOLDER_STRUCTURE = true;
     private static final boolean DEFAULT_SORT_ALBUMS_BY_YEAR = true;
-    private static final String DEFAULT_MEDIA_LIBRARY_STATISTICS = "0 0 0 0 0";
     private static final boolean DEFAULT_DLNA_ENABLED = false;
     private static final String DEFAULT_DLNA_SERVER_NAME = "Airsonic";
     private static final String DEFAULT_DLNA_BASE_LAN_URL = null;
@@ -221,6 +220,7 @@ public class SettingsService {
             "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
             "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",
             "UrlRedirectFrom", "UrlRedirectionEnabled", "UrlRedirectType", "Port", "HttpsPort",
+            "MediaLibraryStatistics", "LastScanned",
             // Database settings renamed
             "database.varchar.maxlength", "database.config.type", "database.config.embed.driver",
             "database.config.embed.url", "database.config.embed.username", "database.config.embed.password",
@@ -244,9 +244,9 @@ public class SettingsService {
     @Autowired
     private ApacheCommonsConfigurationService configurationService;
 
-    private String[] cachedCoverArtFileTypesArray;
-    private String[] cachedMusicFileTypesArray;
-    private String[] cachedVideoFileTypesArray;
+    private Set<String> cachedCoverArtFileTypes;
+    private Set<String> cachedMusicFileTypes;
+    private Set<String> cachedVideoFileTypes;
     private List<MusicFolder> cachedMusicFolders;
     private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
 
@@ -263,7 +263,7 @@ public class SettingsService {
 
     }
 
-    public static synchronized File getAirsonicHome() {
+    public static File getAirsonicHome() {
 
         File home;
 
@@ -417,52 +417,49 @@ public class SettingsService {
         setProperty(KEY_PLAYLIST_FOLDER, playlistFolder);
     }
 
-    public synchronized String getMusicFileTypes() {
+    public String getMusicFileTypes() {
         return getProperty(KEY_MUSIC_FILE_TYPES, DEFAULT_MUSIC_FILE_TYPES);
     }
 
-    public synchronized void setMusicFileTypes(String fileTypes) {
+    public void setMusicFileTypes(String fileTypes) {
         setProperty(KEY_MUSIC_FILE_TYPES, fileTypes);
-        cachedMusicFileTypesArray = null;
     }
 
-    synchronized String[] getMusicFileTypesAsArray() {
-        if (cachedMusicFileTypesArray == null) {
-            cachedMusicFileTypesArray = toStringArray(getMusicFileTypes());
+    public Set<String> getMusicFileTypesSet() {
+        if (cachedMusicFileTypes == null) {
+            cachedMusicFileTypes = splitLowerString(getMusicFileTypes(), " ");
         }
-        return cachedMusicFileTypesArray;
+        return cachedMusicFileTypes;
     }
 
-    public synchronized String getVideoFileTypes() {
+    public String getVideoFileTypes() {
         return getProperty(KEY_VIDEO_FILE_TYPES, DEFAULT_VIDEO_FILE_TYPES);
     }
 
-    public synchronized void setVideoFileTypes(String fileTypes) {
+    public void setVideoFileTypes(String fileTypes) {
         setProperty(KEY_VIDEO_FILE_TYPES, fileTypes);
-        cachedVideoFileTypesArray = null;
     }
 
-    public synchronized String[] getVideoFileTypesAsArray() {
-        if (cachedVideoFileTypesArray == null) {
-            cachedVideoFileTypesArray = toStringArray(getVideoFileTypes());
+    public Set<String> getVideoFileTypesSet() {
+        if (cachedVideoFileTypes == null) {
+            cachedVideoFileTypes = splitLowerString(getVideoFileTypes(), " ");
         }
-        return cachedVideoFileTypesArray;
+        return cachedVideoFileTypes;
     }
 
-    public synchronized String getCoverArtFileTypes() {
+    public String getCoverArtFileTypes() {
         return getProperty(KEY_COVER_ART_FILE_TYPES, DEFAULT_COVER_ART_FILE_TYPES);
     }
 
-    public synchronized void setCoverArtFileTypes(String fileTypes) {
+    public void setCoverArtFileTypes(String fileTypes) {
         setProperty(KEY_COVER_ART_FILE_TYPES, fileTypes);
-        cachedCoverArtFileTypesArray = null;
     }
 
-    synchronized String[] getCoverArtFileTypesAsArray() {
-        if (cachedCoverArtFileTypesArray == null) {
-            cachedCoverArtFileTypesArray = toStringArray(getCoverArtFileTypes());
+    Set<String> getCoverArtFileTypesSet() {
+        if (cachedCoverArtFileTypes == null) {
+            cachedCoverArtFileTypes = splitLowerString(getCoverArtFileTypes(), " ");
         }
-        return cachedCoverArtFileTypesArray;
+        return cachedCoverArtFileTypes;
     }
 
     public int getCoverArtConcurrency() {
@@ -727,19 +724,6 @@ public class SettingsService {
         return getLong(KEY_SETTINGS_CHANGED, DEFAULT_SETTINGS_CHANGED);
     }
 
-    public Date getLastScanned() {
-        String lastScanned = getProperty(KEY_LAST_SCANNED, null);
-        return lastScanned == null ? null : new Date(Long.parseLong(lastScanned));
-    }
-
-    void setLastScanned(Date date) {
-        if (date == null) {
-            setProperty(KEY_LAST_SCANNED, null);
-        } else {
-            setLong(KEY_LAST_SCANNED, date.getTime());
-        }
-    }
-
     public boolean isOrganizeByFolderStructure() {
         return getBoolean(KEY_ORGANIZE_BY_FOLDER_STRUCTURE, DEFAULT_ORGANIZE_BY_FOLDER_STRUCTURE);
     }
@@ -786,14 +770,6 @@ public class SettingsService {
             compileExcludePattern();
         }
         return excludePattern;
-    }
-
-    public MediaLibraryStatistics getMediaLibraryStatistics() {
-        return MediaLibraryStatistics.parse(getString(KEY_MEDIA_LIBRARY_STATISTICS, DEFAULT_MEDIA_LIBRARY_STATISTICS));
-    }
-
-    void setMediaLibraryStatistics(MediaLibraryStatistics statistics) {
-        setString(KEY_MEDIA_LIBRARY_STATISTICS, statistics.format());
     }
 
     /**
@@ -957,13 +933,9 @@ public class SettingsService {
             cachedMusicFolders = musicFolderDao.getAllMusicFolders();
         }
 
-        List<MusicFolder> result = new ArrayList<>(cachedMusicFolders.size());
-        for (MusicFolder folder : cachedMusicFolders) {
-            if ((includeDisabled || folder.isEnabled()) && (includeNonExisting || FileUtil.exists(folder.getPath()))) {
-                result.add(folder);
-            }
-        }
-        return result;
+        return cachedMusicFolders.parallelStream()
+                .filter(folder -> (includeDisabled || folder.isEnabled()) && (includeNonExisting || FileUtil.exists(folder.getPath())))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -1148,7 +1120,7 @@ public class SettingsService {
         settings.setListReloadDelay(60);
         settings.setLastFmUsername(null);
         settings.setLastFmPassword(null);
-        settings.setChanged(new Date());
+        settings.setChanged(Instant.now());
         settings.setPaginationSize(40);
 
         UserSettings.Visibility playlist = settings.getPlaylistVisibility();
@@ -1268,14 +1240,9 @@ public class SettingsService {
         }
     }
 
-    private String[] toStringArray(String s) {
-        List<String> result = new ArrayList<>();
-        StringTokenizer tokenizer = new StringTokenizer(s, " ");
-        while (tokenizer.hasMoreTokens()) {
-            result.add(tokenizer.nextToken());
-        }
-
-        return result.toArray(new String[result.size()]);
+    private static Set<String> splitLowerString(String s, String splitter) {
+        //serial stream and linkedhashset because order matters
+        return Stream.of(s.split(splitter)).filter(x -> StringUtils.isNotBlank(x)).map(x -> x.toLowerCase()).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     public void setInternetRadioDao(InternetRadioDao internetRadioDao) {
