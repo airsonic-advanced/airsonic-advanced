@@ -275,8 +275,7 @@ public class SettingsService {
         } else if (oldHome != null) {
             home = Paths.get(oldHome);
         } else {
-            boolean isWindows = System.getProperty("os.name", "Windows").toLowerCase().startsWith("windows");
-            home = isWindows ? AIRSONIC_HOME_WINDOWS : AIRSONIC_HOME_OTHER;
+            home = Util.isWindows() ? AIRSONIC_HOME_WINDOWS : AIRSONIC_HOME_OTHER;
         }
         ensureDirectoryPresent(home);
 

@@ -26,6 +26,7 @@ import com.google.common.io.MoreFiles;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
+import org.airsonic.player.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +76,7 @@ public class FFmpegParser extends MetaDataParser {
         try {
             // Use `ffprobe` in the transcode directory if it exists, otherwise let the system sort it out.
             String ffprobe;
-            Path inTranscodeDirectory = transcodingService.getTranscodeDirectory().resolve("ffprobe");
+            Path inTranscodeDirectory = Util.isWindows() ? transcodingService.getTranscodeDirectory().resolve("ffprobe.exe") : transcodingService.getTranscodeDirectory().resolve("ffprobe");
             if (Files.exists(inTranscodeDirectory)) {
                 ffprobe = inTranscodeDirectory.toString();
             } else {
