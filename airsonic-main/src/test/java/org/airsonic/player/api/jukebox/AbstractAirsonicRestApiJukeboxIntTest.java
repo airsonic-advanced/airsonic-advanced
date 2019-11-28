@@ -13,6 +13,7 @@ import org.airsonic.player.util.StringUtil;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -36,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(classes = AbstractAirsonicRestApiJukeboxIntTest.Config.class)
 @AutoConfigureMockMvc
 public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
@@ -45,16 +46,22 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     @TestConfiguration
     static class Config {
-        private static class SpiedPlayerDaoPlayQueueFactory extends PlayerDaoPlayQueueFactory {
-            @Override
-            public PlayQueue createPlayQueue() {
-                return spy(super.createPlayQueue());
-            }
-        }
-
         @Bean
-        public PlayerDaoPlayQueueFactory playerDaoPlayQueueFactory() {
-            return new SpiedPlayerDaoPlayQueueFactory();
+        public BeanPostProcessor convertToSpy() {
+            return new BeanPostProcessor() {
+                @Override
+                public Object postProcessAfterInitialization(Object bean, String beanName) {
+                    if (bean instanceof PlayerDaoPlayQueueFactory) {
+                        PlayerDaoPlayQueueFactory temp = (PlayerDaoPlayQueueFactory) spy(bean);
+                        
+                        doReturn(spy(temp.createPlayQueue())).when(temp).createPlayQueue();
+                        
+                        bean = temp;
+                    }
+                    
+                    return bean;
+                }
+            };
         }
     }
 
@@ -133,7 +140,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     public void setup() throws Exception {
         populateDatabase();
 
-        testJukeboxPlayer = findTestJukeboxPlayer();
+        testJukeboxPlayer = spy(findTestJukeboxPlayer());
         assertThat(testJukeboxPlayer).isNotNull();
         reset(testJukeboxPlayer.getPlayQueue());
         testJukeboxPlayer.getPlayQueue().clear();

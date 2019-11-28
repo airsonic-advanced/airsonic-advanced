@@ -13,38 +13,39 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.ViewResolver;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.handler.SimpleUrlHandlerMapping;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
 import javax.servlet.Filter;
+import javax.servlet.Servlet;
 
 import java.util.Properties;
 
 @Configuration
-public class ServletConfiguration extends WebMvcConfigurerAdapter {
+public class ServletConfiguration implements WebMvcConfigurer {
     /**
      * Registers the DWR servlet.
      *
      * @return a registration bean.
      */
     @Bean
-    public ServletRegistrationBean dwrServletRegistrationBean() {
-        ServletRegistrationBean servlet = new ServletRegistrationBean(new DwrServlet(), "/dwr/*");
+    public ServletRegistrationBean<Servlet> dwrServletRegistrationBean() {
+        ServletRegistrationBean<Servlet> servlet = new ServletRegistrationBean<>(new DwrServlet(), "/dwr/*");
         servlet.addInitParameter("crossDomainSessionSecurity","false");
         return servlet;
     }
 
     @Bean
-    public ServletRegistrationBean cxfServletBean() {
-        return new ServletRegistrationBean(new org.apache.cxf.transport.servlet.CXFServlet(), "/ws/*");
+    public ServletRegistrationBean<Servlet> cxfServletBean() {
+        return new ServletRegistrationBean<>(new org.apache.cxf.transport.servlet.CXFServlet(), "/ws/*");
     }
 
     @Bean
-    public FilterRegistrationBean bootstrapVerificationFilterRegistration() {
-        FilterRegistrationBean registration = new FilterRegistrationBean();
-        registration.setFilter(bootstrapVerificationFiler());
+    public FilterRegistrationBean<Filter> bootstrapVerificationFilterRegistration() {
+        FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(bootstrapVerificationFilter());
         registration.addUrlPatterns("/*");
         registration.setName("BootstrapVerificationFilter");
         registration.setOrder(1);
@@ -52,14 +53,13 @@ public class ServletConfiguration extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public Filter bootstrapVerificationFiler() {
+    public Filter bootstrapVerificationFilter() {
         return new BootstrapVerificationFilter();
     }
 
     @Bean
-    public FilterRegistrationBean parameterDecodingFilterRegistration() {
-        FilterRegistrationBean registration = new FilterRegistrationBean();
-        registration.setFilter(parameterDecodingFilter());
+    public FilterRegistrationBean<Filter> parameterDecodingFilterRegistration() {
+        FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>(parameterDecodingFilter());
         registration.addUrlPatterns("/*");
         registration.setName("ParameterDecodingFilter");
         registration.setOrder(2);
@@ -72,9 +72,8 @@ public class ServletConfiguration extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public FilterRegistrationBean restFilterRegistration() {
-        FilterRegistrationBean registration = new FilterRegistrationBean();
-        registration.setFilter(restFilter());
+    public FilterRegistrationBean<Filter> restFilterRegistration() {
+        FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>(restFilter());
         registration.addUrlPatterns("/rest/*");
         registration.setName("RESTFilter");
         registration.setOrder(3);
@@ -87,9 +86,8 @@ public class ServletConfiguration extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public FilterRegistrationBean requestEncodingFilterRegistration() {
-        FilterRegistrationBean registration = new FilterRegistrationBean();
-        registration.setFilter(requestEncodingFilter());
+    public FilterRegistrationBean<Filter> requestEncodingFilterRegistration() {
+        FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>(requestEncodingFilter());
         registration.addUrlPatterns("/*");
         registration.addInitParameter("encoding", "UTF-8");
         registration.setName("RequestEncodingFilter");
@@ -103,9 +101,8 @@ public class ServletConfiguration extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public FilterRegistrationBean cacheFilterRegistration() {
-        FilterRegistrationBean registration = new FilterRegistrationBean();
-        registration.setFilter(cacheFilter());
+    public FilterRegistrationBean<Filter> cacheFilterRegistration() {
+        FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>(cacheFilter());
         registration.addUrlPatterns("/icons/*", "/style/*", "/script/*", "/dwr/*", "/icons/*", "/coverArt.view", "/avatar.view");
         registration.addInitParameter("Cache-Control", "max-age=36000");
         registration.setName("CacheFilter");
@@ -119,9 +116,8 @@ public class ServletConfiguration extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public FilterRegistrationBean noCacheFilterRegistration() {
-        FilterRegistrationBean registration = new FilterRegistrationBean();
-        registration.setFilter(noCacheFilter());
+    public FilterRegistrationBean<Filter> noCacheFilterRegistration() {
+        FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>(noCacheFilter());
         registration.addUrlPatterns("/statusChart.view", "/userChart.view", "/playQueue.view", "/podcastChannels.view", "/podcastChannel.view", "/help.view", "/top.view", "/home.view");
         registration.addInitParameter("Cache-Control", "no-cache, post-check=0, pre-check=0");
         registration.addInitParameter("Pragma", "no-cache");
@@ -132,26 +128,24 @@ public class ServletConfiguration extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public Filter metricsFilter() {
-        return new MetricsFilter();
+    public Filter noCacheFilter() {
+        return new ResponseHeaderFilter();
     }
 
     @Bean
-    public FilterRegistrationBean metricsFilterRegistration() {
-        FilterRegistrationBean registration = new FilterRegistrationBean();
-        registration.setFilter(metricsFilter());
+    public FilterRegistrationBean<Filter> metricsFilterRegistration() {
+        FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>(metricsFilter());
         registration.setOrder(7);
         return registration;
     }
 
-
     @Bean
-    public Filter noCacheFilter() {
-        return new ResponseHeaderFilter();
+    public Filter metricsFilter() {
+        return new MetricsFilter();
     }
     
     @Bean
-    public ViewResolver viewResolver() {
+    public ViewResolver jspViewResolver() {
         InternalResourceViewResolver resolver = new InternalResourceViewResolver();
         resolver.setViewClass(JstlView.class);
         resolver.setPrefix("/WEB-INF/jsp/");
@@ -160,13 +154,8 @@ public class ServletConfiguration extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public SimpleUrlHandlerMapping urlMapping(PodcastController podcastController) {
+    public SimpleUrlHandlerMapping podcastMapping(PodcastController podcastController) {
         SimpleUrlHandlerMapping mapping = new SimpleUrlHandlerMapping();
-
-        // Default is intmax, so need to set a higher priority than
-        // ResourceHttpRequestHandler/ResourceHandlerRegistry (which is intmax-1). Otherwise, that will
-        // intercept every request before it gets here
-        mapping.setOrder(Integer.MAX_VALUE - 2);
 
         mapping.setAlwaysUseFullPath(true);
 
