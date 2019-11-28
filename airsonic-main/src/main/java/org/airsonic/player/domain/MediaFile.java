@@ -22,10 +22,9 @@ package org.airsonic.player.domain;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.io.FilenameUtils;
 
-import java.io.File;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Function;
@@ -137,17 +136,12 @@ public class MediaFile {
         this.folder = folder;
     }
     
-    public Path getFilePath() {
-        return FileSystems.getDefault().getPath(path);
-    }
-
-    public File getFile() {
-        // TODO: Optimize
-        return new File(path);
+    public Path getFile() {
+        return Paths.get(path);
     }
 
     public boolean exists() {
-        return Files.exists(getFilePath());
+        return Files.exists(getFile());
     }
 
     public MediaType getMediaType() {
@@ -331,8 +325,8 @@ public class MediaFile {
         this.parentPath = parentPath;
     }
 
-    public File getParentFile() {
-        return getFile().getParentFile();
+    public Path getParentFile() {
+        return getFile().getParent();
     }
 
     public int getPlayCount() {
@@ -432,9 +426,9 @@ public class MediaFile {
         return path.hashCode();
     }
 
-    public File getCoverArtFile() {
+    public Path getCoverArtFile() {
         // TODO: Optimize
-        return coverArtPath == null ? null : new File(coverArtPath);
+        return coverArtPath == null ? null : Paths.get(coverArtPath);
     }
 
     @Override

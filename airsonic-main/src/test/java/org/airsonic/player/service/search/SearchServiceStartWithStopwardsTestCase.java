@@ -5,12 +5,13 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.SearchCriteria;
 import org.airsonic.player.domain.SearchResult;
 import org.airsonic.player.service.SearchService;
+import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +36,7 @@ public class SearchServiceStartWithStopwardsTestCase extends AbstractAirsonicHom
     public List<MusicFolder> getMusicFolders() {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
-            File musicDir = new File(resolveBaseMediaPath.apply("Search/StartWithStopwards"));
+            Path musicDir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("StartWithStopwards");
             musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, Instant.now()));
         }
         return musicFolders;

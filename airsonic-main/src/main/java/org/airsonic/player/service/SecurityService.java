@@ -24,7 +24,6 @@ import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.User;
-import org.airsonic.player.util.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +38,8 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -230,7 +230,7 @@ public class SecurityService implements UserDetailsService {
      *
      * @return Whether the given file may be read.
      */
-    public boolean isReadAllowed(File file) {
+    public boolean isReadAllowed(Path file) {
         // Allowed to read from both music folder and podcast folder.
         return isInMusicFolder(file) || isInPodcastFolder(file);
     }
@@ -240,10 +240,10 @@ public class SecurityService implements UserDetailsService {
      *
      * @return Whether the given file may be written, created or deleted.
      */
-    public boolean isWriteAllowed(File file) {
+    public boolean isWriteAllowed(Path file) {
         // Only allowed to write podcasts or cover art.
         boolean isPodcast = isInPodcastFolder(file);
-        boolean isCoverArt = isInMusicFolder(file) && file.getName().startsWith("cover.");
+        boolean isCoverArt = isInMusicFolder(file) && file.getFileName().toString().startsWith("cover.");
 
         return isPodcast || isCoverArt;
     }
@@ -253,8 +253,8 @@ public class SecurityService implements UserDetailsService {
      *
      * @return Whether the given file may be uploaded.
      */
-    public boolean isUploadAllowed(File file) {
-        return isInMusicFolder(file) && !FileUtil.exists(file);
+    public boolean isUploadAllowed(Path file) {
+        return isInMusicFolder(file) && !Files.exists(file);
     }
 
     /**
@@ -263,19 +263,13 @@ public class SecurityService implements UserDetailsService {
      * @param file The file in question.
      * @return Whether the given file is located in one of the music folders.
      */
-    private boolean isInMusicFolder(File file) {
+    private boolean isInMusicFolder(Path file) {
         return getMusicFolderForFile(file) != null;
     }
 
-    private MusicFolder getMusicFolderForFile(File file) {
-        List<MusicFolder> folders = settingsService.getAllMusicFolders(false, true);
-        String path = file.getPath();
-        for (MusicFolder folder : folders) {
-            if (isFileInFolder(path, folder.getPath().getPath())) {
-                return folder;
-            }
-        }
-        return null;
+    private MusicFolder getMusicFolderForFile(Path file) {
+        String path = file.toString();
+        return settingsService.getAllMusicFolders(false, true).stream().filter(folder -> isFileInFolder(path, folder.getPath().toString())).findFirst().orElse(null);
     }
 
     /**
@@ -284,15 +278,15 @@ public class SecurityService implements UserDetailsService {
      * @param file The file in question.
      * @return Whether the given file is located in the Podcast folder.
      */
-    private boolean isInPodcastFolder(File file) {
+    private boolean isInPodcastFolder(Path file) {
         String podcastFolder = settingsService.getPodcastFolder();
-        return isFileInFolder(file.getPath(), podcastFolder);
+        return isFileInFolder(file.toString(), podcastFolder);
     }
 
-    public String getRootFolderForFile(File file) {
+    public String getRootFolderForFile(Path file) {
         MusicFolder folder = getMusicFolderForFile(file);
         if (folder != null) {
-            return folder.getPath().getPath();
+            return folder.getPath().toString();
         }
 
         if (isInPodcastFolder(file)) {
@@ -305,13 +299,8 @@ public class SecurityService implements UserDetailsService {
         if (isInPodcastFolder(file.getFile())) {
             return true;
         }
-
-        for (MusicFolder musicFolder : settingsService.getMusicFoldersForUser(username)) {
-            if (musicFolder.getPath().getPath().equals(file.getFolder())) {
-                return true;
-            }
-        }
-        return false;
+        
+        return settingsService.getMusicFoldersForUser(username).parallelStream().anyMatch(musicFolder -> musicFolder.getPath().toString().equals(file.getFolder()));
     }
 
     /**

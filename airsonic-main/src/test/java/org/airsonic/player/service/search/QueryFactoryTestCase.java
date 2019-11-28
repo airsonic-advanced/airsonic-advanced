@@ -12,8 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -44,9 +44,9 @@ public class QueryFactoryTestCase {
     private static final int FID2 = 20;
 
     private static final MusicFolder MUSIC_FOLDER1 =
-            new MusicFolder(FID1, new File(PATH1), "music1", true, Instant.now());
+            new MusicFolder(FID1, Paths.get(PATH1), "music1", true, Instant.now());
     private static final MusicFolder MUSIC_FOLDER2 = 
-            new MusicFolder(FID2, new File(PATH2), "music2", true, Instant.now());
+            new MusicFolder(FID2, Paths.get(PATH2), "music2", true, Instant.now());
 
     private static final List<MusicFolder> SINGLE_FOLDERS = Arrays.asList(MUSIC_FOLDER1);
     private static final List<MusicFolder> MULTI_FOLDERS  = Arrays.asList(MUSIC_FOLDER1, MUSIC_FOLDER2);

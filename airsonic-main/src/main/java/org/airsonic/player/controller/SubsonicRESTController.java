@@ -1334,7 +1334,7 @@ public class SubsonicRESTController {
 
         List<org.airsonic.player.domain.MusicFolder> musicFolders = settingsService.getAllMusicFolders(false, true);
         for (org.airsonic.player.domain.MusicFolder musicFolder : musicFolders) {
-            String folderPath = musicFolder.getPath().getPath();
+            String folderPath = musicFolder.getPath().toString();
             folderPath = folderPath.replace('\\', '/');
             String folderPathLower = folderPath.toLowerCase();
             if (!folderPathLower.endsWith("/")) {

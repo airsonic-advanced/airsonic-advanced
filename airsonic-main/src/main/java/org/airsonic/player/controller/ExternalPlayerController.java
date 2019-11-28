@@ -38,6 +38,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -114,7 +115,7 @@ public class ExternalPlayerController {
 
         if (share != null) {
             for (MediaFile file : shareService.getSharedFiles(share.getId(), musicFolders)) {
-                if (file.getFile().exists()) {
+                if (Files.exists(file.getFile())) {
                     if (file.isDirectory()) {
                         List<MediaFile> childrenOf = mediaFileService.getChildrenOf(file, true, false, true);
                         result.addAll(childrenOf.stream().map(mf -> addUrlInfo(request, player, mf, finalExpires)).collect(Collectors.toList()));

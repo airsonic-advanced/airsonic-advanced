@@ -1,6 +1,6 @@
 package org.airsonic.player.domain;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.time.Instant;
 
 public class MediaFileWithUrlInfo {
@@ -47,7 +47,7 @@ public class MediaFileWithUrlInfo {
         file.setFolder(folder);
     }
 
-    public File getFile() {
+    public Path getFile() {
         return file.getFile();
     }
 
@@ -227,7 +227,7 @@ public class MediaFileWithUrlInfo {
         file.setParentPath(parentPath);
     }
 
-    public File getParentFile() {
+    public Path getParentFile() {
         return file.getParentFile();
     }
 
@@ -307,7 +307,7 @@ public class MediaFileWithUrlInfo {
         return file.getVersion();
     }
 
-    public File getCoverArtFile() {
+    public Path getCoverArtFile() {
         return file.getCoverArtFile();
     }
 }

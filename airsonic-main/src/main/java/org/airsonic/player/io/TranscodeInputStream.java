@@ -24,10 +24,12 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.stream.Collectors;
 
 /**
  * Subclass of {@link InputStream} which provides on-the-fly transcoding.
@@ -43,7 +45,7 @@ public class TranscodeInputStream extends InputStream {
     private InputStream processInputStream;
     private OutputStream processOutputStream;
     private Process process;
-    private final File tmpFile;
+    private final Path tmpFile;
 
     /**
      * Creates a transcoded input stream by executing an external process. If <code>in</code> is not null,
@@ -54,14 +56,9 @@ public class TranscodeInputStream extends InputStream {
      * @param tmpFile Temporary file to delete when this stream is closed.  May be {@code null}.
      * @throws IOException If an I/O error occurs.
      */
-    public TranscodeInputStream(ProcessBuilder processBuilder, final InputStream in, File tmpFile) throws IOException {
+    public TranscodeInputStream(ProcessBuilder processBuilder, final InputStream in, Path tmpFile) throws IOException {
         this.tmpFile = tmpFile;
-
-        StringBuilder buf = new StringBuilder("Starting transcoder: ");
-        for (String s : processBuilder.command()) {
-            buf.append('[').append(s).append("] ");
-        }
-        LOG.info(buf.toString());
+        LOG.info("Starting transcoder: {}", processBuilder.command().stream().collect(Collectors.joining("][", "[", "]")));
 
         process = processBuilder.start();
         processOutputStream = process.getOutputStream();
@@ -121,8 +118,10 @@ public class TranscodeInputStream extends InputStream {
         }
 
         if (tmpFile != null) {
-            if (!tmpFile.delete()) {
-                LOG.warn("Failed to delete tmp file: " + tmpFile);
+            try {
+                Files.deleteIfExists(tmpFile);
+            } catch (IOException e) {
+                LOG.warn("Failed to delete tmp file: {}", tmpFile);
             }
         }
     }

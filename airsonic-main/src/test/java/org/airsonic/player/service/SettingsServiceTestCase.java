@@ -22,7 +22,9 @@ package org.airsonic.player.service;
 import junit.framework.TestCase;
 import org.airsonic.player.TestCaseUtils;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -38,10 +40,10 @@ public class SettingsServiceTestCase extends TestCase {
     private SettingsService settingsService;
 
     @Override
-    protected void setUp() {
+    protected void setUp() throws IOException {
         String airsonicHome = TestCaseUtils.airsonicHomePathForTest();
         System.setProperty("airsonic.home", airsonicHome);
-        new File(airsonicHome, "airsonic.properties").delete();
+        Files.deleteIfExists(Paths.get(airsonicHome, "airsonic.properties"));
         settingsService = newSettingsService();
     }
 
@@ -52,7 +54,7 @@ public class SettingsServiceTestCase extends TestCase {
     }
 
     public void testAirsonicHome() {
-        assertEquals("Wrong Airsonic home.", TestCaseUtils.airsonicHomePathForTest(), SettingsService.getAirsonicHome().getAbsolutePath());
+        assertEquals("Wrong Airsonic home.", TestCaseUtils.airsonicHomePathForTest(), SettingsService.getAirsonicHome().toString());
     }
 
     public void testDefaultValues() {

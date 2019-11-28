@@ -6,7 +6,6 @@ import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.service.MediaScannerService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.HomeRule;
-import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -18,7 +17,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -40,10 +38,6 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
 
     // Above.
     private static AtomicBoolean dataBaseReady = new AtomicBoolean();
-
-    protected final static Function<String, String> resolveBaseMediaPath = (childPath) -> {
-        return MusicFolderTestData.resolveBaseMediaPath().concat(childPath);
-    };
 
     @Autowired
     protected DaoHelper daoHelper;

@@ -234,7 +234,7 @@ public class JukeboxJavaService {
                 public File getCurrentAudioFile() {
                     MediaFile current = airsonicPlayer.getPlayQueue().getCurrentFile();
                     if (current != null) {
-                        return airsonicPlayer.getPlayQueue().getCurrentFile().getFile();
+                        return airsonicPlayer.getPlayQueue().getCurrentFile().getFile().toFile();
                     } else {
                         return null;
                     }

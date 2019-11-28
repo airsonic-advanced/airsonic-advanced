@@ -26,6 +26,7 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.SearchCriteria;
 import org.airsonic.player.domain.SearchResult;
 import org.airsonic.player.service.SearchService;
+import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,7 +34,7 @@ import org.junit.rules.TemporaryFolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +56,7 @@ public class IndexManagerTestCase extends AbstractAirsonicHomeTest {
     public List<MusicFolder> getMusicFolders() {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
-            File musicDir = new File(resolveBaseMediaPath.apply("Music"));
+            Path musicDir = MusicFolderTestData.resolveMusicFolderPath();
             musicFolders.add(new MusicFolder(1, musicDir, "Music", true, Instant.now()));
         }
         return musicFolders;

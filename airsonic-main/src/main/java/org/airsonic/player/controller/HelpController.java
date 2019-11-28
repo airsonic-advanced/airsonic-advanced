@@ -34,11 +34,11 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
+import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -89,7 +89,7 @@ public class HelpController {
         map.put("serverInfo", serverInfo);
         map.put("usedMemory", totalMemory - freeMemory);
         map.put("totalMemory", totalMemory);
-        File logFile = SettingsService.getLogFile();
+        Path logFile = SettingsService.getLogFile();
         List<String> latestLogEntries = getLatestLogEntries(logFile);
         map.put("logEntries", latestLogEntries);
         map.put("logFile", logFile);
@@ -97,9 +97,9 @@ public class HelpController {
         return new ModelAndView("help","model",map);
     }
 
-    private static List<String> getLatestLogEntries(File logFile) {
-        List<String> lines = new ArrayList<>(LOG_LINES_TO_SHOW);
-        try (ReversedLinesFileReader reader = new ReversedLinesFileReader(logFile, Charset.defaultCharset())) {
+    private static List<String> getLatestLogEntries(Path logFile) {
+        List<String> lines = new LinkedList<>();
+        try (ReversedLinesFileReader reader = new ReversedLinesFileReader(logFile.toFile(), Charset.defaultCharset())) {
             String current;
             while ((current = reader.readLine()) != null) {
                 if (lines.size() >= LOG_LINES_TO_SHOW) {

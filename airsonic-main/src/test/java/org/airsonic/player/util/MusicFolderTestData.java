@@ -2,7 +2,9 @@ package org.airsonic.player.util;
 
 import org.airsonic.player.domain.MusicFolder;
 
-import java.io.File;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,29 +13,33 @@ public class MusicFolderTestData {
 
     private static String baseResources = "/MEDIAS/";
 
-    public static String resolveBaseMediaPath() {
-        return MusicFolderTestData.class.getResource(baseResources).toString().replace("file:","");
+    public static Path resolveBaseMediaPath() {
+        try {
+            return Paths.get(MusicFolderTestData.class.getResource(baseResources).toURI());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Could not find base resources for tests", e);
+        }
     }
 
-    public static String resolveMusicFolderPath() {
-        return (MusicFolderTestData.resolveBaseMediaPath() + "Music");
+    public static Path resolveMusicFolderPath() {
+        return resolveBaseMediaPath().resolve("Music");
     }
 
-    public static String resolveMusic2FolderPath() {
-        return (MusicFolderTestData.resolveBaseMediaPath() + "Music2");
+    public static Path resolveMusic2FolderPath() {
+        return resolveBaseMediaPath().resolve("Music2");
     }
 
-    public static String resolveMusic3FolderPath() {
-        return (MusicFolderTestData.resolveBaseMediaPath() + "Music3");
+    public static Path resolveMusic3FolderPath() {
+        return resolveBaseMediaPath().resolve("Music3");
     }
 
     public static List<MusicFolder> getTestMusicFolders() {
         List<MusicFolder> liste = new ArrayList<>();
-        File musicDir = new File(MusicFolderTestData.resolveMusicFolderPath());
+        Path musicDir = resolveMusicFolderPath();
         MusicFolder musicFolder = new MusicFolder(1,musicDir,"Music",true,Instant.now());
         liste.add(musicFolder);
 
-        File music2Dir = new File(MusicFolderTestData.resolveMusic2FolderPath());
+        Path music2Dir = resolveMusic2FolderPath();
         MusicFolder musicFolder2 = new MusicFolder(2,music2Dir,"Music2",true,Instant.now());
         liste.add(musicFolder2);
         return liste;

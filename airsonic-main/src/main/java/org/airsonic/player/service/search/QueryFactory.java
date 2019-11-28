@@ -72,7 +72,7 @@ public class QueryFactory {
 
     private final Function<MusicFolder, Query> toFolderPathQuery = (folder) -> {
         // Unanalyzed field
-        return new TermQuery(new Term(FieldNames.FOLDER, folder.getPath().getPath()));
+        return new TermQuery(new Term(FieldNames.FOLDER, folder.getPath().toString()));
     };
 
     /*

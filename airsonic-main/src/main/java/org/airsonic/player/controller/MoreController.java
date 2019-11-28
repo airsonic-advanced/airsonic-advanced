@@ -35,7 +35,6 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.io.File;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -68,10 +67,8 @@ public class MoreController  {
         String uploadDirectory = null;
         List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(user.getUsername());
         if (!musicFolders.isEmpty()) {
-            uploadDirectory = new File(musicFolders.get(0).getPath(), "Incoming").getPath();
+            uploadDirectory = musicFolders.get(0).getPath().resolve("Incoming").toString();
         }
-
-
 
         Player player = playerService.getPlayer(request, response);
         ModelAndView result = new ModelAndView();
