@@ -25,10 +25,12 @@ import org.airsonic.player.domain.Genre;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.RandomSearchCriteria;
+import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +57,9 @@ public class MediaFileDao extends AbstractDao {
     private static final String GENRE_COLUMNS = "name, song_count, album_count";
 
     public static final int VERSION = 4;
+    
+    @Autowired
+    private SettingsService settingsService;
 
     private final RowMapper<MediaFile> rowMapper = new MediaFileMapper();
     private final RowMapper musicFileInfoRowMapper = new MusicFileInfoMapper();
@@ -667,8 +672,15 @@ public class MediaFileDao extends AbstractDao {
     public void markNonPresent(Instant lastScanned) {
         Instant childrenLastUpdated = Instant.ofEpochMilli(1);  // Used to force a children rescan if file is later resurrected.
         
-        update("update media_file set present=false, children_last_updated=? where last_scanned < ? and present",
-                childrenLastUpdated, lastScanned);
+        if (settingsService.getDatabaseUpdateRowLimit() <= 0) {
+            update("update media_file set present=false, children_last_updated=? where last_scanned < ? and present",
+                    childrenLastUpdated, lastScanned);
+        } else {
+            // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
+            String sql = "update media_file set present=false, children_last_updated=? where id in (select id from media_file where last_scanned < ? and present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
+            while (update(sql, childrenLastUpdated, lastScanned) > 0) {}
+        }
+        
     }
 
     public List<Integer> getArtistExpungeCandidates() {
@@ -688,7 +700,13 @@ public class MediaFileDao extends AbstractDao {
     }
 
     public void expunge() {
-        update("delete from media_file where not present");
+        if (settingsService.getDatabaseUpdateRowLimit() <= 0) {
+            update("delete from media_file where not present");
+        } else {
+            // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
+            String sql = "delete from media_file where id in (select id from media_file where not present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
+            while (update(sql) > 0) {}
+        }
     }
 
     private static class MediaFileMapper implements RowMapper<MediaFile> {

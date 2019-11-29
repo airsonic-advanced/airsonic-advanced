@@ -22,7 +22,9 @@ package org.airsonic.player.dao;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.service.SettingsService;
 import org.apache.commons.lang.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,9 @@ public class AlbumDao extends AbstractDao {
                                           "folder_id, mb_release_id";
 
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
+    
+    @Autowired
+    private SettingsService settingsService;
 
     private final RowMapper rowMapper = new AlbumMapper();
 
@@ -336,7 +341,13 @@ public class AlbumDao extends AbstractDao {
     }
 
     public void markNonPresent(Instant lastScanned) {
-        update("update album set present=false where last_scanned < ? and present", lastScanned);
+        if (settingsService.getDatabaseUpdateRowLimit() <= 0) {
+            update("update album set present=false where last_scanned < ? and present", lastScanned);
+        } else {
+            // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
+            String sql = "update album set present=false where id in (select id from album where last_scanned < ? and present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
+            while (update(sql, lastScanned) > 0) {}
+        }
     }
 
     public List<Integer> getExpungeCandidates() {
@@ -344,7 +355,13 @@ public class AlbumDao extends AbstractDao {
     }
 
     public void expunge() {
-        update("delete from album where not present");
+        if (settingsService.getDatabaseUpdateRowLimit() <= 0) {
+            update("delete from album where not present");
+        } else {
+            // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
+            String sql = "delete from album where id in (select id from album where not present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
+            while (update(sql) > 0) {}
+        }
     }
 
     public void starAlbum(int albumId, String username) {
