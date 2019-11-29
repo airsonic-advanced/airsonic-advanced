@@ -56,6 +56,7 @@ public class DatabaseSettingsController {
         command.setJNDIName(settingsService.getDatabaseConfigJNDIName());
         command.setMysqlVarcharMaxlength(settingsService.getDatabaseMysqlVarcharMaxlength());
         command.setUsertableQuote(settingsService.getDatabaseUsertableQuote());
+        command.setRowUpdateLimit(settingsService.getDatabaseUpdateRowLimit());
         model.addAttribute("command", command);
     }
 
@@ -84,6 +85,7 @@ public class DatabaseSettingsController {
                 settingsService.setDatabaseMysqlVarcharMaxlength(command.getMysqlVarcharMaxlength());
                 settingsService.setDatabaseUsertableQuote(command.getUsertableQuote());
             }
+            settingsService.setDatabaseUpdateRowLimit(command.getRowUpdateLimit());
             redirectAttributes.addFlashAttribute("settings_toast", true);
             settingsService.save();
             return "redirect:databaseSettings.view";

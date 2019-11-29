@@ -37,6 +37,18 @@
 
 <form:form modelAttribute="command" action="databaseSettings.view" method="post">
     <p><fmt:message key="databasesettings.moreinfo"/></p>
+    
+    <div>
+        <table style="white-space:nowrap" class="indent">
+            <tr>
+                <td><fmt:message key="databasesettings.rowupdatelimit"/></td>
+                <td>
+                    <form:input path="rowUpdateLimit" size="8"/>
+                    <c:import url="helpToolTip.jsp"><c:param name="topic" value="rowupdatelimit"/></c:import>
+                </td>
+            </tr>
+        </table>
+    </div>
 
     <table style="white-space:nowrap" class="indent">
         <tr>
