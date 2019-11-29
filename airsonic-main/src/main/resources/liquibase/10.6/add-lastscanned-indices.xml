@@ -1,0 +1,35 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="album-lastscanned-index" author="anonymous">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_album_last_scanned" />
+            </not>
+        </preConditions>
+        <createIndex tableName="album" indexName="idx_album_last_scanned">
+            <column name="last_scanned" />
+        </createIndex>
+    </changeSet>
+    <changeSet id="artist-lastscanned-index" author="anonymous">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_artist_last_scanned" />
+            </not>
+        </preConditions>
+        <createIndex tableName="artist" indexName="idx_artist_last_scanned">
+            <column name="last_scanned" />
+        </createIndex>
+    </changeSet>
+    <changeSet id="mediafile-lastscanned-index" author="anonymous">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_media_file_last_scanned" />
+            </not>
+        </preConditions>
+        <createIndex tableName="media_file" indexName="idx_media_file_last_scanned">
+            <column name="last_scanned" />
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
