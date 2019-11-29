@@ -346,7 +346,7 @@ public class AlbumDao extends AbstractDao {
         } else {
             // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
             String sql = "update album set present=false where id in (select id from album where last_scanned < ? and present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
-            while (update(sql, lastScanned) > 0) {}
+            while (update(sql, lastScanned) > 0) { }
         }
     }
 
@@ -360,7 +360,7 @@ public class AlbumDao extends AbstractDao {
         } else {
             // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
             String sql = "delete from album where id in (select id from album where not present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
-            while (update(sql) > 0) {}
+            while (update(sql) > 0) { }
         }
     }
 

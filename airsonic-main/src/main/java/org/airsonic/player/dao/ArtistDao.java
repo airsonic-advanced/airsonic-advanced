@@ -171,7 +171,7 @@ public class ArtistDao extends AbstractDao {
         } else {
             // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
             String sql = "update artist set present=false where id in (select id from artist where last_scanned < ? and present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
-            while (update(sql, lastScanned) > 0) {}
+            while (update(sql, lastScanned) > 0) { }
         }
     }
 
@@ -185,7 +185,7 @@ public class ArtistDao extends AbstractDao {
         } else {
             // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
             String sql = "delete from artist where id in (select id from artist where not present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
-            while (update(sql) > 0) {}
+            while (update(sql) > 0) { }
         }
     }
 

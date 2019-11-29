@@ -678,7 +678,7 @@ public class MediaFileDao extends AbstractDao {
         } else {
             // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
             String sql = "update media_file set present=false, children_last_updated=? where id in (select id from media_file where last_scanned < ? and present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
-            while (update(sql, childrenLastUpdated, lastScanned) > 0) {}
+            while (update(sql, childrenLastUpdated, lastScanned) > 0) { }
         }
         
     }
@@ -705,7 +705,7 @@ public class MediaFileDao extends AbstractDao {
         } else {
             // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
             String sql = "delete from media_file where id in (select id from media_file where not present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
-            while (update(sql) > 0) {}
+            while (update(sql) > 0) { }
         }
     }
 
