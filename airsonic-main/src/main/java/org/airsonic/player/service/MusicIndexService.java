@@ -21,14 +21,15 @@ package org.airsonic.player.service;
 
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.MusicIndex.SortableArtist;
-import org.airsonic.player.util.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Files;
 import java.text.Collator;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Provides services for grouping artists by index.
@@ -76,16 +77,12 @@ public class MusicIndexService {
     }
 
     public List<MediaFile> getShortcuts(List<MusicFolder> musicFoldersToUse) {
-        List<MediaFile> result = new ArrayList<MediaFile>();
-        for (String shortcut : settingsService.getShortcutsAsArray()) {
-            for (MusicFolder musicFolder : musicFoldersToUse) {
-                File file = new File(musicFolder.getPath(), shortcut);
-                if (FileUtil.exists(file)) {
-                    result.add(mediaFileService.getMediaFile(file, true));
-                }
-            }
-        }
-        return result;
+        return Stream.of(settingsService.getShortcutsAsArray())
+                .flatMap(shortcut -> musicFoldersToUse.parallelStream()
+                        .map(musicFolder -> musicFolder.getPath().resolve(shortcut)))
+                .filter(Files::exists)
+                .map(file -> mediaFileService.getMediaFile(file, true))
+                .collect(Collectors.toList());
     }
 
     private <T extends SortableArtist> SortedMap<MusicIndex, List<T>> sortArtists(List<T> artists) {

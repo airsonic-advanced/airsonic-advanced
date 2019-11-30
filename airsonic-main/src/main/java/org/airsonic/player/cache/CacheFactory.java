@@ -26,7 +26,7 @@ import net.sf.ehcache.config.ConfigurationFactory;
 import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.InitializingBean;
 
-import java.io.File;
+import java.nio.file.Path;
 
 /**
  * Initializes Ehcache and creates caches.
@@ -41,8 +41,8 @@ public class CacheFactory implements InitializingBean {
         Configuration configuration = ConfigurationFactory.parseConfiguration();
 
         // Override configuration to make sure cache is stored in Airsonic home dir.
-        File cacheDir = new File(SettingsService.getAirsonicHome(), "cache");
-        configuration.getDiskStoreConfiguration().setPath(cacheDir.getPath());
+        Path cacheDir = SettingsService.getAirsonicHome().resolve("cache");
+        configuration.getDiskStoreConfiguration().setPath(cacheDir.toString());
 
         cacheManager = CacheManager.create(configuration);
     }

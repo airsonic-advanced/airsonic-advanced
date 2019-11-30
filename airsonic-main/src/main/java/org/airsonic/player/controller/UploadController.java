@@ -42,13 +42,13 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 /**
  * Controller which receives uploaded files.
@@ -75,8 +75,8 @@ public class UploadController {
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) {
 
         Map<String, Object> map = new HashMap<>();
-        List<File> uploadedFiles = new ArrayList<>();
-        List<File> unzippedFiles = new ArrayList<>();
+        List<Path> uploadedFiles = new ArrayList<>();
+        List<Path> unzippedFiles = new ArrayList<>();
         TransferStatus status = null;
 
         try {
@@ -91,7 +91,7 @@ public class UploadController {
                 throw new Exception("Illegal request.");
             }
 
-            File dir = null;
+            Path dir = null;
             boolean unzip = false;
 
             UploadListener listener = new UploadListenerImpl(status);
@@ -106,7 +106,7 @@ public class UploadController {
                 FileItem item = (FileItem) o;
 
                 if (item.isFormField() && "dir".equals(item.getFieldName())) {
-                    dir = new File(item.getString());
+                    dir = Paths.get(item.getString());
                 } else if (item.isFormField() && "unzip".equals(item.getFieldName())) {
                     unzip = true;
                 }
@@ -124,21 +124,21 @@ public class UploadController {
                     String fileName = item.getName();
                     if (!fileName.trim().isEmpty()) {
 
-                        File targetFile = new File(dir, new File(fileName).getName());
+                        Path targetFile = dir.resolve(Paths.get(fileName).getFileName());
 
                         if (!securityService.isUploadAllowed(targetFile)) {
-                            throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(targetFile.getPath()));
+                            throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(targetFile.toString()));
                         }
 
-                        if (!dir.exists()) {
-                            dir.mkdirs();
+                        if (!Files.exists(dir)) {
+                            Files.createDirectories(dir);
                         }
 
-                        item.write(targetFile);
+                        item.write(targetFile.toFile());
                         uploadedFiles.add(targetFile);
                         LOG.info("Uploaded " + targetFile);
 
-                        if (unzip && targetFile.getName().toLowerCase().endsWith(".zip")) {
+                        if (unzip && targetFile.getFileName().toString().toLowerCase().endsWith(".zip")) {
                             unzip(targetFile, unzippedFiles);
                         }
                     }
@@ -163,60 +163,34 @@ public class UploadController {
         return new ModelAndView("upload","model",map);
     }
 
-    private void unzip(File file, List<File> unzippedFiles) throws Exception {
+    private void unzip(Path file, List<Path> unzippedFiles) throws Exception {
         LOG.info("Unzipping " + file);
-
-        try (ZipFile zipFile = new ZipFile(file)) {
-
-            Enumeration<?> entries = zipFile.entries();
-
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = (ZipEntry) entries.nextElement();
-                File entryFile = new File(file.getParentFile(), entry.getName());
-                if (!entryFile.toPath().normalize().startsWith(file.getParentFile().toPath())) {
-                    throw new Exception("Bad zip filename: " + StringEscapeUtils.escapeHtml(entryFile.getPath()));
+        
+        try (ZipInputStream zipInputStream = new ZipInputStream(Files.newInputStream(file))) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                final Path toPath = file.resolveSibling(entry.getName());
+                if (!toPath.normalize().startsWith(file.getParent())) {
+                    throw new Exception("Bad zip filename: " + StringEscapeUtils.escapeHtml(toPath.toString()));
                 }
-
-                if (!entry.isDirectory()) {
-
-                    if (!securityService.isUploadAllowed(entryFile)) {
-                        throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(entryFile.getPath()));
+                
+                if (entry.isDirectory()) {
+                    Files.createDirectory(toPath);
+                } else {
+                    if (!securityService.isUploadAllowed(toPath)) {
+                        throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(toPath.toString()));
                     }
-
-                    entryFile.getParentFile().mkdirs();
-                    InputStream inputStream = null;
-                    OutputStream outputStream = null;
-                    try {
-                        inputStream = zipFile.getInputStream(entry);
-                        outputStream = new FileOutputStream(entryFile);
-
-                        byte[] buf = new byte[8192];
-                        while (true) {
-                            int n = inputStream.read(buf);
-                            if (n == -1) {
-                                break;
-                            }
-                            outputStream.write(buf, 0, n);
-                        }
-
-                        LOG.info("Unzipped " + entryFile);
-                        unzippedFiles.add(entryFile);
-                    } finally {
-                        FileUtil.closeQuietly(inputStream);
-                        FileUtil.closeQuietly(outputStream);
-                    }
+                    Files.copy(zipInputStream, toPath);
+                    LOG.info("Unzipped " + toPath);
+                    unzippedFiles.add(toPath);
                 }
             }
-
-            zipFile.close();
-            file.delete();
-
+        } catch (IOException e) {
+            LOG.warn("Something went wrong unzipping {}", file, e);
+        } finally {
+            FileUtil.delete(file);
         }
     }
-
-
-
-
 
     /**
      * Receives callbacks as the file upload progresses.
@@ -232,7 +206,7 @@ public class UploadController {
 
         @Override
         public void start(String fileName) {
-            status.setFile(new File(fileName));
+            status.setFile(Paths.get(fileName));
         }
 
         @Override

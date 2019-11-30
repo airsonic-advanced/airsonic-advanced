@@ -19,12 +19,10 @@
 
 package org.airsonic.player.service;
 
-import com.google.common.base.Predicates;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.Lists;
 import de.umass.lastfm.*;
 import de.umass.lastfm.Album;
 import de.umass.lastfm.Artist;
+
 import org.airsonic.player.dao.ArtistDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
@@ -36,10 +34,11 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Provides services from the Last.fm REST API.
@@ -66,7 +65,7 @@ public class LastFmService {
         Caller caller = Caller.getInstance();
         caller.setUserAgent("Airsonic");
 
-        File cacheDir = new File(SettingsService.getAirsonicHome(), "lastfmcache");
+        Path cacheDir = SettingsService.getAirsonicHome().resolve("lastfmcache");
         caller.setCache(new LastFmCache(cacheDir, CACHE_TIME_TO_LIVE_MILLIS));
     }
 
@@ -361,26 +360,24 @@ public class LastFmService {
             }
 
             Collection<Album> matches = Album.search(query.toString(), LAST_FM_KEY);
-            return FluentIterable.from(matches)
-                                 .transform(album1 -> convert(album1))
-                                 .filter(Predicates.notNull())
-                                 .toList();
+            return matches.stream()
+                    .map(LastFmService::convert)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
         } catch (Throwable x) {
             LOG.warn("Failed to search for cover art for " + artist + " - " + album, x);
             return Collections.emptyList();
         }
     }
 
-    private LastFmCoverArt convert(Album album) {
-        String imageUrl = null;
-        for (ImageSize imageSize : Lists.reverse(Arrays.asList(ImageSize.values()))) {
-            imageUrl = StringUtils.trimToNull(album.getImageURL(imageSize));
-            if (imageUrl != null) {
-                break;
-            }
-        }
-
-        return imageUrl == null ? null : new LastFmCoverArt(imageUrl, album.getArtist(), album.getName());
+    private static LastFmCoverArt convert(Album album) {
+        return EnumSet.allOf(ImageSize.class).stream()
+                .sorted(Comparator.reverseOrder())
+                .map(imageSize -> StringUtils.trimToNull(album.getImageURL(imageSize)))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(imageUrl -> new LastFmCoverArt(imageUrl, album.getArtist(), album.getName()))
+                .orElse(null);
     }
 
     private String getCanonicalArtistName(String artistName) {

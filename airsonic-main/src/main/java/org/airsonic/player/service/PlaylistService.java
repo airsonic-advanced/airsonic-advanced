@@ -44,7 +44,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Provides services for loading and saving playlists to and from persistent storage.
@@ -127,17 +129,7 @@ public class PlaylistService {
     }
 
     public List<MediaFile> getFilesInPlaylist(int id, boolean includeNotPresent) {
-        List<MediaFile> files = mediaFileDao.getFilesInPlaylist(id);
-        if (includeNotPresent) {
-            return files;
-        }
-        List<MediaFile> presentFiles = new ArrayList<MediaFile>(files.size());
-        for (MediaFile file : files) {
-            if (file.isPresent()) {
-                presentFiles.add(file);
-            }
-        }
-        return presentFiles;
+        return mediaFileDao.getFilesInPlaylist(id).stream().filter(x -> includeNotPresent || x.isPresent()).collect(Collectors.toList());
     }
 
     public void setFilesInPlaylist(int id, List<MediaFile> files) {
@@ -199,7 +191,7 @@ public class PlaylistService {
         for (String error : result.getRight()) {
             LOG.warn("File in playlist '" + fileName + "' not found: " + error);
         }
-        Date now = new Date();
+        Instant now = Instant.now();
         Playlist playlist;
         if (existingPlaylist == null) {
             playlist = new Playlist();
@@ -288,7 +280,7 @@ public class PlaylistService {
         for (Playlist playlist : allPlaylists) {
             if (fileName.equals(playlist.getImportedFrom())) {
                 existingPlaylist = playlist;
-                if (file.lastModified() <= playlist.getChanged().getTime()) {
+                if (file.lastModified() <= playlist.getChanged().toEpochMilli()) {
                     // Already imported and not changed since.
                     return;
                 }

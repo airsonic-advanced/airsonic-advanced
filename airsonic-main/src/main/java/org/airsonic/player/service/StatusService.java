@@ -26,7 +26,8 @@ import org.airsonic.player.domain.TransferStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -37,6 +38,7 @@ import java.util.*;
  * @author Sindre Mehus
  * @see TransferStatus
  */
+//TODO needs to be rewritten to avoid so many sync locks
 @Service
 public class StatusService {
 
@@ -149,7 +151,7 @@ public class StatusService {
 
         for (TransferStatus streamStatus : statuses) {
             Player player = streamStatus.getPlayer();
-            File file = streamStatus.getFile();
+            Path file = streamStatus.getFile();
             if (file == null) {
                 continue;
             }
@@ -157,7 +159,7 @@ public class StatusService {
             if (player == null || mediaFile == null) {
                 continue;
             }
-            Date time = new Date(System.currentTimeMillis() - streamStatus.getMillisSinceLastUpdate());
+            Instant time = Instant.now().minusMillis(streamStatus.getMillisSinceLastUpdate());
             result.put(player.getId(), new PlayStatus(mediaFile, player, time));
         }
         return new ArrayList<PlayStatus>(result.values());

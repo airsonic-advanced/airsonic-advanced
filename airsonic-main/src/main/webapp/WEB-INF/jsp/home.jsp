@@ -1,5 +1,5 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
 <!DOCTYPE html>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
 
 <html><head>
     <%@ include file="head.jsp" %>
@@ -33,7 +33,7 @@
 <body class="mainframe bgcolor1" onload="init();">
 <c:if test="${not empty model.welcomeTitle}">
 <h1>
-    <img src="<spring:theme code="homeImage"/>" alt="">
+    <img src="<spring:theme code='homeImage'/>" alt="">
     <span style="vertical-align: middle">${model.welcomeTitle}</span>
 </h1>
 </c:if>
@@ -64,7 +64,7 @@
 <%@ include file="homePager.jsp" %>
 
 <c:if test="${not empty model.welcomeMessage}">
-    <div style="width:15em;float:right;padding:0 1em 0 1em;border-left:1px solid #<spring:theme code="detailColor"/>">
+    <div style="width:15em;float:right;padding:0 1em 0 1em;border-left:1px solid #<spring:theme code='detailColor'/>">
         ${model.welcomeMessage}
     </div>
 </c:if>
@@ -89,12 +89,12 @@
         <c:set var="captionCount" value="3"/>
     </c:if>
     <c:if test="${not empty album.lastPlayed}">
-        <fmt:formatDate value="${album.lastPlayed}" dateStyle="short" var="lastPlayedDate"/>
+        <javatime:format value="${album.lastPlayed}" style="S-" var="lastPlayedDate"/>
         <c:set var="caption3"><fmt:message key="home.lastplayed"><fmt:param value="${lastPlayedDate}"/></fmt:message></c:set>
         <c:set var="captionCount" value="3"/>
     </c:if>
     <c:if test="${not empty album.created}">
-        <fmt:formatDate value="${album.created}" dateStyle="short" var="creationDate"/>
+        <javatime:format value="${album.created}" style="S-" var="creationDate"/>
         <c:set var="caption3"><fmt:message key="home.created"><fmt:param value="${creationDate}"/></fmt:message></c:set>
         <c:set var="captionCount" value="3"/>
     </c:if>

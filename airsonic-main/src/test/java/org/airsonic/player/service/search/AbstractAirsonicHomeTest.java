@@ -6,44 +6,28 @@ import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.service.MediaScannerService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.HomeRule;
-import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.rules.SpringClassRule;
-import org.springframework.test.context.junit4.rules.SpringMethodRule;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
-@ContextConfiguration(locations = {
-        "/applicationContext-service.xml",
-        "/applicationContext-cache.xml",
-        "/applicationContext-testdb.xml"})
+@RunWith(SpringRunner.class)
+@SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@Component
 /*
  * Abstract class for scanning MusicFolder.
  */
 public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
 
     @ClassRule
-    public static final SpringClassRule classRule = new SpringClassRule() {
-        HomeRule homeRule = new HomeRule();
-
-        @Override
-        public Statement apply(Statement base, Description description) {
-            Statement spring = super.apply(base, description);
-            return homeRule.apply(spring, description);
-        }
-    };
+    public static final HomeRule airsonicRule = new HomeRule();
 
     /*
      * Currently, Maven is executing test classes in series,
@@ -54,10 +38,6 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
 
     // Above.
     private static AtomicBoolean dataBaseReady = new AtomicBoolean();
-
-    protected final static Function<String, String> resolveBaseMediaPath = (childPath) -> {
-        return MusicFolderTestData.resolveBaseMediaPath().concat(childPath);
-    };
 
     @Autowired
     protected DaoHelper daoHelper;
@@ -70,9 +50,6 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
 
     @Autowired
     protected SettingsService settingsService;
-
-    @Rule
-    public final SpringMethodRule springMethodRule = new SpringMethodRule();
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();

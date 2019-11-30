@@ -28,8 +28,6 @@ import org.airsonic.player.service.*;
 import org.airsonic.player.service.PlaylistService;
 import org.airsonic.player.util.StringUtil;
 import org.directwebremoting.WebContextFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.support.RequestContextUtils;
@@ -37,6 +35,7 @@ import org.springframework.web.servlet.support.RequestContextUtils;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -81,8 +80,6 @@ public class PlayQueueService {
     private JWTSecurityService jwtSecurityService;
     @Autowired
     private InternetRadioService internetRadioService;
-
-    private static final Logger LOG = LoggerFactory.getLogger(PlayQueueService.class);
 
     /**
      * Returns the play queue for the player of the current user.
@@ -168,7 +165,7 @@ public class PlayQueueService {
         List<Integer> ids = MediaFile.toIdList(playQueue.getFiles());
 
         Integer currentId = currentSongIndex == -1 ? null : playQueue.getFile(currentSongIndex).getId();
-        SavedPlayQueue savedPlayQueue = new SavedPlayQueue(null, username, ids, currentId, positionMillis, new Date(), "Airsonic");
+        SavedPlayQueue savedPlayQueue = new SavedPlayQueue(null, username, ids, currentId, positionMillis, Instant.now(), "Airsonic");
         playQueueDao.savePlayQueue(savedPlayQueue);
     }
 
@@ -382,7 +379,6 @@ public class PlayQueueService {
         HttpServletRequest request = WebContextFactory.get().getHttpServletRequest();
         HttpServletResponse response = WebContextFactory.get().getHttpServletResponse();
         String username = securityService.getCurrentUsername(request);
-        UserSettings userSettings = settingsService.getUserSettings(securityService.getCurrentUsername(request));
 
         MusicFolder selectedMusicFolder = settingsService.getSelectedMusicFolder(username);
         List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(username,
@@ -664,8 +660,6 @@ public class PlayQueueService {
 
     private PlayQueueInfo convert(HttpServletRequest request, Player player, boolean serverSidePlaylist, int offset) {
 
-        String url = NetworkService.getBaseUrl(request);
-        Locale locale = RequestContextUtils.getLocale(request);
         PlayQueue playQueue = player.getPlayQueue();
 
         List<PlayQueueInfo.Entry> entries;

@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -155,18 +156,12 @@ public class ArtistDao extends AbstractDao {
                           rowMapper, args);
     }
 
-    public void markPresent(String artistName, Date lastScanned) {
+    public void markPresent(String artistName, Instant lastScanned) {
         update("update artist set present=?, last_scanned = ? where name=?", true, lastScanned, artistName);
     }
 
-    public void markNonPresent(Date lastScanned) {
-        int minId = queryForInt("select min(id) from artist where last_scanned < ? and present", 0, lastScanned);
-        int maxId = queryForInt("select max(id) from artist where last_scanned < ? and present", 0, lastScanned);
-
-        final int batchSize = 1000;
-        for (int id = minId; id <= maxId; id += batchSize) {
-            update("update artist set present=false where id between ? and ? and last_scanned < ? and present", id, id + batchSize, lastScanned);
-        }
+    public void markNonPresent(Instant lastScanned) {
+        update("update artist set present=false where last_scanned < ? and present", lastScanned);
     }
 
     public List<Integer> getExpungeCandidates() {
@@ -174,26 +169,20 @@ public class ArtistDao extends AbstractDao {
     }
 
     public void expunge() {
-        int minId = queryForInt("select min(id) from artist where not present", 0);
-        int maxId = queryForInt("select max(id) from artist where not present", 0);
-
-        final int batchSize = 1000;
-        for (int id = minId; id <= maxId; id += batchSize) {
-            update("delete from artist where id between ? and ? and not present", id, id + batchSize);
-        }
+        update("delete from artist where not present");
     }
 
     public void starArtist(int artistId, String username) {
         unstarArtist(artistId, username);
-        update("insert into starred_artist(artist_id, username, created) values (?,?,?)", artistId, username, new Date());
+        update("insert into starred_artist(artist_id, username, created) values (?,?,?)", artistId, username, Instant.now());
     }
 
     public void unstarArtist(int artistId, String username) {
         update("delete from starred_artist where artist_id=? and username=?", artistId, username);
     }
 
-    public Date getArtistStarredDate(int artistId, String username) {
-        return queryForDate("select created from starred_artist where artist_id=? and username=?", null, artistId, username);
+    public Instant getArtistStarredDate(int artistId, String username) {
+        return queryForInstant("select created from starred_artist where artist_id=? and username=?", null, artistId, username);
     }
 
     private static class ArtistMapper implements RowMapper<Artist> {
@@ -203,7 +192,7 @@ public class ArtistDao extends AbstractDao {
                     rs.getString(2),
                     rs.getString(3),
                     rs.getInt(4),
-                    rs.getTimestamp(5),
+                    Optional.ofNullable(rs.getTimestamp(5)).map(x -> x.toInstant()).orElse(null),
                     rs.getBoolean(6),
                     rs.getInt(7));
         }

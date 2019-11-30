@@ -24,6 +24,7 @@ import org.airsonic.player.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Provides user-related database services.
@@ -71,7 +73,7 @@ public class UserDao extends AbstractDao {
     private final String userTableQuote;
 
     @Autowired
-    public UserDao(String userTableQuote) {
+    public UserDao(@Value("${DatabaseUsertableQuote:}") String userTableQuote) {
         this.userTableQuote = userTableQuote;
     }
 
@@ -164,7 +166,7 @@ public class UserDao extends AbstractDao {
     public void updateUser(User user) {
         String sql = "update " + getUserTable() + " set password=?, email=?, ldap_authenticated=?, bytes_streamed=?, bytes_downloaded=?, bytes_uploaded=? " +
                 "where username=?";
-        getJdbcTemplate().update(sql, encrypt(user.getPassword()), user.getEmail(), user.isLdapAuthenticated(),
+        update(sql, encrypt(user.getPassword()), user.getEmail(), user.isLdapAuthenticated(),
                 user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded(),
                 user.getUsername());
         writeRoles(user);
@@ -204,13 +206,13 @@ public class UserDao extends AbstractDao {
      * @param settings The user-specific settings.
      */
     public void updateUserSettings(UserSettings settings) {
-        getJdbcTemplate().update("delete from user_settings where username=?", settings.getUsername());
+        update("delete from user_settings where username=?", settings.getUsername());
 
         String sql = "insert into user_settings (" + USER_SETTINGS_COLUMNS + ") values (" + questionMarks(USER_SETTINGS_COLUMNS) + ')';
         String locale = settings.getLocale() == null ? null : settings.getLocale().toString();
         UserSettings.Visibility main = settings.getMainVisibility();
         UserSettings.Visibility playlist = settings.getPlaylistVisibility();
-        getJdbcTemplate().update(sql, settings.getUsername(), locale, settings.getThemeId(),
+        update(sql, settings.getUsername(), locale, settings.getThemeId(),
                 settings.isFinalVersionNotificationEnabled(), settings.isBetaVersionNotificationEnabled(),
                 settings.isSongNotificationEnabled(), main.isTrackNumberVisible(),
                 main.isArtistVisible(), main.isAlbumVisible(), main.isGenreVisible(), main.isYearVisible(),
@@ -287,40 +289,40 @@ public class UserDao extends AbstractDao {
 
     private void writeRoles(User user) {
         String sql = "delete from user_role where username=?";
-        getJdbcTemplate().update(sql, user.getUsername());
+        update(sql, user.getUsername());
         sql = "insert into user_role (username, role_id) values(?, ?)";
         if (user.isAdminRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_ADMIN);
+            update(sql, user.getUsername(), ROLE_ID_ADMIN);
         }
         if (user.isDownloadRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_DOWNLOAD);
+            update(sql, user.getUsername(), ROLE_ID_DOWNLOAD);
         }
         if (user.isUploadRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_UPLOAD);
+            update(sql, user.getUsername(), ROLE_ID_UPLOAD);
         }
         if (user.isPlaylistRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_PLAYLIST);
+            update(sql, user.getUsername(), ROLE_ID_PLAYLIST);
         }
         if (user.isCoverArtRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_COVER_ART);
+            update(sql, user.getUsername(), ROLE_ID_COVER_ART);
         }
         if (user.isCommentRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_COMMENT);
+            update(sql, user.getUsername(), ROLE_ID_COMMENT);
         }
         if (user.isPodcastRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_PODCAST);
+            update(sql, user.getUsername(), ROLE_ID_PODCAST);
         }
         if (user.isStreamRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_STREAM);
+            update(sql, user.getUsername(), ROLE_ID_STREAM);
         }
         if (user.isJukeboxRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_JUKEBOX);
+            update(sql, user.getUsername(), ROLE_ID_JUKEBOX);
         }
         if (user.isSettingsRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_SETTINGS);
+            update(sql, user.getUsername(), ROLE_ID_SETTINGS);
         }
         if (user.isShareRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_SHARE);
+            update(sql, user.getUsername(), ROLE_ID_SHARE);
         }
     }
 
@@ -377,7 +379,7 @@ public class UserDao extends AbstractDao {
             settings.setNowPlayingAllowed(rs.getBoolean(col++));
             settings.setAvatarScheme(AvatarScheme.valueOf(rs.getString(col++)));
             settings.setSystemAvatarId((Integer) rs.getObject(col++));
-            settings.setChanged(rs.getTimestamp(col++));
+            settings.setChanged(Optional.ofNullable(rs.getTimestamp(col++)).map(x -> x.toInstant()).orElse(null));
             settings.setShowArtistInfoEnabled(rs.getBoolean(col++));
             settings.setAutoHidePlayQueue(rs.getBoolean(col++));
             settings.setViewAsList(rs.getBoolean(col++));

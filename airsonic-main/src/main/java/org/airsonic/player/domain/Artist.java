@@ -19,7 +19,8 @@
  */
 package org.airsonic.player.domain;
 
-import java.util.Date;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Sindre Mehus
@@ -30,19 +31,19 @@ public class Artist {
     private int id;
     private String name;
     private String coverArtPath;
-    private int albumCount;
-    private Date lastScanned;
+    private final AtomicInteger albumCount = new AtomicInteger();
+    private Instant lastScanned;
     private boolean present;
     private Integer folderId;
 
     public Artist() {
     }
 
-    public Artist(int id, String name, String coverArtPath, int albumCount, Date lastScanned, boolean present, Integer folderId) {
+    public Artist(int id, String name, String coverArtPath, int albumCount, Instant lastScanned, boolean present, Integer folderId) {
         this.id = id;
         this.name = name;
         this.coverArtPath = coverArtPath;
-        this.albumCount = albumCount;
+        this.albumCount.set(albumCount);
         this.lastScanned = lastScanned;
         this.present = present;
         this.folderId = folderId;
@@ -73,18 +74,18 @@ public class Artist {
     }
 
     public int getAlbumCount() {
-        return albumCount;
+        return albumCount.get();
     }
 
     public void setAlbumCount(int albumCount) {
-        this.albumCount = albumCount;
+        this.albumCount.set(albumCount);
     }
 
-    public Date getLastScanned() {
+    public Instant getLastScanned() {
         return lastScanned;
     }
 
-    public void setLastScanned(Date lastScanned) {
+    public void setLastScanned(Instant lastScanned) {
         this.lastScanned = lastScanned;
     }
 

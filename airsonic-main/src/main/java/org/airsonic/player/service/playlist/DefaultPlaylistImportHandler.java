@@ -8,8 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,7 +67,7 @@ public class DefaultPlaylistImportHandler implements PlaylistImportHandler {
                 public void beginVisitMedia(Media media) {
                     try {
                         URI uri = media.getSource().getURI();
-                        File file = new File(uri);
+                        Path file = Paths.get(uri);
                         MediaFile mediaFile = mediaFileService.getMediaFile(file);
                         if (mediaFile != null) {
                             mediaFiles.add(mediaFile);

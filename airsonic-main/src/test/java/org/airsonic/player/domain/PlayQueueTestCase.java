@@ -21,7 +21,8 @@ package org.airsonic.player.domain;
 
 import junit.framework.TestCase;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -303,8 +304,8 @@ public class PlayQueueTestCase extends TestCase {
         }
         
         @Override
-        public File getFile() {
-            return new File(name);
+        public Path getFile() {
+            return Paths.get(name);
         }
 
         @Override

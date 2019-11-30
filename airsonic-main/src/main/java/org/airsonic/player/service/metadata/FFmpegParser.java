@@ -21,16 +21,20 @@ package org.airsonic.player.service.metadata;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.MoreFiles;
+
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
-import org.apache.commons.io.FilenameUtils;
+import org.airsonic.player.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +47,7 @@ import java.util.List;
  * @author Sindre Mehus
  */
 @Service("ffmpegParser")
+@Order(100)
 public class FFmpegParser extends MetaDataParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(FFmpegParser.class);
@@ -64,16 +69,16 @@ public class FFmpegParser extends MetaDataParser {
      * @return Meta data for the file.
      */
     @Override
-    public MetaData getRawMetaData(File file) {
+    public MetaData getRawMetaData(Path file) {
 
         MetaData metaData = new MetaData();
 
         try {
             // Use `ffprobe` in the transcode directory if it exists, otherwise let the system sort it out.
             String ffprobe;
-            File inTranscodeDirectory = new File(transcodingService.getTranscodeDirectory(), "ffprobe");
-            if (inTranscodeDirectory.exists()) {
-                ffprobe = inTranscodeDirectory.getAbsolutePath();
+            Path inTranscodeDirectory = Util.isWindows() ? transcodingService.getTranscodeDirectory().resolve("ffprobe.exe") : transcodingService.getTranscodeDirectory().resolve("ffprobe");
+            if (Files.exists(inTranscodeDirectory)) {
+                ffprobe = inTranscodeDirectory.toAbsolutePath().toString();
             } else {
                 ffprobe = "ffprobe";
             }
@@ -81,7 +86,7 @@ public class FFmpegParser extends MetaDataParser {
             List<String> command = new ArrayList<>();
             command.add(ffprobe);
             command.addAll(Arrays.asList(FFPROBE_OPTIONS));
-            command.add(file.getAbsolutePath());
+            command.add(file.toAbsolutePath().toString());
 
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]));
             final JsonNode result = objectMapper.readTree(process.getInputStream());
@@ -132,19 +137,13 @@ public class FFmpegParser extends MetaDataParser {
     /**
      * Returns whether this parser is applicable to the given file.
      *
-     * @param file The file in question.
+     * @param path The path to file in question.
      * @return Whether this parser is applicable to the given file.
      */
     @Override
-    public boolean isApplicable(File file) {
-        String format = FilenameUtils.getExtension(file.getName()).toLowerCase();
-
-        for (String s : settingsService.getVideoFileTypesAsArray()) {
-            if (format.equals(s)) {
-                return true;
-            }
-        }
-        return false;
+    public boolean isApplicable(Path path) {
+        String format = MoreFiles.getFileExtension(path).toLowerCase();
+        return settingsService.getVideoFileTypesSet().contains(format);
     }
 
     public void setTranscodingService(TranscodingService transcodingService) {

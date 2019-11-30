@@ -19,7 +19,10 @@
  */
 package org.airsonic.player.service.metadata;
 
-import java.io.File;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -27,11 +30,13 @@ import java.util.List;
  *
  * @author Sindre Mehus
  */
+@Component
 public class MetaDataParserFactory {
 
     private List<MetaDataParser> parsers;
 
-    public void setParsers(List<MetaDataParser> parsers) {
+    @Autowired
+    public MetaDataParserFactory(List<MetaDataParser> parsers) {
         this.parsers = parsers;
     }
 
@@ -41,12 +46,7 @@ public class MetaDataParserFactory {
      * @param file The file in question.
      * @return An applicable parser, or <code>null</code> if no parser is found.
      */
-    public MetaDataParser getParser(File file) {
-        for (MetaDataParser parser : parsers) {
-            if (parser.isApplicable(file)) {
-                return parser;
-            }
-        }
-        return null;
+    public MetaDataParser getParser(Path path) {
+        return parsers.stream().filter(parser -> parser.isApplicable(path)).findFirst().orElse(null);
     }
 }

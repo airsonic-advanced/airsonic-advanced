@@ -40,10 +40,10 @@
                 <td style="padding-left:1em"><a href="${shareInfo.shareUrl}" target="_blank">${share.name}</a></td>
                 <td style="padding-left:1em">${fn:escapeXml(share.username)}</td>
                 <td style="padding-left:1em"><input type="text" name="description[${share.id}]" size="40" value="${share.description}"/></td>
-                <td style="padding-left:1em"><fmt:formatDate value="${share.lastVisited}" type="date" dateStyle="medium"/></td>
+                <td style="padding-left:1em"><javatime:format value="${share.lastVisited}" style="M-"/></td>
                 <td style="padding-left:1em; text-align:right">${share.visitCount}</td>
                 <td style="padding-left:1em"><a href="${albumUrl}" title="${shareInfo.dir.name}"><str:truncateNicely upper="30">${fn:escapeXml(shareInfo.dir.name)}</str:truncateNicely></a></td>
-                <td style="padding-left:1em"><fmt:formatDate value="${share.expires}" type="date" dateStyle="medium"/></td>
+                <td style="padding-left:1em"><javatime:format value="${share.expires}" style="M-"/></td>
                 <td style="padding-left:1em">
                     <label><input type="radio" name="expireIn[${share.id}]" value="7"><fmt:message key="sharesettings.expirein.week"/></label>
                     <label><input type="radio" name="expireIn[${share.id}]" value="30"><fmt:message key="sharesettings.expirein.month"/></label>
@@ -57,8 +57,8 @@
     </table>
 
     <p style="padding-top:1em">
-        <input type="submit" value="<fmt:message key="common.save"/>" style="margin-right:0.3em">
-        <a href='nowPlaying.view'><input type="button" value="<fmt:message key="common.cancel"/>" style="margin-right:2.0em"></a>
+        <input type="submit" value="<fmt:message key='common.save'/>" style="margin-right:0.3em">
+        <a href='nowPlaying.view'><input type="button" value="<fmt:message key='common.cancel'/>" style="margin-right:2.0em"></a>
         <input type="checkbox" id="deleteExpired" name="deleteExpired"/>
         <label for="deleteExpired"><fmt:message key="sharesettings.deleteexpired"/></label>
     </p>

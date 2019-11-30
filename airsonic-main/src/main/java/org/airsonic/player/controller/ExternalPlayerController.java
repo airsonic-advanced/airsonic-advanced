@@ -38,6 +38,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.nio.file.Files;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -79,13 +81,13 @@ public class ExternalPlayerController {
 
         Share share = shareService.getShareByName(shareName);
 
-        if (share != null && share.getExpires() != null && share.getExpires().before(new Date())) {
+        if (share != null && share.getExpires() != null && share.getExpires().isBefore(Instant.now())) {
             LOG.warn("Share " + shareName + " is expired");
             share = null;
         }
 
         if (share != null) {
-            share.setLastVisited(new Date());
+            share.setLastVisited(Instant.now());
             share.setVisitCount(share.getVisitCount() + 1);
             shareService.updateShare(share);
         }
@@ -99,13 +101,13 @@ public class ExternalPlayerController {
     }
 
     private List<MediaFileWithUrlInfo> getSongs(HttpServletRequest request, Share share, Player player) {
-        Date expires = null;
+        Instant expires = null;
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication instanceof JWTAuthenticationToken) {
             DecodedJWT token = jwtSecurityService.verify((String) authentication.getCredentials());
-            expires = token.getExpiresAt();
+            expires = Optional.ofNullable(token).map(x -> x.getExpiresAt()).map(x -> x.toInstant()).orElse(null);
         }
-        Date finalExpires = expires;
+        Instant finalExpires = expires;
 
         List<MediaFileWithUrlInfo> result = new ArrayList<>();
 
@@ -113,7 +115,7 @@ public class ExternalPlayerController {
 
         if (share != null) {
             for (MediaFile file : shareService.getSharedFiles(share.getId(), musicFolders)) {
-                if (file.getFile().exists()) {
+                if (Files.exists(file.getFile())) {
                     if (file.isDirectory()) {
                         List<MediaFile> childrenOf = mediaFileService.getChildrenOf(file, true, false, true);
                         result.addAll(childrenOf.stream().map(mf -> addUrlInfo(request, player, mf, finalExpires)).collect(Collectors.toList()));
@@ -126,7 +128,7 @@ public class ExternalPlayerController {
         return result;
     }
 
-    public MediaFileWithUrlInfo addUrlInfo(HttpServletRequest request, Player player, MediaFile mediaFile, Date expires) {
+    public MediaFileWithUrlInfo addUrlInfo(HttpServletRequest request, Player player, MediaFile mediaFile, Instant expires) {
         String prefix = "ext";
         String streamUrl = jwtSecurityService.addJWTToken(
                 UriComponentsBuilder
