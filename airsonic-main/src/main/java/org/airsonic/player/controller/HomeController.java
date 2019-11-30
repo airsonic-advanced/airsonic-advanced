@@ -134,7 +134,6 @@ public class HomeController  {
         map.put("coverArtSize", CoverArtScheme.MEDIUM.getSize());
         map.put("listOffset", listOffset);
         map.put("musicFolder", selectedMusicFolder);
-        map.put("listReloadDelay", userSettings.getListReloadDelay());
 
         return new ModelAndView("home","model",map);
     }

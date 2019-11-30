@@ -1101,7 +1101,6 @@ public class SettingsService {
         settings.setQueueFollowingSongs(true);
         settings.setDefaultAlbumList(AlbumListType.RANDOM);
         settings.setLastFmEnabled(false);
-        settings.setListReloadDelay(60);
         settings.setLastFmUsername(null);
         settings.setLastFmPassword(null);
         settings.setChanged(Instant.now());
