@@ -28,10 +28,10 @@ import org.airsonic.player.service.StatusService;
 import org.airsonic.player.upload.MonitoredDiskFileItemFactory;
 import org.airsonic.player.upload.UploadListener;
 import org.airsonic.player.util.FileUtil;
-import org.airsonic.player.util.StringUtil;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -127,7 +127,7 @@ public class UploadController {
                         Path targetFile = dir.resolve(Paths.get(fileName).getFileName());
 
                         if (!securityService.isUploadAllowed(targetFile)) {
-                            throw new Exception("Permission denied: " + StringUtil.toHtml(targetFile.toString()));
+                            throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(targetFile.toString()));
                         }
 
                         if (!Files.exists(dir)) {
@@ -171,14 +171,14 @@ public class UploadController {
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 final Path toPath = file.resolveSibling(entry.getName());
                 if (!toPath.normalize().startsWith(file.getParent())) {
-                    throw new Exception("Bad zip filename: " + StringUtil.toHtml(toPath.toString()));
+                    throw new Exception("Bad zip filename: " + StringEscapeUtils.escapeHtml(toPath.toString()));
                 }
                 
                 if (entry.isDirectory()) {
                     Files.createDirectory(toPath);
                 } else {
                     if (!securityService.isUploadAllowed(toPath)) {
-                        throw new Exception("Permission denied: " + StringUtil.toHtml(toPath.toString()));
+                        throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(toPath.toString()));
                     }
                     Files.copy(zipInputStream, toPath);
                     LOG.info("Unzipped " + toPath);
