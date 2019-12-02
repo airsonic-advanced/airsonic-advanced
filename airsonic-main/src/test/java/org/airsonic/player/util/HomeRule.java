@@ -1,7 +1,7 @@
 package org.airsonic.player.util;
 
 import org.airsonic.player.TestCaseUtils;
-import org.airsonic.player.service.ApacheCommonsConfigurationService;
+import org.airsonic.player.service.ConfigurationPropertiesService;
 import org.junit.rules.ExternalResource;
 
 import java.nio.file.Paths;
@@ -19,7 +19,7 @@ public class HomeRule extends ExternalResource {
         super.before();
         System.setProperty("airsonic.home", TestCaseUtils.airsonicHomePathForTest());
         TestCaseUtils.cleanAirsonicHomeForTest();
-        ApacheCommonsConfigurationService.reset();
+        ConfigurationPropertiesService.reset();
     }
     
     @Override

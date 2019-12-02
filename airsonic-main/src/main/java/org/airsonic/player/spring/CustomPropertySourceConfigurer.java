@@ -1,7 +1,7 @@
 package org.airsonic.player.spring;
 
 import com.google.common.collect.Lists;
-import org.airsonic.player.service.ApacheCommonsConfigurationService;
+import org.airsonic.player.service.ConfigurationPropertiesService;
 import org.apache.commons.configuration2.spring.ConfigurationPropertySource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationContextInitializer;
@@ -15,7 +15,7 @@ public class CustomPropertySourceConfigurer implements
     public static final String DATASOURCE_CONFIG_TYPE = "DatabaseConfigType";
 
     public void initialize(ConfigurableWebApplicationContext ctx) {
-        ctx.getEnvironment().getPropertySources().addLast(new ConfigurationPropertySource("airsonic-pre-init-configs", ApacheCommonsConfigurationService.getInstance().getConfiguration()));
+        ctx.getEnvironment().getPropertySources().addLast(new ConfigurationPropertySource("airsonic-pre-init-configs", ConfigurationPropertiesService.getInstance().getConfiguration()));
 
         addDataSourceProfile(ctx);
     }

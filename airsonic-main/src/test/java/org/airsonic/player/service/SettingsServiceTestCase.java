@@ -58,15 +58,15 @@ public class SettingsServiceTestCase {
     @Before
     public void setUp() throws IOException {
         TestCaseUtils.cleanAirsonicHomeForTest();
-        ApacheCommonsConfigurationService.reset();
+        ConfigurationPropertiesService.reset();
         
         settingsService = newSettingsService();
     }
 
     private SettingsService newSettingsService() {
         SettingsService settingsService = new SettingsService();
-        settingsService.setConfigurationService(ApacheCommonsConfigurationService.getInstance());
-        env.getPropertySources().addFirst(new ConfigurationPropertySource("airsonic-pre-init-configs", ApacheCommonsConfigurationService.getInstance().getConfiguration()));
+        settingsService.setConfigurationPropertiesService(ConfigurationPropertiesService.getInstance());
+        env.getPropertySources().addFirst(new ConfigurationPropertySource("airsonic-pre-init-configs", ConfigurationPropertiesService.getInstance().getConfiguration()));
         settingsService.setEnvironment(env);
         return settingsService;
     }

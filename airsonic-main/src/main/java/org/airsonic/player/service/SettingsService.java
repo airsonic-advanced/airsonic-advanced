@@ -244,7 +244,7 @@ public class SettingsService {
     @Autowired
     private AvatarDao avatarDao;
     @Autowired
-    private ApacheCommonsConfigurationService configurationService;
+    private ConfigurationPropertiesService configurationPropertiesService;
     @Autowired
     private Environment env;
 
@@ -257,14 +257,12 @@ public class SettingsService {
     private Pattern excludePattern;
 
     private void removeObsoleteProperties() {
-
         OBSOLETE_KEYS.forEach(oKey -> {
-            if (configurationService.containsKey(oKey)) {
+            if (configurationPropertiesService.containsKey(oKey)) {
                 LOG.info("Removing obsolete property [" + oKey + ']');
-                configurationService.clearProperty(oKey);
+                configurationPropertiesService.clearProperty(oKey);
             }
         });
-
     }
 
     public static Path getAirsonicHome() {
@@ -320,7 +318,7 @@ public class SettingsService {
             removeObsoleteProperties();
             this.setLong(KEY_SETTINGS_CHANGED, System.currentTimeMillis());
         }
-        configurationService.save();
+        configurationPropertiesService.save();
     }
 
     private static void ensureDirectoryPresent(Path home) {
@@ -1219,9 +1217,9 @@ public class SettingsService {
 
     private void setProperty(String key, Object value) {
         if (value == null) {
-            configurationService.clearProperty(key);
+            configurationPropertiesService.clearProperty(key);
         } else {
-            configurationService.setProperty(key, value);
+            configurationPropertiesService.setProperty(key, value);
         }
     }
 
@@ -1401,8 +1399,8 @@ public class SettingsService {
         setString(KEY_JWT_KEY, jwtKey);
     }
 
-    public void setConfigurationService(ApacheCommonsConfigurationService configurationService) {
-        this.configurationService = configurationService;
+    public void setConfigurationPropertiesService(ConfigurationPropertiesService configurationPropertiesService) {
+        this.configurationPropertiesService = configurationPropertiesService;
     }
     
     public void setEnvironment(Environment env) {
