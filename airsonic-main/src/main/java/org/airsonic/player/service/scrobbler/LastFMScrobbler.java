@@ -203,7 +203,7 @@ public class LastFMScrobbler {
         params.put("s", sessionId);
         params.put("a[0]", registrationData.artist);
         params.put("t[0]", registrationData.title);
-        params.put("i[0]", String.valueOf(registrationData.time.toEpochMilli() / 1000L));
+        params.put("i[0]", String.valueOf(registrationData.time.getEpochSecond()));
         params.put("o[0]", "P");
         params.put("r[0]", "");
         params.put("l[0]", String.valueOf(registrationData.duration));

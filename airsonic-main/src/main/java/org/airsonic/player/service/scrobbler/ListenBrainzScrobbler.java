@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -61,7 +62,7 @@ public class ListenBrainzScrobbler {
      * @param submission Whether this is a submission or a now playing notification.
      * @param time       Event time, or {@code null} to use current time.
      */
-    public synchronized void register(MediaFile mediaFile, String token, boolean submission, Date time) {
+    public synchronized void register(MediaFile mediaFile, String token, boolean submission, Instant time) {
         if (thread == null) {
             thread = new RegistrationThread();
             thread.start();
@@ -84,7 +85,7 @@ public class ListenBrainzScrobbler {
         }
     }
 
-    private RegistrationData createRegistrationData(MediaFile mediaFile, String token, boolean submission, Date time) {
+    private RegistrationData createRegistrationData(MediaFile mediaFile, String token, boolean submission, Instant time) {
         RegistrationData reg = new RegistrationData();
         reg.token = token;
         reg.artist = mediaFile.getArtist();
@@ -94,7 +95,7 @@ public class ListenBrainzScrobbler {
         reg.musicBrainzRecordingId = mediaFile.getMusicBrainzRecordingId();
         reg.trackNumber = mediaFile.getTrackNumber();
         reg.duration = mediaFile.getDurationSeconds() == null ? 0 : mediaFile.getDurationSeconds();
-        reg.time = time == null ? new Date() : time;
+        reg.time = time == null ? Instant.now() : time;
         reg.submission = submission;
 
         return reg;
@@ -144,7 +145,7 @@ public class ListenBrainzScrobbler {
         Map<String, Object> content = new HashMap<String, Object>();
 
         if (registrationData.submission) {
-            payload.put("listened_at", Long.valueOf(registrationData.time.getTime() / 1000L));
+            payload.put("listened_at", Long.valueOf(registrationData.time.getEpochSecond()));
             content.put("listen_type", "single");
         } else {
             content.put("listen_type", "playing_now");
@@ -223,7 +224,7 @@ public class ListenBrainzScrobbler {
         private String musicBrainzRecordingId;
         private Integer trackNumber;
         private int duration;
-        private Date time;
+        private Instant time;
         public boolean submission;
     }
 
