@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.servlet.MultipartAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
+import org.springframework.boot.context.event.ApplicationContextInitializedEvent;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
@@ -26,9 +26,9 @@ public class Application extends SpringBootServletInitializer implements  WebSer
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
     private static SpringApplicationBuilder doConfigure(SpringApplicationBuilder application) {
-        // Handle HSQLDB database upgrades from 1.8 to 2.x before any beans are started.
-        application.application().addListeners((ApplicationListener<ApplicationEnvironmentPreparedEvent>) event -> {
-            LegacyHsqlUtil.upgradeHsqldbDatabaseSafely();
+        // Handle HSQLDB database upgrades for builtin legacy db from 1.8 to 2.x before any beans are started.
+        application.application().addListeners((ApplicationListener<ApplicationContextInitializedEvent>) event -> {
+            LegacyHsqlUtil.upgradeFileHsqlDbIfNeeded(event.getApplicationContext().getEnvironment());
         });
 
         // Customize the application or call application.sources(...) to add sources

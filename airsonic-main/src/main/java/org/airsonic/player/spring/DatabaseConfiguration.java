@@ -9,7 +9,6 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.lookup.JndiDataSourceLookup;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
@@ -23,29 +22,16 @@ import java.util.Map;
 public class DatabaseConfiguration {
     @Value("${DatabaseConfigEmbedUrl:#{T(org.airsonic.player.service.SettingsService).getDefaultJDBCUrl()}}")
     private String url;
-    @Value("${DatabaseConfigEmbedUsername:sa}")
+    @Value("${DatabaseConfigEmbedUsername:#{T(org.airsonic.player.service.SettingsService).getDefaultJDBCUsername()}}")
     private String user;
-    @Value("${DatabaseConfigEmbedPassword:}")
+    @Value("${DatabaseConfigEmbedPassword:#{T(org.airsonic.player.service.SettingsService).getDefaultJDBCPassword()}}")
     private String password;
     @Value("${DatabaseConfigEmbedDriver:org.hsqldb.jdbcDriver}")
     private String driver;
 
     @Bean
-    @Profile("legacy")
-    public DataSource legacyDataSource() {
-        return DataSourceBuilder.create()
-                //hsqldb driver (1.8) doesn't support Connection.isValid for pools
-                .type(DriverManagerDataSource.class)
-                .username(user)
-                .password(password)
-                .driverClassName(driver)
-                .url(url)
-                .build();
-    }
-
-    @Bean
-    @Profile("embed")
-    public DataSource embedDataSource() {
+    @Profile("!jndi")
+    public DataSource dataSource() {
         return DataSourceBuilder.create()
                 //find connection pool automatically
                 .username(user)
