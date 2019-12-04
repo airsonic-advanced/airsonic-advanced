@@ -287,12 +287,8 @@ public class SettingsService {
         return home.contains("libresonic") ? "libresonic" : "airsonic";
     }
 
-    public static String getDefaultJDBCPath() {
-        return getAirsonicHome().toString() + "/db/" + getFileSystemAppName();
-    }
-
     public static String getDefaultJDBCUrl() {
-        return "jdbc:hsqldb:file:" + getDefaultJDBCPath() + ";sql.enforce_size=false;sql.nulls_first=false";
+        return "jdbc:hsqldb:file:" + getAirsonicHome().resolve("db").resolve(getFileSystemAppName()).toString() + ";sql.enforce_size=false;sql.nulls_first=false";
     }
 
     public static String getDefaultJDBCUsername() {
