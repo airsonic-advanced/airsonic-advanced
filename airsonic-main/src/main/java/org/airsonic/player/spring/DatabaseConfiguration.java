@@ -26,7 +26,7 @@ public class DatabaseConfiguration {
     private String user;
     @Value("${DatabaseConfigEmbedPassword:#{T(org.airsonic.player.service.SettingsService).getDefaultJDBCPassword()}}")
     private String password;
-    @Value("${DatabaseConfigEmbedDriver:org.hsqldb.jdbcDriver}")
+    @Value("${DatabaseConfigEmbedDriver:org.hsqldb.jdbc.JDBCDriver}")
     private String driver;
 
     @Bean
