@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -151,23 +152,23 @@ public class AbstractDao {
     }
 
     protected Integer queryForInt(String sql, Integer defaultValue, Object... args) {
-        return queryForTypes(sql, Integer.class, args).stream().findFirst().orElse(defaultValue);
+        return queryForTypes(sql, Integer.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }
 
     protected Integer namedQueryForInt(String sql, Integer defaultValue, Map<String, Object> args) {
-        return namedQueryForTypes(sql, Integer.class, args).stream().findFirst().orElse(defaultValue);
+        return namedQueryForTypes(sql, Integer.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }
 
     protected Instant queryForInstant(String sql, Instant defaultValue, Object... args) {
-        return queryForTypes(sql, Timestamp.class, args).stream().findFirst().map(x -> x.toInstant()).orElse(defaultValue);
+        return queryForTypes(sql, Timestamp.class, args).stream().filter(Objects::nonNull).findFirst().map(x -> x.toInstant()).orElse(defaultValue);
     }
 
     protected Long queryForLong(String sql, Long defaultValue, Object... args) {
-        return queryForTypes(sql, Long.class, args).stream().findFirst().orElse(defaultValue);
+        return queryForTypes(sql, Long.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }
     
     protected Double queryForDouble(String sql, Double defaultValue, Object... args) {
-        return queryForTypes(sql, Double.class, args).stream().findFirst().orElse(defaultValue);
+        return queryForTypes(sql, Double.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }
 
     protected <T> T queryOne(String sql, RowMapper<T> rowMapper, Object... args) {
