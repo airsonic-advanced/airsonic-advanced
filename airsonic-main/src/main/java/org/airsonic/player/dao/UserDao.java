@@ -179,15 +179,10 @@ public class UserDao extends AbstractDao {
      * @param username The user name.
      * @return Roles the user is granted.
      */
-    public String[] getRolesForUser(String username) {
+    public List<String> getRolesForUser(String username) {
         String sql = "select r.name from role r, user_role ur " +
                 "where ur.username=? and ur.role_id=r.id";
-        List<?> roles = getJdbcTemplate().queryForList(sql, new Object[]{username}, String.class);
-        String[] result = new String[roles.size()];
-        for (int i = 0; i < result.length; i++) {
-            result[i] = (String) roles.get(i);
-        }
-        return result;
+        return queryForStrings(sql, username);
     }
 
     /**
@@ -259,7 +254,7 @@ public class UserDao extends AbstractDao {
 
     private void readRoles(User user) {
         String sql = "select role_id from user_role where username=?";
-        List<?> roles = getJdbcTemplate().queryForList(sql, new Object[]{user.getUsername()}, Integer.class);
+        List<Integer> roles = queryForInts(sql, user.getUsername());
         for (Object role : roles) {
             if (ROLE_ID_ADMIN.equals(role)) {
                 user.setAdminRole(true);
