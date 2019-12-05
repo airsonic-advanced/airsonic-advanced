@@ -30,7 +30,7 @@ public class LegacyHsqlUtil {
             return PropertiesLoaderUtils
                     .loadProperties(new FileSystemResource(Paths.get(dbPath + ".properties")))
                     .getProperty("version");
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOG.warn("Failed to determine HSQLDB database version", e);
             return null;
         }
