@@ -244,7 +244,7 @@ public class DownloadController implements LastModified {
                 }
             }
         }
-        if (coverArtFile != null &&  Files.exists(coverArtFile) && !cover_embedded) {
+        if (coverArtFile != null && Files.exists(coverArtFile) && !cover_embedded) {
             zip(out, coverArtFile.getParent(), coverArtFile, status, range);
         }
 

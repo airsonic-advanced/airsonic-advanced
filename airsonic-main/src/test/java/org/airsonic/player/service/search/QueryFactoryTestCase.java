@@ -49,7 +49,7 @@ public class QueryFactoryTestCase {
             new MusicFolder(FID2, Paths.get(PATH2), "music2", true, Instant.now());
 
     private static final List<MusicFolder> SINGLE_FOLDERS = Arrays.asList(MUSIC_FOLDER1);
-    private static final List<MusicFolder> MULTI_FOLDERS  = Arrays.asList(MUSIC_FOLDER1, MUSIC_FOLDER2);
+    private static final List<MusicFolder> MULTI_FOLDERS = Arrays.asList(MUSIC_FOLDER1, MUSIC_FOLDER2);
 
 
     /*

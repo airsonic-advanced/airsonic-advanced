@@ -59,7 +59,7 @@ public class AbstractDao {
     }
 
     protected static String questionMarks(String columns) {
-        int numberOfColumns =  StringUtils.countMatches(columns, ",") + 1;
+        int numberOfColumns = StringUtils.countMatches(columns, ",") + 1;
         return StringUtils.repeat("?", ", ", numberOfColumns);
     }
 

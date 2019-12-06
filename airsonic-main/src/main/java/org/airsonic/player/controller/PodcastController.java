@@ -45,7 +45,7 @@ import java.util.*;
  */
 @Controller
 @RequestMapping("/podcast")
-public class PodcastController  {
+public class PodcastController {
 
     @Autowired
     private PlaylistService playlistService;

@@ -403,7 +403,7 @@ public class PodcastService {
 
         episodeElements.parallelStream()
                 .map(episodeElement -> {
-                    String title =  StringUtil.removeMarkup(episodeElement.getChildTextTrim("title"));
+                    String title = StringUtil.removeMarkup(episodeElement.getChildTextTrim("title"));
 
                     Element enclosure = episodeElement.getChild("enclosure");
                     if (enclosure == null) {
