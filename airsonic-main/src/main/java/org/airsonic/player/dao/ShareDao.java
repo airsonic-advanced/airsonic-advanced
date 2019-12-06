@@ -58,7 +58,7 @@ public class ShareDao extends AbstractDao {
         update(sql, share.getName(), share.getDescription(), share.getUsername(), share.getCreated(),
                 share.getExpires(), share.getLastVisited(), share.getVisitCount());
 
-        int id = getJdbcTemplate().queryForObject("select max(id) from share", Integer.class);
+        int id = queryForInt("select max(id) from share", 0);
         share.setId(id);
     }
 
