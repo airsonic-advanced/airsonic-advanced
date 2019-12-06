@@ -18,9 +18,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.Properties;
 
-public class LegacyHsqlUtil {
+public class LegacyHsqlMigrationUtil {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LegacyHsqlUtil.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LegacyHsqlMigrationUtil.class);
 
     /**
      * Return the current version of the HSQLDB database, as reported by the database properties file.
