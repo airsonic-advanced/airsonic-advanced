@@ -70,7 +70,7 @@ public class DatabaseConfiguration {
                                      String userTableQuote) {
         // add support for our hqldb that doesn't support schemas
         DatabaseFactory.getInstance().register(new HsqlDatabase());
-        
+
         SpringLiquibase springLiquibase = new SpringLiquibase();
         springLiquibase.setDataSource(dataSource);
         springLiquibase.setChangeLog("classpath:liquibase/db-changelog.xml");

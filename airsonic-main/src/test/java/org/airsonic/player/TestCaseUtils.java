@@ -53,7 +53,7 @@ public class TestCaseUtils {
      */
     public static void cleanAirsonicHomeForTest() throws IOException {
         Path airsonicHomeDir = Paths.get(airsonicHomePathForTest());
-        
+
         if (!FileUtil.delete(airsonicHomeDir)) {
             throw new IOException("Error while deleting airsonic home. Couldn't delete" + airsonicHomeDir);
         }

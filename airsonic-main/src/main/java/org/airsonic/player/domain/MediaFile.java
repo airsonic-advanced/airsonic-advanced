@@ -70,12 +70,13 @@ public class MediaFile {
     private boolean present;
     private int version;
     private String musicBrainzReleaseId;
+    private String musicBrainzRecordingId;
 
     public MediaFile(int id, String path, String folder, MediaType mediaType, String format, String title,
                      String albumName, String artist, String albumArtist, Integer discNumber, Integer trackNumber, Integer year, String genre, Integer bitRate,
                      boolean variableBitRate, Integer durationSeconds, Long fileSize, Integer width, Integer height, String coverArtPath,
                      String parentPath, int playCount, Instant lastPlayed, String comment, Instant created, Instant changed, Instant lastScanned,
-                     Instant childrenLastUpdated, boolean present, int version, String musicBrainzReleaseId) {
+                     Instant childrenLastUpdated, boolean present, int version, String musicBrainzReleaseId, String musicBrainzRecordingId) {
         this.id = id;
         this.path = path;
         this.folder = folder;
@@ -107,6 +108,7 @@ public class MediaFile {
         this.present = present;
         this.version = version;
         this.musicBrainzReleaseId = musicBrainzReleaseId;
+        this.musicBrainzRecordingId = musicBrainzRecordingId;
     }
 
     public MediaFile() {
@@ -135,7 +137,7 @@ public class MediaFile {
     public void setFolder(String folder) {
         this.folder = folder;
     }
-    
+
     public Path getFile() {
         return Paths.get(path);
     }
@@ -391,6 +393,14 @@ public class MediaFile {
 
     public void setMusicBrainzReleaseId(String musicBrainzReleaseId) {
         this.musicBrainzReleaseId = musicBrainzReleaseId;
+    }
+
+    public String getMusicBrainzRecordingId() {
+        return musicBrainzRecordingId;
+    }
+
+    public void setMusicBrainzRecordingId(String musicBrainzRecordingId) {
+        this.musicBrainzRecordingId = musicBrainzRecordingId;
     }
 
     /**

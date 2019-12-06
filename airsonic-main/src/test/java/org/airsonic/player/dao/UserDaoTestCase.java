@@ -10,9 +10,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 
 /**
  * Unit test of {@link UserDao}.
@@ -153,13 +162,8 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         user.setSettingsRole(true);
         userDao.createUser(user);
 
-        String[] roles = userDao.getRolesForUser("sindre");
-        assertEquals("Wrong number of roles.", 5, roles.length);
-        assertEquals("Wrong role.", "admin", roles[0]);
-        assertEquals("Wrong role.", "comment", roles[1]);
-        assertEquals("Wrong role.", "podcast", roles[2]);
-        assertEquals("Wrong role.", "stream", roles[3]);
-        assertEquals("Wrong role.", "settings", roles[4]);
+        List<String> roles = userDao.getRolesForUser("sindre");
+        assertThat(roles).containsExactly("admin", "comment", "podcast", "stream", "settings");
     }
 
     @Test
@@ -187,6 +191,8 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         assertFalse("Error in getUserSettings().", userSettings.isLastFmEnabled());
         assertNull("Error in getUserSettings().", userSettings.getLastFmUsername());
         assertNull("Error in getUserSettings().", userSettings.getLastFmPassword());
+        assertFalse("Error in getUserSettings().", userSettings.isListenBrainzEnabled());
+        assertNull("Error in getUserSettings().", userSettings.getListenBrainzToken());
         assertSame("Error in getUserSettings().", TranscodeScheme.OFF, userSettings.getTranscodeScheme());
         assertFalse("Error in getUserSettings().", userSettings.isShowNowPlayingEnabled());
         assertEquals("Error in getUserSettings().", -1, userSettings.getSelectedMusicFolderId());
@@ -194,7 +200,6 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         assertFalse("Error in getUserSettings().", userSettings.isNowPlayingAllowed());
         assertSame("Error in getUserSettings().", AvatarScheme.NONE, userSettings.getAvatarScheme());
         assertNull("Error in getUserSettings().", userSettings.getSystemAvatarId());
-        assertEquals("Error in getUserSettings().", 0, userSettings.getListReloadDelay());
         assertFalse("Error in getUserSettings().", userSettings.isKeyboardShortcutsEnabled());
         assertEquals("Error in getUserSettings().", 0, userSettings.getPaginationSize());
 
@@ -209,6 +214,8 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         settings.setLastFmEnabled(true);
         settings.setLastFmUsername("last_user");
         settings.setLastFmPassword("last_pass");
+        settings.setListenBrainzEnabled(true);
+        settings.setListenBrainzToken("01234567-89ab-cdef-0123-456789abcdef");
         settings.setTranscodeScheme(TranscodeScheme.MAX_192);
         settings.setShowNowPlayingEnabled(false);
         settings.setSelectedMusicFolderId(3);
@@ -217,7 +224,6 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         settings.setAvatarScheme(AvatarScheme.SYSTEM);
         settings.setSystemAvatarId(1);
         settings.setChanged(Instant.ofEpochMilli(9412L));
-        settings.setListReloadDelay(60);
         settings.setKeyboardShortcutsEnabled(true);
         settings.setPaginationSize(120);
 
@@ -235,6 +241,8 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         assertEquals("Error in getUserSettings().", true, userSettings.isLastFmEnabled());
         assertEquals("Error in getUserSettings().", "last_user", userSettings.getLastFmUsername());
         assertEquals("Error in getUserSettings().", "last_pass", userSettings.getLastFmPassword());
+        assertEquals("Error in getUserSettings().", true, userSettings.isListenBrainzEnabled());
+        assertEquals("Error in getUserSettings().", "01234567-89ab-cdef-0123-456789abcdef", userSettings.getListenBrainzToken());
         assertSame("Error in getUserSettings().", TranscodeScheme.MAX_192, userSettings.getTranscodeScheme());
         assertFalse("Error in getUserSettings().", userSettings.isShowNowPlayingEnabled());
         assertEquals("Error in getUserSettings().", 3, userSettings.getSelectedMusicFolderId());
@@ -243,7 +251,6 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         assertSame("Error in getUserSettings().", AvatarScheme.SYSTEM, userSettings.getAvatarScheme());
         assertEquals("Error in getUserSettings().", 1, userSettings.getSystemAvatarId().intValue());
         assertEquals("Error in getUserSettings().", Instant.ofEpochMilli(9412L), userSettings.getChanged());
-        assertEquals("Error in getUserSettings().", 60, userSettings.getListReloadDelay());
         assertTrue("Error in getUserSettings().", userSettings.isKeyboardShortcutsEnabled());
         assertEquals("Error in getUserSettings().", 120, userSettings.getPaginationSize());
 

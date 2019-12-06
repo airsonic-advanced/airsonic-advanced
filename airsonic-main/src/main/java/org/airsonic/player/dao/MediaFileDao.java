@@ -51,7 +51,7 @@ public class MediaFileDao extends AbstractDao {
     private static final String INSERT_COLUMNS = "path, folder, type, format, title, album, artist, album_artist, disc_number, " +
                                                 "track_number, year, genre, bit_rate, variable_bit_rate, duration_seconds, file_size, width, height, cover_art_path, " +
                                                 "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, " +
-                                                "version, mb_release_id";
+                                                "version, mb_release_id, mb_recording_id";
 
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private static final String GENRE_COLUMNS = "name, song_count, album_count";
@@ -61,9 +61,9 @@ public class MediaFileDao extends AbstractDao {
     @Autowired
     private SettingsService settingsService;
 
-    private final RowMapper<MediaFile> rowMapper = new MediaFileMapper();
-    private final RowMapper musicFileInfoRowMapper = new MusicFileInfoMapper();
-    private final RowMapper genreRowMapper = new GenreMapper();
+    private final MediaFileMapper rowMapper = new MediaFileMapper();
+    private final MusicFileInfoMapper musicFileInfoRowMapper = new MusicFileInfoMapper();
+    private final GenreMapper genreRowMapper = new GenreMapper();
 
     /**
      * Returns the media file for the given path.
@@ -170,7 +170,8 @@ public class MediaFileDao extends AbstractDao {
                      "children_last_updated=?," +
                      "present=?, " +
                      "version=?, " +
-                     "mb_release_id=? " +
+                     "mb_release_id=?, " +
+                     "mb_recording_id=? " +
                      "where path=?";
 
         LOG.trace("Updating media file {}", Util.debugObject(file));
@@ -181,7 +182,7 @@ public class MediaFileDao extends AbstractDao {
                        file.isVariableBitRate(), file.getDurationSeconds(), file.getFileSize(), file.getWidth(), file.getHeight(),
                        file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
                        file.getChanged(), file.getLastScanned(), file.getChildrenLastUpdated(), file.isPresent(), VERSION,
-                       file.getMusicBrainzReleaseId(), file.getPath());
+                       file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId(), file.getPath());
 
         if (n == 0) {
 
@@ -199,7 +200,7 @@ public class MediaFileDao extends AbstractDao {
                    file.isVariableBitRate(), file.getDurationSeconds(), file.getFileSize(), file.getWidth(), file.getHeight(),
                    file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
                    file.getCreated(), file.getChanged(), file.getLastScanned(),
-                   file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getMusicBrainzReleaseId());
+                   file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId());
         }
 
         int id = queryForInt("select id from media_file where path=?", null, file.getPath());
@@ -213,7 +214,7 @@ public class MediaFileDao extends AbstractDao {
     public void deleteMediaFile(String path) {
         update("update media_file set present=false, children_last_updated=? where path=?", Instant.ofEpochMilli(1), path);
     }
-    
+
     public void deleteMediaFiles(Collection<String> paths) {
         if (!paths.isEmpty()) {
             namedUpdate("update media_file set present=false, children_last_updated=:updatedate where path in (:paths)", ImmutableMap.of("updatedate", Instant.ofEpochMilli(1), "paths", paths));
@@ -605,7 +606,9 @@ public class MediaFileDao extends AbstractDao {
 
         query += " order by rand()";
 
-        return namedQueryWithLimit(query, rowMapper, args, criteria.getCount());
+        query += " limit " + criteria.getCount();
+
+        return namedQuery(query, rowMapper, args);
     }
 
     public int getAlbumCount(final List<MusicFolder> musicFolders) {
@@ -662,7 +665,7 @@ public class MediaFileDao extends AbstractDao {
     public void markPresent(String path, Instant lastScanned) {
         update("update media_file set present=?, last_scanned = ? where path=?", true, lastScanned, path);
     }
-    
+
     public void markPresent(Collection<String> paths, Instant lastScanned) {
         if (!paths.isEmpty()) {
             namedUpdate("update media_file set present=true, last_scanned = :lastScanned where path in (:paths)", ImmutableMap.of("lastScanned", lastScanned, "paths", paths));
@@ -671,7 +674,7 @@ public class MediaFileDao extends AbstractDao {
 
     public void markNonPresent(Instant lastScanned) {
         Instant childrenLastUpdated = Instant.ofEpochMilli(1);  // Used to force a children rescan if file is later resurrected.
-        
+
         if (settingsService.getDatabaseUpdateRowLimit() <= 0) {
             update("update media_file set present=false, children_last_updated=? where last_scanned < ? and present",
                     childrenLastUpdated, lastScanned);
@@ -680,7 +683,6 @@ public class MediaFileDao extends AbstractDao {
             String sql = "update media_file set present=false, children_last_updated=? where id in (select id from media_file where last_scanned < ? and present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
             while (update(sql, childrenLastUpdated, lastScanned) > 0) { }
         }
-        
     }
 
     public List<Integer> getArtistExpungeCandidates() {
@@ -742,7 +744,8 @@ public class MediaFileDao extends AbstractDao {
                     Optional.ofNullable(rs.getTimestamp(28)).map(x -> x.toInstant()).orElse(null),
                     rs.getBoolean(29),
                     rs.getInt(30),
-                    rs.getString(31));
+                    rs.getString(31),
+                    rs.getString(32));
         }
     }
 

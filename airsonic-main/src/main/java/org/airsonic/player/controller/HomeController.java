@@ -44,7 +44,7 @@ import static org.springframework.web.bind.ServletRequestUtils.getStringParamete
  */
 @Controller
 @RequestMapping("/home")
-public class HomeController  {
+public class HomeController {
 
     private static final int LIST_SIZE = 40;
 
@@ -134,7 +134,6 @@ public class HomeController  {
         map.put("coverArtSize", CoverArtScheme.MEDIUM.getSize());
         map.put("listOffset", listOffset);
         map.put("musicFolder", selectedMusicFolder);
-        map.put("listReloadDelay", userSettings.getListReloadDelay());
 
         return new ModelAndView("home","model",map);
     }

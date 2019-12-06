@@ -40,7 +40,7 @@ public class MediaLibraryStatistics {
     private AtomicLong totalDurationInSeconds = new AtomicLong(0);
 
     public MediaLibraryStatistics() {}
-    
+
     public void setScanDate(Instant scanDate) {
         this.scanDate = scanDate;
     }
@@ -64,7 +64,7 @@ public class MediaLibraryStatistics {
     public void setTotalDurationInSeconds(long totalDurationInSeconds) {
         this.totalDurationInSeconds.set(totalDurationInSeconds);
     }
-    
+
     public void reset() {
         artistCount.set(0);
         albumCount.set(0);
@@ -133,6 +133,7 @@ public class MediaLibraryStatistics {
 
     @Override
     public int hashCode() {
-        return Objects.hash(artistCount.get(), albumCount.get(), songCount.get(), totalLengthInBytes.get(), totalDurationInSeconds.get(), scanDate);
+        return Objects.hash(artistCount.get(), albumCount.get(), songCount.get(),
+            totalLengthInBytes.get(), totalDurationInSeconds.get(), scanDate);
     }
 }

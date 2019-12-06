@@ -44,8 +44,8 @@ public class ArtistDao extends AbstractDao {
 
     @Autowired
     private SettingsService settingsService;
-    
-    private final RowMapper rowMapper = new ArtistMapper();
+
+    private final ArtistMapper rowMapper = new ArtistMapper();
 
     /**
      * Returns the artist with the given name.

@@ -46,7 +46,7 @@ import java.util.*;
  */
 @Controller
 @RequestMapping("/left")
-public class LeftController  {
+public class LeftController {
 
     // Update this time if you want to force a refresh in clients.
     private static final Instant LAST_COMPATIBILITY_TIME = Instant.parse("2012-03-06T00:00:00.00Z");
