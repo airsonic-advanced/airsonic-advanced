@@ -98,10 +98,7 @@ public class PlayerDao extends AbstractDao {
      */
     @Transactional
     public void createPlayer(Player player) {
-        Integer existingMax = getJdbcTemplate().queryForObject("select max(id) from player", Integer.class);
-        if (existingMax == null) {
-            existingMax = 0;
-        }
+        Integer existingMax = queryForInt("select max(id) from player", 0);
         int id = existingMax + 1;
         player.setId(id);
         String sql = "insert into player (" + QUERY_COLUMNS + ") values (" + questionMarks(QUERY_COLUMNS) + ")";

@@ -40,8 +40,9 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Provides security-related services for authentication and authorization.
@@ -92,14 +93,13 @@ public class SecurityService implements UserDetailsService {
     }
 
     public List<GrantedAuthority> getGrantedAuthorities(String username) {
-        String[] roles = userDao.getRolesForUser(username);
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("IS_AUTHENTICATED_ANONYMOUSLY"));
-        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-        for (String role : roles) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
-        }
-        return authorities;
+        return Stream.concat(
+                Stream.of(
+                        new SimpleGrantedAuthority("IS_AUTHENTICATED_ANONYMOUSLY"),
+                        new SimpleGrantedAuthority("ROLE_USER")),
+                userDao.getRolesForUser(username).stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())))
+                .collect(Collectors.toList());
     }
 
     /**
