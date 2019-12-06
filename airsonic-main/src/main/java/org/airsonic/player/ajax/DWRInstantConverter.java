@@ -40,12 +40,10 @@ public class DWRInstantConverter extends AbstractConverter {
             } else {
                 throw new ConversionException(paramType);
             }
-        }
-        catch (ConversionException ex) {
-            throw ex;
-        }
-        catch (Exception ex) {
-            throw new ConversionException(paramType, ex);
+        } catch (ConversionException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ConversionException(paramType, e);
         }
     }
 

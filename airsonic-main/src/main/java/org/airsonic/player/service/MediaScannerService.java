@@ -314,8 +314,7 @@ public class MediaScannerService {
         }
         if (file.isAlbum()) {
             genres.incrementAlbumCount(genre);
-        }
-        else if (file.isAudio()) {
+        } else if (file.isAudio()) {
             genres.incrementSongCount(genre);
         }
     }
