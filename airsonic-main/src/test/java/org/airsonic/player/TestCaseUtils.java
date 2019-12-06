@@ -1,11 +1,12 @@
 package org.airsonic.player;
 
 import org.airsonic.player.controller.JAXBWriter;
-import org.airsonic.player.dao.DaoHelper;
+import org.airsonic.player.dao.AbstractDao;
 import org.airsonic.player.service.MediaScannerService;
 import org.airsonic.player.util.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.test.context.TestConfiguration;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -65,37 +66,47 @@ public class TestCaseUtils {
      * @param daoHelper DaoHelper object
      * @return Map table name -> records count
      */
-    public static Map<String, Integer> recordsInAllTables(DaoHelper daoHelper) {
-        List<String> tableNames = daoHelper.getJdbcTemplate().queryForList("" +
+    public static Map<String, Integer> recordsInAllTables(AbstractDao dao) {
+        List<String> tableNames = dao.queryForStrings("" +
                       "select table_name " +
                       "from information_schema.system_tables " +
-                      "where table_type <> 'SYSTEM TABLE'"
-              , String.class);
+                      "where table_type <> 'SYSTEM TABLE'");
 
-        return tableNames.stream()
-                .collect(Collectors.toMap(table -> table, table -> recordsInTable(table,daoHelper)));
+        return tableNames.parallelStream()
+                .collect(Collectors.toConcurrentMap(table -> table, table -> recordsInTable(table, dao)));
     }
 
     /**
      * Counts records in a table.
      */
-    public static Integer recordsInTable(String tableName, DaoHelper daoHelper) {
-        return daoHelper.getJdbcTemplate().queryForObject("select count(1) from " + tableName,Integer.class);
+    public static Integer recordsInTable(String tableName, AbstractDao dao) {
+        return dao.queryForInt("select count(*) from " + tableName, -1);
     }
-
-    /**
-     * Scans the music library   * @param mediaScannerService
-     */
-    public static void execScan(MediaScannerService mediaScannerService) {
-        // TODO create a synchronous scan
-        mediaScannerService.scanLibrary();
-
+    
+    public static void waitForScanFinish(MediaScannerService mediaScannerService) {
         while (mediaScannerService.isScanning()) {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
     }
+
+    /**
+     * Scans the music library
+     * @param mediaScannerService
+     */
+    public static void execScan(MediaScannerService mediaScannerService) {
+        // TODO create a synchronous scan
+        mediaScannerService.scanLibrary();
+
+        waitForScanFinish(mediaScannerService);
+    }
+    
+    @TestConfiguration
+    public static class TestDao extends AbstractDao {
+
+    }
+
 }

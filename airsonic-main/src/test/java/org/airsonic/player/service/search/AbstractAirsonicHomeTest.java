@@ -1,7 +1,7 @@
 package org.airsonic.player.service.search;
 
 import org.airsonic.player.TestCaseUtils;
-import org.airsonic.player.dao.DaoHelper;
+import org.airsonic.player.TestCaseUtils.TestDao;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.service.MediaScannerService;
 import org.airsonic.player.service.SettingsService;
@@ -12,6 +12,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -20,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
+@Import(TestDao.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 /*
  * Abstract class for scanning MusicFolder.
@@ -40,9 +42,6 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
     private static AtomicBoolean dataBaseReady = new AtomicBoolean();
 
     @Autowired
-    protected DaoHelper daoHelper;
-
-    @Autowired
     protected MediaScannerService mediaScannerService;
 
     @Autowired
@@ -50,6 +49,9 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
 
     @Autowired
     protected SettingsService settingsService;
+    
+    @Autowired
+    protected TestDao testDao;
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -70,17 +72,10 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
             dataBasePopulated().set(true);
             getMusicFolders().forEach(musicFolderDao::createMusicFolder);
             settingsService.clearMusicFolderCache();
-            try {
-                // Await time to avoid scan failure.
-                for (int i = 0; i < 10; i++) {
-                    Thread.sleep(100);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            TestCaseUtils.waitForScanFinish(mediaScannerService);
             TestCaseUtils.execScan(mediaScannerService);
             System.out.println("--- Report of records count per table ---");
-            Map<String, Integer> records = TestCaseUtils.recordsInAllTables(daoHelper);
+            Map<String, Integer> records = TestCaseUtils.recordsInAllTables(testDao);
             records.keySet().stream().filter(s ->
                     s.equals("MEDIA_FILE")
                     | s.equals("ARTIST")

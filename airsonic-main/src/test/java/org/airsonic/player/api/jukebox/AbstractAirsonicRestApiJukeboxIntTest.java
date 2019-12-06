@@ -1,6 +1,7 @@
 package org.airsonic.player.api.jukebox;
 
 import org.airsonic.player.TestCaseUtils;
+import org.airsonic.player.TestCaseUtils.TestDao;
 import org.airsonic.player.controller.SubsonicRESTController;
 import org.airsonic.player.dao.*;
 import org.airsonic.player.domain.*;
@@ -37,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = AbstractAirsonicRestApiJukeboxIntTest.Config.class)
+@SpringBootTest(classes = {AbstractAirsonicRestApiJukeboxIntTest.Config.class, TestDao.class})
 @AutoConfigureMockMvc
 public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
@@ -71,7 +72,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     private static String AIRSONIC_API_VERSION;
 
     private static boolean dataBasePopulated;
-    private static DaoHelper staticDaoHelper;
+    private static TestDao staticTestDao;
 
     @Autowired
     protected PlayerService playerService;
@@ -88,7 +89,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     @Autowired
     private MediaFileDao mediaFileDao;
     @Autowired
-    private DaoHelper daoHelper;
+    private TestDao testDao;
     @Autowired
     private AlbumDao albumDao;
     @Autowired
@@ -104,8 +105,8 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     @AfterClass
     public static void cleanDataBase() {
-        staticDaoHelper.getJdbcTemplate().execute("DROP SCHEMA PUBLIC CASCADE");
-        staticDaoHelper = null;
+        staticTestDao.getJdbcTemplate().execute("DROP SCHEMA PUBLIC CASCADE");
+        staticTestDao = null;
         dataBasePopulated = false;
     }
 
@@ -120,7 +121,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
      */
     private void populateDatabase() {
         if (!dataBasePopulated) {
-            staticDaoHelper = daoHelper;
+            staticTestDao = testDao;
 
             assertThat(musicFolderDao.getAllMusicFolders().size()).isEqualTo(1);
             MusicFolderTestData.getTestMusicFolders().forEach(musicFolderDao::createMusicFolder);

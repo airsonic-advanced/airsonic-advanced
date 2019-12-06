@@ -6,6 +6,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.io.Resources;
 
 import org.airsonic.player.TestCaseUtils;
+import org.airsonic.player.TestCaseUtils.TestDao;
 import org.airsonic.player.dao.*;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.Artist;
@@ -22,6 +23,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -51,6 +53,7 @@ import static org.junit.Assert.assertEquals;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest
+@Import(TestDao.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class MediaScannerServiceTestCase {
 
@@ -69,7 +72,7 @@ public class MediaScannerServiceTestCase {
     private MusicFolderDao musicFolderDao;
 
     @Autowired
-    private DaoHelper daoHelper;
+    private TestDao testDao;
 
     @Autowired
     private MediaFileService mediaFileService;
@@ -86,14 +89,9 @@ public class MediaScannerServiceTestCase {
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-
     @Before
     public void setup() {
-        while (mediaScannerService.isScanning()) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {}
-        }
+        TestCaseUtils.waitForScanFinish(mediaScannerService);
     }
     
     /**
@@ -112,7 +110,7 @@ public class MediaScannerServiceTestCase {
         globalTimerContext.stop();
 
         System.out.println("--- Report of records count per table ---");
-        Map<String, Integer> records = TestCaseUtils.recordsInAllTables(daoHelper);
+        Map<String, Integer> records = TestCaseUtils.recordsInAllTables(testDao);
         records.keySet().forEach(tableName -> System.out.println(tableName + " : " + records.get(tableName).toString()));
         System.out.println("--- *********************** ---");
 
