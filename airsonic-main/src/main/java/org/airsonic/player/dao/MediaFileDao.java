@@ -209,7 +209,7 @@ public class MediaFileDao extends AbstractDao {
     public void deleteMediaFile(String path) {
         update("update media_file set present=false, children_last_updated=? where path=?", Instant.ofEpochMilli(1), path);
     }
-    
+
     public void deleteMediaFiles(Collection<String> paths) {
         if (!paths.isEmpty()) {
             namedUpdate("update media_file set present=false, children_last_updated=:updatedate where path in (:paths)", ImmutableMap.of("updatedate", Instant.ofEpochMilli(1), "paths", paths));
@@ -600,7 +600,7 @@ public class MediaFileDao extends AbstractDao {
         }
 
         query += " order by rand()";
-        
+
         query += " limit " + criteria.getCount();
 
         return namedQuery(query, rowMapper, args);
@@ -660,7 +660,7 @@ public class MediaFileDao extends AbstractDao {
     public void markPresent(String path, Instant lastScanned) {
         update("update media_file set present=?, last_scanned = ? where path=?", true, lastScanned, path);
     }
-    
+
     public void markPresent(Collection<String> paths, Instant lastScanned) {
         if (!paths.isEmpty()) {
             namedUpdate("update media_file set present=true, last_scanned = :lastScanned where path in (:paths)", ImmutableMap.of("lastScanned", lastScanned, "paths", paths));
@@ -669,7 +669,7 @@ public class MediaFileDao extends AbstractDao {
 
     public void markNonPresent(Instant lastScanned) {
         Instant childrenLastUpdated = Instant.ofEpochMilli(1);  // Used to force a children rescan if file is later resurrected.
-        
+
         update("update media_file set present=false, children_last_updated=? where last_scanned < ? and present",
                 childrenLastUpdated, lastScanned);
     }

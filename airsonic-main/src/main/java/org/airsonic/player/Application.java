@@ -18,7 +18,7 @@ import java.lang.reflect.Method;
         JmxAutoConfiguration.class,
         MultipartAutoConfiguration.class // TODO: update to use spring boot builtin multipart support
 })
-public class Application extends SpringBootServletInitializer implements  WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {
+public class Application extends SpringBootServletInitializer implements WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 

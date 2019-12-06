@@ -175,7 +175,7 @@ public class IndexManagerTestCase extends AbstractAirsonicHomeTest {
         indexManager.expunge();
         indexManager.stopIndexing(indexManager.getStatistics());
 
-        /* 
+        /*
          * Subsequent search results.
          * Results can also be confirmed with Luke.
          */

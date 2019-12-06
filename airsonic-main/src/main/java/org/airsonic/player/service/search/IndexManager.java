@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 /**
  * Function class that is strongly linked to the lucene index implementation.
  * Legacy has an implementation in SearchService.
- * 
+ *
  * If the index CRUD and search functionality are in the same class,
  * there is often a dependency conflict on the class used.
  * Although the interface of SearchService is left to maintain the legacy implementation,
@@ -68,7 +68,7 @@ public class IndexManager {
     /**
      * Schema version of Airsonic index.
      * It may be incremented in the following cases:
-     * 
+     *
      *  - Incompatible update case in Lucene index implementation
      *  - When schema definition is changed due to modification of AnalyzerFactory,
      *    DocumentFactory or the class that they use.
@@ -230,7 +230,7 @@ public class IndexManager {
                 writer.setLiveCommitData(userData.entrySet());
                 boolean updated = (-1 != writer.commit());
                 LOG.trace("Success to create or update search index : [{}]", tw);
-                
+
                 if (updated) {
                     searchers.computeIfPresent(tw, (ts, s) -> {
                         try {
@@ -246,7 +246,7 @@ public class IndexManager {
             } catch (IOException e) {
                 LOG.error("Failed to create search index for {}.", tw, e);
             }
-            
+
             //remove from map
             return null;
         });
@@ -276,12 +276,12 @@ public class IndexManager {
                 return null;
             }
         }).distinct().collect(Collectors.toSet());
-        
+
         if (stats.size() > 1) {
             LOG.warn("Differing stats data for different indices: {}", stats.stream().map(x -> Util.objectToStringMap(x)).collect(Collectors.toSet()));
             return null;
         }
-        
+
         return stats.stream().map(x -> Optional.ofNullable(x)).findAny().flatMap(x -> x).orElse(null);
     }
 
@@ -302,7 +302,7 @@ public class IndexManager {
             } catch (IOException e) {
                 LOG.error("Failed to initialize SearcherManager for {}", k, e);
             }
-            
+
             return null;
         })).map(s -> {
             try {
@@ -323,10 +323,10 @@ public class IndexManager {
                 } catch (Exception e) {
                     LOG.warn("Failed to release {} because it wasn't found. IndexSearcher has been closed.", k, e);
                 }
-                
+
                 return null;
             }
-            
+
             try {
                 v.release(indexSearcher);
                 return v;
@@ -339,14 +339,14 @@ public class IndexManager {
 
     private static Pattern legacyIndexPattern = Pattern.compile("^lucene\\d+$");
     private static Pattern nonCurrentIndexPattern = Pattern.compile("^index\\d+$");
-    
+
     /**
      * Check the version of the index and clean it up if necessary.
      * Legacy type indexes (files or directories starting with lucene) are deleted.
      * If there is no index directory, initialize the directory.
      * If the index directory exists and is not the current version,
      * initialize the directory.
-     * @throws IOException 
+     * @throws IOException
      */
     public void deleteOldIndexFiles() throws IOException {
 
@@ -358,9 +358,9 @@ public class IndexManager {
                     LOG.info("Found legacy index file. Try to delete : {}", p);
                     FileUtil.delete(p);
                 });
-            
+
         }
-        
+
         // Delete if not old index version
         try (Stream<Path> files = Files.list(SettingsService.getAirsonicHome())) {
             files
@@ -370,7 +370,7 @@ public class IndexManager {
                     LOG.info("Found old index file. Try to delete : {}", p);
                     FileUtil.delete(p);
                 });
-            
+
         }
 
     }

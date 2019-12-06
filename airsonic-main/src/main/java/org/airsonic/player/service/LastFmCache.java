@@ -77,10 +77,10 @@ public class LastFmCache extends Cache {
 
         Path xmlFile = getXmlFile(cacheEntryName);
         Path metaFile = getMetaFile(cacheEntryName);
-        
+
         try (InputStream is = inputStream; Writer mw = Files.newBufferedWriter(metaFile)) {
             Files.copy(is, xmlFile, StandardCopyOption.REPLACE_EXISTING);
-            
+
             Properties properties = new Properties();
 
             // Note: Ignore the given expirationDate, since Last.fm sets it to just one day ahead.

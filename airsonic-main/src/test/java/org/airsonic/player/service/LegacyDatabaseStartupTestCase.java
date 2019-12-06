@@ -24,7 +24,7 @@ public class LegacyDatabaseStartupTestCase {
 
     @ClassRule
     public static final HomeRule airsonicRule = new HomeRule();
-    
+
     @BeforeClass
     public static void setupOnce() throws IOException {
         String homeParent = TestCaseUtils.airsonicHomePathForTest();
@@ -35,10 +35,10 @@ public class LegacyDatabaseStartupTestCase {
         System.setProperty("DatabaseConfigEmbedUrl",
                 SettingsService.getDefaultJDBCUrl().replaceAll("airsonic$", "libresonic"));
     }
-    
+
     @Autowired
     DataSource dataSource;
-    
+
     @Test
     public void testStartup() {
         assertThat(dataSource).isNotNull();
