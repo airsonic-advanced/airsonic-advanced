@@ -94,7 +94,7 @@ public class QueryFactory {
      *  XXX 3.x -> 8.x :
      * In order to support wildcards,
      * MultiFieldQueryParser has been replaced by the following process.
-     * 
+     *
      *  - There is also an override of MultiFieldQueryParser, but it is known to be high cost.
      *  - MultiFieldQueryParser was created before Java API was modernized.
      *  - The spec of Parser has changed from time to time. Using parser does not reduce library update risk.
@@ -157,7 +157,7 @@ public class QueryFactory {
     /**
      * Query generation expression extracted from
      * {@link org.airsonic.player.service.SearchService#search(SearchCriteria, List, IndexType)}.
-     * 
+     *
      * @param criteria criteria
      * @param musicFolders musicFolders
      * @param indexType {@link IndexType}
@@ -216,7 +216,7 @@ public class QueryFactory {
     /**
      * Query generation expression extracted from
      * {@link org.airsonic.player.service.SearchService#searchByName( String, String, int, int, List, Class)}.
-     * 
+     *
      * @param fieldName {@link FieldNames}
      * @return Query
      * @throws IOException When parsing of QueryParser fails
@@ -257,7 +257,7 @@ public class QueryFactory {
     /**
      * Query generation expression extracted from
      * {@link org.airsonic.player.service.SearchService#getRandomAlbums(int, List)}.
-     * 
+     *
      * @param musicFolders musicFolders
      * @return Query
      */
@@ -270,7 +270,7 @@ public class QueryFactory {
     /**
      * Query generation expression extracted from
      * {@link org.airsonic.player.service.SearchService#getRandomAlbumsId3(int, List)}.
-     * 
+     *
      * @param musicFolders musicFolders
      * @return Query
      */

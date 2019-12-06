@@ -155,7 +155,7 @@ public class AnalyzerFactoryTestCase {
 
     /**
      * Detailed tests on Stopward.
-     * 
+     *
      * @see org.apache.lucene.analysis.core.StopAnalyzer#ENGLISH_STOP_WORDS_SET
      */
     @Test
@@ -259,7 +259,7 @@ public class AnalyzerFactoryTestCase {
         terms = toTermString(queryFullWidth);
         /*
          * XXX 3.x -> 8.x :
-         * 
+         *
          * This is not a change due to the library but an intentional change.
          * The filter order has been changed properly
          * as it is probably not a deliberate specification.

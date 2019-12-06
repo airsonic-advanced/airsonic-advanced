@@ -216,10 +216,10 @@ public class VersionService {
         }
     };
 
-    private static Function<Map<String,Object>, Version> releaseToVersionMapper = r -> 
+    private static Function<Map<String,Object>, Version> releaseToVersionMapper = r ->
             new Version(
-                    (String) r.get("tag_name"), 
-                    (String) r.get("target_commitish"), 
+                    (String) r.get("tag_name"),
+                    (String) r.get("target_commitish"),
                     (Boolean) r.get("draft") || (Boolean) r.get("prerelease"),
                     (String) r.get("html_url"),
                     Instant.parse((String) r.get("published_at")),
