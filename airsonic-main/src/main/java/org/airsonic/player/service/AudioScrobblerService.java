@@ -40,8 +40,8 @@ public class AudioScrobblerService {
     private SettingsService settingsService;
 
     /**
-     * Registers the given media file at audio scrobble service. This method returns immediately, the actual registration is done
-     * by separate threads.
+     * Registers the given media file at audio scrobble service.
+     * This method returns immediately, the actual registration is done by separate threads.
      *
      * @param mediaFile  The media file to register.
      * @param username   The user which played the music file.

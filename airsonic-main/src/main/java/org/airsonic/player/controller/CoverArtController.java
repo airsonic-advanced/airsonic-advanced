@@ -309,7 +309,7 @@ public class CoverArtController implements LastModified {
                 LOG.error("Failed to create thumbnail cache {}", dir, e);
             }
         }
-        
+
         return dir;
     }
 

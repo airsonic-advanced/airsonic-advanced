@@ -35,7 +35,7 @@ public interface AirsonicHomeTest {
      *         completed
      */
     abstract AtomicBoolean dataBaseReady();
-    
+
     /**
      * Populate the database only once.
      * It is called in the @Before granted method.

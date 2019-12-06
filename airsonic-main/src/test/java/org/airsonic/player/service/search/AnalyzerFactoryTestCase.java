@@ -459,7 +459,7 @@ public class AnalyzerFactoryTestCase {
         assertEquals("walker", terms.get(2));
         assertEquals("nash", terms.get(3));
         assertEquals("ensemble", terms.get(4));
-        
+
         // Space
         assertEquals(asList("abc", "def"), toTermString(" ABC DEF "));
         assertEquals(asList("abc1", "def"), toTermString(" ABC1 DEF "));
@@ -630,7 +630,7 @@ public class AnalyzerFactoryTestCase {
         assertEquals(1, terms.size());
         assertEquals("{ }", terms.get(0));
     }
-    
+
     private List<String> toTermString(String str) {
         return toTermString(null, str);
     }

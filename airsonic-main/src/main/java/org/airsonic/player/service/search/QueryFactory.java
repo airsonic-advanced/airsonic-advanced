@@ -186,9 +186,9 @@ public class QueryFactory {
     public Query getRandomSongs(RandomSearchCriteria criteria) throws IOException {
 
         BooleanQuery.Builder query = new BooleanQuery.Builder();
-        
+
         Analyzer analyzer = analyzerFactory.getQueryAnalyzer();
-        
+
         // Unanalyzed field
         query.add(new TermQuery(new Term(FieldNames.MEDIA_TYPE, MediaType.MUSIC.name())), Occur.MUST);
 

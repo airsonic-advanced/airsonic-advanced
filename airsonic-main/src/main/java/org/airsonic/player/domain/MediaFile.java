@@ -137,7 +137,7 @@ public class MediaFile {
     public void setFolder(String folder) {
         this.folder = folder;
     }
-    
+
     public Path getFile() {
         return Paths.get(path);
     }

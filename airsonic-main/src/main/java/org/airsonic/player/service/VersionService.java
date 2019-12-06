@@ -59,15 +59,15 @@ public class VersionService {
     private static final Logger LOG = LoggerFactory.getLogger(VersionService.class);
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.of("UTC"));
-    
+
     private final Properties build;
-    
+
     private Version localVersion;
     private Version latestFinalVersion;
     private Version latestBetaVersion;
     private Instant localBuildDate;
     private String localBuildNumber;
-    
+
     public VersionService() throws IOException {
         build = PropertiesLoaderUtils.loadAllProperties("build.properties");
     }
@@ -215,7 +215,7 @@ public class VersionService {
             }
         }
     };
-    
+
     private static Function<Map<String,Object>, Version> releaseToVersionMapper = r -> 
             new Version(
                     (String) r.get("tag_name"), 
@@ -226,7 +226,7 @@ public class VersionService {
                     Instant.parse((String) r.get("created_at")),
                     (List<Map<String,Object>>) r.get("assets")
                     );
-    
+
     /**
      * Resolves the latest available Airsonic version by inspecting github.
      */
@@ -246,7 +246,7 @@ public class VersionService {
             LOG.warn("Got a timeout when trying to reach {}", VERSION_URL);
             return;
         }
-        
+
         List<Map<String, Object>> releases = content.stream()
                 .sorted(Comparator.<Map<String, Object>,Instant>comparing(r -> Instant.parse((String) r.get("published_at")), Comparator.reverseOrder()))
                 .collect(Collectors.toList());
@@ -255,7 +255,7 @@ public class VersionService {
         Optional<Map<String, Object>> betaR = releases.stream().findFirst();
         Optional<Map<String, Object>> finalR = releases.stream().filter(x -> !((Boolean)x.get("draft")) && !((Boolean)x.get("prerelease"))).findFirst();
         Optional<Map<String,Object>> currentR = releases.stream().filter(x -> StringUtils.equals(build.getProperty("version") + "." + build.getProperty("timestamp"), (String) x.get("tag_name"))).findAny();
-        
+
         LOG.debug("Got {} for beta version", betaR.map(x -> x.get("tag_name")).orElse(null));
         LOG.debug("Got {} for final version", finalR.map(x -> x.get("tag_name")).orElse(null));
 

@@ -72,7 +72,7 @@ public class PodcastController  {
             for (MediaFile song : songs) {
                 length += song.getFileSize();
             }
-            
+
             //use .atZone(ZoneId.systemDefault) to use relative to current location (like -0800 instead of GMT)
             String publishDate = DateTimeFormatter.RFC_1123_DATE_TIME.format(playlist.getCreated().atOffset(ZoneOffset.UTC));
 

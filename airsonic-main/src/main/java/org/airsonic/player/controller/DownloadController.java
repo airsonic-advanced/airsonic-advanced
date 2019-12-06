@@ -117,7 +117,7 @@ public class DownloadController implements LastModified {
             if (mediaFile != null) {
                 response.setIntHeader("ETag", mediaFile.getId());
                 response.setHeader("Accept-Ranges", "bytes");
-                
+
                 if (!securityService.isFolderAccessAllowed(mediaFile, user.getUsername())) {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN,
                             "Access to file " + mediaFile.getId() + " is forbidden for user " + user.getUsername());
@@ -333,13 +333,13 @@ public class DownloadController implements LastModified {
                     String zipName = f.relativize(root).toString();
                     if (Files.isRegularFile(f)) {
                         status.setFile(f);
-    
+
                         ZipEntry zipEntry = new ZipEntry(zipName);
                         long size = FileUtil.size(f);
                         zipEntry.setSize(size);
                         zipEntry.setCompressedSize(size);
                         zipEntry.setCrc(computeCrc(f));
-    
+
                         out.putNextEntry(zipEntry);
                         copyFileToStream(f, out, status, range);
                         out.closeEntry();
@@ -348,7 +348,7 @@ public class DownloadController implements LastModified {
                         zipEntry.setSize(0);
                         zipEntry.setCompressedSize(0);
                         zipEntry.setCrc(0);
-    
+
                         out.putNextEntry(zipEntry);
                         out.closeEntry();
                     }
@@ -371,7 +371,7 @@ public class DownloadController implements LastModified {
             while ((cis.read(buf)) != -1) {
                 continue;
             }
-            
+
             return cis.getChecksum().getValue();
         }
     }

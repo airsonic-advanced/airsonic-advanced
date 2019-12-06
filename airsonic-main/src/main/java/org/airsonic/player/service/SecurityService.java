@@ -299,7 +299,7 @@ public class SecurityService implements UserDetailsService {
         if (isInPodcastFolder(file.getFile())) {
             return true;
         }
-        
+
         return settingsService.getMusicFoldersForUser(username).parallelStream().anyMatch(musicFolder -> musicFolder.getPath().toString().equals(file.getFolder()));
     }
 
