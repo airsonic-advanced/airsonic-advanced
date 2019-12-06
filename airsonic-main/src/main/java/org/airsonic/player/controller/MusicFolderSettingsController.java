@@ -102,7 +102,6 @@ public class MusicFolderSettingsController {
 
 
     private void expunge() {
-
         // to be before dao#expunge
         MediaLibraryStatistics statistics = indexManager.getStatistics();
         if (statistics != null) {
@@ -123,7 +122,6 @@ public class MusicFolderSettingsController {
         LOG.debug("Deleting non-present media files...");
         mediaFileDao.expunge();
         LOG.debug("Database cleanup complete.");
-        mediaFileDao.checkpoint();
     }
 
     private List<MusicFolderSettingsCommand.MusicFolderInfo> wrap(List<MusicFolder> musicFolders) {

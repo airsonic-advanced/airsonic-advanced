@@ -175,7 +175,6 @@ public class MediaScannerService {
         
         CompletableFuture.runAsync(() -> doScanLibrary(pool), pool)
                 .thenRunAsync(() -> playlistService.importPlaylists(), pool)
-                .thenRunAsync(() -> mediaFileDao.checkpoint(), pool)
                 .thenRun(() -> pool.shutdown())
                 .thenRun(() -> scanning = false);
     }
