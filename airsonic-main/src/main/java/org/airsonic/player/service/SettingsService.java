@@ -136,6 +136,8 @@ public class SettingsService {
     private static final String KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH = "DatabaseMysqlMaxlength";
     private static final String KEY_DATABASE_USERTABLE_QUOTE = "DatabaseUsertableQuote";
 
+    public static final String KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY = "PropertiesFileUpgradeRetainCompatibility";
+
     // Default values.
     private static final String DEFAULT_JWT_KEY = null;
     private static final String DEFAULT_INDEX_STRING = "A B C D E F G H I J K L M N O P Q R S T U V W X-Z(XYZ)";
@@ -215,19 +217,6 @@ public class SettingsService {
     private static final Integer DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH = 512;
     private static final String DEFAULT_DATABASE_USERTABLE_QUOTE = null;
 
-    // Array of obsolete keys.  Used to clean property file.
-    private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
-            "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "AutoCoverBatch", "MusicMask",
-            "VideoMask", "CoverArtMask, HlsCommand", "HlsCommand2", "JukeboxCommand",
-            "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
-            "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",
-            "UrlRedirectFrom", "UrlRedirectionEnabled", "UrlRedirectType", "Port", "HttpsPort",
-            "MediaLibraryStatistics", "LastScanned",
-            // Database settings renamed
-            "database.varchar.maxlength", "database.config.type", "database.config.embed.driver",
-            "database.config.embed.url", "database.config.embed.username", "database.config.embed.password",
-            "database.config.jndi.name", "database.usertable.quote");
-
     private static final String LOCALES_FILE = "/org/airsonic/player/i18n/locales.txt";
     private static final String THEMES_FILE = "/org/airsonic/player/theme/themes.txt";
 
@@ -254,13 +243,51 @@ public class SettingsService {
 
     private Pattern excludePattern;
 
-    private void removeObsoleteProperties() {
-        OBSOLETE_KEYS.forEach(oKey -> {
-            if (ConfigurationPropertiesService.getInstance().containsKey(oKey)) {
-                LOG.info("Removing obsolete property [" + oKey + ']');
-                ConfigurationPropertiesService.getInstance().clearProperty(oKey);
+    // Array of obsolete keys.  Used to clean property file.
+    private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
+            "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "AutoCoverBatch", "MusicMask",
+            "VideoMask", "CoverArtMask, HlsCommand", "HlsCommand2", "JukeboxCommand",
+            "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
+            "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",
+            "UrlRedirectFrom", "UrlRedirectionEnabled", "UrlRedirectType", "Port", "HttpsPort",
+            "MediaLibraryStatistics", "LastScanned"
+            );
+
+    public static void migrateKeys() {
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        OBSOLETE_KEYS.forEach(x -> keyMaps.put(x, null));
+        keyMaps.put("database.varchar.maxlength", KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH);
+        keyMaps.put("database.config.type", KEY_DATABASE_CONFIG_TYPE);
+        keyMaps.put("database.config.embed.driver", KEY_DATABASE_CONFIG_EMBED_DRIVER);
+        keyMaps.put("database.config.embed.url", KEY_DATABASE_CONFIG_EMBED_URL);
+        keyMaps.put("database.config.embed.username", KEY_DATABASE_CONFIG_EMBED_USERNAME);
+        keyMaps.put("database.config.embed.password", KEY_DATABASE_CONFIG_EMBED_PASSWORD);
+        keyMaps.put("database.config.jndi.name", KEY_DATABASE_CONFIG_JNDI_NAME);
+        keyMaps.put("database.usertable.quote", KEY_DATABASE_USERTABLE_QUOTE);
+        migrateKeys(keyMaps);
+    }
+
+    public static void migrateKeys(Map<String, String> keyMaps) {
+        ConfigurationPropertiesService cps = ConfigurationPropertiesService.getInstance();
+        Boolean backwardsCompatible = Optional.ofNullable(cps.getProperty(KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY)).map(x -> Boolean.valueOf((String) x)).orElse(true);
+
+        keyMaps.entrySet().forEach(e -> {
+            if (e.getValue() == null) {
+                // this is non backwards-compatible
+                LOG.info("Removing obsolete property [{}]", e.getKey());
+                cps.clearProperty(e.getKey());
+            } else if (cps.containsKey(e.getKey()) && !cps.containsKey(e.getValue())) {
+                LOG.info("Migrating obsolete property [{}] to [{}]", e.getKey(), e.getValue());
+                cps.setProperty(e.getValue(), cps.getProperty(e.getKey()));
+            }
+
+            //clean house if not backwards-compatible, otherwise don't delete old proprety
+            if (!backwardsCompatible) {
+                cps.clearProperty(e.getKey());
             }
         });
+
+        cps.save();
     }
 
     public static Path getAirsonicHome() {
@@ -308,14 +335,7 @@ public class SettingsService {
     }
 
     public void save() {
-        save(true);
-    }
-
-    public void save(boolean updateSettingsChanged) {
-        if (updateSettingsChanged) {
-            removeObsoleteProperties();
-            this.setLong(KEY_SETTINGS_CHANGED, System.currentTimeMillis());
-        }
+        this.setLong(KEY_SETTINGS_CHANGED, System.currentTimeMillis());
         ConfigurationPropertiesService.getInstance().save();
     }
 
