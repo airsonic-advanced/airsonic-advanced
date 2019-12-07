@@ -81,6 +81,10 @@ public class ConfigurationPropertiesService {
     public void setProperty(String key, Object value) {
         config.setProperty(key, value);
     }
+    
+    public Object getProperty(String key) {
+        return config.getProperty(key);
+    }
 
     public Configuration getConfiguration() {
         return config;
