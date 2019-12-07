@@ -2,8 +2,8 @@ package org.airsonic.player.monitor;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jmx.JmxReporter;
-import org.airsonic.player.service.ApacheCommonsConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 public class MetricsManager {
 
     @Autowired
-    private ApacheCommonsConfigurationService configurationService;
+    private Environment env;
 
     // Main metrics registry
     private static final MetricRegistry metrics = new MetricRegistry();
@@ -27,7 +27,7 @@ public class MetricsManager {
     private static JmxReporter reporter;
 
     private void configureMetricsActivation() {
-        if (configurationService.containsKey("Metrics")) {
+        if (env.containsProperty("Metrics")) {
             metricsActivatedByConfiguration = Boolean.TRUE;
 
             // Start a Metrics JMX reporter
@@ -86,10 +86,6 @@ public class MetricsManager {
         } else {
             return nullTimerBuilderSingleton;
         }
-    }
-
-    public void setConfigurationService(ApacheCommonsConfigurationService configurationService) {
-        this.configurationService = configurationService;
     }
 
     /**

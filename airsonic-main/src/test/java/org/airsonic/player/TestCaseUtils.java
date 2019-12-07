@@ -1,9 +1,11 @@
 package org.airsonic.player;
 
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
+
 import org.airsonic.player.controller.JAXBWriter;
 import org.airsonic.player.dao.DaoHelper;
 import org.airsonic.player.service.MediaScannerService;
-import org.airsonic.player.util.FileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,14 +51,11 @@ public class TestCaseUtils {
     }
 
     /**
-     * Cleans the AIRSONIC_HOME directory used for tests.
+     * Cleans the AIRSONIC_HOME directory used for tests. (Does not delete the folder itself)
      */
     public static void cleanAirsonicHomeForTest() throws IOException {
         Path airsonicHomeDir = Paths.get(airsonicHomePathForTest());
-
-        if (!FileUtil.delete(airsonicHomeDir)) {
-            throw new IOException("Error while deleting airsonic home. Couldn't delete" + airsonicHomeDir);
-        }
+        MoreFiles.deleteDirectoryContents(airsonicHomeDir, RecursiveDeleteOption.ALLOW_INSECURE);
     }
 
     /**

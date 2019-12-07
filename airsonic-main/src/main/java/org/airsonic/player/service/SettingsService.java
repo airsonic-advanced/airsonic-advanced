@@ -31,6 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -243,7 +244,7 @@ public class SettingsService {
     @Autowired
     private AvatarDao avatarDao;
     @Autowired
-    private ApacheCommonsConfigurationService configurationService;
+    private Environment env;
 
     private Set<String> cachedCoverArtFileTypes;
     private Set<String> cachedMusicFileTypes;
@@ -254,18 +255,15 @@ public class SettingsService {
     private Pattern excludePattern;
 
     private void removeObsoleteProperties() {
-
         OBSOLETE_KEYS.forEach(oKey -> {
-            if (configurationService.containsKey(oKey)) {
+            if (ConfigurationPropertiesService.getInstance().containsKey(oKey)) {
                 LOG.info("Removing obsolete property [" + oKey + ']');
-                configurationService.clearProperty(oKey);
+                ConfigurationPropertiesService.getInstance().clearProperty(oKey);
             }
         });
-
     }
 
     public static Path getAirsonicHome() {
-
         Path home;
 
         String overrideHome = System.getProperty("airsonic.home");
@@ -304,9 +302,9 @@ public class SettingsService {
         logServerInfo();
     }
 
-    private void logServerInfo() {
+    private static void logServerInfo() {
         LOG.info("Java: " + System.getProperty("java.version") +
-                 ", OS: " + System.getProperty("os.name"));
+                ", OS: " + System.getProperty("os.name"));
     }
 
     public void save() {
@@ -318,7 +316,7 @@ public class SettingsService {
             removeObsoleteProperties();
             this.setLong(KEY_SETTINGS_CHANGED, System.currentTimeMillis());
         }
-        configurationService.save();
+        ConfigurationPropertiesService.getInstance().save();
     }
 
     private static void ensureDirectoryPresent(Path home) {
@@ -341,7 +339,7 @@ public class SettingsService {
     }
 
     private int getInt(String key, int defaultValue) {
-        return configurationService.getInteger(key, defaultValue);
+        return env.getProperty(key, int.class, defaultValue);
     }
 
     private void setInt(String key, Integer value) {
@@ -349,7 +347,7 @@ public class SettingsService {
     }
 
     private long getLong(String key, long defaultValue) {
-        return configurationService.getLong(key, defaultValue);
+        return env.getProperty(key, long.class, defaultValue);
     }
 
     private void setLong(String key, Long value) {
@@ -357,7 +355,7 @@ public class SettingsService {
     }
 
     private boolean getBoolean(String key, boolean defaultValue) {
-        return configurationService.getBoolean(key, defaultValue);
+        return env.getProperty(key, boolean.class, defaultValue);
     }
 
     private void setBoolean(String key, Boolean value) {
@@ -377,7 +375,7 @@ public class SettingsService {
     }
 
     private String getProperty(String key, String defaultValue) {
-        return configurationService.getString(key, defaultValue);
+        return env.getProperty(key, defaultValue);
     }
 
     public void setIndexString(String indexString) {
@@ -1219,9 +1217,9 @@ public class SettingsService {
 
     private void setProperty(String key, Object value) {
         if (value == null) {
-            configurationService.clearProperty(key);
+            ConfigurationPropertiesService.getInstance().clearProperty(key);
         } else {
-            configurationService.setProperty(key, value);
+            ConfigurationPropertiesService.getInstance().setProperty(key, value);
         }
     }
 
@@ -1401,8 +1399,8 @@ public class SettingsService {
         setString(KEY_JWT_KEY, jwtKey);
     }
 
-    public void setConfigurationService(ApacheCommonsConfigurationService configurationService) {
-        this.configurationService = configurationService;
+    public void setEnvironment(Environment env) {
+        this.env = env;
     }
 
     public void resetDatabaseToDefault() {
