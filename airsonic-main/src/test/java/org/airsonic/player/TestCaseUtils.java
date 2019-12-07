@@ -54,8 +54,7 @@ public class TestCaseUtils {
      * Cleans the AIRSONIC_HOME directory used for tests. (Does not delete the folder itself)
      */
     public static void cleanAirsonicHomeForTest() throws IOException {
-        Path airsonicHomeDir = Paths.get(airsonicHomePathForTest());
-        
+        Path airsonicHomeDir = Paths.get(airsonicHomePathForTest());        
         MoreFiles.deleteDirectoryContents(airsonicHomeDir, RecursiveDeleteOption.ALLOW_INSECURE);
     }
 

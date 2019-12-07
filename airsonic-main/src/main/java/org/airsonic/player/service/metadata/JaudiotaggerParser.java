@@ -103,6 +103,7 @@ public class JaudiotaggerParser extends MetaDataParser {
                 metaData.setDiscNumber(parseInteger(getTagField(tag, FieldKey.DISC_NO)));
                 metaData.setTrackNumber(parseTrackNumber(getTagField(tag, FieldKey.TRACK)));
                 metaData.setMusicBrainzReleaseId(getTagField(tag, FieldKey.MUSICBRAINZ_RELEASEID));
+                metaData.setMusicBrainzRecordingId(getTagField(tag, FieldKey.MUSICBRAINZ_TRACK_ID));
 
                 metaData.setArtist(getTagField(tag, FieldKey.ARTIST));
                 metaData.setAlbumArtist(getTagField(tag, FieldKey.ALBUM_ARTIST));
@@ -325,7 +326,7 @@ public class JaudiotaggerParser extends MetaDataParser {
     SettingsService getSettingsService() {
         return settingsService;
     }
-    
+
     private static Set<String> applicableFormats = ImmutableSet.of("mp3", "m4a", "m4b", "aac", "ogg", "flac", "wav", "mpc", "mp+", "ape", "wma");
 
     /**

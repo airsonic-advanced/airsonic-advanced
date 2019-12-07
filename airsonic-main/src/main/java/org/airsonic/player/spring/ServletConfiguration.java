@@ -143,7 +143,7 @@ public class ServletConfiguration implements WebMvcConfigurer {
     public Filter metricsFilter() {
         return new MetricsFilter();
     }
-    
+
     @Bean
     public ViewResolver jspViewResolver() {
         InternalResourceViewResolver resolver = new InternalResourceViewResolver();

@@ -50,7 +50,8 @@ public class UserDao extends AbstractDao {
             "main_year, main_bit_rate, main_duration, main_format, main_file_size, " +
             "playlist_track_number, playlist_artist, playlist_album, playlist_genre, " +
             "playlist_year, playlist_bit_rate, playlist_duration, playlist_format, playlist_file_size, " +
-            "last_fm_enabled, last_fm_username, last_fm_password, transcode_scheme, show_now_playing, selected_music_folder_id, " +
+            "last_fm_enabled, last_fm_username, last_fm_password, listenbrainz_enabled, listenbrainz_token, " +
+            "transcode_scheme, show_now_playing, selected_music_folder_id, " +
             "party_mode_enabled, now_playing_allowed, avatar_scheme, system_avatar_id, changed, show_artist_info, auto_hide_play_queue, " +
             "view_as_list, default_album_list, queue_following_songs, show_side_bar, list_reload_delay, " +
             "keyboard_shortcuts_enabled, pagination_size";
@@ -178,15 +179,10 @@ public class UserDao extends AbstractDao {
      * @param username The user name.
      * @return Roles the user is granted.
      */
-    public String[] getRolesForUser(String username) {
+    public List<String> getRolesForUser(String username) {
         String sql = "select r.name from role r, user_role ur " +
                 "where ur.username=? and ur.role_id=r.id";
-        List<?> roles = getJdbcTemplate().queryForList(sql, new Object[]{username}, String.class);
-        String[] result = new String[roles.size()];
-        for (int i = 0; i < result.length; i++) {
-            result[i] = (String) roles.get(i);
-        }
-        return result;
+        return queryForStrings(sql, username);
     }
 
     /**
@@ -221,6 +217,7 @@ public class UserDao extends AbstractDao {
                 playlist.isGenreVisible(), playlist.isYearVisible(), playlist.isBitRateVisible(), playlist.isDurationVisible(),
                 playlist.isFormatVisible(), playlist.isFileSizeVisible(),
                 settings.isLastFmEnabled(), settings.getLastFmUsername(), encrypt(settings.getLastFmPassword()),
+                settings.isListenBrainzEnabled(), settings.getListenBrainzToken(),
                 settings.getTranscodeScheme().name(), settings.isShowNowPlayingEnabled(),
                 settings.getSelectedMusicFolderId(), settings.isPartyModeEnabled(), settings.isNowPlayingAllowed(),
                 settings.getAvatarScheme().name(), settings.getSystemAvatarId(), settings.getChanged(),
@@ -257,7 +254,7 @@ public class UserDao extends AbstractDao {
 
     private void readRoles(User user) {
         String sql = "select role_id from user_role where username=?";
-        List<?> roles = getJdbcTemplate().queryForList(sql, new Object[]{user.getUsername()}, Integer.class);
+        List<Integer> roles = queryForInts(sql, user.getUsername());
         for (Object role : roles) {
             if (ROLE_ID_ADMIN.equals(role)) {
                 user.setAdminRole(true);
@@ -371,6 +368,9 @@ public class UserDao extends AbstractDao {
             settings.setLastFmEnabled(rs.getBoolean(col++));
             settings.setLastFmUsername(rs.getString(col++));
             settings.setLastFmPassword(decrypt(rs.getString(col++)));
+
+            settings.setListenBrainzEnabled(rs.getBoolean(col++));
+            settings.setListenBrainzToken(rs.getString(col++));
 
             settings.setTranscodeScheme(TranscodeScheme.valueOf(rs.getString(col++)));
             settings.setShowNowPlayingEnabled(rs.getBoolean(col++));

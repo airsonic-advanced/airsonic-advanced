@@ -21,7 +21,6 @@ package org.airsonic.player.dao;
 
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collections;
@@ -88,11 +87,7 @@ public class RatingDao extends AbstractDao {
      * @return The average rating, or <code>null</code> if no ratings are set.
      */
     public Double getAverageRating(MediaFile mediaFile) {
-        try {
-            return (Double) getJdbcTemplate().queryForObject("select avg(rating) from user_rating where path=?", new Object[]{mediaFile.getPath()}, Double.class);
-        } catch (EmptyResultDataAccessException x) {
-            return null;
-        }
+        return queryForDouble("select avg(rating) from user_rating where path=?", null, mediaFile.getPath());
     }
 
     /**
@@ -103,11 +98,7 @@ public class RatingDao extends AbstractDao {
      * @return The rating, or <code>null</code> if no rating is set.
      */
     public Integer getRatingForUser(String username, MediaFile mediaFile) {
-        try {
-            return getJdbcTemplate().queryForObject("select rating from user_rating where username=? and path=?", new Object[]{username, mediaFile.getPath()},Integer.class);
-        } catch (EmptyResultDataAccessException x) {
-            return null;
-        }
+        return queryForInt("select rating from user_rating where username=? and path=?", null, username, mediaFile.getPath());
     }
 
     public int getRatedAlbumCount(final String username, final List<MusicFolder> musicFolders) {

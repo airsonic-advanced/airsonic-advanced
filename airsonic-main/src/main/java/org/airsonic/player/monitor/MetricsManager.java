@@ -95,7 +95,7 @@ public class MetricsManager {
 
         public Timer timer(Class clazz, String name) {
             com.codahale.metrics.Timer t = metrics.timer(MetricRegistry.name(clazz,name));
-            com.codahale.metrics.Timer.Context tContext =  t.time();
+            com.codahale.metrics.Timer.Context tContext = t.time();
             return new Timer(tContext);
         }
 
@@ -139,7 +139,7 @@ public class MetricsManager {
         }
 
         @Override
-        public void close()  {
+        public void close() {
             // Does nothing
         }
     }

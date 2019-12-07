@@ -47,7 +47,7 @@ public class AlbumDao extends AbstractDao {
 
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
 
-    private final RowMapper rowMapper = new AlbumMapper();
+    private final AlbumMapper rowMapper = new AlbumMapper();
 
     public Album getAlbum(int id) {
         return queryOne("select " + QUERY_COLUMNS + " from album where id=?", rowMapper, id);
@@ -191,8 +191,7 @@ public class AlbumDao extends AbstractDao {
         Map<String, Object> args = new HashMap<String, Object>();
         args.put("folders", MusicFolder.toIdList(musicFolders));
 
-        return getNamedParameterJdbcTemplate().queryForObject("select count(*) from album where present and folder_id in (:folders)", args, Integer.class);
-
+        return namedQueryForInt("select count(*) from album where present and folder_id in (:folders)", 0, args);
     }
 
     /**
