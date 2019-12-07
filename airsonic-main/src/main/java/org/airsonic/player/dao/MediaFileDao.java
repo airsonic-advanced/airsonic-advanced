@@ -57,7 +57,7 @@ public class MediaFileDao extends AbstractDao {
     private static final String GENRE_COLUMNS = "name, song_count, album_count";
 
     public static final int VERSION = 4;
-    
+
     @Autowired
     private SettingsService settingsService;
 

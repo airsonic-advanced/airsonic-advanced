@@ -48,7 +48,7 @@ public class AlbumDao extends AbstractDao {
                                           "folder_id, mb_release_id";
 
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
-    
+
     @Autowired
     private SettingsService settingsService;
 

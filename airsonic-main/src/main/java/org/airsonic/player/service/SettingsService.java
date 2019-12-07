@@ -1393,11 +1393,11 @@ public class SettingsService {
     public void setDatabaseUsertableQuote(String usertableQuote) {
         setString(KEY_DATABASE_USERTABLE_QUOTE, usertableQuote);
     }
-    
+
     public void setDatabaseUpdateRowLimit(int limit) {
         setInt(KEY_DATABASE_UPDATE_ROW_LIMIT, limit);
     }
-    
+
     public int getDatabaseUpdateRowLimit() {
         return getInt(KEY_DATABASE_UPDATE_ROW_LIMIT, 0);
     }
