@@ -46,12 +46,12 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(SpringRunner.class)
 public class SettingsServiceTestCase {
-    
+
     @ClassRule
     public static HomeRule home = new HomeRule();
-    
+
     private SettingsService settingsService;
-    
+
     @Autowired
     StandardEnvironment env;
 
@@ -59,7 +59,7 @@ public class SettingsServiceTestCase {
     public void setUp() throws IOException {
         TestCaseUtils.cleanAirsonicHomeForTest();
         ConfigurationPropertiesService.reset();
-        
+
         settingsService = newSettingsService();
     }
 

@@ -304,7 +304,7 @@ public class SettingsService {
 
     private static void logServerInfo() {
         LOG.info("Java: " + System.getProperty("java.version") +
-                 ", OS: " + System.getProperty("os.name"));
+                ", OS: " + System.getProperty("os.name"));
     }
 
     public void save() {
@@ -1398,7 +1398,7 @@ public class SettingsService {
     public void setJWTKey(String jwtKey) {
         setString(KEY_JWT_KEY, jwtKey);
     }
-    
+
     public void setEnvironment(Environment env) {
         this.env = env;
     }
