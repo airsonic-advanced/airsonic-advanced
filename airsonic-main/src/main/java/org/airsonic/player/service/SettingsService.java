@@ -244,8 +244,6 @@ public class SettingsService {
     @Autowired
     private AvatarDao avatarDao;
     @Autowired
-    private ConfigurationPropertiesService configurationPropertiesService;
-    @Autowired
     private Environment env;
 
     private Set<String> cachedCoverArtFileTypes;
@@ -258,9 +256,9 @@ public class SettingsService {
 
     private void removeObsoleteProperties() {
         OBSOLETE_KEYS.forEach(oKey -> {
-            if (configurationPropertiesService.containsKey(oKey)) {
+            if (ConfigurationPropertiesService.getInstance().containsKey(oKey)) {
                 LOG.info("Removing obsolete property [" + oKey + ']');
-                configurationPropertiesService.clearProperty(oKey);
+                ConfigurationPropertiesService.getInstance().clearProperty(oKey);
             }
         });
     }
@@ -318,7 +316,7 @@ public class SettingsService {
             removeObsoleteProperties();
             this.setLong(KEY_SETTINGS_CHANGED, System.currentTimeMillis());
         }
-        configurationPropertiesService.save();
+        ConfigurationPropertiesService.getInstance().save();
     }
 
     private static void ensureDirectoryPresent(Path home) {
@@ -1219,9 +1217,9 @@ public class SettingsService {
 
     private void setProperty(String key, Object value) {
         if (value == null) {
-            configurationPropertiesService.clearProperty(key);
+            ConfigurationPropertiesService.getInstance().clearProperty(key);
         } else {
-            configurationPropertiesService.setProperty(key, value);
+            ConfigurationPropertiesService.getInstance().setProperty(key, value);
         }
     }
 
@@ -1399,10 +1397,6 @@ public class SettingsService {
 
     public void setJWTKey(String jwtKey) {
         setString(KEY_JWT_KEY, jwtKey);
-    }
-
-    public void setConfigurationPropertiesService(ConfigurationPropertiesService configurationPropertiesService) {
-        this.configurationPropertiesService = configurationPropertiesService;
     }
     
     public void setEnvironment(Environment env) {

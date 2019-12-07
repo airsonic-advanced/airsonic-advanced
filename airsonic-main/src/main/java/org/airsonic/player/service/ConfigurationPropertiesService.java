@@ -9,22 +9,12 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.sync.ReadWriteSynchronizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Bean;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class ConfigurationPropertiesService {
-    
-    @org.springframework.context.annotation.Configuration
-    public static class ConfigurationPropertiesServiceConfiguration {
-        @Bean
-        public ConfigurationPropertiesService configurationPropertiesService() {
-            return ConfigurationPropertiesService.getInstance();
-        };
-    }
-
     private static final Logger LOG = LoggerFactory.getLogger(ConfigurationPropertiesService.class);
 
     private final FileBasedConfigurationBuilder<FileBasedConfiguration> builder;

@@ -65,7 +65,6 @@ public class SettingsServiceTestCase {
 
     private SettingsService newSettingsService() {
         SettingsService settingsService = new SettingsService();
-        settingsService.setConfigurationPropertiesService(ConfigurationPropertiesService.getInstance());
         env.getPropertySources().addFirst(new ConfigurationPropertySource("airsonic-pre-init-configs", ConfigurationPropertiesService.getInstance().getConfiguration()));
         settingsService.setEnvironment(env);
         return settingsService;
