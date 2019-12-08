@@ -95,7 +95,7 @@ public class MediaScannerServiceTestCase {
             } catch (InterruptedException e) {}
         }
     }
-    
+
     /**
      * Tests the MediaScannerService by scanning the test media library into an empty database.
      */

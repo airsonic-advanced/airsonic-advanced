@@ -66,7 +66,7 @@ public class RecoverController {
             } else {
                 captchaOk = true;
             }
-            
+
             if (!captchaOk) {
                 map.put("error", "recover.error.invalidcaptcha");
             } else if (user == null) {

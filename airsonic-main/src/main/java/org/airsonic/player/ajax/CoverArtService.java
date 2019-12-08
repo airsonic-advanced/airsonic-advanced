@@ -78,9 +78,9 @@ public class CoverArtService {
             MediaFile mediaFile = mediaFileService.getMediaFile(albumId);
             saveCoverArt(mediaFile.getPath(), url);
             return null;
-        } catch (Exception x) {
-            LOG.warn("Failed to save cover art for album " + albumId, x);
-            return x.toString();
+        } catch (Exception e) {
+            LOG.warn("Failed to save cover art for album " + albumId, e);
+            return e.toString();
         }
     }
 
@@ -91,7 +91,7 @@ public class CoverArtService {
                 .build();
         HttpGet method = new HttpGet(url);
         method.setConfig(requestConfig);
-        
+
         // Attempt to resolve proper suffix.
         String suffix = "jpg";
         if (url.toLowerCase().endsWith(".gif")) {
@@ -109,14 +109,14 @@ public class CoverArtService {
         try (CloseableHttpClient client = HttpClients.createDefault();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream input = response.getEntity().getContent()) {
-            
+
             // If file exists, create a backup.
             backup(newCoverFile, Paths.get(path, "cover." + suffix + ".backup"));
 
             // Write file.
             Files.copy(input, newCoverFile, StandardCopyOption.REPLACE_EXISTING);
         }
-        
+
         MediaFile dir = mediaFileService.getMediaFile(path);
 
         // Refresh database.

@@ -19,44 +19,65 @@
  */
 package org.airsonic.player.service;
 
-import junit.framework.TestCase;
 import org.airsonic.player.TestCaseUtils;
+import org.airsonic.player.util.HomeRule;
+import org.apache.commons.configuration2.spring.ConfigurationPropertySource;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.StandardEnvironment;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit test of {@link SettingsService}.
  *
  * @author Sindre Mehus
  */
-public class SettingsServiceTestCase extends TestCase {
+@RunWith(SpringRunner.class)
+public class SettingsServiceTestCase {
+
+    @ClassRule
+    public static HomeRule home = new HomeRule();
 
     private SettingsService settingsService;
 
-    @Override
-    protected void setUp() throws IOException {
-        String airsonicHome = TestCaseUtils.airsonicHomePathForTest();
-        System.setProperty("airsonic.home", airsonicHome);
-        Files.deleteIfExists(Paths.get(airsonicHome, "airsonic.properties"));
+    @Autowired
+    StandardEnvironment env;
+
+    @Before
+    public void setUp() throws IOException {
+        TestCaseUtils.cleanAirsonicHomeForTest();
+        ConfigurationPropertiesService.reset();
+
         settingsService = newSettingsService();
     }
 
     private SettingsService newSettingsService() {
         SettingsService settingsService = new SettingsService();
-        settingsService.setConfigurationService(new ApacheCommonsConfigurationService());
+        env.getPropertySources().addFirst(new ConfigurationPropertySource("airsonic-pre-init-configs", ConfigurationPropertiesService.getInstance().getConfiguration()));
+        settingsService.setEnvironment(env);
         return settingsService;
     }
 
+    @Test
     public void testAirsonicHome() {
         assertEquals("Wrong Airsonic home.", TestCaseUtils.airsonicHomePathForTest(), SettingsService.getAirsonicHome().toString());
     }
 
+    @Test
     public void testDefaultValues() {
         assertEquals("Wrong default language.", "en", settingsService.getLocale().getLanguage());
         assertEquals("Wrong default index creation interval.", 1, settingsService.getIndexCreationInterval());
@@ -75,6 +96,7 @@ public class SettingsServiceTestCase extends TestCase {
         assertEquals("Wrong default LDAP auto-shadowing.", false, settingsService.isLdapAutoShadowing());
     }
 
+    @Test
     public void testChangeSettings() {
         settingsService.setIndexString("indexString");
         settingsService.setIgnoredArticles("a the foo bar");
@@ -134,5 +156,107 @@ public class SettingsServiceTestCase extends TestCase {
         assertEquals("Wrong LDAP manager password.", "secret", settingsService.getLdapManagerPassword());
         assertEquals("Wrong LDAP search filter.", "newLdapSearchFilter", settingsService.getLdapSearchFilter());
         assertTrue("Wrong LDAP auto-shadowing.", settingsService.isLdapAutoShadowing());
+    }
+
+    @Test
+    public void migrateKeys_noKeys() {
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        keyMaps.put("bla", "bla2");
+        keyMaps.put("bla2", "bla3");
+        SettingsService.migrateKeys(keyMaps);
+
+        assertNull(env.getProperty("bla"));
+        assertNull(env.getProperty("bla2"));
+        assertNull(env.getProperty("bla3"));
+    }
+
+    @Test
+    public void migrateKeys_deleteKeys_BackwardsCompatibilitySet() {
+        ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
+
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        keyMaps.put("bla", "bla2");
+        keyMaps.put("bla2", "bla3");
+        keyMaps.put("bla3", null);
+        SettingsService.migrateKeys(keyMaps);
+
+        assertEquals("hello", env.getProperty("bla"));
+        assertEquals("hello", env.getProperty("bla2"));
+        assertNull(env.getProperty("bla3"));
+    }
+
+    @Test
+    public void migrateKeys_deleteKeys_NonBackwardsCompatible() {
+        ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY, "false");
+        ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
+
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        keyMaps.put("bla", "bla2");
+        keyMaps.put("bla2", "bla3");
+        keyMaps.put("bla3", null);
+        SettingsService.migrateKeys(keyMaps);
+
+        assertNull(env.getProperty("bla"));
+        assertNull(env.getProperty("bla2"));
+        assertNull(env.getProperty("bla3"));
+    }
+
+    @Test
+    public void migrateKeys_withKeys_ExplicitlyBackwardsCompatible() {
+        ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY, "true");
+        ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
+        ConfigurationPropertiesService.getInstance().setProperty("bla3", "hello2");
+
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        keyMaps.put("bla", "bla2");
+        keyMaps.put("bla2", "bla3");
+        keyMaps.put("bla3", "bla4");
+        keyMaps.put("bla4", "bla5");
+        SettingsService.migrateKeys(keyMaps);
+
+        assertEquals("hello", env.getProperty("bla"));
+        assertEquals("hello", env.getProperty("bla2"));
+        assertEquals("hello2", env.getProperty("bla3"));
+        assertEquals("hello2", env.getProperty("bla4"));
+        assertEquals("hello2", env.getProperty("bla5"));
+    }
+
+    @Test
+    public void migrateKeys_withKeys_ImplicitlyBackwardsCompatible() {
+        ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
+        ConfigurationPropertiesService.getInstance().setProperty("bla3", "hello2");
+
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        keyMaps.put("bla", "bla2");
+        keyMaps.put("bla2", "bla3");
+        keyMaps.put("bla3", "bla4");
+        keyMaps.put("bla4", "bla5");
+        SettingsService.migrateKeys(keyMaps);
+
+        assertEquals("hello", env.getProperty("bla"));
+        assertEquals("hello", env.getProperty("bla2"));
+        assertEquals("hello2", env.getProperty("bla3"));
+        assertEquals("hello2", env.getProperty("bla4"));
+        assertEquals("hello2", env.getProperty("bla5"));
+    }
+
+    @Test
+    public void migrateKeys_withKeys_NonBackwardsCompatible() {
+        ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY, "false");
+        ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
+        ConfigurationPropertiesService.getInstance().setProperty("bla3", "hello2");
+
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        keyMaps.put("bla", "bla2");
+        keyMaps.put("bla2", "bla3");
+        keyMaps.put("bla3", "bla4");
+        keyMaps.put("bla4", "bla5");
+        SettingsService.migrateKeys(keyMaps);
+
+        assertNull(env.getProperty("bla"));
+        assertNull(env.getProperty("bla2"));
+        assertNull(env.getProperty("bla3"));
+        assertNull(env.getProperty("bla4"));
+        assertEquals("hello2", env.getProperty("bla5"));
     }
 }

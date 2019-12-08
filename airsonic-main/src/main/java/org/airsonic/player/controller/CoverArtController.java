@@ -285,7 +285,7 @@ public class CoverArtController implements LastModified {
                 throw new RuntimeException(e);
             }
         } else {
-            is =  new BufferedInputStream(Files.newInputStream(file));
+            is = new BufferedInputStream(Files.newInputStream(file));
             mimeType = StringUtil.getMimeType(MoreFiles.getFileExtension(file));
         }
         return Pair.of(is, mimeType);
@@ -309,7 +309,7 @@ public class CoverArtController implements LastModified {
                 LOG.error("Failed to create thumbnail cache {}", dir, e);
             }
         }
-        
+
         return dir;
     }
 

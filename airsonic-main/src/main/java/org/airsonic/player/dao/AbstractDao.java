@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,43 +46,36 @@ import java.util.stream.Stream;
  */
 public class AbstractDao {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDao.class);
-    
+
     @Autowired
     private DaoHelper daoHelper;
 
-    /**
-     * Returns a JDBC template for performing database operations.
-     * @return A JDBC template.
-     */
     public JdbcTemplate getJdbcTemplate() {
         return daoHelper.getJdbcTemplate();
     }
 
-    /**
-     * Similar to {@link #getJdbcTemplate()}, but with named parameters.
-     */
     public NamedParameterJdbcTemplate getNamedParameterJdbcTemplate() {
         return daoHelper.getNamedParameterJdbcTemplate();
     }
 
-    protected String questionMarks(String columns) {
-        int numberOfColumns =  StringUtils.countMatches(columns, ",") + 1;
+    protected static String questionMarks(String columns) {
+        int numberOfColumns = StringUtils.countMatches(columns, ",") + 1;
         return StringUtils.repeat("?", ", ", numberOfColumns);
     }
 
-    protected String prefix(String columns, String prefix) {
+    protected static String prefix(String columns, String prefix) {
         List<String> l = Arrays.asList(columns.split(", "));
         l.replaceAll(s -> prefix + "." + s);
         return String.join(", ", l);
     }
-    
+
     protected static Object[] convertToDBTypes(Object[] args) {
         return args == null ? null : Stream.of(args)
                 .map(x -> (Object) ((x instanceof Instant) ? Timestamp.from((Instant) x) : x))
                 .collect(Collectors.toList())
                 .toArray();
     }
-    
+
     protected static Map<String, Object> convertToDBTypes(Map<String, Object> args) {
         return args == null ? null : args.entrySet()
                 .stream()
@@ -98,7 +92,7 @@ public class AbstractDao {
         log(sql, t);
         return result;
     }
-    
+
     protected int namedUpdate(String sql, Map<String, Object> args) {
         long t = System.nanoTime();
         LOG.trace("Executing query: [{}]", sql);
@@ -117,79 +111,72 @@ public class AbstractDao {
         }
     }
 
-    protected <T> List<T> query(String sql, RowMapper rowMapper, Object... args) {
+    protected <T> List<T> query(String sql, RowMapper<T> rowMapper, Object... args) {
         long t = System.nanoTime();
         List<T> result = getJdbcTemplate().query(sql, convertToDBTypes(args), rowMapper);
         log(sql, t);
         return result;
     }
 
-    protected <T> List<T> namedQuery(String sql, RowMapper rowMapper, Map<String, Object> args) {
+    protected <T> List<T> namedQuery(String sql, RowMapper<T> rowMapper, Map<String, Object> args) {
         long t = System.nanoTime();
         List<T> result = getNamedParameterJdbcTemplate().query(sql, convertToDBTypes(args), rowMapper);
         log(sql, t);
         return result;
     }
 
-    protected List<String> queryForStrings(String sql, Object... args) {
+    protected <T> List<T> queryForTypes(String sql, Class<T> type, Object... args) {
         long t = System.nanoTime();
-        List<String> result = getJdbcTemplate().queryForList(sql, convertToDBTypes(args), String.class);
+        List<T> result = getJdbcTemplate().queryForList(sql, convertToDBTypes(args), type);
         log(sql, t);
         return result;
+    }
+
+    protected <T> List<T> namedQueryForTypes(String sql, Class<T> type, Map<String, Object> args) {
+        long t = System.nanoTime();
+        List<T> result = getNamedParameterJdbcTemplate().queryForList(sql, convertToDBTypes(args), type);
+        log(sql, t);
+        return result;
+    }
+
+    protected List<String> queryForStrings(String sql, Object... args) {
+        return queryForTypes(sql, String.class, args);
     }
 
     protected List<Integer> queryForInts(String sql, Object... args) {
-        long t = System.nanoTime();
-        List<Integer> result = getJdbcTemplate().queryForList(sql, convertToDBTypes(args), Integer.class);
-        log(sql, t);
-        return result;
+        return queryForTypes(sql, Integer.class, args);
     }
 
     protected List<String> namedQueryForStrings(String sql, Map<String, Object> args) {
-        long t = System.nanoTime();
-        List<String> result = getNamedParameterJdbcTemplate().queryForList(sql, convertToDBTypes(args), String.class);
-        log(sql, t);
-        return result;
+        return namedQueryForTypes(sql, String.class, args);
     }
 
     protected Integer queryForInt(String sql, Integer defaultValue, Object... args) {
-        long t = System.nanoTime();
-        List<Integer> list = getJdbcTemplate().queryForList(sql, convertToDBTypes(args), Integer.class);
-        Integer result = list.isEmpty() ? defaultValue : list.get(0) == null ? defaultValue : list.get(0);
-        log(sql, t);
-        return result;
+        return queryForTypes(sql, Integer.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }
 
     protected Integer namedQueryForInt(String sql, Integer defaultValue, Map<String, Object> args) {
-        long t = System.nanoTime();
-        List<Integer> list = getNamedParameterJdbcTemplate().queryForList(sql, convertToDBTypes(args), Integer.class);
-        Integer result = list.isEmpty() ? defaultValue : list.get(0) == null ? defaultValue : list.get(0);
-        log(sql, t);
-        return result;
+        return namedQueryForTypes(sql, Integer.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }
 
     protected Instant queryForInstant(String sql, Instant defaultValue, Object... args) {
-        long t = System.nanoTime();
-        List<Timestamp> list = getJdbcTemplate().queryForList(sql, convertToDBTypes(args), Timestamp.class);
-        Instant result = list.stream().findFirst().map(x -> x.toInstant()).orElse(defaultValue);
-        log(sql, t);
-        return result;
+        return queryForTypes(sql, Timestamp.class, args).stream().filter(Objects::nonNull).findFirst().map(x -> x.toInstant()).orElse(defaultValue);
     }
 
     protected Long queryForLong(String sql, Long defaultValue, Object... args) {
-        long t = System.nanoTime();
-        List<Long> list = getJdbcTemplate().queryForList(sql, convertToDBTypes(args), Long.class);
-        Long result = list.isEmpty() ? defaultValue : list.get(0) == null ? defaultValue : list.get(0);
-        log(sql, t);
-        return result;
+        return queryForTypes(sql, Long.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }
 
-    protected <T> T queryOne(String sql, RowMapper rowMapper, Object... args) {
+    protected Double queryForDouble(String sql, Double defaultValue, Object... args) {
+        return queryForTypes(sql, Double.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
+    }
+
+    protected <T> T queryOne(String sql, RowMapper<T> rowMapper, Object... args) {
         List<T> list = query(sql, rowMapper, args);
         return list.isEmpty() ? null : list.get(0);
     }
 
-    protected <T> T namedQueryOne(String sql, RowMapper rowMapper, Map<String, Object> args) {
+    protected <T> T namedQueryOne(String sql, RowMapper<T> rowMapper, Map<String, Object> args) {
         List<T> list = namedQuery(sql, rowMapper, args);
         return list.isEmpty() ? null : list.get(0);
     }
@@ -198,6 +185,8 @@ public class AbstractDao {
         this.daoHelper = daoHelper;
     }
 
-    public void checkpoint() { daoHelper.checkpoint(); }
+    public void checkpoint() {
+        daoHelper.checkpoint();
+    }
 
 }

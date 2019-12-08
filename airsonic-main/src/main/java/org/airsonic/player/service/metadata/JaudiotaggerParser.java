@@ -326,7 +326,7 @@ public class JaudiotaggerParser extends MetaDataParser {
     SettingsService getSettingsService() {
         return settingsService;
     }
-    
+
     private static Set<String> applicableFormats = ImmutableSet.of("mp3", "m4a", "m4b", "aac", "ogg", "flac", "wav", "mpc", "mp+", "ape", "wma");
 
     /**

@@ -10,9 +10,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 
 /**
  * Unit test of {@link UserDao}.
@@ -153,13 +162,8 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         user.setSettingsRole(true);
         userDao.createUser(user);
 
-        String[] roles = userDao.getRolesForUser("sindre");
-        assertEquals("Wrong number of roles.", 5, roles.length);
-        assertEquals("Wrong role.", "admin", roles[0]);
-        assertEquals("Wrong role.", "comment", roles[1]);
-        assertEquals("Wrong role.", "podcast", roles[2]);
-        assertEquals("Wrong role.", "stream", roles[3]);
-        assertEquals("Wrong role.", "settings", roles[4]);
+        List<String> roles = userDao.getRolesForUser("sindre");
+        assertThat(roles).containsExactly("admin", "comment", "podcast", "stream", "settings");
     }
 
     @Test
