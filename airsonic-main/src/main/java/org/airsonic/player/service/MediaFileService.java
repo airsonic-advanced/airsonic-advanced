@@ -197,22 +197,22 @@ public class MediaFileService {
         }
 
         Stream<MediaFile> resultStream = null;
-        
+
         // Make sure children are stored and up-to-date in the database.
         if (!useFastCache) {
             resultStream = Optional.ofNullable(updateChildren(parent)).map(x -> x.parallelStream()).orElse(null);
         }
-        
+
         if (resultStream == null) {
             resultStream = mediaFileDao.getChildrenOf(parent.getPath()).parallelStream().map(x -> checkLastModified(x, useFastCache)).filter(x -> includeMediaFile(x));
         }
-        
+
         resultStream = resultStream.filter(x -> (includeDirectories && x.isDirectory()) || (includeFiles && x.isFile()));
-        
+
         if (sort) {
             resultStream = resultStream.sorted(new MediaFileComparator(settingsService.isSortAlbumsByYear()));
         }
-        
+
         return resultStream.collect(Collectors.toList());
     }
 
@@ -392,11 +392,11 @@ public class MediaFileService {
                         } else {
                             media = checkLastModified(media, false); //has to be false, only time it's called
                         }
-                        
+
                         return media;
                     })
                     .collect(Collectors.toList());
-            
+
             // Delete children that no longer exist on disk.
             mediaFileDao.deleteMediaFiles(storedChildrenMap.keySet());
 
@@ -404,11 +404,11 @@ public class MediaFileService {
             parent.setChildrenLastUpdated(parent.getChanged());
             parent.setPresent(true);
             mediaFileDao.createOrUpdateMediaFile(parent);
-            
+
             return result;
         } catch (IOException e) {
             LOG.warn("Could not retrieve and update all the children for {}. Will skip", parent.getPath(), e);
-            
+
             return null;
         }
     }
@@ -416,7 +416,7 @@ public class MediaFileService {
     public boolean includeMediaFile(MediaFile candidate) {
         return includeMediaFile(candidate.getFile());
     }
-    
+
     public boolean includeMediaFile(Path candidate) {
         String suffix = MoreFiles.getFileExtension(candidate).toLowerCase();
         return (!isExcluded(candidate) && (Files.isDirectory(candidate) || isAudioFile(suffix) || isVideoFile(suffix)));
@@ -505,7 +505,7 @@ public class MediaFileService {
                             .filter(x -> includeMediaFile(x))
                             .filter(x -> Files.isRegularFile(x))
                             .findFirst().orElse(null);
-                    
+
                     if (firstChild != null) {
                         mediaFile.setMediaType(MediaFile.MediaType.ALBUM);
 
@@ -528,10 +528,10 @@ public class MediaFileService {
                     } else {
                         mediaFile.setArtist(file.getFileName().toString());
                     }
-                            
+
                 } catch (IOException e) {
                     LOG.warn("Could not retrieve children for {}.", file.toString(), e);
-                    
+
                     mediaFile.setArtist(file.getFileName().toString());
                 }
             }
@@ -602,7 +602,7 @@ public class MediaFileService {
                 String candidate = c.getFileName().toString().toLowerCase();
                 return candidate.endsWith(mask) && !candidate.startsWith(".") && Files.isRegularFile(c);
             }).findAny().orElse(null);
-            
+
             if (cand != null) {
                 return cand;
             }

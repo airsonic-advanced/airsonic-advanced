@@ -93,7 +93,7 @@ public class MediaScannerServiceTestCase {
     public void setup() {
         TestCaseUtils.waitForScanFinish(mediaScannerService);
     }
-    
+
     /**
      * Tests the MediaScannerService by scanning the test media library into an empty database.
      */

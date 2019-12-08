@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
  */
 @Controller
 @RequestMapping("/main")
-public class MainController  {
+public class MainController {
 
     @Autowired
     private SecurityService securityService;

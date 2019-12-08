@@ -47,7 +47,7 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("/more")
-public class MoreController  {
+public class MoreController {
 
     @Autowired
     private SettingsService settingsService;

@@ -165,7 +165,7 @@ public class UploadController {
 
     private void unzip(Path file, List<Path> unzippedFiles) throws Exception {
         LOG.info("Unzipping " + file);
-        
+
         try (ZipInputStream zipInputStream = new ZipInputStream(Files.newInputStream(file))) {
             ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
@@ -173,7 +173,7 @@ public class UploadController {
                 if (!toPath.normalize().startsWith(file.getParent())) {
                     throw new Exception("Bad zip filename: " + StringEscapeUtils.escapeHtml(toPath.toString()));
                 }
-                
+
                 if (entry.isDirectory()) {
                     Files.createDirectory(toPath);
                 } else {

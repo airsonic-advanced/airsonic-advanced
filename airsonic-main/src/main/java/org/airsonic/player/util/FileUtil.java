@@ -46,7 +46,7 @@ public final class FileUtil {
      */
     private FileUtil() {
     }
-    
+
     public static Instant lastModified(final Path file) {
         try {
             return Files.getLastModifiedTime(file).toInstant();
@@ -55,7 +55,7 @@ public final class FileUtil {
             return Instant.now();
         }
     }
-    
+
     public static long size(final Path file) {
         try {
             return Files.size(file);
@@ -64,24 +64,24 @@ public final class FileUtil {
             return 0;
         }
     }
-    
+
     public static boolean delete(Path fileOrFolder) {
         try (Stream<Path> walk = Files.walk(fileOrFolder)) {
             walk.sorted(Comparator.reverseOrder())
                 .forEach(uncheck(Files::deleteIfExists));
-            
+
             return true;
         } catch (Exception e) {
             LOG.warn("Could not delete file/folder {}", fileOrFolder, e);
             return false;
         }
     }
-    
+
     @FunctionalInterface
     public interface ThrowingConsumer<T, E extends Exception> {
         void accept(T t) throws E;
     }
-    
+
     public static <T, E extends Exception> Consumer<T> uncheck(ThrowingConsumer<T, E> throwingConsumer) {
         return i -> {
             try {
@@ -100,7 +100,7 @@ public final class FileUtil {
         if (file == null) {
             return null;
         }
-        
+
         Path parent = file.getParent();
         if (parent == null) {
             return file.getFileName().toString();

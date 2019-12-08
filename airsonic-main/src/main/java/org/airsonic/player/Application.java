@@ -1,5 +1,6 @@
 package org.airsonic.player;
 
+import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.LegacyHsqlMigrationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,13 +22,15 @@ import java.lang.reflect.Method;
         JmxAutoConfiguration.class,
         MultipartAutoConfiguration.class // TODO: update to use spring boot builtin multipart support
 })
-public class Application extends SpringBootServletInitializer implements  WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {
+public class Application extends SpringBootServletInitializer implements WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
     private static SpringApplicationBuilder doConfigure(SpringApplicationBuilder application) {
-        // Handle HSQLDB database upgrades for builtin legacy db from 1.8 to 2.x before any beans are started.
         application.application().addListeners((ApplicationListener<ApplicationContextInitializedEvent>) event -> {
+            // Migrate keys to the latest
+            SettingsService.migrateKeys();
+            // Handle HSQLDB database upgrades for builtin legacy db from 1.8 to 2.x before any beans are started.
             LegacyHsqlMigrationUtil.upgradeFileHsqlDbIfNeeded(event.getApplicationContext().getEnvironment());
         });
 

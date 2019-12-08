@@ -54,12 +54,12 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
                 public Object postProcessAfterInitialization(Object bean, String beanName) {
                     if (bean instanceof PlayerDaoPlayQueueFactory) {
                         PlayerDaoPlayQueueFactory temp = (PlayerDaoPlayQueueFactory) spy(bean);
-                        
+
                         doReturn(spy(temp.createPlayQueue())).when(temp).createPlayQueue();
-                        
+
                         bean = temp;
                     }
-                    
+
                     return bean;
                 }
             };

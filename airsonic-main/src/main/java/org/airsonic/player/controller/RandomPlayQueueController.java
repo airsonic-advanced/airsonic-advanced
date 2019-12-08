@@ -142,7 +142,7 @@ public class RandomPlayQueueController {
             default:
                 break;
         }
-        
+
         if (lastPlayed != null) {
             switch (lastPlayedComp) {
                 case "lt":

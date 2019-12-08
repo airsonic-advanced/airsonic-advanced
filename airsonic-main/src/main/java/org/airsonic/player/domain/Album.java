@@ -106,7 +106,7 @@ public class Album {
     public int getSongCount() {
         return songCount.get();
     }
-    
+
     public void setSongCount(int songCount) {
         this.songCount.set(songCount);
     }
@@ -122,7 +122,7 @@ public class Album {
     public void setDurationSeconds(int durationSeconds) {
         this.durationSeconds.set(durationSeconds);
     }
-    
+
     public void incrementDurationSeconds(int durationSeconds) {
         this.durationSeconds.addAndGet(durationSeconds);
     }
@@ -158,7 +158,7 @@ public class Album {
     public void setPlayCount(int playCount) {
         this.playCount.set(playCount);
     }
-    
+
     public void incrementPlayCount() {
         this.playCount.incrementAndGet();
     }

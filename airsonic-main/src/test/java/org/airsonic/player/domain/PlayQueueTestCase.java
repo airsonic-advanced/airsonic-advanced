@@ -302,7 +302,7 @@ public class PlayQueueTestCase extends TestCase {
         public String getAlbumName() {
             return album;
         }
-        
+
         @Override
         public Path getFile() {
             return Paths.get(name);

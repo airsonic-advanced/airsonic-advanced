@@ -54,7 +54,7 @@ public class LegacyHsqlMigrationUtil {
      * -    null or !2  something went wrong, we better make copies  true
      * 1.x  2.x         this is the big upgrade                      true
      * 2.x  2.x         already up to date                           false
-     * 
+     *
      * all else true (default)
      *
      * @return true if a database backup/migration should be performed

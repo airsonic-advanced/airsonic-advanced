@@ -253,7 +253,7 @@ public class PodcastService {
                     episode.setMediaFileId(mediaFile.getId());
                 }
             }
-            
+
             return episode;
         }).collect(Collectors.toList());
     }
@@ -270,11 +270,11 @@ public class PodcastService {
                         channel.setMediaFileId(mediaFile.getId());
                     }
                 }
-                
+
             } catch (Exception x) {
                 LOG.warn("Failed to resolve media file ID for podcast channel '" + channel.getTitle() + "': " + x, x);
             }
-            
+
             return channel;
         }).collect(Collectors.toList());
     }
@@ -308,7 +308,7 @@ public class PodcastService {
         try (CloseableHttpClient client = HttpClients.createDefault();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent()) {
-            
+
             Document document = createSAXBuilder().build(in);
             Element channelElement = document.getRootElement().getChild("channel");
 
@@ -341,7 +341,7 @@ public class PodcastService {
         if (imageUrl == null) {
             return;
         }
-        
+
         Path dir = getChannelDirectory(channel);
         MediaFile channelMediaFile = mediaFileService.getMediaFile(dir);
         Path existingCoverArt = mediaFileService.getCoverArt(channelMediaFile);
@@ -398,12 +398,12 @@ public class PodcastService {
         if (downloadCount == -1) {
             downloadCount = Integer.MAX_VALUE;
         }
-        
+
         AtomicInteger counter = new AtomicInteger(downloadCount);
-        
+
         episodeElements.parallelStream()
                 .map(episodeElement -> {
-                    String title =  StringUtil.removeMarkup(episodeElement.getChildTextTrim("title"));
+                    String title = StringUtil.removeMarkup(episodeElement.getChildTextTrim("title"));
 
                     Element enclosure = episodeElement.getChild("enclosure");
                     if (enclosure == null) {
@@ -416,12 +416,12 @@ public class PodcastService {
                         LOG.info("No enclosure URL found for episode " + title);
                         return null;
                     }
-                    
+
                     if (getEpisodeByUrl(url) != null) {
                         LOG.info("Episode already exists for episode " + title);
                         return null;
                     }
-                    
+
                     String duration = formatDuration(getITunesElement(episodeElement, "duration"));
                     String description = StringUtil.removeMarkup(episodeElement.getChildTextTrim("description"));
                     if (StringUtils.isBlank(description)) {
@@ -439,7 +439,7 @@ public class PodcastService {
                     PodcastEpisode episode = new PodcastEpisode(null, channel.getId(), url, null, title, description, date,
                             duration, length, 0L, PodcastStatus.NEW, null);
                     LOG.info("Created Podcast episode " + title);
-                    
+
                     return episode;
                 })
                 .filter(Objects::nonNull)
@@ -502,7 +502,7 @@ public class PodcastService {
         }
 
         LOG.info("Starting to download Podcast from " + episode.getUrl());
-        
+
         PodcastChannel channel = getChannel(episode.getChannelId());
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(2 * 60 * 1000) // 2 minutes
@@ -516,12 +516,11 @@ public class PodcastService {
         method.setConfig(requestConfig);
         Path file = getFile(channel, episode);
 
-
-        try (CloseableHttpClient client = HttpClients.createDefault(); 
-                CloseableHttpResponse response = client.execute(method); 
+        try (CloseableHttpClient client = HttpClients.createDefault();
+                CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent();
                 OutputStream out = new BufferedOutputStream(Files.newOutputStream(file))) {
-            
+
             episode.setStatus(PodcastStatus.DOWNLOADING);
             episode.setBytesDownloaded(0L);
             episode.setErrorMessage(null);
@@ -632,7 +631,6 @@ public class PodcastService {
             extension = "mp3";
         }
 
-        
         Path file = channelDir.resolve(filename + "." + extension);
         for (int i = 0; Files.exists(file); i++) {
             file = channelDir.resolve(filename + i + "." + extension);
@@ -663,7 +661,7 @@ public class PodcastService {
             mediaFile.setComment(channel.getDescription());
             mediaFileService.updateMediaFile(mediaFile);
         }
-        
+
         return channelDir;
     }
 
@@ -675,7 +673,7 @@ public class PodcastService {
     public void deleteChannel(int channelId) {
         // Delete all associated episodes (in case they have files that need to be deleted).
         getEpisodes(channelId).parallelStream().map(PodcastEpisode::getId).forEach(id -> deleteEpisode(id, false));
-        
+
         podcastDao.deleteChannel(channelId);
     }
 

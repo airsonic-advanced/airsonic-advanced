@@ -46,7 +46,7 @@ import java.util.stream.Stream;
  */
 public class AbstractDao {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDao.class);
-    
+
     @Autowired
     JdbcTemplate jdbcTemplate;
 
@@ -62,7 +62,7 @@ public class AbstractDao {
     }
 
     protected static String questionMarks(String columns) {
-        int numberOfColumns =  StringUtils.countMatches(columns, ",") + 1;
+        int numberOfColumns = StringUtils.countMatches(columns, ",") + 1;
         return StringUtils.repeat("?", ", ", numberOfColumns);
     }
 
@@ -71,14 +71,14 @@ public class AbstractDao {
         l.replaceAll(s -> prefix + "." + s);
         return String.join(", ", l);
     }
-    
+
     protected static Object[] convertToDBTypes(Object[] args) {
         return args == null ? null : Stream.of(args)
-                .map(x -> (Object) ((x instanceof Instant) ? Timestamp.from((Instant) x) : x))
+                .map(x -> ((x instanceof Instant) ? Timestamp.from((Instant) x) : x))
                 .collect(Collectors.toList())
                 .toArray();
     }
-    
+
     protected static Map<String, Object> convertToDBTypes(Map<String, Object> args) {
         return args == null ? null : args.entrySet()
                 .stream()
@@ -95,7 +95,7 @@ public class AbstractDao {
         log(sql, t);
         return result;
     }
-    
+
     protected int namedUpdate(String sql, Map<String, Object> args) {
         long t = System.nanoTime();
         LOG.trace("Executing query: [{}]", sql);
@@ -127,14 +127,14 @@ public class AbstractDao {
         log(sql, t);
         return result;
     }
-    
+
     protected <T> List<T> queryForTypes(String sql, Class<T> type, Object... args) {
         long t = System.nanoTime();
         List<T> result = getJdbcTemplate().queryForList(sql, convertToDBTypes(args), type);
         log(sql, t);
         return result;
     }
-    
+
     protected <T> List<T> namedQueryForTypes(String sql, Class<T> type, Map<String, Object> args) {
         long t = System.nanoTime();
         List<T> result = getNamedParameterJdbcTemplate().queryForList(sql, convertToDBTypes(args), type);
@@ -169,7 +169,7 @@ public class AbstractDao {
     protected Long queryForLong(String sql, Long defaultValue, Object... args) {
         return queryForTypes(sql, Long.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }
-    
+
     protected Double queryForDouble(String sql, Double defaultValue, Object... args) {
         return queryForTypes(sql, Double.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }
@@ -183,5 +183,4 @@ public class AbstractDao {
         List<T> list = namedQuery(sql, rowMapper, args);
         return list.isEmpty() ? null : list.get(0);
     }
-
 }
