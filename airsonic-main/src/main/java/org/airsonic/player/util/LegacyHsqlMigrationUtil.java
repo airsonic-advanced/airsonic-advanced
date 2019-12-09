@@ -142,18 +142,19 @@ public class LegacyHsqlMigrationUtil {
      * If needed, perform an in-place database upgrade from HSQLDB 1.x to 2.x after having created backups.
      */
     public static void upgradeFileHsqlDbIfNeeded(Environment env) {
-        String jdbcUrl = Optional.ofNullable(env.getProperty(SettingsService.KEY_DATABASE_CONFIG_EMBED_URL)).orElseGet(() -> SettingsService.getDefaultJDBCUrl());
+        String jdbcUrl = env.getProperty(SettingsService.KEY_DATABASE_CONFIG_EMBED_URL);
         String dbPath = StringUtils.substringBetween(jdbcUrl, "jdbc:hsqldb:file:", ";");
+        String jndi = env.getProperty(SettingsService.KEY_DATABASE_CONFIG_JNDI_NAME);
 
-        if (dbPath != null && isHsqlDbBackupNeeded(dbPath, jdbcUrl)) {
+        if (jndi == null && dbPath != null && isHsqlDbBackupNeeded(dbPath, jdbcUrl)) {
             try {
                 performHsqlDbBackup(dbPath);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to backup HSQLDB database before upgrade", e);
             }
             try {
-                String user = Optional.ofNullable(env.getProperty(SettingsService.KEY_DATABASE_CONFIG_EMBED_USERNAME)).orElseGet(() -> SettingsService.getDefaultJDBCUsername());
-                String password = Optional.ofNullable(env.getProperty(SettingsService.KEY_DATABASE_CONFIG_EMBED_PASSWORD)).orElseGet(() -> SettingsService.getDefaultJDBCPassword());
+                String user = env.getProperty(SettingsService.KEY_DATABASE_CONFIG_EMBED_USERNAME);
+                String password = env.getProperty(SettingsService.KEY_DATABASE_CONFIG_EMBED_PASSWORD);
                 performHsqlDbUpgrade(jdbcUrl, user, password);
                 LOG.info("HSQLDB database version is now {}", getHsqlDbVersion(dbPath));
             } catch (Exception e) {

@@ -30,6 +30,8 @@ public class Application extends SpringBootServletInitializer implements WebServ
         application.application().addListeners((ApplicationListener<ApplicationContextInitializedEvent>) event -> {
             // Migrate keys to the latest
             SettingsService.migrateKeys();
+            // Set default constants
+            SettingsService.setDefaultConstants(event.getApplicationContext().getEnvironment());
             // Handle HSQLDB database upgrades for builtin legacy db from 1.8 to 2.x before any beans are started.
             LegacyHsqlMigrationUtil.upgradeFileHsqlDbIfNeeded(event.getApplicationContext().getEnvironment());
         });
