@@ -56,26 +56,26 @@
         <table style="white-space:nowrap;" class="indent">
             <table style="white-space:nowrap;" class="indent">
                 <tr>
-                    <td><fmt:message key="databasesettings.embeddriver"/></td>
+                    <td><fmt:message key="databasesettings.driver"/></td>
                     <td>
                         <form:input path="driver" size="30"/>
-                        <c:import url="helpToolTip.jsp"><c:param name="topic" value="embeddriver"/></c:import>
+                        <c:import url="helpToolTip.jsp"><c:param name="topic" value="jdbcdriver"/></c:import>
                     </td>
                 </tr>
                 <tr>
-                    <td><fmt:message key="databasesettings.embedurl"/></td>
+                    <td><fmt:message key="databasesettings.url"/></td>
                     <td>
                         <form:input path="url" size="58"/>
                     </td>
                 </tr>
                 <tr>
-                    <td><fmt:message key="databasesettings.embedusername"/></td>
+                    <td><fmt:message key="databasesettings.username"/></td>
                     <td>
                         <form:input path="username" size="36"/>
                     </td>
                 </tr>
                 <tr>
-                    <td><fmt:message key="databasesettings.embedpassword"/></td>
+                    <td><fmt:message key="databasesettings.password"/></td>
                     <td>
                         <form:input path="password" size="36"/>
                     </td>
