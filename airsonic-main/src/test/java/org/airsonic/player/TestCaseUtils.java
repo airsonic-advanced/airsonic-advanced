@@ -81,7 +81,7 @@ public class TestCaseUtils {
     public static Integer recordsInTable(String tableName, AbstractDao dao) {
         return dao.queryForInt("select count(*) from " + tableName, -1);
     }
-    
+
     public static void waitForScanFinish(MediaScannerService mediaScannerService) {
         while (mediaScannerService.isScanning()) {
             try {
@@ -102,7 +102,7 @@ public class TestCaseUtils {
 
         waitForScanFinish(mediaScannerService);
     }
-    
+
     @TestConfiguration
     public static class TestDao extends AbstractDao {
 

@@ -49,7 +49,7 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
 
     @Autowired
     protected SettingsService settingsService;
-    
+
     @Autowired
     protected TestDao testDao;
 
