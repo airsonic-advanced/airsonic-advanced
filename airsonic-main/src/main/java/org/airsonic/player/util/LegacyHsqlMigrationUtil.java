@@ -15,7 +15,6 @@ import java.nio.file.Paths;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
 import java.util.Properties;
 
 public class LegacyHsqlMigrationUtil {
@@ -142,9 +141,9 @@ public class LegacyHsqlMigrationUtil {
      * If needed, perform an in-place database upgrade from HSQLDB 1.x to 2.x after having created backups.
      */
     public static void upgradeFileHsqlDbIfNeeded(Environment env) {
-        String jdbcUrl = env.getProperty(SettingsService.KEY_DATABASE_CONFIG_EMBED_URL);
+        String jdbcUrl = env.getProperty(SettingsService.KEY_DATABASE_URL);
         String dbPath = StringUtils.substringBetween(jdbcUrl, "jdbc:hsqldb:file:", ";");
-        String jndi = env.getProperty(SettingsService.KEY_DATABASE_CONFIG_JNDI_NAME);
+        String jndi = env.getProperty(SettingsService.KEY_DATABASE_JNDI_NAME);
 
         if (jndi == null && dbPath != null && isHsqlDbBackupNeeded(dbPath, jdbcUrl)) {
             try {
@@ -153,8 +152,8 @@ public class LegacyHsqlMigrationUtil {
                 throw new RuntimeException("Failed to backup HSQLDB database before upgrade", e);
             }
             try {
-                String user = env.getProperty(SettingsService.KEY_DATABASE_CONFIG_EMBED_USERNAME);
-                String password = env.getProperty(SettingsService.KEY_DATABASE_CONFIG_EMBED_PASSWORD);
+                String user = env.getProperty(SettingsService.KEY_DATABASE_USERNAME);
+                String password = env.getProperty(SettingsService.KEY_DATABASE_PASSWORD);
                 performHsqlDbUpgrade(jdbcUrl, user, password);
                 LOG.info("HSQLDB database version is now {}", getHsqlDbVersion(dbPath));
             } catch (Exception e) {

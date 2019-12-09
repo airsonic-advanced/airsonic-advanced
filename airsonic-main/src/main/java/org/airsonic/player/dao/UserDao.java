@@ -34,6 +34,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
+import static org.airsonic.player.service.SettingsService.KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE;
+
 /**
  * Provides user-related database services.
  *
@@ -74,7 +76,7 @@ public class UserDao extends AbstractDao {
     private final String userTableQuote;
 
     @Autowired
-    public UserDao(@Value("${DatabaseUsertableQuote:}") String userTableQuote) {
+    public UserDao(@Value("${" + KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE + ":}") String userTableQuote) {
         this.userTableQuote = userTableQuote;
     }
 
@@ -324,6 +326,7 @@ public class UserDao extends AbstractDao {
     }
 
     private class UserRowMapper implements RowMapper<User> {
+        @Override
         public User mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new User(rs.getString(1),
                     decrypt(rs.getString(2)),
@@ -336,6 +339,7 @@ public class UserDao extends AbstractDao {
     }
 
     private static class UserSettingsRowMapper implements RowMapper<UserSettings> {
+        @Override
         public UserSettings mapRow(ResultSet rs, int rowNum) throws SQLException {
             int col = 1;
             UserSettings settings = new UserSettings(rs.getString(col++));

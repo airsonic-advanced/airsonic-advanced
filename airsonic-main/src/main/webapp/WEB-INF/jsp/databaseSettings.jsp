@@ -13,8 +13,8 @@
             if (objToShow.length) {
                 objToShow.show();
             }
-            if(value != 'LEGACY') {
-                $("#nonLEGACYDatabaseOptions").show();
+            if(value != 'BUILTIN') {
+                $("#nonBUILTINDatabaseOptions").show();
             }
         }
 
@@ -43,8 +43,8 @@
             <td><fmt:message key="databasesettings.configtype"/></td>
             <td>
                 <form:select path="configType" cssStyle="width:12em" id="configType">
-                    <form:option value="LEGACY" label="Legacy"/>
-                    <form:option value="EMBED" label="Embedded JDBC"/>
+                    <form:option value="BUILTIN" label="Built-in"/>
+                    <form:option value="EXTERNAL" label="External"/>
                     <form:option value="JNDI" label="JNDI"/>
                 </form:select>
                 <c:import url="helpToolTip.jsp"><c:param name="topic" value="databaseConfigType"/></c:import>
@@ -52,32 +52,32 @@
         </tr>
     </table>
 
-    <div id="EMBEDDatabaseOptions" class="hideawayDatabaseOptions">
+    <div id="EXTERNALDatabaseOptions" class="hideawayDatabaseOptions">
         <table style="white-space:nowrap;" class="indent">
             <table style="white-space:nowrap;" class="indent">
                 <tr>
                     <td><fmt:message key="databasesettings.embeddriver"/></td>
                     <td>
-                        <form:input path="embedDriver" size="30"/>
+                        <form:input path="driver" size="30"/>
                         <c:import url="helpToolTip.jsp"><c:param name="topic" value="embeddriver"/></c:import>
                     </td>
                 </tr>
                 <tr>
                     <td><fmt:message key="databasesettings.embedurl"/></td>
                     <td>
-                        <form:input path="embedUrl" size="58"/>
+                        <form:input path="url" size="58"/>
                     </td>
                 </tr>
                 <tr>
                     <td><fmt:message key="databasesettings.embedusername"/></td>
                     <td>
-                        <form:input path="embedUsername" size="36"/>
+                        <form:input path="username" size="36"/>
                     </td>
                 </tr>
                 <tr>
                     <td><fmt:message key="databasesettings.embedpassword"/></td>
                     <td>
-                        <form:input path="embedPassword" size="36"/>
+                        <form:input path="password" size="36"/>
                     </td>
                 </tr>
             </table>
@@ -95,7 +95,7 @@
             </tr>
         </table>
     </div>
-    <div id="nonLEGACYDatabaseOptions" class="hideawayDatabaseOptions">
+    <div id="nonBUILTINDatabaseOptions" class="hideawayDatabaseOptions">
         <table style="white-space:nowrap" class="indent">
             <tr>
                 <td><fmt:message key="databasesettings.mysqlvarcharmaxlength"/></td>

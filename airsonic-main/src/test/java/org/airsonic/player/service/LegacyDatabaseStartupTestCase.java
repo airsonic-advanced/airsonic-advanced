@@ -32,7 +32,7 @@ public class LegacyDatabaseStartupTestCase {
         FileUtils.forceMkdir(dbDirectory);
         org.airsonic.player.util.FileUtils.copyResourcesRecursively(LegacyDatabaseStartupTestCase.class.getResource("/db/pre-liquibase/db"), new File(homeParent));
         // have to change the url here because old db files are libresonic
-        System.setProperty("DatabaseConfigEmbedUrl",
+        System.setProperty(SettingsService.KEY_DATABASE_URL,
                 SettingsService.getDefaultJDBCUrl().replaceAll("airsonic$", "libresonic"));
     }
 

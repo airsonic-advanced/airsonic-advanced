@@ -1,17 +1,15 @@
 package org.airsonic.player.command;
 
-import org.airsonic.player.spring.DataSourceConfigType;
-
 import javax.validation.constraints.NotNull;
 
 public class DatabaseSettingsCommand {
 
     @NotNull
     private DataSourceConfigType configType;
-    private String embedDriver;
-    private String embedPassword;
-    private String embedUrl;
-    private String embedUsername;
+    private String driver;
+    private String password;
+    private String url;
+    private String username;
     private String JNDIName;
     private int mysqlVarcharMaxlength;
     private String usertableQuote;
@@ -24,36 +22,36 @@ public class DatabaseSettingsCommand {
         this.configType = configType;
     }
 
-    public String getEmbedDriver() {
-        return embedDriver;
+    public String getDriver() {
+        return driver;
     }
 
-    public void setEmbedDriver(String embedDriver) {
-        this.embedDriver = embedDriver;
+    public void setDriver(String embedDriver) {
+        this.driver = embedDriver;
     }
 
-    public String getEmbedPassword() {
-        return embedPassword;
+    public String getPassword() {
+        return password;
     }
 
-    public void setEmbedPassword(String embedPassword) {
-        this.embedPassword = embedPassword;
+    public void setPassword(String embedPassword) {
+        this.password = embedPassword;
     }
 
-    public String getEmbedUrl() {
-        return embedUrl;
+    public String getUrl() {
+        return url;
     }
 
-    public void setEmbedUrl(String embedUrl) {
-        this.embedUrl = embedUrl;
+    public void setUrl(String embedUrl) {
+        this.url = embedUrl;
     }
 
-    public String getEmbedUsername() {
-        return embedUsername;
+    public String getUsername() {
+        return username;
     }
 
-    public void setEmbedUsername(String embedUsername) {
-        this.embedUsername = embedUsername;
+    public void setUsername(String embedUsername) {
+        this.username = embedUsername;
     }
 
     public String getJNDIName() {
@@ -78,5 +76,9 @@ public class DatabaseSettingsCommand {
 
     public void setUsertableQuote(String usertableQuote) {
         this.usertableQuote = usertableQuote;
+    }
+
+    public enum DataSourceConfigType {
+        JNDI, EXTERNAL, BUILTIN
     }
 }
