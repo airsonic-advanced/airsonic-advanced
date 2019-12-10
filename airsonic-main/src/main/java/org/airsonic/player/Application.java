@@ -1,7 +1,5 @@
 package org.airsonic.player;
 
-import org.airsonic.player.service.SettingsService;
-import org.airsonic.player.util.LegacyHsqlMigrationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.WebApplicationType;
@@ -9,11 +7,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.servlet.MultipartAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.event.ApplicationContextInitializedEvent;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
-import org.springframework.context.ApplicationListener;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
@@ -27,15 +23,6 @@ public class Application extends SpringBootServletInitializer implements WebServ
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
     private static SpringApplicationBuilder doConfigure(SpringApplicationBuilder application) {
-        application.application().addListeners((ApplicationListener<ApplicationContextInitializedEvent>) event -> {
-            // Migrate keys to the latest
-            SettingsService.migrateKeys();
-            // Set default constants
-            SettingsService.setDefaultConstants(event.getApplicationContext().getEnvironment());
-            // Handle HSQLDB database upgrades for builtin legacy db from 1.8 to 2.x before any beans are started.
-            LegacyHsqlMigrationUtil.upgradeFileHsqlDbIfNeeded(event.getApplicationContext().getEnvironment());
-        });
-
         // Customize the application or call application.sources(...) to add sources
         // Since our example is itself a @Configuration class (via @SpringBootApplication)
         // we actually don't need to override this method.
