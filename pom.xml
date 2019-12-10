@@ -356,6 +356,7 @@
                                 <ignoredUsedUndeclaredDependency>com.fasterxml.jackson.*:jackson-*</ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                             <ignoredUnusedDeclaredDependencies>
+                                <ignoredUnusedDeclaredDependency>com.fasterxml.jackson.module:jackson-module-jaxb-annotations</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>com.sun.mail:jakarta.mail*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.seamless:seamless-http*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>taglibs:string:jar*</ignoredUnusedDeclaredDependency>
