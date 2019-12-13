@@ -330,7 +330,7 @@ public class DownloadController implements LastModified {
         try (Stream<Path> paths = Files.walk(file)) {
             paths.filter(f -> !f.getFileName().toString().startsWith("."))
                 .forEach(FileUtil.uncheck(f -> {
-                    String zipName = f.relativize(root).toString();
+                    String zipName = root.relativize(f).toString();
                     if (Files.isRegularFile(f)) {
                         status.setFile(f);
 
