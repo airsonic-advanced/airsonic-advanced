@@ -34,14 +34,14 @@ public class TransferStatus {
     private static final int HISTORY_LENGTH = 200;
     private static final long SAMPLE_INTERVAL_MILLIS = 5000;
 
-    private Player player;
+    private final Player player;
     private Path file;
-    private AtomicLong bytesTransferred = new AtomicLong();
-    private AtomicLong bytesSkipped = new AtomicLong();
-    private AtomicLong bytesTotal;
+    private final AtomicLong bytesTransferred = new AtomicLong();
+    private final AtomicLong bytesSkipped = new AtomicLong();
+    private final AtomicLong bytesTotal = new AtomicLong();
     private final SampleHistory history = new SampleHistory();
-    private boolean terminated;
-    private boolean active = true;
+    private volatile boolean terminated;
+    private volatile boolean active = true;
 
     public TransferStatus(Player player) {
         this.player = player;
