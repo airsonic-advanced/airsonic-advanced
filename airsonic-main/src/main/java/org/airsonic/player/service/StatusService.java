@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -129,7 +128,7 @@ public class StatusService {
         List<PlayStatus> remotePlaySnapshot = new ArrayList<>(remotePlays);
 
         return Stream.concat(
-                remotePlaySnapshot.parallelStream().filter(Predicate.not(PlayStatus::isExpired)),
+                remotePlaySnapshot.parallelStream().filter(r -> !r.isExpired()),
                 getAllStreamStatuses().parallelStream().map(streamStatus -> {
                     Path file = streamStatus.getFile();
                     if (file == null) {
