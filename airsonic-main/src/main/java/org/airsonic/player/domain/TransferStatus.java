@@ -177,15 +177,6 @@ public class TransferStatus {
     }
 
     /**
-     * Sets the remote player for the stream.
-     *
-     * @param player The remote player for the stream.
-     */
-    public void setPlayer(Player player) {
-        this.player = player;
-    }
-
-    /**
      * Returns a history of samples for the stream
      *
      * @return A (copy of) the history list of samples.
