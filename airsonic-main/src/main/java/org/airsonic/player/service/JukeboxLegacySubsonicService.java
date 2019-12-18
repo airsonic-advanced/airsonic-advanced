@@ -160,7 +160,7 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
         LOG.info(player.getUsername() + " starting jukebox for \"" + FileUtil.getShortPath(file.getFile()) + "\"");
         status = statusService.createStreamStatus(player);
         status.setFile(file.getFile());
-        status.addBytesTransfered(file.getFileSize());
+        status.addBytesTransferred(file.getFileSize());
         mediaFileService.incrementPlayCount(file);
         scrobble(file, false);
     }

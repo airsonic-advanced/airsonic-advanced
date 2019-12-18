@@ -148,7 +148,7 @@ public class DownloadController implements LastModified {
         } finally {
             if (status != null) {
                 statusService.removeDownloadStatus(status);
-                securityService.updateUserByteCounts(user, 0L, status.getBytesTransfered(), 0L);
+                securityService.updateUserByteCounts(user, 0L, status.getBytesTransferred(), 0L);
             }
         }
     }
@@ -282,12 +282,12 @@ public class DownloadController implements LastModified {
                 out.write(buf, 0, n);
 
                 // Don't sleep if outside range.
-                if (range != null && !range.contains(status.getBytesSkipped() + status.getBytesTransfered())) {
+                if (range != null && !range.contains(status.getBytesSkipped() + status.getBytesTransferred())) {
                     status.addBytesSkipped(n);
                     continue;
                 }
 
-                status.addBytesTransfered(n);
+                status.addBytesTransferred(n);
                 long after = System.currentTimeMillis();
 
                 // Calculate bitrate limit every 5 seconds.

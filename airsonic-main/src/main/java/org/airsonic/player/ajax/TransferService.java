@@ -45,7 +45,7 @@ public class TransferService {
         TransferStatus status = (TransferStatus) session.getAttribute(UploadController.UPLOAD_STATUS);
 
         if (status != null) {
-            return new UploadInfo(status.getBytesTransfered(), status.getBytesTotal());
+            return new UploadInfo(status.getBytesTransferred(), status.getBytesTotal());
         }
         return new UploadInfo(0L, 0L);
     }

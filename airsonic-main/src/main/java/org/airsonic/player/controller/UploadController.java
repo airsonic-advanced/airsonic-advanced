@@ -153,7 +153,7 @@ public class UploadController {
                 statusService.removeUploadStatus(status);
                 request.getSession().removeAttribute(UPLOAD_STATUS);
                 User user = securityService.getCurrentUser(request);
-                securityService.updateUserByteCounts(user, 0L, 0L, status.getBytesTransfered());
+                securityService.updateUserByteCounts(user, 0L, 0L, status.getBytesTransferred());
             }
         }
 
@@ -214,14 +214,14 @@ public class UploadController {
 
             // Throttle bitrate.
 
-            long byteCount = status.getBytesTransfered() + bytesRead;
+            long byteCount = status.getBytesTransferred() + bytesRead;
             long bitCount = byteCount * 8L;
 
             float elapsedMillis = Math.max(1, System.currentTimeMillis() - start);
             float elapsedSeconds = elapsedMillis / 1000.0F;
             long maxBitsPerSecond = getBitrateLimit();
 
-            status.setBytesTransfered(byteCount);
+            status.setBytesTransferred(byteCount);
 
             if (maxBitsPerSecond > 0) {
                 float sleepMillis = 1000.0F * (bitCount / maxBitsPerSecond - elapsedSeconds);
