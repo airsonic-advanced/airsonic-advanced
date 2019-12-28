@@ -19,34 +19,53 @@
  */
 package org.airsonic.player.controller;
 
+import com.google.common.collect.Streams;
+
 import org.airsonic.player.domain.*;
-import org.airsonic.player.io.RangeOutputStream;
 import org.airsonic.player.service.*;
 import org.airsonic.player.util.FileUtil;
-import org.airsonic.player.util.HttpRange;
-import org.airsonic.player.util.Util;
+import org.airsonic.player.util.PipeStreams.MonitoredResource;
+import org.airsonic.player.util.PipeStreams.PipedInputStream;
+import org.airsonic.player.util.PipeStreams.PipedOutputStream;
+import org.airsonic.player.util.StringUtil;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.ServletRequestBindingException;
-import org.springframework.web.bind.ServletRequestUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.servlet.mvc.LastModified;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.ServletWebRequest;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.security.Principal;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
@@ -54,17 +73,18 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * A controller used for downloading files to a remote client. If the requested path refers to a file, the
- * given file is downloaded.  If the requested path refers to a directory, the entire directory (including
- * sub-directories) are downloaded as an uncompressed zip-file.
+ * A controller used for downloading files to a remote client. If the requested
+ * path refers to a file, the given file is downloaded. If the requested path
+ * refers to a directory, the entire directory (including sub-directories) are
+ * downloaded as an uncompressed zip-file.
  *
  * @author Sindre Mehus
+ * @author Randomnic
  */
 
-//TODO This entire class is ripe for a rewrite with the framework able to handle much of the custom code for supporting byte ranges
 @Controller
 @RequestMapping("/download")
-public class DownloadController implements LastModified {
+public class DownloadController {
 
     private static final Logger LOG = LoggerFactory.getLogger(DownloadController.class);
 
@@ -81,279 +101,59 @@ public class DownloadController implements LastModified {
     @Autowired
     private MediaFileService mediaFileService;
 
-    public long getLastModified(HttpServletRequest request) {
-        try {
-            MediaFile mediaFile = getMediaFile(request);
-            if (mediaFile == null || mediaFile.isDirectory() || mediaFile.getChanged() == null) {
-                return -1;
-            }
-            return mediaFile.getChanged().toEpochMilli();
-        } catch (ServletRequestBindingException e) {
-            return -1;
-        }
-    }
-
     @GetMapping
-    public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+    public ResponseEntity<Resource> handleRequest(Principal p,
+            @RequestParam Optional<Integer> id,
+            @RequestParam(required = false) Integer playlist,
+            @RequestParam(required = false) Integer player,
+            @RequestParam(required = false, name = "i") List<Integer> indices,
+            ServletWebRequest swr) throws Exception {
+        User user = securityService.getUserByName(p.getName());
+        Player transferPlayer = playerService.getPlayer(swr.getRequest(), swr.getResponse(), false, false);
+        String defaultDownloadName = null;
+        ResponseDTO response = null;
 
-        User user = securityService.getCurrentUser(request);
-        TransferStatus status = null;
-        try {
+        Supplier<TransferStatus> statusSupplier = () -> statusService.createDownloadStatus(transferPlayer);
 
-            status = statusService.createDownloadStatus(playerService.getPlayer(request, response, false, false));
+        Consumer<TransferStatus> statusCloser = status -> {
+            statusService.removeDownloadStatus(status);
+            securityService.updateUserByteCounts(user, 0L, status.getBytesTransferred(), 0L);
+            LOG.info("Transferred {} bytes to user: {}, player: {}", status.getBytesTransferred(), user.getUsername(), transferPlayer);
+        };
 
-            MediaFile mediaFile = getMediaFile(request);
+        MediaFile mediaFile = id.map(mediaFileService::getMediaFile).orElse(null);
 
-            Integer playlistId = ServletRequestUtils.getIntParameter(request, "playlist");
-            Integer playerId = ServletRequestUtils.getIntParameter(request, "player");
-            int[] indexes = request.getParameter("i") == null ? null : ServletRequestUtils.getIntParameters(request, "i");
-
-            HttpRange range = HttpRange.valueOf(request.getHeader("Range"));
-            if (range != null) {
-                response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-                LOG.info("Got HTTP range: " + range);
+        if (mediaFile != null) {
+            if (!securityService.isFolderAccessAllowed(mediaFile, user.getUsername())) {
+                throw new AccessDeniedException("Access to file " + mediaFile.getId() + " is forbidden for user " + user.getUsername());
             }
 
-            if (mediaFile != null) {
-                response.setIntHeader("ETag", mediaFile.getId());
-                response.setHeader("Accept-Ranges", "bytes");
-
-                if (!securityService.isFolderAccessAllowed(mediaFile, user.getUsername())) {
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                            "Access to file " + mediaFile.getId() + " is forbidden for user " + user.getUsername());
-                    return;
-                }
-
-                if (mediaFile.isFile()) {
-                    downloadFile(response, status, mediaFile.getFile(), range);
-                } else {
-                    List<MediaFile> children = mediaFileService.getChildrenOf(mediaFile, true, false, true);
-                    String zipFileName = FilenameUtils.getBaseName(mediaFile.getPath()) + ".zip";
-                    Path coverArtFile = indexes == null ? mediaFile.getCoverArtFile() : null;
-                    downloadFiles(response, status, children, indexes, coverArtFile, range, zipFileName);
-                }
-
-            } else if (playlistId != null) {
-                List<MediaFile> songs = playlistService.getFilesInPlaylist(playlistId);
-                Playlist playlist = playlistService.getPlaylist(playlistId);
-                downloadFiles(response, status, songs, null, null, range, playlist.getName() + ".zip");
-
-            } else if (playerId != null) {
-                Player player = playerService.getPlayerById(playerId);
-                PlayQueue playQueue = player.getPlayQueue();
-                playQueue.setName("Playlist");
-                downloadFiles(response, status, playQueue.getFiles(), indexes, null, range, "download.zip");
-            }
-
-        } finally {
-            if (status != null) {
-                statusService.removeDownloadStatus(status);
-                securityService.updateUserByteCounts(user, 0L, status.getBytesTransferred(), 0L);
-            }
-        }
-    }
-
-    private MediaFile getMediaFile(HttpServletRequest request) throws ServletRequestBindingException {
-        Integer id = ServletRequestUtils.getIntParameter(request, "id");
-        return id == null ? null : mediaFileService.getMediaFile(id);
-    }
-
-    /**
-     * Downloads a single file.
-     *
-     * @param response The HTTP response.
-     * @param status   The download status.
-     * @param file     The file to download.
-     * @param range    The byte range, may be <code>null</code>.
-     * @throws IOException If an I/O error occurs.
-     */
-    private void downloadFile(HttpServletResponse response, TransferStatus status, Path file, HttpRange range) throws IOException {
-        LOG.info("Starting to download '" + FileUtil.getShortPath(file) + "' to " + status.getPlayer());
-        status.setFile(file);
-
-        response.setContentType("application/x-download");
-        response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + encodeAsRFC5987(file.getFileName().toString()));
-        if (range == null) {
-            Util.setContentLength(response, FileUtil.size(file));
-        }
-
-        copyFileToStream(file, RangeOutputStream.wrap(response.getOutputStream(), range), status, range);
-        LOG.info("Downloaded '" + FileUtil.getShortPath(file) + "' to " + status.getPlayer());
-    }
-
-    private String encodeAsRFC5987(String string) {
-        byte[] stringAsByteArray = string.getBytes(StandardCharsets.UTF_8);
-        char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-        byte[] attrChar = {'!', '#', '$', '&', '+', '-', '.', '^', '_', '`', '|', '~', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
-        StringBuilder sb = new StringBuilder();
-        for (byte b : stringAsByteArray) {
-            if (Arrays.binarySearch(attrChar, b) >= 0) {
-                sb.append((char) b);
+            if (mediaFile.isFile()) {
+                response = prepareResponse(Collections.singletonList(mediaFile), null, statusSupplier, statusCloser);
+                defaultDownloadName = mediaFile.getFile().getFileName().toString();
             } else {
-                sb.append('%');
-                sb.append(digits[0x0f & (b >>> 4)]);
-                sb.append(digits[b & 0x0f]);
+                response = prepareResponse(mediaFileService.getChildrenOf(mediaFile, true, false, true), indices,
+                        statusSupplier, statusCloser, indices == null ? mediaFile.getCoverArtFile() : null);
+                defaultDownloadName = FilenameUtils.getBaseName(mediaFile.getPath()) + ".zip";
             }
-        }
-        return sb.toString();
-    }
-
-    /**
-     * Downloads the given files.  The files are packed together in an
-     * uncompressed zip-file.
-     *
-     * @param response     The HTTP response.
-     * @param status       The download status.
-     * @param files        The files to download.
-     * @param indexes      Only download songs at these indexes. May be <code>null</code>.
-     * @param coverArtFile The cover art file to include, may be {@code null}.
-     * @param range        The byte range, may be <code>null</code>.
-     * @param zipFileName  The name of the resulting zip file.   @throws IOException If an I/O error occurs.
-     */
-    private void downloadFiles(HttpServletResponse response, TransferStatus status, List<MediaFile> files, int[] indexes, Path coverArtFile, HttpRange range, String zipFileName) throws IOException {
-        boolean cover_embedded = false;
-
-        if (indexes != null && indexes.length == 1) {
-            downloadFile(response, status, files.get(indexes[0]).getFile(), range);
-            return;
+        } else if (playlist != null) {
+            response = prepareResponse(playlistService.getFilesInPlaylist(playlist), indices, statusSupplier, statusCloser);
+            defaultDownloadName = playlistService.getPlaylist(playlist).getName() + ".zip";
+        } else if (player != null) {
+            response = prepareResponse(transferPlayer.getPlayQueue().getFiles(), indices, statusSupplier, statusCloser);
+            defaultDownloadName = "download.zip";
         }
 
-        LOG.info("Starting to download '" + zipFileName + "' to " + status.getPlayer());
-        response.setContentType("application/x-download");
-        response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + encodeAsRFC5987(zipFileName));
-
-        ZipOutputStream out = new ZipOutputStream(RangeOutputStream.wrap(response.getOutputStream(), range));
-        out.setMethod(ZipOutputStream.STORED);  // No compression.
-
-        Set<MediaFile> filesToDownload = new HashSet<>();
-        if (indexes == null) {
-            filesToDownload.addAll(files);
-        } else {
-            for (int index : indexes) {
-                try {
-                    filesToDownload.add(files.get(index));
-                } catch (IndexOutOfBoundsException x) { /* Ignored */}
-            }
+        if (swr.checkNotModified(String.valueOf(response.getSize()), response.getChanged())) {
+            return null;
         }
 
-        for (MediaFile mediaFile : filesToDownload) {
-            zip(out, mediaFile.getParentFile(), mediaFile.getFile(), status, range);
-            if (coverArtFile != null && Files.exists(coverArtFile)) {
-                if (mediaFile.getFile().toRealPath().equals(coverArtFile.toRealPath())) {
-                    cover_embedded = true;
-                }
-            }
-        }
-        if (coverArtFile != null && Files.exists(coverArtFile) && !cover_embedded) {
-            zip(out, coverArtFile.getParent(), coverArtFile, status, range);
-        }
-
-
-        out.close();
-        LOG.info("Downloaded '" + zipFileName + "' to " + status.getPlayer());
-    }
-
-    /**
-     * Utility method for writing the content of a given file to a given output stream.
-     *
-     * @param file   The file to copy.
-     * @param out    The output stream to write to.
-     * @param status The download status.
-     * @param range  The byte range, may be <code>null</code>.
-     * @throws IOException If an I/O error occurs.
-     */
-    private void copyFileToStream(Path file, OutputStream out, TransferStatus status, HttpRange range) throws IOException {
-        LOG.info("Downloading '" + FileUtil.getShortPath(file) + "' to " + status.getPlayer());
-
-        final int bufferSize = 16 * 1024; // 16 Kbit
-        InputStream in = new BufferedInputStream(Files.newInputStream(file), bufferSize);
-
-        try {
-            byte[] buf = new byte[bufferSize];
-            long bitrateLimit = 0;
-            long lastLimitCheck = 0;
-
-            while (true) {
-                long before = System.currentTimeMillis();
-                int n = in.read(buf);
-                if (n == -1) {
-                    break;
-                }
-                out.write(buf, 0, n);
-
-                // Don't sleep if outside range.
-                if (range != null && !range.contains(status.getBytesSkipped() + status.getBytesTransferred())) {
-                    status.addBytesSkipped(n);
-                    continue;
-                }
-
-                status.addBytesTransferred(n);
-                long after = System.currentTimeMillis();
-
-                // Calculate bitrate limit every 5 seconds.
-                if (after - lastLimitCheck > 5000) {
-                    bitrateLimit = 1024L * settingsService.getDownloadBitrateLimit() /
-                            Math.max(1, statusService.getAllDownloadStatuses().size());
-                    lastLimitCheck = after;
-                }
-
-                // Sleep for a while to throttle bitrate.
-                if (bitrateLimit != 0) {
-                    long sleepTime = 8L * 1000 * bufferSize / bitrateLimit - (after - before);
-                    if (sleepTime > 0L) {
-                        try {
-                            Thread.sleep(sleepTime);
-                        } catch (Exception x) {
-                            LOG.warn("Failed to sleep.", x);
-                        }
-                    }
-                }
-            }
-        } finally {
-            out.flush();
-            FileUtil.closeQuietly(in);
-        }
-    }
-
-    /**
-     * Writes a file or a directory structure to a zip output stream. File entries in the zip file are relative
-     * to the given root.
-     *
-     * @param out    The zip output stream.
-     * @param root   The root of the directory structure.  Used to create path information in the zip file.
-     * @param file   The file or directory to zip.
-     * @param status The download status.
-     * @param range  The byte range, may be <code>null</code>.
-     * @throws IOException If an I/O error occurs.
-     */
-    private void zip(ZipOutputStream out, Path root, Path file, TransferStatus status, HttpRange range) throws IOException {
-        try (Stream<Path> paths = Files.walk(file)) {
-            paths.filter(f -> !f.getFileName().toString().startsWith("."))
-                .forEach(FileUtil.uncheck(f -> {
-                    String zipName = root.relativize(f).toString();
-                    if (Files.isRegularFile(f)) {
-                        status.setFile(f);
-
-                        ZipEntry zipEntry = new ZipEntry(zipName);
-                        long size = FileUtil.size(f);
-                        zipEntry.setSize(size);
-                        zipEntry.setCompressedSize(size);
-                        zipEntry.setCrc(computeCrc(f));
-
-                        out.putNextEntry(zipEntry);
-                        copyFileToStream(f, out, status, range);
-                        out.closeEntry();
-                    } else {
-                        ZipEntry zipEntry = new ZipEntry(zipName + '/');
-                        zipEntry.setSize(0);
-                        zipEntry.setCompressedSize(0);
-                        zipEntry.setCrc(0);
-
-                        out.putNextEntry(zipEntry);
-                        out.closeEntry();
-                    }
-                }));
-        }
+        String filename = Optional.ofNullable(response.getProposedName()).orElse(defaultDownloadName);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.builder("attachment").filename(filename, StandardCharsets.UTF_8).build());
+        headers.setContentType(MediaType.parseMediaType(StringUtil.getMimeType(FilenameUtils.getExtension(filename))));
+        LOG.info("Downloading '{}' to {}", filename, player);
+        return ResponseEntity.ok().headers(headers).body(response.getResource());
     }
 
     /**
@@ -363,7 +163,7 @@ public class DownloadController implements LastModified {
      * @return A CRC32 checksum.
      * @throws IOException If an I/O error occurs.
      */
-    private long computeCrc(Path file) throws IOException {
+    private static long computeCrc(Path file) throws IOException {
         try (InputStream is = Files.newInputStream(file);
                 BufferedInputStream bis = new BufferedInputStream(is);
                 CheckedInputStream cis = new CheckedInputStream(bis, new CRC32())) {
@@ -374,6 +174,163 @@ public class DownloadController implements LastModified {
 
             return cis.getChecksum().getValue();
         }
+    }
+
+    private static long zipSize(Stream<Entry<String, Long>> paths) {
+        return paths.mapToLong(e -> 30 + 46 + (2 * e.getKey().length()) + e.getValue()).sum() + 22;
+    }
+
+    private ResponseDTO prepareResponse(List<MediaFile> files, List<Integer> indices,
+            Supplier<TransferStatus> statusSupplier, Consumer<TransferStatus> statusCloser, Path... additionalFiles)
+            throws IOException {
+        if (indices == null) {
+            indices = IntStream.range(0, files.size()).boxed().collect(Collectors.toList());
+        } else if (indices.parallelStream().anyMatch(i -> i >= files.size())) {
+            throw new IllegalArgumentException("Can't have index > number of files");
+        }
+
+        if (indices.size() == 0) {
+            // nothing, just return empty
+            return new ResponseDTO(null, "emptyfile.download", 0, -1);
+        }
+
+        if (indices.size() == 1 && (additionalFiles == null || additionalFiles.length == 0)) {
+            // single file
+            MediaFile file = files.get(indices.get(0));
+            Path path = file.getFile();
+            long changed = file.getChanged() == null ? -1 : file.getChanged().toEpochMilli();
+            return new ResponseDTO(
+                    new MonitoredResource(
+                            new FileSystemResource(path),
+                            settingsService.getDownloadBitrateLimiter(),
+                            statusSupplier,
+                            statusCloser,
+                            (input, status) -> {}),
+                    path.getFileName().toString(),
+                    file.getFileSize(),
+                    changed);
+        } else {
+            // get a list of all paths under the tree, plus their zip names and sizes
+            Collection<Pair<Path, Pair<String, Long>>> pathsToZip = Streams
+                    .concat(indices.stream().map(i -> files.get(i)).map(x -> x.getFile()), Stream.of(additionalFiles))
+                    .flatMap(p -> {
+                        Path parent = p.getParent();
+                        try (Stream<Path> paths = Files.walk(p)) {
+                            return paths.filter(f -> !f.getFileName().toString().startsWith(".")).map(f -> {
+                                String zipName = parent.relativize(f).toString();
+                                long size = 0L;
+                                if (Files.isRegularFile(f)) {
+                                    size = FileUtil.size(f);
+                                } else {
+                                    zipName = zipName + '/';
+                                }
+                                return Pair.of(f, Pair.of(zipName, size));
+                            }).collect(Collectors.toList()).stream();
+                        } catch (Exception e) {
+                            LOG.warn("Error retrieving file to zip", e);
+                            return Stream.empty();
+                        }
+                    }).filter(f -> Objects.nonNull(f))
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+
+            // zip to out
+            BiConsumer<InputStream, TransferStatus> poutInit = (input, status) -> {
+                PipedInputStream pin = (PipedInputStream) input;
+
+                // start a new thread to feed data in
+                new Thread(() -> {
+                    try (PipedOutputStream pout = new PipedOutputStream(pin);
+                            ZipOutputStream zout = new ZipOutputStream(pout)) {
+                        zout.setMethod(ZipOutputStream.STORED); // No compression.
+                        pathsToZip.stream().forEach(FileUtil.uncheck(f -> {
+                            status.setFile(f.getKey());
+                            ZipEntry zipEntry = new ZipEntry(f.getValue().getKey());
+                            zipEntry.setSize(f.getValue().getValue());
+                            zipEntry.setCompressedSize(f.getValue().getValue());
+
+                            if (f.getValue().getKey().endsWith("/") && f.getValue().getValue() == 0L) {
+                                // directory
+                                zipEntry.setCrc(0);
+                                zout.putNextEntry(zipEntry);
+                            } else {
+                                zipEntry.setCrc(computeCrc(f.getKey()));
+                                zout.putNextEntry(zipEntry);
+                                Files.copy(f.getKey(), zout);
+                            }
+
+                            zout.closeEntry();
+                        }));
+                    } catch (Exception e1) {
+                        LOG.debug("Error with output to zip", e1);
+                    }
+                }).start();
+
+                // wait for src data thread to connect
+                while (pin.source == null) {
+                    // sit and wait and ponder life
+                }
+            };
+
+            long size = zipSize(pathsToZip.stream().map(e -> e.getValue()));
+
+            PipedInputStream pin = new PipedInputStream(null, 16 * 1024); // 16 Kb buffer
+
+            return new ResponseDTO(
+                    new MonitoredResource(
+                            new KnownLengthInputStreamResource(pin, size),
+                            settingsService.getDownloadBitrateLimiter(),
+                            statusSupplier,
+                            statusCloser,
+                            poutInit),
+                    null, size, -1);
+        }
+    }
+
+    public static class KnownLengthInputStreamResource extends InputStreamResource {
+        private long len;
+
+        public KnownLengthInputStreamResource(InputStream inputStream, long len) {
+            super(inputStream);
+            this.len = len;
+        }
+
+        @Override
+        public long contentLength() {
+            return len;
+        }
+    }
+
+    public static class ResponseDTO {
+        private final Resource resource;
+        private final String proposedName;
+        // used as an ETag to see if a resource has changed
+        private final long size;
+        // used for Last-Modified
+        private final long changed;
+
+        public ResponseDTO(Resource resource, String proposedName, long size, long changed) {
+            this.resource = resource;
+            this.proposedName = proposedName;
+            this.size = size;
+            this.changed = changed;
+        }
+
+        public Resource getResource() {
+            return resource;
+        }
+
+        public String getProposedName() {
+            return proposedName;
+        }
+
+        public long getSize() {
+            return size;
+        }
+
+        public long getChanged() {
+            return changed;
+        }
+
     }
 
 }
