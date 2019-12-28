@@ -205,7 +205,7 @@ public class DownloadController {
                             settingsService.getDownloadBitrateLimiter(),
                             statusSupplier,
                             statusCloser,
-                            (input, status) -> {}),
+                        (input, status) -> {}),
                     path.getFileName().toString(),
                     file.getFileSize(),
                     changed);

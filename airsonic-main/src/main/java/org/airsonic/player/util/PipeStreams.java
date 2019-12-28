@@ -41,9 +41,7 @@ public class PipeStreams {
      * @author WD
      */
 
-    public static class PipedInputStream extends InputStream
-
-    {
+    public static class PipedInputStream extends InputStream {
 
         byte[] buffer;
         boolean closed = false;
@@ -133,11 +131,6 @@ public class PipeStreams {
         }
 
         @Override
-        protected void finalize() throws Throwable {
-            close();
-        }
-
-        @Override
         public void mark(int readLimit) {
             return;
         }
@@ -181,9 +174,7 @@ public class PipeStreams {
                     try {
                         buffer.notifyAll();
                         buffer.wait();
-                    }
-
-                    catch (InterruptedException e) {
+                    } catch (InterruptedException e) {
                         throw new IOException(e.getMessage());
                     }
 
@@ -201,8 +192,8 @@ public class PipeStreams {
                 System.arraycopy(buffer, readPosition, b, off, amount);
                 readPosition += amount;
 
-                if (readPosition == buffer.length) // A lap was completed, so go back.
-                {
+                if (readPosition == buffer.length) {
+                    // A lap was completed, so go back.
                     readPosition = 0;
                     ++readLaps;
                 }
@@ -238,9 +229,7 @@ public class PipeStreams {
      * @author WD
      */
 
-    public static class PipedOutputStream extends OutputStream
-
-    {
+    public static class PipedOutputStream extends OutputStream {
 
         PipedInputStream sink;
 
@@ -294,11 +283,6 @@ public class PipeStreams {
         }
 
         @Override
-        protected void finalize() throws Throwable {
-            close();
-        }
-
-        @Override
         public void flush() throws IOException {
             synchronized (sink.buffer) {
                 // Release all readers.
@@ -338,9 +322,7 @@ public class PipeStreams {
                     try {
                         sink.buffer.notifyAll();
                         sink.buffer.wait();
-                    }
-
-                    catch (InterruptedException e) {
+                    } catch (InterruptedException e) {
                         throw new IOException(e.getMessage());
                     }
 

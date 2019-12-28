@@ -16,17 +16,6 @@
 
 package org.airsonic.player.spring;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.airsonic.player.util.FileUtil;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourceRegion;
@@ -41,6 +30,17 @@ import org.springframework.util.Assert;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StreamUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
 /**
  * Implementation of {@link HttpMessageConverter} that can write a single
  * {@link ResourceRegion}, or Collections of {@link ResourceRegion
@@ -48,7 +48,7 @@ import org.springframework.util.StreamUtils;
  * 5.2.3 is released with
  * https://github.com/spring-projects/spring-framework/commit/0eacb443b01833eb1b34006d74c2ee6da04af403
  * which fixes the ResourceRange InputStream non-reuse.
- * 
+ *
  * @author Brian Clozel
  * @author Juergen Hoeller
  * @author Randomnic
