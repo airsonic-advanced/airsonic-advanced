@@ -586,7 +586,7 @@ public class SonosHelper {
         trackMetadata.setAlbumArtist(song.getAlbumArtist());
         trackMetadata.setAlbum(song.getAlbumName());
         trackMetadata.setAlbumArtURI(albumArtURI);
-        trackMetadata.setDuration(song.getDurationSeconds());
+        trackMetadata.setDuration((int) Math.round(song.getDuration()));
         trackMetadata.setTrackNumber(song.getTrackNumber());
 
         MediaFile parent = mediaFileService.getParentOf(song);

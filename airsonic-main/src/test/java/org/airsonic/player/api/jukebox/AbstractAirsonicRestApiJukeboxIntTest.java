@@ -178,7 +178,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].size").value(mediaFile.getFileSize()).match(result);
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].contentType").value(StringUtil.getMimeType(mediaFile.getFormat())).match(result);
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].suffix").value(mediaFile.getFormat()).match(result);
-            jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].duration").value(mediaFile.getDurationSeconds()).match(result);
+            jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].duration").value(Math.round(mediaFile.getDuration())).match(result);
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].bitRate").value(mediaFile.getBitRate()).match(result);
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].path").value(SubsonicRESTController.getRelativePath(mediaFile, settingsService)).match(result);
             jsonPath("$.subsonic-response.jukeboxPlaylist.entry[0].isVideo").value(mediaFile.isVideo()).match(result);

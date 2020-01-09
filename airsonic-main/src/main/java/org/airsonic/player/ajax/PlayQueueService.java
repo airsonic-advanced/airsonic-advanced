@@ -710,7 +710,7 @@ public class PlayQueueService {
             boolean starred = mediaFileService.getMediaFileStarredDate(file.getId(), username) != null;
             entries.add(new PlayQueueInfo.Entry(file.getId(), file.getTrackNumber(), file.getTitle(), file.getArtist(),
                     file.getAlbumName(), file.getGenre(), file.getYear(), formatBitRate(file),
-                    file.getDurationSeconds(), file.getDurationString(), format, formatContentType(format),
+                    file.getDuration(), file.getDurationString(), format, formatContentType(format),
                     formatFileSize(file.getFileSize(), locale), starred, albumUrl, streamUrl, remoteStreamUrl,
                     coverArtUrl, remoteCoverArtUrl));
         }
@@ -741,7 +741,7 @@ public class PlayQueueService {
                     "Internet Radio",  // Genre
                     0,                 // Year
                     "",                // Bit rate
-                    0,                 // Duration
+                    0.0,               // Duration
                     "",                // Duration (as string)
                     "",                // Format
                     "",                // Content Type

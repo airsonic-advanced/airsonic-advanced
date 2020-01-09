@@ -87,8 +87,8 @@ public class HLSController {
             return;
         }
 
-        Integer duration = mediaFile.getDurationSeconds();
-        if (duration == null || duration == 0) {
+        Double duration = mediaFile.getDuration();
+        if (duration == null || duration < 0.0001) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Unknown duration for media file: " + id);
             return;
         }
@@ -100,7 +100,7 @@ public class HLSController {
         if (bitRates.size() > 1) {
             generateVariantPlaylist(request, id, player, bitRates, writer);
         } else {
-            generateNormalPlaylist(request, id, player, bitRates.size() == 1 ? bitRates.get(0) : null, duration, writer);
+            generateNormalPlaylist(request, id, player, bitRates.size() == 1 ? bitRates.get(0) : null, Math.round(duration), writer);
         }
 
         return;
@@ -160,7 +160,8 @@ public class HLSController {
 //        writer.println("#EXT-X-ENDLIST");
     }
 
-    private void generateNormalPlaylist(HttpServletRequest request, int id, Player player, Pair<Integer, Dimension> bitRate, int totalDuration, PrintWriter writer) {
+    private void generateNormalPlaylist(HttpServletRequest request, int id, Player player,
+            Pair<Integer, Dimension> bitRate, long totalDuration, PrintWriter writer) {
         writer.println("#EXTM3U");
         writer.println("#EXT-X-VERSION:1");
         writer.println("#EXT-X-TARGETDURATION:" + SEGMENT_DURATION);
@@ -171,16 +172,16 @@ public class HLSController {
             writer.println(createStreamUrl(request, player, id, offset, SEGMENT_DURATION, bitRate));
         }
 
-        int remainder = totalDuration % SEGMENT_DURATION;
+        long remainder = totalDuration % SEGMENT_DURATION;
         if (remainder > 0) {
             writer.println("#EXTINF:" + remainder + ",");
-            int offset = totalDuration - remainder;
+            long offset = totalDuration - remainder;
             writer.println(createStreamUrl(request, player, id, offset, remainder, bitRate));
         }
         writer.println("#EXT-X-ENDLIST");
     }
 
-    private String createStreamUrl(HttpServletRequest request, Player player, int id, int offset, int duration, Pair<Integer, Dimension> bitRate) {
+    private String createStreamUrl(HttpServletRequest request, Player player, int id, long offset, long duration, Pair<Integer, Dimension> bitRate) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(getContextPath(request) + "ext/stream/stream.ts");
         builder.queryParam("id", id);
         builder.queryParam("hls", "true");

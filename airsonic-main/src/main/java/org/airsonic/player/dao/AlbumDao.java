@@ -41,7 +41,7 @@ import java.util.*;
  */
 @Repository
 public class AlbumDao extends AbstractDao {
-    private static final String INSERT_COLUMNS = "path, name, artist, song_count, duration_seconds, cover_art_path, " +
+    private static final String INSERT_COLUMNS = "path, name, artist, song_count, duration, cover_art_path, " +
                                           "year, genre, play_count, last_played, comment, created, last_scanned, present, " +
                                           "folder_id, mb_release_id";
 
@@ -119,7 +119,7 @@ public class AlbumDao extends AbstractDao {
         String sql = "update album set " +
                      "path=?," +
                      "song_count=?," +
-                     "duration_seconds=?," +
+                     "duration=?," +
                      "cover_art_path=?," +
                      "year=?," +
                      "genre=?," +
@@ -133,14 +133,14 @@ public class AlbumDao extends AbstractDao {
                      "mb_release_id=? " +
                      "where artist=? and name=?";
 
-        int n = update(sql, album.getPath(), album.getSongCount(), album.getDurationSeconds(), album.getCoverArtPath(), album.getYear(),
+        int n = update(sql, album.getPath(), album.getSongCount(), album.getDuration(), album.getCoverArtPath(), album.getYear(),
                        album.getGenre(), album.getPlayCount(), album.getLastPlayed(), album.getComment(), album.getCreated(),
                        album.getLastScanned(), album.isPresent(), album.getFolderId(), album.getMusicBrainzReleaseId(), album.getArtist(), album.getName());
 
         if (n == 0) {
 
             update("insert into album (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")", album.getPath(),
-                   album.getName(), album.getArtist(), album.getSongCount(), album.getDurationSeconds(),
+                   album.getName(), album.getArtist(), album.getSongCount(), album.getDuration(),
                    album.getCoverArtPath(), album.getYear(), album.getGenre(), album.getPlayCount(), album.getLastPlayed(),
                    album.getComment(), album.getCreated(), album.getLastScanned(), album.isPresent(), album.getFolderId(), album.getMusicBrainzReleaseId());
         }
@@ -360,6 +360,7 @@ public class AlbumDao extends AbstractDao {
     }
 
     private static class AlbumMapper implements RowMapper<Album> {
+        @Override
         public Album mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Album(
                     rs.getInt(1),
@@ -367,7 +368,7 @@ public class AlbumDao extends AbstractDao {
                     rs.getString(3),
                     rs.getString(4),
                     rs.getInt(5),
-                    rs.getInt(6),
+                    rs.getDouble(6),
                     rs.getString(7),
                     rs.getInt(8) == 0 ? null : rs.getInt(8),
                     rs.getString(9),

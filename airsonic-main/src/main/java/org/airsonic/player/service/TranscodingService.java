@@ -500,7 +500,7 @@ public class TranscodingService {
         if (!parameters.isDownsample() && !parameters.isTranscode()) {
             return file.getFileSize();
         }
-        Integer duration = file.getDurationSeconds();
+        Double duration = file.getDuration();
         Integer maxBitRate = parameters.getMaxBitRate();
 
         if (duration == null) {
@@ -514,7 +514,7 @@ public class TranscodingService {
         }
 
         // Over-estimate size a bit (2 seconds) so don't cut off early in case of small calculation differences
-        return (duration + 2) * (long)maxBitRate * 1000L / 8L;
+        return Math.round((duration + 2) * maxBitRate * 1000L / 8L);
     }
 
     private boolean isRangeAllowed(Parameters parameters) {

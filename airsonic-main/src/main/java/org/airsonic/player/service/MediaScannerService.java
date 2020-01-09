@@ -299,8 +299,8 @@ public class MediaScannerService {
         updateGenres(file, genres);
         encountered.putIfAbsent(file.getPath(), Boolean.TRUE);
 
-        if (file.getDurationSeconds() != null) {
-            statistics.incrementTotalDurationInSeconds(file.getDurationSeconds());
+        if (file.getDuration() != null) {
+            statistics.incrementTotalDurationInSeconds(file.getDuration());
         }
         if (file.getFileSize() != null) {
             statistics.incrementTotalLengthInBytes(file.getFileSize());
@@ -343,8 +343,8 @@ public class MediaScannerService {
 
             firstEncounter.set(!lastScanned.equals(a.getLastScanned()));
 
-            if (file.getDurationSeconds() != null) {
-                a.incrementDurationSeconds(file.getDurationSeconds());
+            if (file.getDuration() != null) {
+                a.incrementDuration(file.getDuration());
             }
             if (file.isAudio()) {
                 a.incrementSongCount();

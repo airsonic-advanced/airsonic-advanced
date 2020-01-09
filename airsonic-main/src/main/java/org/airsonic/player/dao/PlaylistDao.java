@@ -37,7 +37,7 @@ import java.util.*;
  */
 @Repository
 public class PlaylistDao extends AbstractDao {
-    private static final String INSERT_COLUMNS = "username, is_public, name, comment, file_count, duration_seconds, " +
+    private static final String INSERT_COLUMNS = "username, is_public, name, comment, file_count, duration, " +
                                                 "created, changed, imported_from";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private final PlaylistMapper rowMapper = new PlaylistMapper();
@@ -81,7 +81,7 @@ public class PlaylistDao extends AbstractDao {
     public void createPlaylist(Playlist playlist) {
         update("insert into playlist(" + INSERT_COLUMNS + ") values(" + questionMarks(INSERT_COLUMNS) + ")",
                 playlist.getUsername(), playlist.isShared(), playlist.getName(), playlist.getComment(),
-                0, 0, playlist.getCreated(), playlist.getChanged(), playlist.getImportedFrom());
+                0, 0.0, playlist.getCreated(), playlist.getChanged(), playlist.getImportedFrom());
 
         int id = queryForInt("select max(id) from playlist", 0);
         playlist.setId(id);
@@ -89,14 +89,14 @@ public class PlaylistDao extends AbstractDao {
 
     public void setFilesInPlaylist(int id, List<MediaFile> files) {
         update("delete from playlist_file where playlist_id=?", id);
-        int duration = 0;
+        double duration = 0;
         for (MediaFile file : files) {
             update("insert into playlist_file (playlist_id, media_file_id) values (?, ?)", id, file.getId());
-            if (file.getDurationSeconds() != null) {
-                duration += file.getDurationSeconds();
+            if (file.getDuration() != null) {
+                duration += file.getDuration();
             }
         }
-        update("update playlist set file_count=?, duration_seconds=?, changed=? where id=?", files.size(), duration, Instant.now(), id);
+        update("update playlist set file_count=?, duration=?, changed=? where id=?", files.size(), duration, Instant.now(), id);
     }
 
     public List<String> getPlaylistUsers(int playlistId) {
@@ -133,7 +133,7 @@ public class PlaylistDao extends AbstractDao {
                     rs.getString(4),
                     rs.getString(5),
                     rs.getInt(6),
-                    rs.getInt(7),
+                    rs.getDouble(7),
                     Optional.ofNullable(rs.getTimestamp(8)).map(x -> x.toInstant()).orElse(null),
                     Optional.ofNullable(rs.getTimestamp(9)).map(x -> x.toInstant()).orElse(null),
                     rs.getString(10));

@@ -144,7 +144,7 @@ public class LeftController {
         if (statistics != null) {
             map.put("statistics", statistics);
             long bytes = statistics.getTotalLengthInBytes();
-            long hours = statistics.getTotalDurationInSeconds() / 3600L;
+            long hours = (long) (statistics.getTotalDurationInSeconds() / 3600L);
             map.put("hours", hours);
             map.put("bytes", StringUtil.formatBytes(bytes, locale));
         }
