@@ -47,8 +47,7 @@ import java.util.*;
 public class MediaFileDao extends AbstractDao {
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileDao.class);
     private static final String INSERT_COLUMNS = "path, folder, type, format, title, album, artist, album_artist, disc_number, " +
-            "track_number, year, genre, bit_rate, variable_bit_rate, duration, file_size, width, height, cover_art_path, "
-            +
+                                                "track_number, year, genre, bit_rate, variable_bit_rate, duration, file_size, width, height, cover_art_path, " +
                                                 "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, " +
                                                 "version, mb_release_id, mb_recording_id";
 
@@ -152,7 +151,7 @@ public class MediaFileDao extends AbstractDao {
                      "genre=?," +
                      "bit_rate=?," +
                      "variable_bit_rate=?," +
-                "duration=?," +
+                     "duration=?," +
                      "file_size=?," +
                      "width=?," +
                      "height=?," +
@@ -193,7 +192,7 @@ public class MediaFileDao extends AbstractDao {
             update("insert into media_file (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")",
                    file.getPath(), file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
                    file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
-                    file.isVariableBitRate(), file.getDuration(), file.getFileSize(), file.getWidth(), file.getHeight(),
+                   file.isVariableBitRate(), file.getDuration(), file.getFileSize(), file.getWidth(), file.getHeight(),
                    file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
                    file.getCreated(), file.getChanged(), file.getLastScanned(),
                    file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId());

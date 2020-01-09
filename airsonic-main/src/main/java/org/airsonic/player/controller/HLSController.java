@@ -160,8 +160,7 @@ public class HLSController {
 //        writer.println("#EXT-X-ENDLIST");
     }
 
-    private void generateNormalPlaylist(HttpServletRequest request, int id, Player player,
-            Pair<Integer, Dimension> bitRate, long totalDuration, PrintWriter writer) {
+    private void generateNormalPlaylist(HttpServletRequest request, int id, Player player, Pair<Integer, Dimension> bitRate, long totalDuration, PrintWriter writer) {
         writer.println("#EXTM3U");
         writer.println("#EXT-X-VERSION:1");
         writer.println("#EXT-X-TARGETDURATION:" + SEGMENT_DURATION);
