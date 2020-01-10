@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -377,7 +378,7 @@ public class TranscodingService {
                 if (Util.isWindows() && !mediaFile.isVideo() && !StringUtils.isAsciiPrintable(path.toString())) {
                     tmpFile = Files.createTempFile("airsonic", "." + MoreFiles.getFileExtension(path));
                     tmpFile.toFile().deleteOnExit();
-                    Files.copy(path, tmpFile);
+                    Files.copy(path, tmpFile, StandardCopyOption.REPLACE_EXISTING);
                     LOG.debug("Created tmp file: " + tmpFile);
                     cmd = cmd.replace("%s", tmpFile.toString());
                 } else {
@@ -485,7 +486,7 @@ public class TranscodingService {
         }
         String executable = StringUtil.split(step)[0];
         try (Stream<Path> files = Files.list(getTranscodeDirectory())) {
-            return files.anyMatch(p -> p.getFileName().startsWith(executable));
+            return files.anyMatch(p -> p.getFileName().toString().startsWith(executable));
         } catch (IOException e) {
             return false;
         }
