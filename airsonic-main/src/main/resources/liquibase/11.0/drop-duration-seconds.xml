@@ -1,0 +1,44 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="drop-duration-seconds-from-mediafile" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="duration_seconds" />
+        </preConditions>
+        <dropColumn tableName="media_file" columnName="duration_seconds"/>
+        <rollback>
+            <addColumn tableName="media_file">
+                <column name="duration_seconds" type="int" />
+            </addColumn>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="drop-duration-seconds-from-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="duration_seconds" />
+        </preConditions>
+        <dropColumn tableName="album" columnName="duration_seconds"/>
+        <rollback>
+            <addColumn tableName="album">
+                <column name="duration_seconds" type="int" defaultValueNumeric="0">
+                    <constraints nullable="false" />
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="drop-duration-seconds-from-playlist" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="playlist" columnName="duration_seconds" />
+        </preConditions>
+        <dropColumn tableName="playlist" columnName="duration_seconds"/>
+        <rollback>
+            <addColumn tableName="playlist">
+                <column name="duration_seconds" type="int" defaultValueNumeric="0">
+                    <constraints nullable="false" />
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
