@@ -12,11 +12,7 @@
             <column name="duration" type="double" />
         </addColumn>
         <sql>update media_file set duration = duration_seconds</sql>
-        <dropColumn tableName="media_file" columnName="duration_seconds"/>
         <rollback>
-            <addColumn tableName="media_file">
-                <column name="duration_seconds" type="int" />
-            </addColumn>
             <dropColumn tableName="media_file" columnName="duration"/>
         </rollback>
     </changeSet>
@@ -33,13 +29,7 @@
             </column>
         </addColumn>
         <sql>update album set duration = duration_seconds</sql>
-        <dropColumn tableName="album" columnName="duration_seconds"/>
         <rollback>
-            <addColumn tableName="album">
-                <column name="duration_seconds" type="int" defaultValueNumeric="0">
-                    <constraints nullable="false" />
-                </column>
-            </addColumn>
             <dropColumn tableName="album" columnName="duration"/>
         </rollback>
     </changeSet>
@@ -56,13 +46,7 @@
             </column>
         </addColumn>
         <sql>update playlist set duration = duration_seconds</sql>
-        <dropColumn tableName="playlist" columnName="duration_seconds"/>
         <rollback>
-            <addColumn tableName="playlist">
-                <column name="duration_seconds" type="int" defaultValueNumeric="0">
-                    <constraints nullable="false" />
-                </column>
-            </addColumn>
             <dropColumn tableName="playlist" columnName="duration"/>
         </rollback>
     </changeSet>
