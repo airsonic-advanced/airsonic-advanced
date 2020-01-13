@@ -69,6 +69,7 @@ public class SecurityService implements UserDetailsService {
      * @throws UsernameNotFoundException if the user could not be found or the user has no GrantedAuthority.
      * @throws DataAccessException       If user could not be found for a repository-specific reason.
      */
+    @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException, DataAccessException {
         return loadUserByUsername(username, true);
     }
@@ -218,11 +219,12 @@ public class SecurityService implements UserDetailsService {
             return;
         }
 
-        user.setBytesStreamed(user.getBytesStreamed() + bytesStreamedDelta);
-        user.setBytesDownloaded(user.getBytesDownloaded() + bytesDownloadedDelta);
-        user.setBytesUploaded(user.getBytesUploaded() + bytesUploadedDelta);
+        userDao.updateUserByteCounts(user.getUsername(), bytesStreamedDelta, bytesDownloadedDelta, bytesUploadedDelta);
 
-        userDao.updateUser(user);
+        User updated = userDao.getUserByName(user.getUsername(), true);
+        user.setBytesStreamed(updated.getBytesStreamed());
+        user.setBytesDownloaded(updated.getBytesDownloaded());
+        user.setBytesUploaded(updated.getBytesUploaded());
     }
 
     /**
