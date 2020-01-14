@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.ServletRequestUtils;
@@ -1357,9 +1358,12 @@ public class SubsonicRESTController {
     }
 
     @RequestMapping("/download")
-    public ResponseEntity<Resource> download(Principal p, @RequestParam(required = false) String id,
-            @RequestParam(required = false) Integer playlist, @RequestParam(required = false) Integer player,
-            @RequestParam(required = false, name = "i") List<Integer> indices, ServletWebRequest swr) throws Exception {
+    public ResponseEntity<Resource> download(Principal p,
+            @RequestParam(required = false) String id,
+            @RequestParam(required = false) Integer playlist,
+            @RequestParam(required = false) Integer player,
+            @RequestParam(required = false, name = "i") List<Integer> indices,
+            ServletWebRequest swr) throws Exception {
         HttpServletRequest request = wrapRequest(swr.getRequest());
         final Integer playerId = Optional.ofNullable(request.getParameter("player")).map(Integer::valueOf).orElse(null);
         Optional<Integer> idInt = Optional.ofNullable(id).map(this::mapId).filter(StringUtils::isNumeric).map(Integer::valueOf);
@@ -1401,15 +1405,24 @@ public class SubsonicRESTController {
     }
 
     @RequestMapping("/stream")
-    public void stream(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
+    public ResponseEntity<Resource> stream(Authentication authentication,
+            @RequestParam(required = false) Integer playlist,
+            @RequestParam(required = false) String format,
+            @RequestParam(required = false) String suffix,
+            @RequestParam Optional<Integer> maxBitRate,
+            @RequestParam Optional<Integer> id,
+            @RequestParam Optional<String> path,
+            @RequestParam(defaultValue = "false") boolean hls,
+            @RequestParam(required = false) Double offsetSeconds,
+            ServletWebRequest swr) throws Exception {
+        HttpServletRequest request = wrapRequest(swr.getRequest());
+        User user = securityService.getUserByName(authentication.getName());
         if (!user.isStreamRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to play files.");
-            return;
+            throw new APIException(ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to play files.");
         }
 
-        streamController.handleRequest(request, response);
+        return streamController.handleRequest(authentication, playlist, format, suffix, maxBitRate, id, path, hls,
+                offsetSeconds, new ServletWebRequest(request, swr.getResponse()));
     }
 
     @RequestMapping("/hls")

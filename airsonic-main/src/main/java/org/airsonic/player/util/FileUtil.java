@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -96,6 +97,11 @@ public final class FileUtil {
     }
 
     @FunctionalInterface
+    public interface ThrowingBiConsumer<T, R, E extends Exception> {
+        void accept(T t, R r) throws E;
+    }
+
+    @FunctionalInterface
     public interface ThrowingSupplier<T, E extends Exception> {
         T get() throws E;
     }
@@ -135,6 +141,17 @@ public final class FileUtil {
         return (i, j) -> {
             try {
                 return throwingBiFunction.apply(i, j);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    public static <T, R, E extends Exception> BiConsumer<T, R> uncheckBiConsumer(
+            ThrowingBiConsumer<T, R, E> throwingBiConsumer) {
+        return (i, j) -> {
+            try {
+                throwingBiConsumer.accept(i, j);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

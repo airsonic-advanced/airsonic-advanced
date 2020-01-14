@@ -27,6 +27,7 @@ import org.apache.commons.lang.StringUtils;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Supplier;
 
 /**
  * Implements SHOUTcast support by decorating an existing output stream.
@@ -49,11 +50,6 @@ public class ShoutCastOutputStream extends OutputStream {
     private OutputStream out;
 
     /**
-     * What to write in the SHOUTcast metadata is fetched from the playlist.
-     */
-    final private PlayQueue playQueue;
-
-    /**
      * Keeps track of the number of bytes written (excluding meta-data).  Between 0 and {@link #META_DATA_INTERVAL}.
      */
     private int byteCount;
@@ -63,7 +59,7 @@ public class ShoutCastOutputStream extends OutputStream {
      */
     private String previousStreamTitle;
 
-    private SettingsService settingsService;
+    private final Supplier<String> titleSupplier;
 
     /**
      * Creates a new SHOUTcast-decorated stream for the given output stream.
@@ -71,15 +67,15 @@ public class ShoutCastOutputStream extends OutputStream {
      * @param out      The output stream to decorate.
      * @param playQueue Meta-data is fetched from this playlist.
      */
-    public ShoutCastOutputStream(OutputStream out, PlayQueue playQueue, SettingsService settingsService) {
+    public ShoutCastOutputStream(OutputStream out, Supplier<String> titleSupplier) {
         this.out = out;
-        this.playQueue = playQueue;
-        this.settingsService = settingsService;
+        this.titleSupplier = titleSupplier;
     }
 
     /**
      * Writes the given byte array to the underlying stream, adding SHOUTcast meta-data as necessary.
      */
+    @Override
     public void write(byte[] b, int off, int len) throws IOException {
 
         int bytesWritten = 0;
@@ -103,6 +99,7 @@ public class ShoutCastOutputStream extends OutputStream {
     /**
      * Writes the given byte array to the underlying stream, adding SHOUTcast meta-data as necessary.
      */
+    @Override
     public void write(byte[] b) throws IOException {
         write(b, 0, b.length);
     }
@@ -110,6 +107,7 @@ public class ShoutCastOutputStream extends OutputStream {
     /**
      * Writes the given byte to the underlying stream, adding SHOUTcast meta-data as necessary.
      */
+    @Override
     public void write(int b) throws IOException {
         byte[] buf = new byte[]{(byte) b};
         write(buf);
@@ -118,6 +116,7 @@ public class ShoutCastOutputStream extends OutputStream {
     /**
      * Flushes the underlying stream.
      */
+    @Override
     public void flush() throws IOException {
         out.flush();
     }
@@ -125,21 +124,23 @@ public class ShoutCastOutputStream extends OutputStream {
     /**
      * Closes the underlying stream.
      */
+    @Override
     public void close() throws IOException {
         out.close();
     }
 
     private void writeMetaData() throws IOException {
-        String streamTitle = StringUtils.trimToEmpty(settingsService.getWelcomeTitle());
+        String streamTitle = titleSupplier.get();
+//                StringUtils.trimToEmpty(settingsService.getWelcomeTitle());
 
-        MediaFile result;
-        synchronized (playQueue) {
-            result = playQueue.getCurrentFile();
-        }
-        MediaFile mediaFile = result;
-        if (mediaFile != null) {
-            streamTitle = mediaFile.getArtist() + " - " + mediaFile.getTitle();
-        }
+//        MediaFile result;
+//        synchronized (playQueue) {
+//            result = playQueue.getCurrentFile();
+//        }
+//        MediaFile mediaFile = result;
+//        if (mediaFile != null) {
+//            streamTitle = mediaFile.getArtist() + " - " + mediaFile.getTitle();
+//        }
 
         byte[] bytes;
 
@@ -169,7 +170,7 @@ public class ShoutCastOutputStream extends OutputStream {
         }
     }
 
-    private byte[] createStreamTitle(String title) {
+    public static byte[] createStreamTitle(String title) {
         // Remove any quotes from the title.
         title = title.replaceAll("'", "");
 
@@ -185,7 +186,7 @@ public class ShoutCastOutputStream extends OutputStream {
     /**
      * Maps from miscellaneous accented characters to similar-looking ASCII characters.
      */
-    private static final char[][] CHAR_MAP = {
+    public static final char[][] CHAR_MAP = {
             {'\u00C0', 'A'}, {'\u00C1', 'A'}, {'\u00C2', 'A'}, {'\u00C3', 'A'}, {'\u00C4', 'A'}, {'\u00C5', 'A'}, {'\u00C6', 'A'},
             {'\u00C8', 'E'}, {'\u00C9', 'E'}, {'\u00CA', 'E'}, {'\u00CB', 'E'}, {'\u00CC', 'I'}, {'\u00CD', 'I'}, {'\u00CE', 'I'},
             {'\u00CF', 'I'}, {'\u00D2', 'O'}, {'\u00D3', 'O'}, {'\u00D4', 'O'}, {'\u00D5', 'O'}, {'\u00D6', 'O'}, {'\u00D9', 'U'},
