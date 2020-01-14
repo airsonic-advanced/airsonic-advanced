@@ -22,11 +22,12 @@ package org.airsonic.player.controller;
 import com.google.common.collect.Streams;
 
 import org.airsonic.player.domain.*;
+import org.airsonic.player.io.PipeStreams.MonitoredResource;
+import org.airsonic.player.io.PipeStreams.PipedInputStream;
+import org.airsonic.player.io.PipeStreams.PipedOutputStream;
 import org.airsonic.player.service.*;
 import org.airsonic.player.util.FileUtil;
-import org.airsonic.player.util.PipeStreams.MonitoredResource;
-import org.airsonic.player.util.PipeStreams.PipedInputStream;
-import org.airsonic.player.util.PipeStreams.PipedOutputStream;
+import org.airsonic.player.util.LambdaUtils;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -242,7 +243,7 @@ public class DownloadController {
                     try (PipedOutputStream pout = new PipedOutputStream(pin);
                             ZipOutputStream zout = new ZipOutputStream(pout)) {
                         zout.setMethod(ZipOutputStream.STORED); // No compression.
-                        pathsToZip.stream().forEach(FileUtil.uncheck(f -> {
+                        pathsToZip.stream().forEach(LambdaUtils.uncheckConsumer(f -> {
                             status.setFile(f.getKey());
                             ZipEntry zipEntry = new ZipEntry(f.getValue().getKey());
                             zipEntry.setSize(f.getValue().getValue());

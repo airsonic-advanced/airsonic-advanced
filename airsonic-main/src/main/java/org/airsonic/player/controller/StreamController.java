@@ -25,13 +25,14 @@ import org.airsonic.player.controller.DownloadController.KnownLengthInputStreamR
 import org.airsonic.player.domain.*;
 import org.airsonic.player.io.PlayQueueInputStream;
 import org.airsonic.player.io.ShoutCastOutputStream;
+import org.airsonic.player.io.PipeStreams.MonitoredInputStream;
+import org.airsonic.player.io.PipeStreams.PipedInputStream;
+import org.airsonic.player.io.PipeStreams.PipedOutputStream;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.sonos.SonosHelper;
 import org.airsonic.player.util.FileUtil;
-import org.airsonic.player.util.PipeStreams.MonitoredInputStream;
-import org.airsonic.player.util.PipeStreams.PipedInputStream;
-import org.airsonic.player.util.PipeStreams.PipedOutputStream;
+import org.airsonic.player.util.LambdaUtils;
 import org.airsonic.player.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,7 +217,7 @@ public class StreamController {
             status.setFile(mediaFile.getFile());
         };
         Consumer<MediaFile> fileEndListener = mediaFile -> scrobble(mediaFile, player, true);
-        Function<MediaFile, InputStream> streamGenerator = FileUtil.uncheckFunction(
+        Function<MediaFile, InputStream> streamGenerator = LambdaUtils.uncheckFunction(
             mediaFile -> transcodingService.getTranscodedInputStream(
                     transcodingService.getParameters(file, player, bitRate, targetFormat, videoTranscodingSettingsF)));
 
@@ -240,7 +241,7 @@ public class StreamController {
         if (byteOffset != null) {
             BiConsumer<InputStream, TransferStatus> streamInitF = streamInit;
             Long byteOffsetF = byteOffset;
-            streamInit = FileUtil.uncheckBiConsumer((i, s) -> {
+            streamInit = LambdaUtils.uncheckBiConsumer((i, s) -> {
                 streamInitF.accept(i, s);
                 s.addBytesSkipped(i.skip(byteOffsetF));
             });

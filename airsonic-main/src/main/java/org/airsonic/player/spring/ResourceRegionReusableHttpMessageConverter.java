@@ -16,7 +16,7 @@
 
 package org.airsonic.player.spring;
 
-import org.airsonic.player.util.FileUtil;
+import org.airsonic.player.util.LambdaUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourceRegion;
 import org.springframework.http.HttpHeaders;
@@ -89,7 +89,7 @@ public class ResourceRegionReusableHttpMessageConverter extends ResourceRegionHt
         try {
             for (ResourceRegion region : resourceRegions) {
                 // retrieve an existing stream or generate a new one
-                Entry<InputStream, Long> input = currStreams.computeIfAbsent(region.getResource(), FileUtil.uncheckFunction(r -> new SimpleEntry<>(r.getInputStream(), 0L)));
+                Entry<InputStream, Long> input = currStreams.computeIfAbsent(region.getResource(), LambdaUtils.uncheckFunction(r -> new SimpleEntry<>(r.getInputStream(), 0L)));
 
                 // offset the existing stream location from the byte start so appropriate number of bytes are skipped
                 long start = region.getPosition() - input.getValue();
@@ -99,7 +99,7 @@ public class ResourceRegionReusableHttpMessageConverter extends ResourceRegionHt
                     // close existing
                     input.getKey().close();
                     // open new stream
-                    input = currStreams.computeIfPresent(region.getResource(), FileUtil.uncheckBiFunction((r, i) -> new SimpleEntry<>(r.getInputStream(), 0L)));
+                    input = currStreams.computeIfPresent(region.getResource(), LambdaUtils.uncheckBiFunction((r, i) -> new SimpleEntry<>(r.getInputStream(), 0L)));
 
                     // reset start
                     start = region.getPosition();
