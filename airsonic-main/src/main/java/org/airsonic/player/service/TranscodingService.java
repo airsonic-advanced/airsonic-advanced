@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -377,7 +378,7 @@ public class TranscodingService {
                 if (Util.isWindows() && !mediaFile.isVideo() && !StringUtils.isAsciiPrintable(path.toString())) {
                     tmpFile = Files.createTempFile("airsonic", "." + MoreFiles.getFileExtension(path));
                     tmpFile.toFile().deleteOnExit();
-                    Files.copy(path, tmpFile);
+                    Files.copy(path, tmpFile, StandardCopyOption.REPLACE_EXISTING);
                     LOG.debug("Created tmp file: " + tmpFile);
                     cmd = cmd.replace("%s", tmpFile.toString());
                 } else {
@@ -485,7 +486,7 @@ public class TranscodingService {
         }
         String executable = StringUtil.split(step)[0];
         try (Stream<Path> files = Files.list(getTranscodeDirectory())) {
-            return files.anyMatch(p -> p.getFileName().startsWith(executable));
+            return files.anyMatch(p -> p.getFileName().toString().startsWith(executable));
         } catch (IOException e) {
             return false;
         }
@@ -500,7 +501,7 @@ public class TranscodingService {
         if (!parameters.isDownsample() && !parameters.isTranscode()) {
             return file.getFileSize();
         }
-        Integer duration = file.getDurationSeconds();
+        Double duration = file.getDuration();
         Integer maxBitRate = parameters.getMaxBitRate();
 
         if (duration == null) {
@@ -514,7 +515,7 @@ public class TranscodingService {
         }
 
         // Over-estimate size a bit (2 seconds) so don't cut off early in case of small calculation differences
-        return (duration + 2) * (long)maxBitRate * 1000L / 8L;
+        return Math.round((duration + 2) * maxBitRate * 1000L / 8L);
     }
 
     private boolean isRangeAllowed(Parameters parameters) {

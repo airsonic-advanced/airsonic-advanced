@@ -445,11 +445,11 @@ public class PlayQueue {
      * @return The total length in bytes.
      */
     public synchronized long length() {
-        long length = 0;
-        for (MediaFile mediaFile : files) {
-            length += mediaFile.getFileSize();
-        }
-        return length;
+        return files.parallelStream().mapToLong(MediaFile::getFileSize).sum();
+    }
+
+    public synchronized double duration() {
+        return files.parallelStream().filter(m -> m.getDuration() != null).mapToDouble(MediaFile::getDuration).sum();
     }
 
     private void makeBackup() {

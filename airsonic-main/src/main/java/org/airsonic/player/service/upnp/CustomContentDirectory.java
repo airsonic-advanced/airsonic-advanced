@@ -81,15 +81,15 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
         MimeType mimeType = mimeTypeString == null ? null : MimeType.valueOf(mimeTypeString);
 
         Res res = new Res(mimeType, null, url);
-        res.setDuration(formatDuration(song.getDurationSeconds()));
+        res.setDuration(formatDuration(song.getDuration()));
         return res;
     }
 
-    private String formatDuration(Integer seconds) {
+    private String formatDuration(Double seconds) {
         if (seconds == null) {
             return null;
         }
-        return StringUtil.formatDurationHMMSS((int)seconds) + ".0";
+        return StringUtil.formatDuration((long) (seconds * 1000));
     }
 
     protected String getBaseUrl() {

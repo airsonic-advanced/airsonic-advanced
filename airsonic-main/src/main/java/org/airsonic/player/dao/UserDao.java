@@ -173,6 +173,11 @@ public class UserDao extends AbstractDao {
         writeRoles(user);
     }
 
+    public void updateUserByteCounts(String user, long bytesStreamedDelta, long bytesDownloadedDelta, long bytesUploadedDelta) {
+        String sql = "update " + getUserTable() + " set bytes_streamed=bytes_streamed+?, bytes_downloaded=bytes_downloaded+?, bytes_uploaded=bytes_uploaded+? where username=?";
+        update(sql, bytesStreamedDelta, bytesDownloadedDelta, bytesUploadedDelta, user);
+    }
+
     /**
      * Returns the name of the roles for the given user.
      *
@@ -324,6 +329,7 @@ public class UserDao extends AbstractDao {
     }
 
     private class UserRowMapper implements RowMapper<User> {
+        @Override
         public User mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new User(rs.getString(1),
                     decrypt(rs.getString(2)),
@@ -336,6 +342,7 @@ public class UserDao extends AbstractDao {
     }
 
     private static class UserSettingsRowMapper implements RowMapper<UserSettings> {
+        @Override
         public UserSettings mapRow(ResultSet rs, int rowNum) throws SQLException {
             int col = 1;
             UserSettings settings = new UserSettings(rs.getString(col++));

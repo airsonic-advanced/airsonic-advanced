@@ -177,8 +177,8 @@ public class StreamController {
             expectedSize = file.isVideo() || !parameters.isRangeAllowed() ? null : parameters.getExpectedLength();
 
             // roughly adjust for offset seconds
-            if (expectedSize != null && expectedSize > 0 && offsetSeconds != null && offsetSeconds > 0 && file.getDurationSeconds() != null) {
-                byteOffset = Math.round(expectedSize * offsetSeconds / file.getDurationSeconds());
+            if (expectedSize != null && expectedSize > 0 && offsetSeconds != null && offsetSeconds > 0 && file.getDuration() != null) {
+                byteOffset = Math.round(expectedSize * offsetSeconds / file.getDuration());
                 expectedSize = Math.max(0, expectedSize - byteOffset);
             }
 
@@ -403,9 +403,8 @@ public class StreamController {
         Integer existingHeight = file.getHeight();
         Integer maxBitRate = ServletRequestUtils.getIntParameter(request, "maxBitRate");
         int timeOffset = ServletRequestUtils.getIntParameter(request, "timeOffset", 0);
-        int defaultDuration = file.getDurationSeconds() == null ? Integer.MAX_VALUE
-                : file.getDurationSeconds() - timeOffset;
-        int duration = ServletRequestUtils.getIntParameter(request, "duration", defaultDuration);
+        double defaultDuration = file.getDuration() == null ? Double.MAX_VALUE : file.getDuration() - timeOffset;
+        double duration = ServletRequestUtils.getDoubleParameter(request, "duration", defaultDuration);
         boolean hls = ServletRequestUtils.getBooleanParameter(request, "hls", false);
 
         Dimension dim = getRequestedVideoSize(request.getParameter("size"));

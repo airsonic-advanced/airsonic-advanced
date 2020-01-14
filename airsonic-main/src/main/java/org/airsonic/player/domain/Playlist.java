@@ -34,7 +34,7 @@ public class Playlist {
     private String name;
     private String comment;
     private int fileCount;
-    private int durationSeconds;
+    private double duration;
     private Instant created;
     private Instant changed;
     private String importedFrom;
@@ -43,14 +43,14 @@ public class Playlist {
     }
 
     public Playlist(int id, String username, boolean shared, String name, String comment, int fileCount,
-                    int durationSeconds, Instant created, Instant changed, String importedFrom) {
+                    double duration, Instant created, Instant changed, String importedFrom) {
         this.id = id;
         this.username = username;
         this.shared = shared;
         this.name = name;
         this.comment = comment;
         this.fileCount = fileCount;
-        this.durationSeconds = durationSeconds;
+        this.duration = duration;
         this.created = created;
         this.changed = changed;
         this.importedFrom = importedFrom;
@@ -104,16 +104,16 @@ public class Playlist {
         this.fileCount = fileCount;
     }
 
-    public int getDurationSeconds() {
-        return durationSeconds;
+    public double getDuration() {
+        return duration;
     }
 
-    public void setDurationSeconds(int durationSeconds) {
-        this.durationSeconds = durationSeconds;
+    public void setDuration(double duration) {
+        this.duration = duration;
     }
 
     public String getDurationAsString() {
-        return StringUtil.formatDurationMSS(durationSeconds);
+        return StringUtil.formatDuration((long) (duration * 1000), false);
     }
 
     public Instant getCreated() {
