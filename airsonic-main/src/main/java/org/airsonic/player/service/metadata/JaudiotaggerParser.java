@@ -176,7 +176,7 @@ public class JaudiotaggerParser extends MetaDataParser {
             if (audioHeader != null) {
                 metaData.setVariableBitRate(audioHeader.isVariableBitRate());
                 metaData.setBitRate((int) audioHeader.getBitRateAsNumber());
-                metaData.setDurationSeconds(audioHeader.getTrackLength());
+                metaData.setDuration(audioHeader.getPreciseTrackLength());
             }
 
 

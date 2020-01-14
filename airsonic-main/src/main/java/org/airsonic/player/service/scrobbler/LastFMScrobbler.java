@@ -103,7 +103,7 @@ public class LastFMScrobbler {
         reg.artist = mediaFile.getArtist();
         reg.album = mediaFile.getAlbumName();
         reg.title = mediaFile.getTitle();
-        reg.duration = mediaFile.getDurationSeconds() == null ? 0 : mediaFile.getDurationSeconds();
+        reg.duration = mediaFile.getDuration() == null ? 0 : (int) Math.round(mediaFile.getDuration());
         reg.time = time == null ? Instant.now() : time;
         reg.submission = submission;
 

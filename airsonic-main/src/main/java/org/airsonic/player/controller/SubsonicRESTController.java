@@ -538,7 +538,7 @@ public class SubsonicRESTController {
             jaxbAlbum.setCoverArt(CoverArtController.ALBUM_COVERART_PREFIX + album.getId());
         }
         jaxbAlbum.setSongCount(album.getSongCount());
-        jaxbAlbum.setDuration(album.getDurationSeconds());
+        jaxbAlbum.setDuration((int) Math.round(album.getDuration()));
         jaxbAlbum.setCreated(jaxbWriter.convertDate(album.getCreated()));
         jaxbAlbum.setStarred(jaxbWriter.convertDate(albumDao.getAlbumStarredDate(album.getId(), username)));
         jaxbAlbum.setYear(album.getYear());
@@ -553,7 +553,7 @@ public class SubsonicRESTController {
         jaxbPlaylist.setOwner(playlist.getUsername());
         jaxbPlaylist.setPublic(playlist.isShared());
         jaxbPlaylist.setSongCount(playlist.getFileCount());
-        jaxbPlaylist.setDuration(playlist.getDurationSeconds());
+        jaxbPlaylist.setDuration((int) Math.round(playlist.getDuration()));
         jaxbPlaylist.setCreated(jaxbWriter.convertDate(playlist.getCreated()));
         jaxbPlaylist.setChanged(jaxbWriter.convertDate(playlist.getChanged()));
         jaxbPlaylist.setCoverArt(CoverArtController.PLAYLIST_COVERART_PREFIX + playlist.getId());
@@ -1264,7 +1264,7 @@ public class SubsonicRESTController {
         child.setPlayCount((long) mediaFile.getPlayCount());
 
         if (mediaFile.isFile()) {
-            child.setDuration(mediaFile.getDurationSeconds());
+            child.setDuration((int) Math.round(mediaFile.getDuration()));
             child.setBitRate(mediaFile.getBitRate());
             child.setTrack(mediaFile.getTrackNumber());
             child.setDiscNumber(mediaFile.getDiscNumber());

@@ -55,13 +55,7 @@ public class PlayQueueInfo {
     }
 
     public String getDurationAsString() {
-        int durationSeconds = 0;
-        for (Entry entry : entries) {
-            if (entry.getDuration() != null) {
-                durationSeconds += entry.getDuration();
-            }
-        }
-        return StringUtil.formatDurationMSS(durationSeconds);
+        return StringUtil.formatDuration(Math.round(1000 * entries.parallelStream().filter(e -> e.getDuration() != null).mapToDouble(Entry::getDuration).sum()), false);
     }
 
     public boolean isStopEnabled() {
@@ -115,7 +109,7 @@ public class PlayQueueInfo {
         private final String genre;
         private final Integer year;
         private final String bitRate;
-        private final Integer duration;
+        private final Double duration;
         private final String durationAsString;
         private final String format;
         private final String contentType;
@@ -136,7 +130,7 @@ public class PlayQueueInfo {
                 String genre,
                 Integer year,
                 String bitRate,
-                Integer duration,
+                Double duration,
                 String durationAsString,
                 String format,
                 String contentType,
@@ -205,7 +199,7 @@ public class PlayQueueInfo {
             return durationAsString;
         }
 
-        public Integer getDuration() {
+        public Double getDuration() {
             return duration;
         }
 

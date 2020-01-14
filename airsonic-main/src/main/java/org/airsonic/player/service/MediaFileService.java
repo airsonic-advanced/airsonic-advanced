@@ -482,7 +482,7 @@ public class MediaFileService {
                 mediaFile.setTrackNumber(metaData.getTrackNumber());
                 mediaFile.setGenre(metaData.getGenre());
                 mediaFile.setYear(metaData.getYear());
-                mediaFile.setDurationSeconds(metaData.getDurationSeconds());
+                mediaFile.setDuration(metaData.getDuration());
                 mediaFile.setBitRate(metaData.getBitRate());
                 mediaFile.setVariableBitRate(metaData.getVariableBitRate());
                 mediaFile.setHeight(metaData.getHeight());

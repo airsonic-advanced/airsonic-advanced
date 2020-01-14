@@ -30,7 +30,7 @@ public class UtilTest {
         assertEquals("5", stringStringMap.get("albumCount"));
         assertEquals("4", stringStringMap.get("songCount"));
         assertEquals("910823", stringStringMap.get("artistCount"));
-        assertEquals("30", stringStringMap.get("totalDurationInSeconds"));
+        assertEquals("30.0", stringStringMap.get("totalDurationInSeconds"));
         assertEquals("2930491082", stringStringMap.get("totalLengthInBytes"));
         assertEquals(String.valueOf(statistics.getScanDate().toEpochMilli()), stringStringMap.get("scanDate"));
     }
@@ -48,7 +48,7 @@ public class UtilTest {
         assertEquals(5, statistics.getAlbumCount());
         assertEquals(4, statistics.getSongCount());
         assertEquals(910823, statistics.getArtistCount());
-        assertEquals(30L, statistics.getTotalDurationInSeconds());
+        assertEquals(30.0, statistics.getTotalDurationInSeconds(), 0.0001);
         assertEquals(2930491082L, statistics.getTotalLengthInBytes());
         assertEquals(Instant.ofEpochMilli(1568350960725L), statistics.getScanDate());
     }
@@ -67,7 +67,7 @@ public class UtilTest {
         assertEquals(5, statistics.getAlbumCount());
         assertEquals(4, statistics.getSongCount());
         assertEquals(910823, statistics.getArtistCount());
-        assertEquals(30L, statistics.getTotalDurationInSeconds());
+        assertEquals(30.0, statistics.getTotalDurationInSeconds(), 0.0001);
         assertEquals(2930491082L, statistics.getTotalLengthInBytes());
         assertEquals(Instant.ofEpochMilli(1568350960725L), statistics.getScanDate());
     }

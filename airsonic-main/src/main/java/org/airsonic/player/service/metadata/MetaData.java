@@ -35,7 +35,7 @@ public class MetaData {
     private Integer year;
     private Integer bitRate;
     private boolean variableBitRate;
-    private Integer durationSeconds;
+    private Double duration;
     private Integer width;
     private Integer height;
     private String musicBrainzReleaseId;
@@ -121,12 +121,12 @@ public class MetaData {
         this.variableBitRate = variableBitRate;
     }
 
-    public Integer getDurationSeconds() {
-        return durationSeconds;
+    public Double getDuration() {
+        return duration;
     }
 
-    public void setDurationSeconds(Integer durationSeconds) {
-        this.durationSeconds = durationSeconds;
+    public void setDuration(Double duration) {
+        this.duration = duration;
     }
 
     public Integer getWidth() {

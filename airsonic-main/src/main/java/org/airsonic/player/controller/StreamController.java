@@ -168,7 +168,7 @@ public class StreamController {
                     // Partial content permitted because either know or expect to be able to predict the final size
                     long contentLength;
                     // If range was requested, respond in kind
-                    range = getRange(request, file.getDurationSeconds(), fileLengthExpected);
+                    range = getRange(request, file.getDuration(), fileLengthExpected);
                     if (range != null) {
                         response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
                         response.setHeader("Accept-Ranges", "bytes");
@@ -318,8 +318,8 @@ public class StreamController {
     }
 
     private void setContentDuration(HttpServletResponse response, MediaFile file) {
-        if (file.getDurationSeconds() != null) {
-            response.setHeader("X-Content-Duration", String.format("%.1f", file.getDurationSeconds().doubleValue()));
+        if (file.getDuration() != null) {
+            response.setHeader("X-Content-Duration", String.format("%.1f", file.getDuration()));
         }
     }
 
@@ -336,7 +336,7 @@ public class StreamController {
     }
 
     @Nullable
-    private HttpRange getRange(HttpServletRequest request, Integer fileDuration, Long fileSize) {
+    private HttpRange getRange(HttpServletRequest request, Double fileDuration, Long fileSize) {
 
         // First, look for "Range" HTTP header.
         HttpRange range = HttpRange.valueOf(request.getHeader("Range"));
@@ -352,7 +352,7 @@ public class StreamController {
     }
 
     @Nullable
-    private HttpRange parseAndConvertOffsetSeconds(String offsetSeconds, Integer fileDuration, Long fileSize) {
+    private HttpRange parseAndConvertOffsetSeconds(String offsetSeconds, Double fileDuration, Long fileSize) {
         if (offsetSeconds == null) {
             return null;
         }
@@ -361,7 +361,7 @@ public class StreamController {
             if (fileDuration == null || fileSize == null) {
                 return null;
             }
-            float offset = Float.parseFloat(offsetSeconds);
+            double offset = Double.valueOf(offsetSeconds);
 
             // Convert from time offset to byte offset.
             long byteOffset = (long) (fileSize * (offset / fileDuration));
@@ -379,9 +379,8 @@ public class StreamController {
         Integer existingHeight = file.getHeight();
         Integer maxBitRate = ServletRequestUtils.getIntParameter(request, "maxBitRate");
         int timeOffset = ServletRequestUtils.getIntParameter(request, "timeOffset", 0);
-        int defaultDuration = file.getDurationSeconds() == null ? Integer.MAX_VALUE :
-                file.getDurationSeconds() - timeOffset;
-        int duration = ServletRequestUtils.getIntParameter(request, "duration", defaultDuration);
+        double defaultDuration = file.getDuration() == null ? Double.MAX_VALUE : file.getDuration() - timeOffset;
+        double duration = ServletRequestUtils.getDoubleParameter(request, "duration", defaultDuration);
         boolean hls = ServletRequestUtils.getBooleanParameter(request, "hls", false);
 
         Dimension dim = getRequestedVideoSize(request.getParameter("size"));
