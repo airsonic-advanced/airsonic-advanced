@@ -19,11 +19,6 @@
  */
 package org.airsonic.player.io;
 
-import org.airsonic.player.domain.MediaFile;
-import org.airsonic.player.domain.PlayQueue;
-import org.airsonic.player.service.SettingsService;
-import org.apache.commons.lang.StringUtils;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;

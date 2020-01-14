@@ -217,8 +217,8 @@ public class StreamController {
         };
         Consumer<MediaFile> fileEndListener = mediaFile -> scrobble(mediaFile, player, true);
         Function<MediaFile, InputStream> streamGenerator = FileUtil.uncheckFunction(
-                mediaFile -> transcodingService.getTranscodedInputStream(
-                        transcodingService.getParameters(file, player, bitRate, targetFormat, videoTranscodingSettingsF)));
+            mediaFile -> transcodingService.getTranscodedInputStream(
+                    transcodingService.getParameters(file, player, bitRate, targetFormat, videoTranscodingSettingsF)));
 
         HttpHeaders headers = new HttpHeaders();
         InputStream playStream = new PlayQueueInputStream(player.getPlayQueue(), fileStartListener, fileEndListener, streamGenerator);
@@ -288,34 +288,29 @@ public class StreamController {
         responseHeaders.set("icy-genre", "Mixed");
         responseHeaders.set("icy-url", "https://airsonic.github.io/");
 
-        return new ShoutcastDetails(
-                new PipedInputStream(),
-                (i, s) -> {
-                    PipedInputStream pin = (PipedInputStream) i;
+        return new ShoutcastDetails(new PipedInputStream(), (i, s) -> {
+            PipedInputStream pin = (PipedInputStream) i;
 
-                    // start a new thread to feed data in
-                    new Thread(() -> {
-                        try (InputStream in = input;
-                                PipedOutputStream pout = new PipedOutputStream(pin);
-                                ShoutCastOutputStream shout = new ShoutCastOutputStream(
-                                        pout, () -> Optional.ofNullable(s)
-                                            .map(TransferStatus::getFile)
-                                            .map(Path::toString)
-                                            .orElseGet(settingsService::getWelcomeTitle))) {
-                            // IOUtils.copy(playStream, shout);
-                            ByteStreams.copy(in, shout);
-                            // StreamUtils.copy(playStream, shout);
-                        } catch (Exception e) {
-                            LOG.debug("Error with output to Shoutcast stream", e);
-                        }
-                    }, "ShoutcastStreamDatafeed").start();
+            // start a new thread to feed data in
+            new Thread(() -> {
+                try (InputStream in = input;
+                        PipedOutputStream pout = new PipedOutputStream(pin);
+                        ShoutCastOutputStream shout = new ShoutCastOutputStream(pout,
+                            () -> Optional.ofNullable(s).map(TransferStatus::getFile).map(Path::toString)
+                                    .orElseGet(settingsService::getWelcomeTitle))) {
+                    // IOUtils.copy(playStream, shout);
+                    ByteStreams.copy(in, shout);
+                    // StreamUtils.copy(playStream, shout);
+                } catch (Exception e) {
+                    LOG.debug("Error with output to Shoutcast stream", e);
+                }
+            }, "ShoutcastStreamDatafeed").start();
 
-                    // wait for src data thread to connect
-                    while (pin.source == null) {
-                        // sit and wait and ponder life
-                    }
-                },
-                responseHeaders);
+            // wait for src data thread to connect
+            while (pin.source == null) {
+                // sit and wait and ponder life
+            }
+        }, responseHeaders);
     }
 
     private static class ShoutcastDetails {
