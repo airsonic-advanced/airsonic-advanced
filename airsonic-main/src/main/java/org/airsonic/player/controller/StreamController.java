@@ -19,45 +19,61 @@
  */
 package org.airsonic.player.controller;
 
+import com.google.common.io.ByteStreams;
+
+import org.airsonic.player.controller.DownloadController.KnownLengthInputStreamResource;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.io.PlayQueueInputStream;
-import org.airsonic.player.io.RangeOutputStream;
 import org.airsonic.player.io.ShoutCastOutputStream;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.sonos.SonosHelper;
-import org.airsonic.player.util.HttpRange;
+import org.airsonic.player.util.FileUtil;
+import org.airsonic.player.util.PipeStreams.MonitoredInputStream;
+import org.airsonic.player.util.PipeStreams.PipedInputStream;
+import org.airsonic.player.util.PipeStreams.PipedOutputStream;
 import org.airsonic.player.util.StringUtil;
-import org.airsonic.player.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.ServletRequestUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.ServletWebRequest;
 
-import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import java.awt.*;
+import java.io.FilterInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Arrays;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A controller which streams the content of a {@link PlayQueue} to a remote {@link Player}.
+ * A controller which streams the content of a {@link PlayQueue} to a remote
+ * {@link Player}.
  *
  * @author Sindre Mehus
  */
 @Controller
-@RequestMapping({"/stream/**", "/ext/stream/**"})
+@RequestMapping({ "/stream/**", "/ext/stream/**" })
 public class StreamController {
 
     private static final Logger LOG = LoggerFactory.getLogger(StreamController.class);
@@ -82,295 +98,303 @@ public class StreamController {
     private SearchService searchService;
 
     @GetMapping
-    public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
-
-        TransferStatus status = null;
-        Player player = playerService.getPlayer(request, response, false, true);
+    public ResponseEntity<Resource> handleRequest(Authentication authentication,
+            @RequestParam(required = false) Integer playlist,
+            @RequestParam(required = false) String format,
+            @RequestParam(required = false) String suffix,
+            @RequestParam Optional<Integer> maxBitRate,
+            @RequestParam Optional<Integer> id,
+            @RequestParam Optional<String> path,
+            @RequestParam(defaultValue = "false") boolean hls,
+            @RequestParam(required = false) Double offsetSeconds,
+            ServletWebRequest swr) throws Exception {
+        Player player = playerService.getPlayer(swr.getRequest(), swr.getResponse(), false, true);
         User user = securityService.getUserByName(player.getUsername());
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        try {
+        if (!(authentication instanceof JWTAuthenticationToken) && !user.isStreamRole()) {
+            throw new AccessDeniedException("Streaming is forbidden for user " + user.getUsername());
+        }
 
-            if (!(authentication instanceof JWTAuthenticationToken) && !user.isStreamRole()) {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                        "Streaming is forbidden for user " + user.getUsername());
-                return;
+        Long expectedSize = null;
+
+        // If "playlist" request parameter is set, this is a Podcast request. In that case, create a separate
+        // play queue (in order to support multiple parallel Podcast streams).
+        boolean isPodcast = playlist != null;
+        if (isPodcast) {
+            PlayQueue playQueue = new PlayQueue();
+            playQueue.addFiles(false, playlistService.getFilesInPlaylist(playlist));
+            player.setPlayQueue(playQueue);
+            // Note: does not take transcoding into account
+            expectedSize = playQueue.length();
+            LOG.info("{}: Incoming Podcast request for playlist {}", swr.getRequest().getRemoteAddr(), playlist);
+        }
+
+//        response.setHeader("Access-Control-Allow-Origin", "*");
+
+        String targetFormat = hls ? "ts" : format;
+        Integer bitRate = maxBitRate.filter(x -> x != 0).orElse(null);
+
+        VideoTranscodingSettings videoTranscodingSettings = null;
+
+        // Is this a request for a single file (typically from the embedded Flash player)?
+        // In that case, create a separate playlist (in order to support multiple parallel streams).
+        // Also, enable partial download (HTTP byte range).
+        MediaFile file = path.map(mediaFileService::getMediaFile)
+                .orElseGet(() -> id.map(mediaFileService::getMediaFile).orElse(null));
+        boolean isSingleFile = file != null;
+
+        Long byteOffset = null;
+
+        if (isSingleFile) {
+
+            if (!(authentication instanceof JWTAuthenticationToken)
+                    && !securityService.isFolderAccessAllowed(file, user.getUsername())) {
+                throw new AccessDeniedException("Access to file " + file.getId() + " is forbidden for user " + user.getUsername());
             }
 
-            // If "playlist" request parameter is set, this is a Podcast request. In that case, create a separate
-            // play queue (in order to support multiple parallel Podcast streams).
-            Integer playlistId = ServletRequestUtils.getIntParameter(request, "playlist");
-            boolean isPodcast = playlistId != null;
-            if (isPodcast) {
-                PlayQueue playQueue = new PlayQueue();
-                playQueue.addFiles(false, playlistService.getFilesInPlaylist(playlistId));
-                player.setPlayQueue(playQueue);
-                Util.setContentLength(response, playQueue.length());
-                LOG.info("{}: Incoming Podcast request for playlist {}", request.getRemoteAddr(), playlistId);
+            // Update the index of the currently playing media file. At
+            // this point we haven't yet modified the play queue to support
+            // multiple streams, so the current play queue is the real one.
+            int currentIndex = player.getPlayQueue().getFiles().indexOf(file);
+            player.getPlayQueue().setIndex(currentIndex);
+
+            // Create a new, fake play queue that only contains the
+            // currently playing media file, in case multiple streams want
+            // to use the same player.
+            PlayQueue playQueue = new PlayQueue();
+            playQueue.addFiles(true, file);
+            player.setPlayQueue(playQueue);
+
+            if (file.isVideo() || hls) {
+                videoTranscodingSettings = createVideoTranscodingSettings(file, swr.getRequest());
             }
 
-            response.setHeader("Access-Control-Allow-Origin", "*");
+            TranscodingService.Parameters parameters = transcodingService.getParameters(file, player, bitRate,
+                    targetFormat, videoTranscodingSettings);
 
-            String contentType = StringUtil.getMimeType(request.getParameter("suffix"));
-            response.setContentType(contentType);
+            // Support ranges as long as we're not transcoding blindly; video is always
+            // assumed to transcode
+            expectedSize = file.isVideo() || !parameters.isRangeAllowed() ? null : parameters.getExpectedLength();
 
-            String preferredTargetFormat = request.getParameter("format");
-            Integer maxBitRate = ServletRequestUtils.getIntParameter(request, "maxBitRate");
-            if (Integer.valueOf(0).equals(maxBitRate)) {
-                maxBitRate = null;
+            // roughly adjust for offset seconds
+            if (expectedSize != null && expectedSize > 0 && offsetSeconds != null && offsetSeconds > 0 && file.getDuration() != null) {
+                byteOffset = Math.round(expectedSize * offsetSeconds / file.getDuration());
+                expectedSize = Math.max(0, expectedSize - byteOffset);
             }
 
-            VideoTranscodingSettings videoTranscodingSettings = null;
+            if (swr.checkNotModified(
+                    Optional.ofNullable(expectedSize).map(String::valueOf).orElse(null),
+                    file.getChanged().toEpochMilli())) {
+                return null;
+            }
 
-            // Is this a request for a single file (typically from the embedded Flash player)?
-            // In that case, create a separate playlist (in order to support multiple parallel streams).
-            // Also, enable partial download (HTTP byte range).
-            MediaFile file = getSingleFile(request);
-            boolean isSingleFile = file != null;
-            HttpRange range = null;
-            Long fileLengthExpected = null;
+            // Set content type of response
+            suffix = transcodingService.getSuffix(player, file, targetFormat);
+        }
 
-            if (isSingleFile) {
+        // Terminate any other streams to this player.
+        if (!isPodcast && !isSingleFile) {
+            statusService.getStreamStatusesForPlayer(player)
+                    .parallelStream()
+                    .filter(TransferStatus::isActive)
+                    .forEach(TransferStatus::terminate);
+        }
 
-                if (!(authentication instanceof JWTAuthenticationToken) && !securityService.isFolderAccessAllowed(file,
-                        user.getUsername())) {
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                            "Access to file " + file.getId() + " is forbidden for user " + user.getUsername());
-                    return;
+        // If playqueue is in auto-random mode, populate it with new random songs.
+        if (player.getPlayQueue().getIndex() == -1 && player.getPlayQueue().getRandomSearchCriteria() != null) {
+            player.getPlayQueue().addFiles(false, searchService.getRandomSongs(player.getPlayQueue().getRandomSearchCriteria()));
+            LOG.info("Recreated random playlist with {} songs.", player.getPlayQueue().size());
+        }
+
+        VideoTranscodingSettings videoTranscodingSettingsF = videoTranscodingSettings;
+        TransferStatus status = statusService.createStreamStatus(player);
+
+        Consumer<MediaFile> fileStartListener = mediaFile -> {
+            LOG.info("{}: {} listening to {}", player.getIpAddress(), player.getUsername(), FileUtil.getShortPath(mediaFile.getFile()));
+            mediaFileService.incrementPlayCount(mediaFile);
+            scrobble(mediaFile, player, false);
+            status.setFile(mediaFile.getFile());
+        };
+        Consumer<MediaFile> fileEndListener = mediaFile -> scrobble(mediaFile, player, true);
+        Function<MediaFile, InputStream> streamGenerator = FileUtil.uncheckFunction(
+            mediaFile -> transcodingService.getTranscodedInputStream(
+                    transcodingService.getParameters(file, player, bitRate, targetFormat, videoTranscodingSettingsF)));
+
+        HttpHeaders headers = new HttpHeaders();
+        InputStream playStream = new PlayQueueInputStream(player.getPlayQueue(), fileStartListener, fileEndListener, streamGenerator);
+        BiConsumer<InputStream, TransferStatus> streamInit = (i, s) -> {};
+
+        // Enabled SHOUTcast, if requested.
+        if ("1".equals(swr.getHeader("icy-metadata"))) {
+            expectedSize = null;
+            ShoutcastDetails shoutcastDetails = getShoutcastDetails(playStream);
+            playStream = shoutcastDetails.getStream();
+            streamInit = shoutcastDetails.getStreamInit();
+            headers.addAll(shoutcastDetails.getHeaders());
+        }
+
+        // Deal with offset seconds by skipping over bytes from the underlying stream
+        // Note that if Range and offsetSeconds both come in request, then first
+        // offsetSeconds skips over a certain length, then Range bytes are allocated,
+        // so Range of 0 will start from bytesSkipped
+        if (byteOffset != null) {
+            BiConsumer<InputStream, TransferStatus> streamInitF = streamInit;
+            Long byteOffsetF = byteOffset;
+            streamInit = FileUtil.uncheckBiConsumer((i, s) -> {
+                streamInitF.accept(i, s);
+                s.addBytesSkipped(i.skip(byteOffsetF));
+            });
+        }
+
+        if (expectedSize != null) {
+            playStream = new ThresholdInputStream(playStream, expectedSize);
+        }
+
+        Supplier<TransferStatus> statusSupplier = () -> status;
+        Consumer<TransferStatus> statusCloser = s -> {
+            securityService.updateUserByteCounts(user, s.getBytesTransferred(), 0L, 0L);
+            statusService.removeStreamStatus(s);
+        };
+
+        InputStream monitoredStream = new MonitoredInputStream(
+                playStream,
+                settingsService.getDownloadBitrateLimiter(),
+                statusSupplier, statusCloser,
+                streamInit);
+
+        Resource resource = expectedSize == null ?
+                new InputStreamResource(monitoredStream) :
+                new KnownLengthInputStreamResource(monitoredStream, expectedSize);
+
+        boolean sonos = SonosHelper.AIRSONIC_CLIENT_ID.equals(player.getClientId());
+        headers.setContentType(MediaType.parseMediaType(StringUtil.getMimeType(suffix, sonos)));
+
+        return ResponseEntity.ok().headers(headers).body(resource);
+    }
+
+    private void scrobble(MediaFile mediaFile, Player player, boolean submission) {
+        // Don't scrobble REST players (except Sonos)
+        if (player.getClientId() == null || player.getClientId().equals(SonosHelper.AIRSONIC_CLIENT_ID)) {
+            audioScrobblerService.register(mediaFile, player.getUsername(), submission, null);
+        }
+    }
+
+    private ShoutcastDetails getShoutcastDetails(InputStream input) throws IOException {
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.set("icy-metaint", String.valueOf(ShoutCastOutputStream.META_DATA_INTERVAL));
+        responseHeaders.set("icy-notice1", "This stream is served using Airsonic");
+        responseHeaders.set("icy-notice2", "Airsonic - Free media streamer");
+        responseHeaders.set("icy-name", "Airsonic");
+        responseHeaders.set("icy-genre", "Mixed");
+        responseHeaders.set("icy-url", "https://airsonic.github.io/");
+
+        return new ShoutcastDetails(new PipedInputStream(), (i, s) -> {
+            PipedInputStream pin = (PipedInputStream) i;
+
+            // start a new thread to feed data in
+            new Thread(() -> {
+                try (InputStream in = input;
+                        PipedOutputStream pout = new PipedOutputStream(pin);
+                        ShoutCastOutputStream shout = new ShoutCastOutputStream(pout,
+                            () -> Optional.ofNullable(s).map(TransferStatus::getFile).map(Path::toString)
+                                    .orElseGet(settingsService::getWelcomeTitle))) {
+                    // IOUtils.copy(playStream, shout);
+                    ByteStreams.copy(in, shout);
+                    // StreamUtils.copy(playStream, shout);
+                } catch (Exception e) {
+                    LOG.debug("Error with output to Shoutcast stream", e);
                 }
+            }, "ShoutcastStreamDatafeed").start();
 
-                // Update the index of the currently playing media file. At
-                // this point we haven't yet modified the play queue to support
-                // multiple streams, so the current play queue is the real one.
-                int currentIndex = player.getPlayQueue().getFiles().indexOf(file);
-                player.getPlayQueue().setIndex(currentIndex);
-
-                // Create a new, fake play queue that only contains the
-                // currently playing media file, in case multiple streams want
-                // to use the same player.
-                PlayQueue playQueue = new PlayQueue();
-                playQueue.addFiles(true, file);
-                player.setPlayQueue(playQueue);
-
-                TranscodingService.Parameters parameters = transcodingService.getParameters(file, player, maxBitRate,
-                        preferredTargetFormat, null);
-                boolean isHls = ServletRequestUtils.getBooleanParameter(request, "hls", false);
-                fileLengthExpected = parameters.getExpectedLength();
-
-                // Wrangle response length and ranges.
-                //
-                // Support ranges as long as we're not transcoding blindly; video is always assumed to transcode
-                if (file.isVideo() || ! parameters.isRangeAllowed()) {
-                    // Use chunked transfer; do not accept range requests
-                    response.setStatus(HttpServletResponse.SC_OK);
-                    response.setHeader("Accept-Ranges", "none");
-                } else {
-                    // Partial content permitted because either know or expect to be able to predict the final size
-                    long contentLength;
-                    // If range was requested, respond in kind
-                    range = getRange(request, file.getDuration(), fileLengthExpected);
-                    if (range != null) {
-                        response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-                        response.setHeader("Accept-Ranges", "bytes");
-
-                        // Both ends are inclusive
-                        long startByte = range.getFirstBytePos();
-                        long endByte = range.isClosed() ? range.getLastBytePos() : fileLengthExpected - 1;
-
-                        response.setHeader("Content-Range",
-                                String.format("bytes %d-%d/%d", startByte, endByte, fileLengthExpected));
-                        contentLength = endByte + 1 - startByte;
-                    } else {
-                        // No range was requested, give back the whole file
-                        response.setStatus(HttpServletResponse.SC_OK);
-                        contentLength = fileLengthExpected;
-                    }
-
-                    response.setIntHeader("ETag", file.getId());
-                    Util.setContentLength(response, contentLength);
-                }
-
-                // Set content type of response
-                if (isHls) {
-                    response.setContentType(StringUtil.getMimeType("ts")); // HLS is always MPEG TS.
-                } else {
-                    String transcodedSuffix = transcodingService.getSuffix(player, file, preferredTargetFormat);
-                    boolean sonos = SonosHelper.AIRSONIC_CLIENT_ID.equals(player.getClientId());
-                    response.setContentType(StringUtil.getMimeType(transcodedSuffix, sonos));
-                    setContentDuration(response, file);
-                }
-
-                if (file.isVideo() || isHls) {
-                    videoTranscodingSettings = createVideoTranscodingSettings(file, request);
-                }
+            // wait for src data thread to connect
+            while (pin.source == null) {
+                // sit and wait and ponder life
             }
+        }, responseHeaders);
+    }
 
-            // All headers are set, stop if that's all the client requested.
-            if (request.getMethod().equals("HEAD")) {
-                return;
-            }
+    private static class ShoutcastDetails {
+        private final InputStream stream;
+        private final BiConsumer<InputStream, TransferStatus> streamInit;
+        private final HttpHeaders headers;
 
-            if (fileLengthExpected != null) {
-                LOG.info("Streaming request for [{}] with range [{}]", file.getPath(), response.getHeader("Content-Range"));
-            }
+        public ShoutcastDetails(InputStream stream, BiConsumer<InputStream, TransferStatus> streamInit,
+                HttpHeaders headers) {
+            this.stream = stream;
+            this.streamInit = streamInit;
+            this.headers = headers;
+        }
 
-            // Terminate any other streams to this player.
-            if (!isPodcast && !isSingleFile) {
-                for (TransferStatus streamStatus : statusService.getStreamStatusesForPlayer(player)) {
-                    if (streamStatus.isActive()) {
-                        streamStatus.terminate();
-                    }
-                }
-            }
+        public InputStream getStream() {
+            return stream;
+        }
 
-            status = statusService.createStreamStatus(player);
+        public BiConsumer<InputStream, TransferStatus> getStreamInit() {
+            return streamInit;
+        }
 
-            try (
-                PlayQueueInputStream in = new PlayQueueInputStream(player, status, maxBitRate, preferredTargetFormat, videoTranscodingSettings,
-                        transcodingService, audioScrobblerService, mediaFileService, searchService);
-                OutputStream out = makeOutputStream(request, response, range, isSingleFile, player, settingsService)
-            ) {
-                final int BUFFER_SIZE = 2048;
-                byte[] buf = new byte[BUFFER_SIZE];
-                long bytesWritten = 0;
-
-                while (!status.terminated()) {
-                    if (player.getPlayQueue().getStatus() == PlayQueue.Status.STOPPED) {
-                        if (isPodcast || isSingleFile) {
-                            break;
-                        } else {
-                            sendDummyDelayed(buf, out);
-                        }
-                    } else {
-
-                        int n = in.read(buf);
-                        if (n == -1) {
-                            if (isPodcast || isSingleFile) {
-                                // Pad the output if needed to avoid content length errors on transcodes
-                                if (fileLengthExpected != null && bytesWritten < fileLengthExpected) {
-                                    sendDummy(buf, out, fileLengthExpected - bytesWritten);
-                                }
-                                break;
-                            } else {
-                                sendDummyDelayed(buf, out);
-                            }
-                        } else {
-                            if (fileLengthExpected != null && bytesWritten <= fileLengthExpected
-                                && bytesWritten + n > fileLengthExpected) {
-                                LOG.warn("Stream output exceeded expected length of {}. It is likely that "
-                                    + "the transcoder is not adhering to the bitrate limit or the media "
-                                    + "source is corrupted or has grown larger", fileLengthExpected);
-                            }
-                            out.write(buf, 0, n);
-                            bytesWritten += n;
-                        }
-                    }
-                }
-            }
-        } catch (IOException e) {
-
-            // This happens often and outside of the control of the server, so
-            // we catch Tomcat/Jetty "connection aborted by client" exceptions
-            // and display a short error message.
-            boolean shouldCatch = Util.isInstanceOfClassName(e, "org.apache.catalina.connector.ClientAbortException");
-            if (shouldCatch) {
-                LOG.info("{}: Client unexpectedly closed connection while loading {} ({})",
-                        request.getRemoteAddr(),
-                        Util.getAnonymizedURLForRequest(request),
-                        e.getCause().toString());
-                return;
-            }
-
-            // Rethrow the exception in all other cases
-            throw e;
-
-        } finally {
-            if (status != null) {
-                securityService.updateUserByteCounts(user, status.getBytesTransferred(), 0L, 0L);
-                statusService.removeStreamStatus(status);
-            }
+        public HttpHeaders getHeaders() {
+            return headers;
         }
     }
 
     /**
-     * Construct an appropriate output stream based on the request.
-     * <p>
-     * This is responsible for limiting the output to the given range (if not null) and injecting Shoutcast metadata
-     * into the stream if requested.
+     *
+     * Class that ensures a stream meets at least minimum length. If underlying
+     * stream is shorter, then this will pad stream with zeros until threshold is
+     * met If underlying stream is longer, then this will warn as soon as it goes
+     * over.
+     *
      */
-    private OutputStream makeOutputStream(HttpServletRequest request, HttpServletResponse response, HttpRange range,
-                                          boolean isSingleFile, Player player, SettingsService settingsService)
-            throws IOException {
-        OutputStream out = RangeOutputStream.wrap(response.getOutputStream(), range);
+    private static class ThresholdInputStream extends FilterInputStream {
+        private long threshold;
+        private long bytesRead = 0;
 
-        // Enabled SHOUTcast, if requested.
-        boolean isShoutCastRequested = "1".equals(request.getHeader("icy-metadata"));
-        if (isShoutCastRequested && !isSingleFile) {
-            response.setHeader("icy-metaint", "" + ShoutCastOutputStream.META_DATA_INTERVAL);
-            response.setHeader("icy-notice1", "This stream is served using Airsonic");
-            response.setHeader("icy-notice2", "Airsonic - Free media streamer");
-            response.setHeader("icy-name", "Airsonic");
-            response.setHeader("icy-genre", "Mixed");
-            response.setHeader("icy-url", "https://airsonic.github.io/");
-            out = new ShoutCastOutputStream(out, player.getPlayQueue(), settingsService);
-        }
-        return out;
-    }
-
-    private void setContentDuration(HttpServletResponse response, MediaFile file) {
-        if (file.getDuration() != null) {
-            response.setHeader("X-Content-Duration", String.format("%.1f", file.getDuration()));
-        }
-    }
-
-    private MediaFile getSingleFile(HttpServletRequest request) throws ServletRequestBindingException {
-        String path = request.getParameter("path");
-        if (path != null) {
-            return mediaFileService.getMediaFile(path);
-        }
-        Integer id = ServletRequestUtils.getIntParameter(request, "id");
-        if (id != null) {
-            return mediaFileService.getMediaFile(id);
-        }
-        return null;
-    }
-
-    @Nullable
-    private HttpRange getRange(HttpServletRequest request, Double fileDuration, Long fileSize) {
-
-        // First, look for "Range" HTTP header.
-        HttpRange range = HttpRange.valueOf(request.getHeader("Range"));
-        if (range != null) {
-            return range;
+        protected ThresholdInputStream(InputStream in, long threshold) {
+            super(in);
+            this.threshold = threshold;
         }
 
-        // Second, look for "offsetSeconds" request parameter.
-        String offsetSeconds = request.getParameter("offsetSeconds");
-        range = parseAndConvertOffsetSeconds(offsetSeconds, fileDuration, fileSize);
-        return range;
-
-    }
-
-    @Nullable
-    private HttpRange parseAndConvertOffsetSeconds(String offsetSeconds, Double fileDuration, Long fileSize) {
-        if (offsetSeconds == null) {
-            return null;
+        private void warn() {
+            LOG.warn("Stream output exceeded expected length of {}. It is likely that "
+                    + "the transcoder is not adhering to the bitrate limit or the media "
+                    + "source is corrupted or has grown larger", threshold);
         }
 
-        try {
-            if (fileDuration == null || fileSize == null) {
-                return null;
+        @Override
+        public int read() throws IOException {
+            int read = super.read();
+            if (read == -1 && bytesRead < threshold) {
+                read = 0;
+            } else if (read != -1 && bytesRead == threshold) {
+                warn();
             }
-            double offset = Double.valueOf(offsetSeconds);
 
-            // Convert from time offset to byte offset.
-            long byteOffset = (long) (fileSize * (offset / fileDuration));
-            return new HttpRange(byteOffset, null);
+            bytesRead++;
 
-        } catch (Exception x) {
-            LOG.error("Failed to parse and convert time offset: " + offsetSeconds, x);
-            return null;
+            return read;
         }
+
+        private static byte[] zeros = new byte[4096];
+
+        @Override
+        public int read(byte b[], int off, int len) throws IOException {
+            int read = super.read(b, off, len);
+            if (read == -1 && bytesRead < threshold) {
+                if (zeros.length < len) {
+                    zeros = new byte[len];
+                }
+                System.arraycopy(zeros, 0, b, off, len);
+                read = Math.min(len, (int) (threshold - bytesRead));
+            } else if (read != -1 && bytesRead <= threshold && bytesRead + read > threshold) {
+                warn();
+            }
+
+            bytesRead += read;
+
+            return read;
+        }
+
     }
 
     private VideoTranscodingSettings createVideoTranscodingSettings(MediaFile file, HttpServletRequest request)
@@ -439,33 +463,9 @@ public class StreamController {
         return new Dimension(even(w), even(h));
     }
 
-    // Make sure width and height are multiples of two, as some versions of ffmpeg require it.
+    // Make sure width and height are multiples of two, as some versions of ffmpeg
+    // require it.
     private int even(int size) {
         return size + (size % 2);
-    }
-
-    private void sendDummy(byte[] buf, OutputStream out, long len) throws IOException {
-        long bytesWritten = 0;
-        int n;
-
-        Arrays.fill(buf, (byte) 0xFF);
-        while (bytesWritten < len) {
-            n = (int) Math.min(buf.length, len - bytesWritten);
-            out.write(buf, 0, n);
-            bytesWritten += n;
-        }
-    }
-
-    /**
-     * Feed the other end with some dummy data to keep it from reconnecting.
-     */
-    private void sendDummyDelayed(byte[] buf, OutputStream out) throws IOException {
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException x) {
-            LOG.warn("Interrupted in sleep.", x);
-        }
-        sendDummy(buf, out, buf.length);
-        out.flush();
     }
 }

@@ -263,7 +263,7 @@ public class DownloadController {
                     } catch (Exception e1) {
                         LOG.debug("Error with output to zip", e1);
                     }
-                }).start();
+                }, "DownloadControllerDatafeed").start();
 
                 // wait for src data thread to connect
                 while (pin.source == null) {
