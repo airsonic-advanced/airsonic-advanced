@@ -83,6 +83,8 @@ public final class StringUtil {
             {"jpeg", "image/jpeg"},
             {"png", "image/png"},
             {"bmp", "image/bmp"},
+
+            {"zip", "application/zip"},
     };
 
     private static final String[] FILE_SYSTEM_UNSAFE = {"/", "\\", "..", ":", "\"", "?", "*", "|"};

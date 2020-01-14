@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.util.concurrent.RateLimiter;
+
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MusicFolderDao;
@@ -240,7 +242,7 @@ public class SettingsService {
     private Set<String> cachedVideoFileTypes;
     private List<MusicFolder> cachedMusicFolders;
     private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
-
+    private RateLimiter downloadRateLimiter;
     private Pattern excludePattern;
 
     // Array of obsolete keys.  Used to clean property file.
@@ -626,11 +628,31 @@ public class SettingsService {
         return Long.parseLong(getProperty(KEY_DOWNLOAD_BITRATE_LIMIT, "" + DEFAULT_DOWNLOAD_BITRATE_LIMIT));
     }
 
+    public RateLimiter getDownloadBitrateLimiter() {
+        if (downloadRateLimiter == null) {
+            downloadRateLimiter = RateLimiter.create(adjustBitrateLimit(getDownloadBitrateLimit()));
+        }
+        return downloadRateLimiter;
+    }
+
+    /**
+     * Convert rate given in KB to bytes and accounts for 0 (meaning no bitrate)
+     */
+    private static Double adjustBitrateLimit(double rate) {
+        double rateLimitInBytes = rate * 1024.0;
+        if (rate == 0) {
+            rateLimitInBytes = Double.POSITIVE_INFINITY;
+        }
+
+        return rateLimitInBytes;
+    }
+
     /**
      * @param limit The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setDownloadBitrateLimit(long limit) {
         setProperty(KEY_DOWNLOAD_BITRATE_LIMIT, String.valueOf(limit));
+        getDownloadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
     /**

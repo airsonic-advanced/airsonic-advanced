@@ -30,6 +30,7 @@ import org.airsonic.player.dao.PlayQueueDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.Bookmark;
 import org.airsonic.player.domain.PlayQueue;
+import org.airsonic.player.domain.User;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.search.IndexType;
@@ -40,6 +41,7 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -47,6 +49,8 @@ import org.springframework.web.bind.ServletRequestUtils;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.subsonic.restapi.*;
 import org.subsonic.restapi.PodcastStatus;
 
@@ -55,9 +59,11 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.datatype.XMLGregorianCalendar;
 
+import java.security.Principal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.Map.Entry;
 
 import static org.airsonic.player.security.RESTRequestParameterProcessingFilter.decrypt;
 import static org.springframework.web.bind.ServletRequestUtils.*;
@@ -1351,27 +1357,47 @@ public class SubsonicRESTController {
     }
 
     @RequestMapping("/download")
-    public void download(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
+    public ResponseEntity<Resource> download(Principal p, @RequestParam(required = false) String id,
+            @RequestParam(required = false) Integer playlist, @RequestParam(required = false) Integer player,
+            @RequestParam(required = false, name = "i") List<Integer> indices, ServletWebRequest swr) throws Exception {
+        HttpServletRequest request = wrapRequest(swr.getRequest());
+        final Integer playerId = Optional.ofNullable(request.getParameter("player")).map(Integer::valueOf).orElse(null);
+        Optional<Integer> idInt = Optional.ofNullable(id).map(this::mapId).filter(StringUtils::isNumeric).map(Integer::valueOf);
+
+        User user = securityService.getUserByName(p.getName());
         if (!user.isDownloadRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to download files.");
-            return;
+            throw new APIException(ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to download files.");
+        }
+        return downloadController.handleRequest(p, idInt, playlist, playerId, indices,
+                new ServletWebRequest(request, swr.getResponse()));
+    }
+
+    public static class APIException extends Exception {
+        private String message;
+        private ErrorCode error;
+
+        public APIException(ErrorCode error, String message) {
+            this.message = message;
+            this.error = error;
         }
 
-        long ifModifiedSince = request.getDateHeader("If-Modified-Since");
-        long lastModified = downloadController.getLastModified(request);
-
-        if (ifModifiedSince != -1 && lastModified != -1 && lastModified <= ifModifiedSince) {
-            response.sendError(HttpServletResponse.SC_NOT_MODIFIED);
-            return;
+        @Override
+        public String getMessage() {
+            return message;
         }
 
-        if (lastModified != -1) {
-            response.setDateHeader("Last-Modified", lastModified);
+        public ErrorCode getError() {
+            return error;
         }
+    }
 
-        downloadController.handleRequest(request, response);
+    @ExceptionHandler(APIException.class)
+    public ResponseEntity<String> apiException(ServletWebRequest swr, APIException exception) {
+        Entry<String, String> exceptionResponse = jaxbWriter.serializeForType(swr.getRequest(),
+                jaxbWriter.createErrorResponse(exception));
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.parseMediaType(exceptionResponse.getKey()))
+                .body(exceptionResponse.getValue());
     }
 
     @RequestMapping("/stream")
@@ -2289,13 +2315,13 @@ public class SubsonicRESTController {
     }
 
     private HttpServletRequest wrapRequest(final HttpServletRequest request, boolean jukebox) {
-        final String playerId = createPlayerIfNecessary(request, jukebox);
+        final Integer playerId = createPlayerIfNecessary(request, jukebox);
         return new HttpServletRequestWrapper(request) {
             @Override
             public String getParameter(String name) {
                 // Returns the correct player to be used in PlayerService.getPlayer()
                 if ("player".equals(name)) {
-                    return playerId;
+                    return playerId == null ? null : String.valueOf(playerId);
                 }
 
                 // Support old style ID parameters.
@@ -2335,7 +2361,7 @@ public class SubsonicRESTController {
         jaxbWriter.writeErrorResponse(request, response, code, message);
     }
 
-    private String createPlayerIfNecessary(HttpServletRequest request, boolean jukebox) {
+    private Integer createPlayerIfNecessary(HttpServletRequest request, boolean jukebox) {
         String username = request.getRemoteUser();
         String clientId = request.getParameter("c");
         if (jukebox) {
@@ -2357,7 +2383,7 @@ public class SubsonicRESTController {
         }
 
         // Return the player ID.
-        return !players.isEmpty() ? String.valueOf(players.get(0).getId()) : null;
+        return !players.isEmpty() ? players.get(0).getId() : null;
     }
 
     public enum ErrorCode {
