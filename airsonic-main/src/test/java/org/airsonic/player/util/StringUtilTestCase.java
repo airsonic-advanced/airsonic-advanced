@@ -22,7 +22,6 @@ package org.airsonic.player.util;
 import junit.framework.TestCase;
 import org.apache.commons.lang.StringEscapeUtils;
 
-import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -113,21 +112,6 @@ public class StringUtilTestCase extends TestCase {
         for (int i = 0; i < expected.length; i++) {
             assertEquals("Wrong criteria.", expected[i], actual[i]);
         }
-    }
-
-    public void testParseInts() {
-        doTestParseInts("123", 123);
-        doTestParseInts("1 2 3", 1, 2, 3);
-        doTestParseInts("10  20 \t\n 30", 10, 20, 30);
-
-        assertTrue("Error in parseInts().", StringUtil.parseInts(null).length == 0);
-        assertTrue("Error in parseInts().", StringUtil.parseInts("").length == 0);
-        assertTrue("Error in parseInts().", StringUtil.parseInts(" ").length == 0);
-        assertTrue("Error in parseInts().", StringUtil.parseInts("  ").length == 0);
-    }
-
-    private void doTestParseInts(String s, int... expected) {
-        assertEquals("Error in parseInts().", Arrays.toString(expected), Arrays.toString(StringUtil.parseInts(s)));
     }
 
     public void testParseLocale() {
