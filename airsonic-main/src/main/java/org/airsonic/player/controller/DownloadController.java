@@ -26,6 +26,7 @@ import org.airsonic.player.io.PipeStreams.MonitoredResource;
 import org.airsonic.player.io.PipeStreams.PipedInputStream;
 import org.airsonic.player.io.PipeStreams.PipedOutputStream;
 import org.airsonic.player.service.*;
+import org.airsonic.player.spring.KnownLengthInputStreamResource;
 import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.LambdaUtils;
 import org.airsonic.player.util.StringUtil;
@@ -35,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -284,20 +284,6 @@ public class DownloadController {
                             statusCloser,
                             poutInit),
                     null, size, -1);
-        }
-    }
-
-    public static class KnownLengthInputStreamResource extends InputStreamResource {
-        private long len;
-
-        public KnownLengthInputStreamResource(InputStream inputStream, long len) {
-            super(inputStream);
-            this.len = len;
-        }
-
-        @Override
-        public long contentLength() {
-            return len;
         }
     }
 

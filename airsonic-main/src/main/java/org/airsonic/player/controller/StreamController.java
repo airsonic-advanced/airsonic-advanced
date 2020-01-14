@@ -21,7 +21,6 @@ package org.airsonic.player.controller;
 
 import com.google.common.io.ByteStreams;
 
-import org.airsonic.player.controller.DownloadController.KnownLengthInputStreamResource;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.io.PlayQueueInputStream;
 import org.airsonic.player.io.ShoutCastOutputStream;
@@ -31,6 +30,7 @@ import org.airsonic.player.io.PipeStreams.PipedOutputStream;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.sonos.SonosHelper;
+import org.airsonic.player.spring.KnownLengthInputStreamResource;
 import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.LambdaUtils;
 import org.airsonic.player.util.StringUtil;
