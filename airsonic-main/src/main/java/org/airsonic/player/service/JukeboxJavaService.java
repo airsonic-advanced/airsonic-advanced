@@ -184,7 +184,7 @@ public class JukeboxJavaService {
         }
         status = statusService.createStreamStatus(player);
         status.setFile(file.getFile());
-        status.addBytesTransfered(file.getFileSize());
+        status.addBytesTransferred(file.getFileSize());
         mediaFileService.incrementPlayCount(file);
         scrobble(player, file, false);
     }

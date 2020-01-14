@@ -95,7 +95,7 @@ public class PlayQueueInputStream extends InputStream {
             close();
             return read(b, off, len);
         } else {
-            status.addBytesTransfered(n);
+            status.addBytesTransferred(n);
         }
         return n;
     }

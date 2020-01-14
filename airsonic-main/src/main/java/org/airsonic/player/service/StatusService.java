@@ -29,6 +29,9 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Provides services for maintaining the list of stream, download and upload statuses.
@@ -38,136 +41,112 @@ import java.util.*;
  * @author Sindre Mehus
  * @see TransferStatus
  */
-//TODO needs to be rewritten to avoid so many sync locks
 @Service
 public class StatusService {
 
     @Autowired
     private MediaFileService mediaFileService;
 
-    private final List<TransferStatus> streamStatuses = new ArrayList<TransferStatus>();
-    private final List<TransferStatus> downloadStatuses = new ArrayList<TransferStatus>();
-    private final List<TransferStatus> uploadStatuses = new ArrayList<TransferStatus>();
-    private final List<PlayStatus> remotePlays = new ArrayList<PlayStatus>();
+    private final List<TransferStatus> streamStatuses = Collections.synchronizedList(new ArrayList<>());
+    private final List<TransferStatus> downloadStatuses = Collections.synchronizedList(new ArrayList<>());
+    private final List<TransferStatus> uploadStatuses = Collections.synchronizedList(new ArrayList<>());
+    private final List<PlayStatus> remotePlays = Collections.synchronizedList(new ArrayList<>());
 
     // Maps from player ID to latest inactive stream status.
-    private final Map<Integer, TransferStatus> inactiveStreamStatuses = new LinkedHashMap<Integer, TransferStatus>();
+    private final Map<Integer, TransferStatus> inactiveStreamStatuses = new ConcurrentHashMap<>();
 
-    public synchronized TransferStatus createStreamStatus(Player player) {
-        // Reuse existing status, if possible.
-        TransferStatus status = inactiveStreamStatuses.get(player.getId());
-        if (status != null) {
-            status.setActive(true);
-        } else {
-            status = createStatus(player, streamStatuses);
-        }
-        return status;
+    public TransferStatus createStreamStatus(Player player) {
+        return createStatus(player, streamStatuses);
     }
 
-    public synchronized void removeStreamStatus(TransferStatus status) {
+    public void removeStreamStatus(TransferStatus status) {
         // Move it to the map of inactive statuses.
-        status.setActive(false);
-        inactiveStreamStatuses.put(status.getPlayer().getId(), status);
-        streamStatuses.remove(status);
+        inactiveStreamStatuses.compute(status.getPlayer().getId(), (k, v) -> {
+            streamStatuses.remove(status);
+            status.setActive(false);
+            return status;
+        });
     }
 
-    public synchronized List<TransferStatus> getAllStreamStatuses() {
-
-        List<TransferStatus> result = new ArrayList<TransferStatus>(streamStatuses);
-
+    public List<TransferStatus> getAllStreamStatuses() {
+        List<TransferStatus> snapshot = new ArrayList<>(streamStatuses);
+        Set<Integer> playerIds = snapshot.parallelStream()
+                .map(x -> x.getPlayer().getId())
+                .collect(Collectors.toCollection(() -> ConcurrentHashMap.newKeySet()));
         // Add inactive status for those players that have no active status.
-        Set<Integer> activePlayers = new HashSet<Integer>();
-        for (TransferStatus status : streamStatuses) {
-            activePlayers.add(status.getPlayer().getId());
-        }
-
-        for (Map.Entry<Integer, TransferStatus> entry : inactiveStreamStatuses.entrySet()) {
-            if (!activePlayers.contains(entry.getKey())) {
-                result.add(entry.getValue());
-            }
-        }
-        return result;
+        return Stream.concat(
+                snapshot.parallelStream(),
+                inactiveStreamStatuses.values().parallelStream().filter(s -> !playerIds.contains(s.getPlayer().getId())))
+                .collect(Collectors.toList());
     }
 
-    public synchronized List<TransferStatus> getStreamStatusesForPlayer(Player player) {
-        List<TransferStatus> result = new ArrayList<TransferStatus>();
-        for (TransferStatus status : streamStatuses) {
-            if (status.getPlayer().getId().equals(player.getId())) {
-                result.add(status);
-            }
+    public List<TransferStatus> getStreamStatusesForPlayer(Player player) {
+        // unsynchronized stream access, but should be okay, we'll just be a bit behind
+        List<TransferStatus> result = streamStatuses.parallelStream()
+                .filter(s -> s.getPlayer().getId().equals(player.getId()))
+                .collect(Collectors.toList());
+
+        if (!result.isEmpty()) {
+            return result;
         }
 
-        // If no active statuses exists, add the inactive one.
-        if (result.isEmpty()) {
-            TransferStatus inactiveStatus = inactiveStreamStatuses.get(player.getId());
-            if (inactiveStatus != null) {
-                result.add(inactiveStatus);
-            }
-        }
-
-        return result;
+        return Optional.ofNullable(inactiveStreamStatuses.get(player.getId()))
+                .map(Collections::singletonList)
+                .orElseGet(Collections::emptyList);
     }
 
-    public synchronized TransferStatus createDownloadStatus(Player player) {
+    public TransferStatus createDownloadStatus(Player player) {
         return createStatus(player, downloadStatuses);
     }
 
-    public synchronized void removeDownloadStatus(TransferStatus status) {
+    public void removeDownloadStatus(TransferStatus status) {
         downloadStatuses.remove(status);
     }
 
-    public synchronized List<TransferStatus> getAllDownloadStatuses() {
-        return new ArrayList<TransferStatus>(downloadStatuses);
+    public List<TransferStatus> getAllDownloadStatuses() {
+        return new ArrayList<>(downloadStatuses);
     }
 
-    public synchronized TransferStatus createUploadStatus(Player player) {
+    public TransferStatus createUploadStatus(Player player) {
         return createStatus(player, uploadStatuses);
     }
 
-    public synchronized void removeUploadStatus(TransferStatus status) {
+    public void removeUploadStatus(TransferStatus status) {
         uploadStatuses.remove(status);
     }
 
-    public synchronized List<TransferStatus> getAllUploadStatuses() {
-        return new ArrayList<TransferStatus>(uploadStatuses);
+    public List<TransferStatus> getAllUploadStatuses() {
+        return new ArrayList<>(uploadStatuses);
     }
 
-    public synchronized void addRemotePlay(PlayStatus playStatus) {
+    public void addRemotePlay(PlayStatus playStatus) {
         remotePlays.removeIf(PlayStatus::isExpired);
         remotePlays.add(playStatus);
     }
 
-    public synchronized List<PlayStatus> getPlayStatuses() {
-        Map<Integer, PlayStatus> result = new LinkedHashMap<Integer, PlayStatus>();
-        for (PlayStatus remotePlay : remotePlays) {
-            if (!remotePlay.isExpired()) {
-                result.put(remotePlay.getPlayer().getId(), remotePlay);
-            }
-        }
+    public List<PlayStatus> getPlayStatuses() {
+        List<PlayStatus> remotePlaySnapshot = new ArrayList<>(remotePlays);
 
-        List<TransferStatus> statuses = new ArrayList<TransferStatus>();
-        statuses.addAll(inactiveStreamStatuses.values());
-        statuses.addAll(streamStatuses);
-
-        for (TransferStatus streamStatus : statuses) {
-            Player player = streamStatus.getPlayer();
-            Path file = streamStatus.getFile();
-            if (file == null) {
-                continue;
-            }
-            MediaFile mediaFile = mediaFileService.getMediaFile(file);
-            if (player == null || mediaFile == null) {
-                continue;
-            }
-            Instant time = Instant.now().minusMillis(streamStatus.getMillisSinceLastUpdate());
-            result.put(player.getId(), new PlayStatus(mediaFile, player, time));
-        }
-        return new ArrayList<PlayStatus>(result.values());
+        return Stream.concat(
+                remotePlaySnapshot.parallelStream().filter(r -> !r.isExpired()),
+                getAllStreamStatuses().parallelStream().map(streamStatus -> {
+                    Path file = streamStatus.getFile();
+                    if (file == null) {
+                        return null;
+                    }
+                    Player player = streamStatus.getPlayer();
+                    MediaFile mediaFile = mediaFileService.getMediaFile(file);
+                    if (player == null || mediaFile == null) {
+                        return null;
+                    }
+                    Instant time = Instant.now().minusMillis(streamStatus.getMillisSinceLastUpdate());
+                    return new PlayStatus(mediaFile, player, time);
+                }).filter(Objects::nonNull))
+                .collect(Collectors.toList());
     }
 
-    private synchronized TransferStatus createStatus(Player player, List<TransferStatus> statusList) {
-        TransferStatus status = new TransferStatus();
-        status.setPlayer(player);
+    private TransferStatus createStatus(Player player, List<TransferStatus> statusList) {
+        TransferStatus status = new TransferStatus(player);
         statusList.add(status);
         return status;
     }

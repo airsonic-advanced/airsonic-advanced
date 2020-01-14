@@ -286,7 +286,7 @@ public class StreamController {
 
         } finally {
             if (status != null) {
-                securityService.updateUserByteCounts(user, status.getBytesTransfered(), 0L, 0L);
+                securityService.updateUserByteCounts(user, status.getBytesTransferred(), 0L, 0L);
                 statusService.removeStreamStatus(status);
             }
         }
