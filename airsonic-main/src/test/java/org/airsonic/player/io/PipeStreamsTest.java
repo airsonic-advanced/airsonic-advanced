@@ -1,13 +1,14 @@
-package org.airsonic.player.util;
+package org.airsonic.player.io;
 
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.RateLimiter;
 
 import org.airsonic.player.domain.TransferStatus;
-import org.airsonic.player.util.PipeStreams.MonitoredInputStream;
-import org.airsonic.player.util.PipeStreams.MonitoredResource;
-import org.airsonic.player.util.PipeStreams.PipedInputStream;
-import org.airsonic.player.util.PipeStreams.PipedOutputStream;
+import org.airsonic.player.io.PipeStreams.MonitoredInputStream;
+import org.airsonic.player.io.PipeStreams.MonitoredResource;
+import org.airsonic.player.io.PipeStreams.PipedInputStream;
+import org.airsonic.player.io.PipeStreams.PipedOutputStream;
+import org.airsonic.player.util.FileUtil;
 import org.junit.Test;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;

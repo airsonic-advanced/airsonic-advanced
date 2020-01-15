@@ -19,21 +19,18 @@
  */
 package org.airsonic.player.controller;
 
-import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastStatus;
 import org.airsonic.player.service.PodcastService;
-import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.ServletRequestUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 /**
  * Controller for the "Podcast receiver" page.
@@ -48,29 +45,37 @@ public class PodcastReceiverAdminController {
     private PodcastService podcastService;
 
     @RequestMapping(method = { RequestMethod.POST, RequestMethod.GET })
-    protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        Integer channelId = ServletRequestUtils.getIntParameter(request, "channelId");
+    protected ModelAndView handleRequestInternal(
+            @RequestParam(required = false) Integer channelId,
+            @RequestParam(required = false) String add,
+            @RequestParam(required = false) List<Integer> downloadEpisode,
+            @RequestParam(required = false) String deleteChannel,
+            @RequestParam(required = false) List<Integer> deleteEpisode,
+            @RequestParam(required = false) String refresh) throws Exception {
 
-        if (request.getParameter("add") != null) {
-            String url = StringUtils.trim(request.getParameter("add"));
+        if (add != null) {
+            String url = StringUtils.trim(add);
             podcastService.createChannel(url);
             return new ModelAndView(new RedirectView("podcastChannels.view"));
         }
-        if (request.getParameter("downloadEpisode") != null && channelId != null) {
-            download(StringUtil.parseInts(request.getParameter("downloadEpisode")));
+        if (downloadEpisode != null && channelId != null) {
+            downloadEpisode.parallelStream()
+                    .map(e -> podcastService.getEpisode(e, false))
+                    .filter(episode -> episode != null && episode.getUrl() != null
+                            && (episode.getStatus() == PodcastStatus.NEW || episode.getStatus() == PodcastStatus.ERROR
+                                    || episode.getStatus() == PodcastStatus.SKIPPED))
+                    .forEach(podcastService::downloadEpisode);
             return new ModelAndView(new RedirectView("podcastChannel.view?id=" + channelId));
         }
-        if (request.getParameter("deleteChannel") != null && channelId != null) {
+        if (deleteChannel != null && channelId != null) {
             podcastService.deleteChannel(channelId);
             return new ModelAndView(new RedirectView("podcastChannels.view"));
         }
-        if (request.getParameter("deleteEpisode") != null) {
-            for (int episodeId : StringUtil.parseInts(request.getParameter("deleteEpisode"))) {
-                podcastService.deleteEpisode(episodeId, true);
-            }
+        if (deleteEpisode != null) {
+            deleteEpisode.forEach(episodeId -> podcastService.deleteEpisode(episodeId, true));
             return new ModelAndView(new RedirectView("podcastChannel.view?id=" + channelId));
         }
-        if (request.getParameter("refresh") != null) {
+        if (refresh != null) {
             if (channelId != null) {
                 podcastService.refreshChannel(channelId, true);
                 return new ModelAndView(new RedirectView("podcastChannel.view?id=" + channelId));
@@ -82,18 +87,4 @@ public class PodcastReceiverAdminController {
 
         return new ModelAndView(new RedirectView("podcastChannels.view"));
     }
-
-    private void download(int[] episodeIds) {
-        for (int episodeId : episodeIds) {
-            PodcastEpisode episode = podcastService.getEpisode(episodeId, false);
-            if (episode != null && episode.getUrl() != null &&
-                (episode.getStatus() == PodcastStatus.NEW ||
-                 episode.getStatus() == PodcastStatus.ERROR ||
-                 episode.getStatus() == PodcastStatus.SKIPPED)) {
-
-                podcastService.downloadEpisode(episode);
-            }
-        }
-    }
-
 }

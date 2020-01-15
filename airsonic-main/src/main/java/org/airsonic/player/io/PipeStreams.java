@@ -1,4 +1,4 @@
-package org.airsonic.player.util;
+package org.airsonic.player.io;
 
 import com.google.common.util.concurrent.RateLimiter;
 

@@ -34,7 +34,6 @@ import java.text.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * Miscellaneous string utility methods.
@@ -239,23 +238,6 @@ public final class StringUtil {
         } finally {
             FileUtil.closeQuietly(in);
         }
-    }
-
-    /**
-     * Converts the given string of whitespace-separated integers to an <code>int</code> array.
-     *
-     * @param s String consisting of integers separated by whitespace.
-     * @return The corresponding array of ints.
-     * @throws NumberFormatException If string contains non-parseable text.
-     */
-    public static int[] parseInts(String s) {
-        if (s == null) {
-            return new int[0];
-        }
-
-        return Stream.of(StringUtils.split(s))
-                .mapToInt(Integer::parseInt)
-                .toArray();
     }
 
     /**
