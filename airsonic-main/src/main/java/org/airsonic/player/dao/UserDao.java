@@ -71,11 +71,11 @@ public class UserDao extends AbstractDao {
     private UserRowMapper userRowMapper = new UserRowMapper();
     private UserSettingsRowMapper userSettingsRowMapper = new UserSettingsRowMapper();
 
-    private final String userTableQuote;
+    private final String userTable;
 
     @Autowired
     public UserDao(@Value("${DatabaseUsertableQuote:}") String userTableQuote) {
-        this.userTableQuote = userTableQuote;
+        this.userTable = userTableQuote + "user" + userTableQuote;
     }
 
     /**
@@ -402,6 +402,6 @@ public class UserDao extends AbstractDao {
     }
 
     String getUserTable() {
-        return userTableQuote + "user" + userTableQuote;
+        return userTable;
     }
 }
