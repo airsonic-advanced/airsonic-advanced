@@ -1385,6 +1385,10 @@ public class SubsonicRESTController {
             this.error = error;
         }
 
+        public APIException(ErrorCode error) {
+            this(error, error.getMessage());
+        }
+
         @Override
         public String getMessage() {
             return message;
