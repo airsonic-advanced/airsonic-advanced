@@ -1,5 +1,7 @@
 package org.airsonic.player.security;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.apache.commons.lang3.StringUtils;
@@ -31,7 +33,6 @@ import org.springframework.security.web.context.request.async.WebAsyncManagerInt
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.security.SecureRandom;
-import java.util.HashMap;
 import java.util.Map;
 
 import static org.airsonic.player.security.MultipleCredsMatchingAuthenticationProvider.SALT_TOKEN_MECHANISM_SPECIALIZATION;
@@ -47,6 +48,34 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
 
     static final String DEVELOPMENT_REMEMBER_ME_KEY = "airsonic";
 
+    @SuppressWarnings("deprecation")
+    public static final Map<String, PasswordEncoder> ENCODERS = ImmutableMap.<String, PasswordEncoder>builderWithExpectedSize(18)
+            .put("bcrypt", new BCryptPasswordEncoder())
+            .put("ldap", new org.springframework.security.crypto.password.LdapShaPasswordEncoder())
+            .put("MD4", new org.springframework.security.crypto.password.Md4PasswordEncoder())
+            .put("MD5", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("MD5"))
+            .put("pbkdf2", new Pbkdf2PasswordEncoder()).put("scrypt", new SCryptPasswordEncoder())
+            .put("SHA-1", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-1"))
+            .put("SHA-256", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-256"))
+            .put("sha256", new org.springframework.security.crypto.password.StandardPasswordEncoder())
+            .put("argon2", new Argon2PasswordEncoder())
+
+            // base decodable encoders
+            .put("noop", org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance())
+            .put("hex", HexPasswordEncoder.getInstance())
+
+            // base decodable encoders that rely on salt+token being passed in (not stored in db with this type)
+            .put("noop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p))
+            .put("hex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()))
+
+            // TODO: legacy marked base encoders, to be upgraded to one-way formats at breaking version change
+            .put("legacynoop", org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance())
+            .put("legacyhex", HexPasswordEncoder.getInstance())
+
+            .put("legacynoop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p))
+            .put("legacyhex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()))
+            .build();
+
     @Autowired
     private CsrfSecurityRequestMatcher csrfSecurityRequestMatcher;
 
@@ -59,38 +88,9 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
     @Autowired
     MultipleCredsMatchingAuthenticationProvider multipleCredsProvider;
 
-    @SuppressWarnings("deprecation")
     @Bean
     public PasswordEncoder passwordEncoder() {
-        String encodingId = "bcrypt";
-        Map<String, PasswordEncoder> encoders = new HashMap<>();
-        encoders.put(encodingId, new BCryptPasswordEncoder());
-        encoders.put("ldap", new org.springframework.security.crypto.password.LdapShaPasswordEncoder());
-        encoders.put("MD4", new org.springframework.security.crypto.password.Md4PasswordEncoder());
-        encoders.put("MD5", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("MD5"));
-        encoders.put("pbkdf2", new Pbkdf2PasswordEncoder());
-        encoders.put("scrypt", new SCryptPasswordEncoder());
-        encoders.put("SHA-1", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-1"));
-        encoders.put("SHA-256", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-256"));
-        encoders.put("sha256", new org.springframework.security.crypto.password.StandardPasswordEncoder());
-        encoders.put("argon2", new Argon2PasswordEncoder());
-
-        // base decodable encoders
-        encoders.put("noop", org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance());
-        encoders.put("hex", HexPasswordEncoder.getInstance());
-
-        // base decodable encoders that rely on salt+token being passed in (not stored in db with this type)
-        encoders.put("noop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p));
-        encoders.put("hex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()));
-
-        // TODO: legacy marked base encoders, to be upgraded to one-way formats at breaking version change
-        encoders.put("legacynoop", org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance());
-        encoders.put("legacyhex", HexPasswordEncoder.getInstance());
-
-        encoders.put("legacynoop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p));
-        encoders.put("legacyhex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()));
-
-        return new DelegatingPasswordEncoder(encodingId, encoders);
+        return new DelegatingPasswordEncoder(settingsService.getAirsonicPasswordEncoder(), ENCODERS);
     }
 
     @EventListener
@@ -116,7 +116,6 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
                     .userSearchFilter(settingsService.getLdapSearchFilter())
                     .userDetailsContextMapper(customUserDetailsContextMapper);
         }
-        // auth.userDetailsService(securityService);
         String jwtKey = settingsService.getJWTKey();
         if (StringUtils.isBlank(jwtKey)) {
             LOG.warn("Generating new jwt key");
@@ -178,8 +177,6 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
 
             RESTRequestParameterProcessingFilter restAuthenticationFilter = new RESTRequestParameterProcessingFilter();
             restAuthenticationFilter.setAuthenticationManager(authenticationManagerBean());
-//            restAuthenticationFilter.setSecurityService(securityService);
-//            restAuthenticationFilter.setEventPublisher(eventPublisher);
             http = http.addFilterBefore(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
             // Try to load the 'remember me' key.
