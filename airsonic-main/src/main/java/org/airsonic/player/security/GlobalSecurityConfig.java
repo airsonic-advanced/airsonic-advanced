@@ -1,28 +1,40 @@
 package org.airsonic.player.security;
 
 import org.airsonic.player.service.JWTSecurityService;
-import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.GlobalAuthenticationConfigurerAdapter;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
+import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.security.SecureRandom;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.airsonic.player.security.MultipleCredsMatchingAuthenticationProvider.SALT_TOKEN_MECHANISM_SPECIALIZATION;
 
 @Configuration
 @Order(SecurityProperties.BASIC_AUTH_ORDER - 2)
@@ -36,9 +48,6 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
     static final String DEVELOPMENT_REMEMBER_ME_KEY = "airsonic";
 
     @Autowired
-    private SecurityService securityService;
-
-    @Autowired
     private CsrfSecurityRequestMatcher csrfSecurityRequestMatcher;
 
     @Autowired
@@ -48,7 +57,41 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
     CustomUserDetailsContextMapper customUserDetailsContextMapper;
 
     @Autowired
-    ApplicationEventPublisher eventPublisher;
+    MultipleCredsMatchingAuthenticationProvider multipleCredsProvider;
+
+    @SuppressWarnings("deprecation")
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        String encodingId = "bcrypt";
+        Map<String, PasswordEncoder> encoders = new HashMap<>();
+        encoders.put(encodingId, new BCryptPasswordEncoder());
+        encoders.put("ldap", new org.springframework.security.crypto.password.LdapShaPasswordEncoder());
+        encoders.put("MD4", new org.springframework.security.crypto.password.Md4PasswordEncoder());
+        encoders.put("MD5", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("MD5"));
+        encoders.put("pbkdf2", new Pbkdf2PasswordEncoder());
+        encoders.put("scrypt", new SCryptPasswordEncoder());
+        encoders.put("SHA-1", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-1"));
+        encoders.put("SHA-256", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-256"));
+        encoders.put("sha256", new org.springframework.security.crypto.password.StandardPasswordEncoder());
+        encoders.put("argon2", new Argon2PasswordEncoder());
+
+        // base decodable encoders
+        encoders.put("noop", org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance());
+        encoders.put("hex", HexPasswordEncoder.getInstance());
+
+        // base decodable encoders that rely on salt+token being passed in (not stored in db with this type)
+        encoders.put("noop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p));
+        encoders.put("hex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()));
+
+        // TODO: legacy marked base encoders, to be upgraded to one-way formats at breaking version change
+        encoders.put("legacynoop", org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance());
+        encoders.put("legacyhex", HexPasswordEncoder.getInstance());
+
+        encoders.put("legacynoop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p));
+        encoders.put("legacyhex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()));
+
+        return new DelegatingPasswordEncoder(encodingId, encoders);
+    }
 
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
@@ -62,7 +105,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
                     .userSearchFilter(settingsService.getLdapSearchFilter())
                     .userDetailsContextMapper(customUserDetailsContextMapper);
         }
-        auth.userDetailsService(securityService);
+        // auth.userDetailsService(securityService);
         String jwtKey = settingsService.getJWTKey();
         if (StringUtils.isBlank(jwtKey)) {
             LOG.warn("Generating new jwt key");
@@ -71,6 +114,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
             settingsService.save();
         }
         auth.authenticationProvider(new JWTAuthenticationProvider(jwtKey));
+        auth.authenticationProvider(multipleCredsProvider);
     }
 
     private static String generateRememberMeKey() {
@@ -123,8 +167,8 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
 
             RESTRequestParameterProcessingFilter restAuthenticationFilter = new RESTRequestParameterProcessingFilter();
             restAuthenticationFilter.setAuthenticationManager(authenticationManagerBean());
-            restAuthenticationFilter.setSecurityService(securityService);
-            restAuthenticationFilter.setEventPublisher(eventPublisher);
+//            restAuthenticationFilter.setSecurityService(securityService);
+//            restAuthenticationFilter.setEventPublisher(eventPublisher);
             http = http.addFilterBefore(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
             // Try to load the 'remember me' key.

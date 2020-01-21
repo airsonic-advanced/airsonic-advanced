@@ -24,6 +24,7 @@ import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.UserCredential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -83,14 +85,18 @@ public class SecurityService implements UserDetailsService {
 
         List<GrantedAuthority> authorities = getGrantedAuthorities(username);
 
-        return new org.springframework.security.core.userdetails.User(
+        return new UserDetail(
                 username,
-                "{noop}" + user.getPassword(),
+                userDao.getUserCredentials(user.getUsername(), "airsonic"),
                 !user.isLdapAuthenticated(),
                 true,
                 true,
                 true,
                 authorities);
+    }
+
+    public boolean updateCredentials(UserCredential oldCreds, UserCredential newCreds) {
+        return userDao.updateCredentials(oldCreds, newCreds);
     }
 
     public List<GrantedAuthority> getGrantedAuthorities(String username) {
@@ -337,5 +343,27 @@ public class SecurityService implements UserDetailsService {
 
     public void setUserCache(Ehcache userCache) {
         this.userCache = userCache;
+    }
+
+    public static class UserDetail extends org.springframework.security.core.userdetails.User {
+        private List<UserCredential> creds;
+
+        public UserDetail(String username, List<UserCredential> creds, boolean enabled, boolean accountNonExpired,
+                boolean credentialsNonExpired, boolean accountNonLocked,
+                Collection<? extends GrantedAuthority> authorities) {
+            super(username, "", enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
+
+            this.creds = creds;
+        }
+
+        public List<UserCredential> getCredentials() {
+            return creds;
+        }
+
+        @Override
+        public void eraseCredentials() {
+            creds = null;
+        }
+
     }
 }
