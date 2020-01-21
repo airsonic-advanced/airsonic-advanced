@@ -21,27 +21,25 @@ package org.airsonic.player.security;
 
 import org.airsonic.player.controller.JAXBWriter;
 import org.airsonic.player.controller.SubsonicRESTController;
-import org.airsonic.player.domain.User;
+import org.airsonic.player.controller.SubsonicRESTController.APIException;
+import org.airsonic.player.controller.SubsonicRESTController.ErrorCode;
 import org.airsonic.player.domain.Version;
-import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.util.StringUtil;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.authentication.AuthenticationDetailsSource;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
-import javax.servlet.*;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -58,123 +56,82 @@ import java.io.IOException;
  *
  * @author Sindre Mehus
  */
-public class RESTRequestParameterProcessingFilter implements Filter {
-
+public class RESTRequestParameterProcessingFilter extends AbstractAuthenticationProcessingFilter {
     private static final Logger LOG = LoggerFactory.getLogger(RESTRequestParameterProcessingFilter.class);
 
-    private final JAXBWriter jaxbWriter = new JAXBWriter();
-    private AuthenticationManager authenticationManager;
-    private SecurityService securityService;
-    private AuthenticationDetailsSource<HttpServletRequest, ?> authenticationDetailsSource = new WebAuthenticationDetailsSource();
-    private ApplicationEventPublisher eventPublisher;
+    private static final RequestMatcher requiresAuthenticationRequestMatcher = new RegexRequestMatcher("/rest/.+", null);
+    private static final Version serverVersion = new Version(JAXBWriter.getRestProtocolVersion());
 
-    private static RequestMatcher requiresAuthenticationRequestMatcher = new RegexRequestMatcher("/rest/.+",null);
-
-    protected boolean requiresAuthentication(HttpServletRequest request,
-                                             HttpServletResponse response) {
-        return requiresAuthenticationRequestMatcher.matches(request);
+    protected RESTRequestParameterProcessingFilter(RequestMatcher requiresAuthenticationRequestMatcher) {
+        super(requiresAuthenticationRequestMatcher);
+        setAuthenticationFailureHandler(new RESTAuthenticationFailureHandler());
+        setAuthenticationSuccessHandler((req, res, auth) -> {
+        });
     }
 
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        if (!(request instanceof HttpServletRequest)) {
-            throw new ServletException("Can only process HttpServletRequest");
-        }
-        if (!(response instanceof HttpServletResponse)) {
-            throw new ServletException("Can only process HttpServletResponse");
-        }
+    public RESTRequestParameterProcessingFilter() {
+        this(requiresAuthenticationRequestMatcher);
+    }
 
-        HttpServletRequest httpRequest = (HttpServletRequest) request;
-        HttpServletResponse httpResponse = (HttpServletResponse) response;
-
-        if (!requiresAuthentication(httpRequest, httpResponse)) {
-            chain.doFilter(request, response);
-
-            return;
-        }
-
-
-        String username = StringUtils.trimToNull(httpRequest.getParameter("u"));
-        String password = decrypt(StringUtils.trimToNull(httpRequest.getParameter("p")));
-        String salt = StringUtils.trimToNull(httpRequest.getParameter("s"));
-        String token = StringUtils.trimToNull(httpRequest.getParameter("t"));
-        String version = StringUtils.trimToNull(httpRequest.getParameter("v"));
-        String client = StringUtils.trimToNull(httpRequest.getParameter("c"));
-
-        SubsonicRESTController.ErrorCode errorCode = null;
+    @Override
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+            throws AuthenticationException, IOException, ServletException {
+        String username = StringUtils.trimToNull(request.getParameter("u"));
+        String password = decrypt(StringUtils.trimToNull(request.getParameter("p")));
+        String salt = StringUtils.trimToNull(request.getParameter("s"));
+        String token = StringUtils.trimToNull(request.getParameter("t"));
+        String version = StringUtils.trimToNull(request.getParameter("v"));
+        String client = StringUtils.trimToNull(request.getParameter("c"));
 
         // The username and credentials parameters are not required if the user
         // was previously authenticated, for example using Basic Auth.
-        boolean passwordOrTokenPresent = password != null || (salt != null && token != null);
         Authentication previousAuth = SecurityContextHolder.getContext().getAuthentication();
-        boolean missingCredentials = previousAuth == null && (username == null || !passwordOrTokenPresent);
+        if (previousAuth != null && previousAuth.isAuthenticated()) {
+            return previousAuth;
+        }
+
+        boolean passwordOrTokenPresent = password != null || (salt != null && token != null);
+        boolean missingCredentials = (username == null || !passwordOrTokenPresent);
         if (missingCredentials || version == null || client == null) {
-            errorCode = SubsonicRESTController.ErrorCode.MISSING_PARAMETER;
+            throw new AuthenticationServiceException("", new APIException(ErrorCode.MISSING_PARAMETER));
         }
 
-        if (errorCode == null) {
-            errorCode = checkAPIVersion(version);
+        checkAPIVersion(version);
+
+        UsernamePasswordAuthenticationToken authRequest = null;
+        if (salt != null && token != null) {
+            authRequest = new UsernamePasswordAuthenticationToken(username, new SaltToken(salt, token));
+        } else if (password != null) {
+            authRequest = new UsernamePasswordAuthenticationToken(username, password);
         }
 
-        if (errorCode == null) {
-            errorCode = authenticate(httpRequest, username, password, salt, token, previousAuth);
-        }
+        authRequest.setDetails(authenticationDetailsSource.buildDetails(request));
 
-        if (errorCode == null) {
-            chain.doFilter(request, response);
-        } else {
-            SecurityContextHolder.getContext().setAuthentication(null);
-            sendErrorXml(httpRequest, httpResponse, errorCode);
-        }
+        return this.getAuthenticationManager().authenticate(authRequest);
     }
 
-    private SubsonicRESTController.ErrorCode checkAPIVersion(String version) {
-        Version serverVersion = new Version(jaxbWriter.getRestProtocolVersion());
+    private void checkAPIVersion(String version) {
         Version clientVersion = new Version(version);
 
-        if (serverVersion.getMajor() > clientVersion.getMajor()) {
-            return SubsonicRESTController.ErrorCode.PROTOCOL_MISMATCH_CLIENT_TOO_OLD;
-        } else if (serverVersion.getMajor() < clientVersion.getMajor()) {
-            return SubsonicRESTController.ErrorCode.PROTOCOL_MISMATCH_SERVER_TOO_OLD;
-        } else if (serverVersion.getMinor() < clientVersion.getMinor()) {
-            return SubsonicRESTController.ErrorCode.PROTOCOL_MISMATCH_SERVER_TOO_OLD;
+        try {
+            if (serverVersion.getMajor() > clientVersion.getMajor()) {
+                throw new APIException(ErrorCode.PROTOCOL_MISMATCH_CLIENT_TOO_OLD);
+            } else if (serverVersion.getMajor() < clientVersion.getMajor()) {
+                throw new APIException(ErrorCode.PROTOCOL_MISMATCH_SERVER_TOO_OLD);
+            } else if (serverVersion.getMinor() < clientVersion.getMinor()) {
+                throw new APIException(ErrorCode.PROTOCOL_MISMATCH_SERVER_TOO_OLD);
+            }
+        } catch (APIException e) {
+            throw new AuthenticationServiceException("", e);
         }
-        return null;
     }
 
-    private SubsonicRESTController.ErrorCode authenticate(HttpServletRequest httpRequest, String username, String password, String salt, String token, Authentication previousAuth) {
-
-        // Previously authenticated and username not overridden?
-        if (username == null && previousAuth != null) {
-            return null;
-        }
-
-        if (salt != null && token != null) {
-            User user = securityService.getUserByName(username);
-            if (user == null) {
-                return SubsonicRESTController.ErrorCode.NOT_AUTHENTICATED;
-            }
-            String expectedToken = DigestUtils.md5Hex(user.getPassword() + salt);
-            if (!expectedToken.equals(token)) {
-                return SubsonicRESTController.ErrorCode.NOT_AUTHENTICATED;
-            }
-
-            password = user.getPassword();
-        }
-
-        if (password != null) {
-            UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(username, password);
-            authRequest.setDetails(authenticationDetailsSource.buildDetails(httpRequest));
-            try {
-                Authentication authResult = authenticationManager.authenticate(authRequest);
-                SecurityContextHolder.getContext().setAuthentication(authResult);
-                return null;
-            } catch (AuthenticationException x) {
-                eventPublisher.publishEvent(new AuthenticationFailureBadCredentialsEvent(authRequest, x));
-                return SubsonicRESTController.ErrorCode.NOT_AUTHENTICATED;
-            }
-        }
-
-        return SubsonicRESTController.ErrorCode.MISSING_PARAMETER;
+    @Override
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
+            Authentication authResult) throws IOException, ServletException {
+        super.successfulAuthentication(request, response, chain, authResult);
+        // carry on with the request
+        chain.doFilter(request, response);
     }
 
     public static String decrypt(String s) {
@@ -191,34 +148,29 @@ public class RESTRequestParameterProcessingFilter implements Filter {
         }
     }
 
-    private void sendErrorXml(HttpServletRequest request, HttpServletResponse response, SubsonicRESTController.ErrorCode errorCode) {
-        try {
-            jaxbWriter.writeErrorResponse(request, response, errorCode, errorCode.getMessage());
-        } catch (Exception e) {
-            LOG.error("Failed to send error response.", e);
+    public static class RESTAuthenticationFailureHandler implements AuthenticationFailureHandler {
+        private static final JAXBWriter jaxbWriter = new JAXBWriter();
+
+        @Override
+        public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+                AuthenticationException exception) throws IOException, ServletException {
+            ErrorCode errorCode = null;
+            if (exception.getCause() instanceof APIException) {
+                errorCode = ((APIException) exception.getCause()).getError();
+            } else {
+                errorCode = ErrorCode.NOT_AUTHENTICATED;
+            }
+
+            sendErrorXml(request, response, errorCode);
         }
-    }
 
-    public void init(FilterConfig filterConfig) {
-    }
-
-    public void destroy() {
-    }
-
-
-    public void setAuthenticationManager(AuthenticationManager authenticationManager) {
-        this.authenticationManager = authenticationManager;
-    }
-
-    public SecurityService getSecurityService() {
-        return securityService;
-    }
-
-    public void setSecurityService(SecurityService securityService) {
-        this.securityService = securityService;
-    }
-
-    public void setEventPublisher(ApplicationEventPublisher eventPublisher) {
-        this.eventPublisher = eventPublisher;
+        private static void sendErrorXml(HttpServletRequest request, HttpServletResponse response,
+                SubsonicRESTController.ErrorCode errorCode) {
+            try {
+                jaxbWriter.writeErrorResponse(request, response, errorCode, errorCode.getMessage());
+            } catch (Exception e) {
+                LOG.error("Failed to send error response.", e);
+            }
+        }
     }
 }
