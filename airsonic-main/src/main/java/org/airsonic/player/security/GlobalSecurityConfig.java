@@ -93,6 +93,17 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
         return new DelegatingPasswordEncoder(encodingId, encoders);
     }
 
+    @EventListener
+    public void loginFailureListener(AbstractAuthenticationFailureEvent event) {
+        if (event.getSource() instanceof AbstractAuthenticationToken) {
+            AbstractAuthenticationToken token = (AbstractAuthenticationToken) event.getSource();
+            Object details = token.getDetails();
+            if (details instanceof WebAuthenticationDetails) {
+                LOG.info("Login failed from [" + ((WebAuthenticationDetails) details).getRemoteAddress() + "]");
+            }
+        }
+    }
+
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
         if (settingsService.isLdapEnabled()) {
