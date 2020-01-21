@@ -55,6 +55,7 @@ public class UserDao extends AbstractDao {
             "party_mode_enabled, now_playing_allowed, avatar_scheme, system_avatar_id, changed, show_artist_info, auto_hide_play_queue, " +
             "view_as_list, default_album_list, queue_following_songs, show_side_bar, list_reload_delay, " +
             "keyboard_shortcuts_enabled, pagination_size";
+    private static final String USER_CREDENTIALS_COLUMNS = "username, location_username, credential, type, location, created, updated, expiration";
 
     private static final Integer ROLE_ID_ADMIN = 1;
     private static final Integer ROLE_ID_DOWNLOAD = 2;
@@ -70,6 +71,7 @@ public class UserDao extends AbstractDao {
 
     private UserRowMapper userRowMapper = new UserRowMapper();
     private UserSettingsRowMapper userSettingsRowMapper = new UserSettingsRowMapper();
+    private UserCredentialRowMapper userCredentialRowMapper = new UserCredentialRowMapper();
 
     private final String userTable;
 
@@ -103,6 +105,19 @@ public class UserDao extends AbstractDao {
             readRoles(user);
         }
         return user;
+    }
+
+    public List<UserCredential> getUserCredentials(String username, String location) {
+        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=? and location=?";
+        return query(sql, userCredentialRowMapper, username, location);
+    }
+
+    public boolean updateCredentials(UserCredential oldCreds, UserCredential newCreds) {
+        String sql = "update user_credentials set location_username=?, credential=?, type=?, location=?, updated=?, expiration=? where username=? and location_username=? and credential=? and type=? and location=? and created=? and updated=?";
+        return update(sql, newCreds.getLocationUsername(), newCreds.getCredential(), newCreds.getType(),
+                newCreds.getLocation(), newCreds.getUpdated(), newCreds.getExpiration(), oldCreds.getUsername(),
+                oldCreds.getLocationUsername(), oldCreds.getCredential(), oldCreds.getType(), oldCreds.getLocation(),
+                oldCreds.getCreated(), oldCreds.getUpdated()) > 0;
     }
 
     /**
@@ -325,6 +340,21 @@ public class UserDao extends AbstractDao {
         }
         if (user.isShareRole()) {
             update(sql, user.getUsername(), ROLE_ID_SHARE);
+        }
+    }
+
+    private class UserCredentialRowMapper implements RowMapper<UserCredential> {
+        @Override
+        public UserCredential mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new UserCredential(
+                    rs.getString("username"),
+                    rs.getString("location_username"),
+                    rs.getString("credential"),
+                    rs.getString("type"),
+                    rs.getString("location"),
+                    rs.getTimestamp("created").toInstant(),
+                    rs.getTimestamp("updated").toInstant(),
+                    Optional.ofNullable(rs.getTimestamp("expiration")).map(x -> x.toInstant()).orElse(null));
         }
     }
 
