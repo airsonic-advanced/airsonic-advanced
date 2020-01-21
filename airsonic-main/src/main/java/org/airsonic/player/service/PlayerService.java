@@ -328,9 +328,9 @@ public class PlayerService {
         // Create guest user if necessary.
         User user = securityService.getUserByName(User.USERNAME_GUEST);
         if (user == null) {
-            user = new User(User.USERNAME_GUEST, RandomStringUtils.randomAlphanumeric(30), null);
+            user = new User(User.USERNAME_GUEST, null);
             user.setStreamRole(true);
-            securityService.createUser(user);
+            securityService.createUser(user, RandomStringUtils.randomAlphanumeric(30));
         }
 
         // Look for existing player.

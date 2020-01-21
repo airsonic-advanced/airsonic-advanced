@@ -165,9 +165,9 @@ public class UserSettingsController {
     }
 
     public void createUser(UserSettingsCommand command) {
-        User user = new User(command.getUsername(), command.getPassword(), StringUtils.trimToNull(command.getEmail()));
+        User user = new User(command.getUsername(), StringUtils.trimToNull(command.getEmail()));
         user.setLdapAuthenticated(command.isLdapAuthenticated());
-        securityService.createUser(user);
+        securityService.createUser(user, command.getPassword());
         updateUser(command);
     }
 

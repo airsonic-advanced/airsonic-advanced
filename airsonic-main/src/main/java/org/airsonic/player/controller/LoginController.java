@@ -1,6 +1,5 @@
 package org.airsonic.player.controller;
 
-import org.airsonic.player.domain.User;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.StringUtil;
@@ -51,8 +50,7 @@ public class LoginController {
         map.put("brand", settingsService.getBrand());
         map.put("loginMessage", settingsService.getLoginMessage());
 
-        User admin = securityService.getUserByName(User.USERNAME_ADMIN);
-        if (User.USERNAME_ADMIN.equals(admin.getPassword())) {
+        if (securityService.checkInsecureCreds()) {
             map.put("insecure", true);
         }
 

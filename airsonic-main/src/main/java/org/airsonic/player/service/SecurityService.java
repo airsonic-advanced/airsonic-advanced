@@ -25,6 +25,8 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential;
+import org.airsonic.player.security.GlobalSecurityConfig;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,7 +98,25 @@ public class SecurityService implements UserDetailsService {
     }
 
     public boolean updateCredentials(UserCredential oldCreds, UserCredential newCreds) {
-        return userDao.updateCredentials(oldCreds, newCreds);
+        return userDao.updateCredential(oldCreds, newCreds);
+    }
+
+    public boolean checkInsecureCreds() {
+        return userDao.getUserCredentials(User.USERNAME_ADMIN, "airsonic").parallelStream()
+                .map(UserCredential::getCredential)
+                .anyMatch(c -> StringUtils.equals(c, User.USERNAME_ADMIN))
+                || userDao.checkNonErasedCredentialsStoredInVariousTables();
+    }
+
+    public boolean checkCredsStoredOpenly() {
+        return Stream.of("noop", "hex", "legacynoop", "legacyhex")
+                .parallel()
+                .mapToInt(userDao::getCredentialCountByType)
+                .anyMatch(i -> i > 0);
+    }
+
+    public boolean checkCredsFullyMigrated() {
+        return userDao.getCredentialCountByType("legacy%") == 0;
     }
 
     public List<GrantedAuthority> getGrantedAuthorities(String username) {
@@ -183,10 +203,22 @@ public class SecurityService implements UserDetailsService {
     /**
      * Creates a new user.
      *
-     * @param user The user to create.
+     * @param user       The user to create.
+     * @param credential The raw credential (will be encoded)
      */
-    public void createUser(User user) {
-        userDao.createUser(user);
+    public void createUser(User user, String credential) {
+        String defaultEncoder = settingsService.getAirsonicPasswordEncoder();
+        UserCredential uc = new UserCredential(
+                user.getUsername(),
+                user.getUsername(),
+                GlobalSecurityConfig.ENCODERS.get(defaultEncoder).encode(credential),
+                defaultEncoder,
+                "airsonic");
+        createUser(user, uc);
+    }
+
+    public void createUser(User user, UserCredential credential) {
+        userDao.createUser(user, credential);
         settingsService.setMusicFoldersForUser(user.getUsername(), MusicFolder.toIdList(settingsService.getAllMusicFolders()));
         LOG.info("Created user " + user.getUsername());
     }

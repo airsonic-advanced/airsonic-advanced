@@ -25,6 +25,13 @@ public class UserCredential {
         this.expiration = expiration;
     }
 
+    public UserCredential(String username, String locationUsername, String credential, String type, String location) {
+        this(username, locationUsername, credential, type, location, null, null, null);
+        Instant now = Instant.now();
+        setCreated(now);
+        setUpdated(now);
+    }
+
     public UserCredential(UserCredential uc) {
         this(uc.getUsername(), uc.getLocationUsername(), uc.getCredential(), uc.getType(), uc.getLocation(),
                 uc.getCreated(), uc.getUpdated(), uc.getExpiration());

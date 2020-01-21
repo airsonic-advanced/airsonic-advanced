@@ -49,10 +49,9 @@ public class User {
     private boolean isJukeboxRole;
     private boolean isShareRole;
 
-    public User(String username, String password, String email, boolean ldapAuthenticated,
+    public User(String username, String email, boolean ldapAuthenticated,
                 long bytesStreamed, long bytesDownloaded, long bytesUploaded) {
         this.username = username;
-        this.password = password;
         this.email = email;
         this.ldapAuthenticated = ldapAuthenticated;
         this.bytesStreamed = bytesStreamed;
@@ -60,16 +59,12 @@ public class User {
         this.bytesUploaded = bytesUploaded;
     }
 
-    public User(String username, String password, String email) {
-        this(username, password, email, false, 0, 0, 0);
+    public User(String username, String email) {
+        this(username, email, false, 0, 0, 0);
     }
 
     public String getUsername() {
         return username;
-    }
-
-    public String getPassword() {
-        return password;
     }
 
     public void setPassword(String password) {

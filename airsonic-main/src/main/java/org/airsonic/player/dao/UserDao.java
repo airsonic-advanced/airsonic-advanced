@@ -44,7 +44,7 @@ import java.util.Optional;
 public class UserDao extends AbstractDao {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserDao.class);
-    private static final String USER_COLUMNS = "username, password, email, ldap_authenticated, bytes_streamed, bytes_downloaded, bytes_uploaded";
+    private static final String USER_COLUMNS = "username, email, ldap_authenticated, bytes_streamed, bytes_downloaded, bytes_uploaded";
     private static final String USER_SETTINGS_COLUMNS = "username, locale, theme_id, final_version_notification, beta_version_notification, " +
             "song_notification, main_track_number, main_artist, main_album, main_genre, " +
             "main_year, main_bit_rate, main_duration, main_format, main_file_size, " +
@@ -112,12 +112,44 @@ public class UserDao extends AbstractDao {
         return query(sql, userCredentialRowMapper, username, location);
     }
 
-    public boolean updateCredentials(UserCredential oldCreds, UserCredential newCreds) {
+    public Integer getCredentialCountByType(String typeMatcher) {
+        String sql = "select count(*) from user_credentials where type like ?";
+        return queryForInt(sql, 0, typeMatcher);
+    }
+
+    public boolean updateCredential(UserCredential oldCreds, UserCredential newCreds) {
         String sql = "update user_credentials set location_username=?, credential=?, type=?, location=?, updated=?, expiration=? where username=? and location_username=? and credential=? and type=? and location=? and created=? and updated=?";
         return update(sql, newCreds.getLocationUsername(), newCreds.getCredential(), newCreds.getType(),
                 newCreds.getLocation(), newCreds.getUpdated(), newCreds.getExpiration(), oldCreds.getUsername(),
                 oldCreds.getLocationUsername(), oldCreds.getCredential(), oldCreds.getType(), oldCreds.getLocation(),
-                oldCreds.getCreated(), oldCreds.getUpdated()) > 0;
+                oldCreds.getCreated(), oldCreds.getUpdated()) == 1;
+    }
+
+    public boolean createCredential(UserCredential credential) {
+        String sql = "insert into user_credentials (" + USER_CREDENTIALS_COLUMNS + ") values (" + questionMarks(USER_CREDENTIALS_COLUMNS) + ')';
+        return update(sql,
+                credential.getUsername(),
+                credential.getLocationUsername(),
+                credential.getCredential(),
+                credential.getType(),
+                credential.getLocation(),
+                credential.getCreated(),
+                credential.getUpdated(),
+                credential.getExpiration()) == 1;
+    }
+
+    public boolean checkNonErasedCredentialsStoredInVariousTables() {
+        String sql = "select count(*) from " + getUserTable() + " where password!=?";
+        if (queryForInt(sql, 0, "") > 0) {
+            return true;
+        }
+
+        sql = "select count(*) from user_settings where last_fm_password is not null or listenbrainz_token is not null";
+        if (queryForInt(sql, 0) > 0) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -152,10 +184,11 @@ public class UserDao extends AbstractDao {
      *
      * @param user The user to create.
      */
-    public void createUser(User user) {
-        String sql = "insert into " + getUserTable() + " (" + USER_COLUMNS + ") values (" + questionMarks(USER_COLUMNS) + ')';
-        update(sql, user.getUsername(), encrypt(user.getPassword()), user.getEmail(), user.isLdapAuthenticated(),
-                user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded());
+    public void createUser(User user, UserCredential credential) {
+        String sql = "insert into " + getUserTable() + " (" + USER_COLUMNS + ", password) values (" + questionMarks(USER_COLUMNS) + ", ?)";
+        update(sql, user.getUsername(), user.getEmail(), user.isLdapAuthenticated(),
+                user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded(), "");
+        createCredential(credential);
         writeRoles(user);
     }
 
@@ -171,6 +204,7 @@ public class UserDao extends AbstractDao {
 
         update("delete from user_role where username=?", username);
         update("delete from player where username=?", username);
+        update("delete from user_credentials where username=?", username);
         update("delete from " + getUserTable() + " where username=?", username);
     }
 
@@ -180,9 +214,8 @@ public class UserDao extends AbstractDao {
      * @param user The user to update.
      */
     public void updateUser(User user) {
-        String sql = "update " + getUserTable() + " set password=?, email=?, ldap_authenticated=?, bytes_streamed=?, bytes_downloaded=?, bytes_uploaded=? " +
-                "where username=?";
-        update(sql, encrypt(user.getPassword()), user.getEmail(), user.isLdapAuthenticated(),
+        String sql = "update " + getUserTable() + " set email=?, ldap_authenticated=?, bytes_streamed=?, bytes_downloaded=?, bytes_uploaded=? " + "where username=?";
+        update(sql, user.getEmail(), user.isLdapAuthenticated(),
                 user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded(),
                 user.getUsername());
         writeRoles(user);
@@ -362,12 +395,11 @@ public class UserDao extends AbstractDao {
         @Override
         public User mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new User(rs.getString(1),
-                    decrypt(rs.getString(2)),
-                    rs.getString(3),
-                    rs.getBoolean(4),
+                    rs.getString(2),
+                    rs.getBoolean(3),
+                    rs.getLong(4),
                     rs.getLong(5),
-                    rs.getLong(6),
-                    rs.getLong(7));
+                    rs.getLong(6));
         }
     }
 
