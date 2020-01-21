@@ -219,7 +219,7 @@ public class StreamController {
         Consumer<MediaFile> fileEndListener = mediaFile -> scrobble(mediaFile, player, true);
         Function<MediaFile, InputStream> streamGenerator = LambdaUtils.uncheckFunction(
             mediaFile -> transcodingService.getTranscodedInputStream(
-                    transcodingService.getParameters(file, player, bitRate, targetFormat, videoTranscodingSettingsF)));
+                    transcodingService.getParameters(mediaFile, player, bitRate, targetFormat, videoTranscodingSettingsF)));
 
         HttpHeaders headers = new HttpHeaders();
         InputStream playStream = new PlayQueueInputStream(player.getPlayQueue(), fileStartListener, fileEndListener, streamGenerator);
