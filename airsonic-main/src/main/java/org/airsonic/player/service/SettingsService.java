@@ -113,6 +113,7 @@ public class SettingsService {
     private static final String KEY_SONOS_SERVICE_ID = "SonosServiceId";
     private static final String KEY_JWT_KEY = "JWTKey";
     private static final String KEY_REMEMBER_ME_KEY = "RememberMeKey";
+    private static final String KEY_AIRSONIC_PASSWORD_ENCODER = "AirsonicPasswordEncoder";
 
     private static final String KEY_SMTP_SERVER = "SmtpServer";
     private static final String KEY_SMTP_ENCRYPTION = "SmtpEncryption";
@@ -198,6 +199,7 @@ public class SettingsService {
     private static final String DEFAULT_EXPORT_PLAYLIST_FORMAT = "m3u";
     private static final boolean DEFAULT_IGNORE_SYMLINKS = false;
     private static final String DEFAULT_EXCLUDE_PATTERN_STRING = null;
+    private static final String DEFAULT_AIRSONIC_PASSWORD_ENCODER = "bcrypt";
 
     private static final String DEFAULT_SMTP_SERVER = null;
     private static final String DEFAULT_SMTP_ENCRYPTION = "None";
@@ -1439,6 +1441,14 @@ public class SettingsService {
 
     public void setJWTKey(String jwtKey) {
         setString(KEY_JWT_KEY, jwtKey);
+    }
+
+    public String getAirsonicPasswordEncoder() {
+        return getString(KEY_AIRSONIC_PASSWORD_ENCODER, DEFAULT_AIRSONIC_PASSWORD_ENCODER);
+    }
+
+    public void setAirsonicPasswordEncoder(String encoder) {
+        setString(KEY_AIRSONIC_PASSWORD_ENCODER, encoder);
     }
 
     public void setEnvironment(Environment env) {
