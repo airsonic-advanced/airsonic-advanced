@@ -104,8 +104,8 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
         }
     }
 
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+    @Override
+    public void configure(AuthenticationManagerBuilder auth) throws Exception {
         if (settingsService.isLdapEnabled()) {
             auth.ldapAuthentication()
                     .contextSource()
