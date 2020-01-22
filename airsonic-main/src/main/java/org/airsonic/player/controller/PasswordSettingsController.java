@@ -24,6 +24,7 @@ import org.airsonic.player.domain.User;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.validator.PasswordSettingsValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.WebDataBinder;
@@ -42,7 +43,7 @@ import javax.servlet.http.HttpServletRequest;
  *
  * @author Sindre Mehus
  */
-@org.springframework.stereotype.Controller
+@Controller
 @RequestMapping("/passwordSettings")
 public class PasswordSettingsController {
 
@@ -63,7 +64,7 @@ public class PasswordSettingsController {
         User user = securityService.getCurrentUser(request);
         command.setUsername(user.getUsername());
         command.setLdapAuthenticated(user.isLdapAuthenticated());
-        return new ModelAndView("passwordSettings","command",command);
+        return new ModelAndView("passwordSettings", "command", command);
     }
 
     @PostMapping
