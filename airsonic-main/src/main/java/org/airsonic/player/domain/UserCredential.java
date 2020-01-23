@@ -8,33 +8,37 @@ public class UserCredential {
     private String credential;
     private String type;
     private String location;
+    private Instant expiration;
     private Instant created;
     private Instant updated;
-    private Instant expiration;
 
     public UserCredential(String username, String locationUsername, String credential, String type, String location,
-            Instant created, Instant updated, Instant expiration) {
+            Instant expiration, Instant created, Instant updated) {
         super();
         this.username = username;
         this.locationUsername = locationUsername;
         this.credential = credential;
         this.type = type;
         this.location = location;
+        this.expiration = expiration;
         this.created = created;
         this.updated = updated;
-        this.expiration = expiration;
     }
 
-    public UserCredential(String username, String locationUsername, String credential, String type, String location) {
-        this(username, locationUsername, credential, type, location, null, null, null);
+    public UserCredential(String username, String locationUsername, String credential, String type, String location, Instant expiration) {
+        this(username, locationUsername, credential, type, location, expiration, null, null);
         Instant now = Instant.now();
         setCreated(now);
         setUpdated(now);
     }
 
+    public UserCredential(String username, String locationUsername, String credential, String type, String location) {
+        this(username, locationUsername, credential, type, location, null);
+    }
+
     public UserCredential(UserCredential uc) {
         this(uc.getUsername(), uc.getLocationUsername(), uc.getCredential(), uc.getType(), uc.getLocation(),
-                uc.getCreated(), uc.getUpdated(), uc.getExpiration());
+                uc.getExpiration(), uc.getCreated(), uc.getUpdated());
     }
 
     public String getUsername() {
@@ -100,4 +104,72 @@ public class UserCredential {
     public void setExpiration(Instant expiration) {
         this.expiration = expiration;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((created == null) ? 0 : created.hashCode());
+        result = prime * result + ((credential == null) ? 0 : credential.hashCode());
+        result = prime * result + ((expiration == null) ? 0 : expiration.hashCode());
+        result = prime * result + ((location == null) ? 0 : location.hashCode());
+        result = prime * result + ((locationUsername == null) ? 0 : locationUsername.hashCode());
+        result = prime * result + ((type == null) ? 0 : type.hashCode());
+        result = prime * result + ((updated == null) ? 0 : updated.hashCode());
+        result = prime * result + ((username == null) ? 0 : username.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        UserCredential other = (UserCredential) obj;
+        if (created == null) {
+            if (other.created != null)
+                return false;
+        } else if (!created.equals(other.created))
+            return false;
+        if (credential == null) {
+            if (other.credential != null)
+                return false;
+        } else if (!credential.equals(other.credential))
+            return false;
+        if (expiration == null) {
+            if (other.expiration != null)
+                return false;
+        } else if (!expiration.equals(other.expiration))
+            return false;
+        if (location == null) {
+            if (other.location != null)
+                return false;
+        } else if (!location.equals(other.location))
+            return false;
+        if (locationUsername == null) {
+            if (other.locationUsername != null)
+                return false;
+        } else if (!locationUsername.equals(other.locationUsername))
+            return false;
+        if (type == null) {
+            if (other.type != null)
+                return false;
+        } else if (!type.equals(other.type))
+            return false;
+        if (updated == null) {
+            if (other.updated != null)
+                return false;
+        } else if (!updated.equals(other.updated))
+            return false;
+        if (username == null) {
+            if (other.username != null)
+                return false;
+        } else if (!username.equals(other.username))
+            return false;
+        return true;
+    }
+
 }

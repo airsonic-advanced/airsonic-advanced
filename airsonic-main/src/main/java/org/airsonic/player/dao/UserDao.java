@@ -385,9 +385,9 @@ public class UserDao extends AbstractDao {
                     rs.getString("credential"),
                     rs.getString("type"),
                     rs.getString("location"),
+                    Optional.ofNullable(rs.getTimestamp("expiration")).map(x -> x.toInstant()).orElse(null),
                     rs.getTimestamp("created").toInstant(),
-                    rs.getTimestamp("updated").toInstant(),
-                    Optional.ofNullable(rs.getTimestamp("expiration")).map(x -> x.toInstant()).orElse(null));
+                    rs.getTimestamp("updated").toInstant());
         }
     }
 
