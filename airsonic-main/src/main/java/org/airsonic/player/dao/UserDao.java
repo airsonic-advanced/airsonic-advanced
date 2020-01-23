@@ -109,7 +109,7 @@ public class UserDao extends AbstractDao {
         return user;
     }
 
-    public List<UserCredential> getUserCredentials(String username, String location) {
+    public List<UserCredential> getCredentials(String username, String location) {
         String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=:user";
         Map<String, Object> args = new HashMap<>();
         args.put("user", username);

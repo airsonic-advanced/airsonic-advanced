@@ -97,6 +97,12 @@ public class SecurityService implements UserDetailsService {
                 authorities);
     }
 
+    /**
+     *
+     * @param oldCreds The exact replica of the creds in the DB, this is used for matching
+     * @param newCreds
+     * @return
+     */
     public boolean updateCredentials(UserCredential oldCreds, UserCredential newCreds) {
         return userDao.updateCredential(oldCreds, newCreds);
     }
@@ -106,16 +112,16 @@ public class SecurityService implements UserDetailsService {
         return userDao.createCredential(newCreds);
     }
 
-    public boolean deleteCredentials(UserCredential creds) {
+    public boolean deleteCredential(UserCredential creds) {
         return userDao.deleteCredential(creds);
     }
 
     public List<UserCredential> getCredentials(String username, String location) {
-        return userDao.getUserCredentials(username, location);
+        return userDao.getCredentials(username, location);
     }
 
     public boolean checkInsecureCreds() {
-        return userDao.getUserCredentials(User.USERNAME_ADMIN, "airsonic").parallelStream()
+        return userDao.getCredentials(User.USERNAME_ADMIN, "airsonic").parallelStream()
                 .map(UserCredential::getCredential)
                 .anyMatch(c -> StringUtils.equals(c, User.USERNAME_ADMIN))
                 || userDao.checkNonErasedCredentialsStoredInVariousTables();

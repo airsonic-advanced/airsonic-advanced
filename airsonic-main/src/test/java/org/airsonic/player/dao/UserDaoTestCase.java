@@ -55,7 +55,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
 
         User newUser = userDao.getAllUsers().get(0);
         assertThat(newUser).isEqualToComparingFieldByField(user);
-        assertThat(userDao.getUserCredentials("sindre", "airsonic").get(0)).isEqualToComparingFieldByField(uc);
+        assertThat(userDao.getCredentials("sindre", "airsonic").get(0)).isEqualToComparingFieldByField(uc);
     }
 
     @Test
@@ -121,7 +121,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         userDao.updateUser(user);
 
         assertThat(userDao.getAllUsers().get(0)).isEqualToComparingFieldByField(user);
-        assertThat(userDao.getUserCredentials("sindre", "airsonic").get(0)).isEqualToComparingFieldByField(uc);
+        assertThat(userDao.getCredentials("sindre", "airsonic").get(0)).isEqualToComparingFieldByField(uc);
     }
 
     @Test
@@ -140,7 +140,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         userDao.updateCredential(uc, newCreds);
 
         assertThat(userDao.getAllUsers().get(0)).isEqualToComparingFieldByField(user);
-        assertThat(userDao.getUserCredentials("sindre", "airsonic").get(0)).isEqualToComparingFieldByField(newCreds);
+        assertThat(userDao.getCredentials("sindre", "airsonic").get(0)).isEqualToComparingFieldByField(newCreds);
     }
 
     @Test
