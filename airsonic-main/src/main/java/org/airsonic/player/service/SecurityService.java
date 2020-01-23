@@ -89,7 +89,7 @@ public class SecurityService implements UserDetailsService {
 
         return new UserDetail(
                 username,
-                userDao.getUserCredentials(user.getUsername(), "airsonic"),
+                getCredentials(user.getUsername(), "airsonic"),
                 !user.isLdapAuthenticated(),
                 true,
                 true,
@@ -101,6 +101,19 @@ public class SecurityService implements UserDetailsService {
         return userDao.updateCredential(oldCreds, newCreds);
     }
 
+    public boolean createCredential(UserCredential newCreds) {
+        newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
+        return userDao.createCredential(newCreds);
+    }
+
+    public boolean deleteCredentials(UserCredential creds) {
+        return userDao.deleteCredential(creds);
+    }
+
+    public List<UserCredential> getCredentials(String username, String location) {
+        return userDao.getUserCredentials(username, location);
+    }
+
     public boolean checkInsecureCreds() {
         return userDao.getUserCredentials(User.USERNAME_ADMIN, "airsonic").parallelStream()
                 .map(UserCredential::getCredential)
@@ -109,8 +122,7 @@ public class SecurityService implements UserDetailsService {
     }
 
     public boolean checkCredsStoredOpenly() {
-        return Stream.of("noop", "hex", "legacynoop", "legacyhex")
-                .parallel()
+        return GlobalSecurityConfig.OPENTEXT_ENCODERS.parallelStream()
                 .mapToInt(userDao::getCredentialCountByType)
                 .anyMatch(i -> i > 0);
     }

@@ -1,6 +1,8 @@
 package org.airsonic.player.security;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.SettingsService;
@@ -34,6 +36,8 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.security.SecureRandom;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.airsonic.player.security.MultipleCredsMatchingAuthenticationProvider.SALT_TOKEN_MECHANISM_SPECIALIZATION;
 
@@ -75,6 +79,14 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
             .put("legacynoop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p))
             .put("legacyhex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()))
             .build();
+
+    public static final Set<String> OPENTEXT_ENCODERS = ImmutableSet.of("noop", "hex", "legacynoop", "legacyhex");
+    public static final Set<String> DECODABLE_ENCODERS = ImmutableSet.<String>builder().addAll(OPENTEXT_ENCODERS).build();
+    public static final Set<String> NONLEGACY_ENCODERS = ENCODERS.keySet().stream()
+            .filter(e -> !StringUtils.containsAny(e, "legacy", SALT_TOKEN_MECHANISM_SPECIALIZATION))
+            .collect(Collectors.toSet());
+    public static final Set<String> NONLEGACY_DECODABLE_ENCODERS = Sets.intersection(DECODABLE_ENCODERS, NONLEGACY_ENCODERS);
+    public static final Set<String> NONLEGACY_NONDECODABLE_ENCODERS = Sets.difference(NONLEGACY_ENCODERS, DECODABLE_ENCODERS);
 
     @Autowired
     private CsrfSecurityRequestMatcher csrfSecurityRequestMatcher;

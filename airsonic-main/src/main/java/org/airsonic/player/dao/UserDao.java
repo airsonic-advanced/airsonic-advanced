@@ -31,7 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -108,8 +110,15 @@ public class UserDao extends AbstractDao {
     }
 
     public List<UserCredential> getUserCredentials(String username, String location) {
-        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=? and location=?";
-        return query(sql, userCredentialRowMapper, username, location);
+        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=:user";
+        Map<String, Object> args = new HashMap<>();
+        args.put("user", username);
+        if (location != null) {
+            sql = sql + " and location=:location";
+            args.put("location", location);
+        }
+
+        return namedQuery(sql, userCredentialRowMapper, args);
     }
 
     public Integer getCredentialCountByType(String typeMatcher) {
@@ -136,6 +145,24 @@ public class UserDao extends AbstractDao {
                 credential.getCreated(),
                 credential.getUpdated(),
                 credential.getExpiration()) == 1;
+    }
+
+    public boolean deleteCredential(UserCredential credential) {
+        String sql = "delete from user_credential where username=:username and location_username=:location_username and credential=:credential and type=:type and location=:location and created=:created amd updated = updated";
+        Map<String, Object> args = new HashMap<>();
+        args.put("username", credential.getUsername());
+        args.put("location_username", credential.getLocationUsername());
+        args.put("credential", credential.getCredential());
+        args.put("type", credential.getType());
+        args.put("location", credential.getLocation());
+        args.put("created", credential.getCreated());
+        args.put("updated", credential.getUpdated());
+        if (credential.getExpiration() != null) {
+            sql = sql + " and expiration=:expiration";
+            args.put("expiration", credential.getExpiration());
+        }
+
+        return namedUpdate(sql, args) == 1;
     }
 
     public boolean checkNonErasedCredentialsStoredInVariousTables() {
