@@ -8,28 +8,36 @@ public class UserCredential {
     private String credential;
     private String type;
     private String location;
+    private String comment;
     private Instant expiration;
     private Instant created;
     private Instant updated;
 
     public UserCredential(String username, String locationUsername, String credential, String type, String location,
-            Instant expiration, Instant created, Instant updated) {
+            String comment, Instant expiration, Instant created, Instant updated) {
         super();
         this.username = username;
         this.locationUsername = locationUsername;
         this.credential = credential;
         this.type = type;
         this.location = location;
+        this.comment = comment;
         this.expiration = expiration;
         this.created = created;
         this.updated = updated;
     }
 
-    public UserCredential(String username, String locationUsername, String credential, String type, String location, Instant expiration) {
-        this(username, locationUsername, credential, type, location, expiration, null, null);
+    public UserCredential(String username, String locationUsername, String credential, String type, String location,
+            String comment, Instant expiration) {
+        this(username, locationUsername, credential, type, location, comment, expiration, null, null);
         Instant now = Instant.now();
         setCreated(now);
         setUpdated(now);
+    }
+
+    public UserCredential(String username, String locationUsername, String credential, String type, String location,
+            String comment) {
+        this(username, locationUsername, credential, type, location, comment, null);
     }
 
     public UserCredential(String username, String locationUsername, String credential, String type, String location) {
@@ -38,7 +46,7 @@ public class UserCredential {
 
     public UserCredential(UserCredential uc) {
         this(uc.getUsername(), uc.getLocationUsername(), uc.getCredential(), uc.getType(), uc.getLocation(),
-                uc.getExpiration(), uc.getCreated(), uc.getUpdated());
+                uc.getComment(), uc.getExpiration(), uc.getCreated(), uc.getUpdated());
     }
 
     public String getUsername() {
@@ -105,10 +113,19 @@ public class UserCredential {
         this.expiration = expiration;
     }
 
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((comment == null) ? 0 : comment.hashCode());
         result = prime * result + ((created == null) ? 0 : created.hashCode());
         result = prime * result + ((credential == null) ? 0 : credential.hashCode());
         result = prime * result + ((expiration == null) ? 0 : expiration.hashCode());
@@ -129,6 +146,11 @@ public class UserCredential {
         if (getClass() != obj.getClass())
             return false;
         UserCredential other = (UserCredential) obj;
+        if (comment == null) {
+            if (other.comment != null)
+                return false;
+        } else if (!comment.equals(other.comment))
+            return false;
         if (created == null) {
             if (other.created != null)
                 return false;
@@ -171,5 +193,4 @@ public class UserCredential {
             return false;
         return true;
     }
-
 }

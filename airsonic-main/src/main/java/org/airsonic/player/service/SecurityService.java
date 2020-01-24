@@ -26,6 +26,7 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.security.GlobalSecurityConfig;
+import org.airsonic.player.security.PasswordDecoder;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -97,18 +99,41 @@ public class SecurityService implements UserDetailsService {
                 authorities);
     }
 
-    /**
-     *
-     * @param oldCreds The exact replica of the creds in the DB, this is used for matching
-     * @param newCreds
-     * @return
-     */
-    public boolean updateCredentials(UserCredential oldCreds, UserCredential newCreds) {
-        return userDao.updateCredential(oldCreds, newCreds);
+    public boolean updateCredentials(UserCredential oldCreds, UserCredential newCreds, String comment,
+            boolean reencodePlaintextNewCreds) {
+        // first check and upgrade legacy creds
+        if (StringUtils.equals(newCreds.getType(), "legacy")) {
+            if (StringUtils.startsWith(newCreds.getCredential(), "enc:")) {
+                newCreds.setType("legacyhex");
+                newCreds.setCredential(StringUtils.substring(newCreds.getCredential(), 4));
+            } else {
+                newCreds.setType("legacynoop");
+            }
+        } else if (!StringUtils.equals(newCreds.getType(), oldCreds.getType()) || reencodePlaintextNewCreds) {
+            if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(oldCreds.getType())) {
+                // decode using original creds decoder
+                PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(oldCreds.getType());
+                newCreds.setCredential(decoder.decode(oldCreds.getCredential()));
+                // reencode
+                newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
+            } else if (reencodePlaintextNewCreds) {
+                newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
+            }
+        }
+
+        if (!newCreds.equals(oldCreds)) {
+            newCreds.setComment(comment);
+            newCreds.setUpdated(Instant.now());
+
+            return userDao.updateCredential(oldCreds, newCreds);
+        }
+
+        return true;
     }
 
     public boolean createCredential(UserCredential newCreds) {
         newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
+        newCreds.setComment("New user created creds");
         return userDao.createCredential(newCreds);
     }
 

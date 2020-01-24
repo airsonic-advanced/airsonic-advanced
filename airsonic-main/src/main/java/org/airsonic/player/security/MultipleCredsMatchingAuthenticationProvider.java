@@ -108,17 +108,9 @@ public class MultipleCredsMatchingAuthenticationProvider extends DaoAuthenticati
 
     private void migrateCred(UserCredential c) {
         if (StringUtils.equals(c.getType(), "legacy")) {
-            UserCredential oldCred = new UserCredential(c);
-            if (StringUtils.startsWith(c.getCredential(), "enc:")) {
-                c.setType("legacyhex");
-                c.setCredential(StringUtils.substring(c.getCredential(), 4));
-            } else {
-                c.setType("legacynoop");
-            }
+            UserCredential oldCreds = new UserCredential(c);
 
-            c.setUpdated(Instant.now());
-
-            if (!securityService.updateCredentials(oldCred, c)) {
+            if (!securityService.updateCredentials(oldCreds, c, "Upgrade legacy types", false)) {
                 LOG.warn("Credentials needing migration found and could not be updated in the database for user {}!", c.getUsername());
             }
         }

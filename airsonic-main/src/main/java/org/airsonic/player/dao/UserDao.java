@@ -57,7 +57,7 @@ public class UserDao extends AbstractDao {
             "party_mode_enabled, now_playing_allowed, avatar_scheme, system_avatar_id, changed, show_artist_info, auto_hide_play_queue, " +
             "view_as_list, default_album_list, queue_following_songs, show_side_bar, list_reload_delay, " +
             "keyboard_shortcuts_enabled, pagination_size";
-    private static final String USER_CREDENTIALS_COLUMNS = "username, location_username, credential, type, location, created, updated, expiration";
+    private static final String USER_CREDENTIALS_COLUMNS = "username, location_username, credential, type, location, created, updated, expiration, comment";
 
     private static final Integer ROLE_ID_ADMIN = 1;
     private static final Integer ROLE_ID_DOWNLOAD = 2;
@@ -144,11 +144,12 @@ public class UserDao extends AbstractDao {
                 credential.getLocation(),
                 credential.getCreated(),
                 credential.getUpdated(),
-                credential.getExpiration()) == 1;
+                credential.getExpiration(),
+                credential.getComment()) == 1;
     }
 
     public boolean deleteCredential(UserCredential credential) {
-        String sql = "delete from user_credential where username=:username and location_username=:location_username and credential=:credential and type=:type and location=:location and created=:created amd updated = updated";
+        String sql = "delete from user_credentials where username=:username and location_username=:location_username and credential=:credential and type=:type and location=:location and created=:created and updated=:updated";
         Map<String, Object> args = new HashMap<>();
         args.put("username", credential.getUsername());
         args.put("location_username", credential.getLocationUsername());
@@ -412,6 +413,7 @@ public class UserDao extends AbstractDao {
                     rs.getString("credential"),
                     rs.getString("type"),
                     rs.getString("location"),
+                    rs.getString("comment"),
                     Optional.ofNullable(rs.getTimestamp("expiration")).map(x -> x.toInstant()).orElse(null),
                     rs.getTimestamp("created").toInstant(),
                     rs.getTimestamp("updated").toInstant());
