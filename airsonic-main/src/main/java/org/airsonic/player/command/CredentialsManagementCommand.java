@@ -1,7 +1,6 @@
 package org.airsonic.player.command;
 
 import org.airsonic.player.domain.UserCredential;
-import org.airsonic.player.security.GlobalSecurityConfig;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.Instant;
@@ -13,8 +12,6 @@ import java.util.Set;
 
 public class CredentialsManagementCommand {
     private List<CredentialsCommand> credentials;
-    private final Set<String> decodableEncoders = GlobalSecurityConfig.NONLEGACY_DECODABLE_ENCODERS;
-    private final Set<String> nonDecodableEncoders = GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS;
 
     public CredentialsManagementCommand() {
     }
@@ -30,14 +27,6 @@ public class CredentialsManagementCommand {
 
     public void setCredentials(List<CredentialsCommand> credentials) {
         this.credentials = credentials;
-    }
-
-    public Set<String> getDecodableEncoders() {
-        return decodableEncoders;
-    }
-
-    public Set<String> getNonDecodableEncoders() {
-        return nonDecodableEncoders;
     }
 
     public static class CredentialsCommand {

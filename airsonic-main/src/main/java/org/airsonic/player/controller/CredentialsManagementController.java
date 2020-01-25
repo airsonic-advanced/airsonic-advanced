@@ -1,22 +1,24 @@
 package org.airsonic.player.controller;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.airsonic.player.command.CredentialsManagementCommand;
 import org.airsonic.player.command.CredentialsManagementCommand.CredentialsCommand;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.security.GlobalSecurityConfig;
 import org.airsonic.player.service.SecurityService;
+import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,13 +29,11 @@ import java.security.Principal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
-//@ControllerAdvice
 @RequestMapping("/credentialsSettings")
 public class CredentialsManagementController {
     private static final Logger LOG = LoggerFactory.getLogger(CredentialsManagementController.class);
@@ -41,26 +41,43 @@ public class CredentialsManagementController {
     @Autowired
     private SecurityService securityService;
 
+    @Autowired
+    private SettingsService settingsService;
+
+    private static final Map<String, Object> APPS_CREDS_SETTINGS = ImmutableMap.of(
+            "airsonic",
+            ImmutableMap.of("usernameRequired", false, "nonDecodableEncodersAllowed", true),
+            "last.fm",
+            ImmutableMap.of("usernameRequired", true, "nonDecodableEncodersAllowed", false),
+            "listenbrainz",
+            ImmutableMap.of("usernameRequired", false, "nonDecodableEncodersAllowed", false));
+
+    private static final Map<String, Object> ENCODER_ALIASES = ImmutableMap.of("noop", "plaintext");
+
     @GetMapping
     protected ModelAndView displayForm(Authentication user, ModelMap map) {
-        // Map<String, Object> credsData = new HashMap<>();
         List<CredentialsCommand> creds = securityService.getCredentials(user.getName(), null)
                 .parallelStream()
                 .map(CredentialsCommand::fromUserCredential)
                 .sorted(Comparator.comparing(CredentialsCommand::getCreated))
                 .collect(Collectors.toList());
 
-//        CredentialsManagementCommand command = new CredentialsManagementCommand(
-//                creds.parallelStream()
-//                    .map(CredentialsCommand::fromUserCredential)
-//                    .sorted(Comparator.comparing(CredentialsCommand::getCreated))
-//                    .collect(Collectors.toList()));
         creds = new ArrayList<>(creds);
         creds.add(new CredentialsCommand("bla", "noop", "airsonic", null, null, null, null, null));
         creds.add(new CredentialsCommand("bla", "noop", "last.fm", null, null, null, null, null));
         creds.add(new CredentialsCommand("bla3", "noop", "last.fm", null, null, Instant.now(), null, null));
         creds.add(new CredentialsCommand("bla3", "noop", "airsonic", null, null,
                 Instant.now().plusSeconds(86400), null, null));
+        creds.add(new CredentialsCommand("bla3", "bcrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
+                null, null));
+        creds.add(new CredentialsCommand("bla3", "scrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
+                null, null));
+        creds.add(new CredentialsCommand("bla3", "bcrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
+                null, null));
+        creds.add(new CredentialsCommand("bla3", "scrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
+                null, null));
+        creds.add(new CredentialsCommand("bla3", "legacyhex", "last.fm", null, null, Instant.now().plusSeconds(86400),
+                null, null));
 
         creds.parallelStream().forEach(c -> {
             if (c.getType().startsWith("legacy")) {
@@ -78,17 +95,25 @@ public class CredentialsManagementController {
             }
         });
 
+        // for updates/deletes/read
         map.addAttribute("command", new CredentialsManagementCommand(creds));
-
-        // map.addAttribute("credsData", credsData);
-        // credsData.put("credentials", creds);
+        // for new creds
         map.addAttribute("newCreds", new CredentialsCommand());
-        map.addAttribute("adminRole",
-                user.getAuthorities().parallelStream().anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_ADMIN")));
-        // credsData.put("decodableEncoders",
-        // GlobalSecurityConfig.NONLEGACY_DECODABLE_ENCODERS);
-        // credsData.put("nonDecodableEncoders",
-        // GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS);
+
+        map.addAttribute("apps", APPS_CREDS_SETTINGS.keySet());
+        map.addAttribute("appsCredsSettingsJson", Util.toJson(APPS_CREDS_SETTINGS));
+
+        map.addAttribute("decodableEncoders", GlobalSecurityConfig.NONLEGACY_DECODABLE_ENCODERS);
+        map.addAttribute("decodableEncodersJson", Util.toJson(GlobalSecurityConfig.NONLEGACY_DECODABLE_ENCODERS));
+        map.addAttribute("nonDecodableEncoders", GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS);
+        map.addAttribute("nonDecodableEncodersJson", Util.toJson(GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS));
+        map.addAttribute("encoderAliases", ENCODER_ALIASES);
+        map.addAttribute("encoderAliasesJson", Util.toJson(ENCODER_ALIASES));
+        map.addAttribute("defaultDecodableEncoder", "hex");
+        map.addAttribute("defaultEncoder", settingsService.getAirsonicPasswordEncoder());
+
+        map.addAttribute("adminRole", user.getAuthorities().parallelStream().anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_ADMIN")));
+
         return new ModelAndView("credentialsSettings", map);
     }
 

@@ -4,26 +4,80 @@
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
-    <sub:url value="credentialsSettings.view" var="credentialsUrl" />
+
     <script type="text/javascript" language="javascript">
-      function createNewCreds(event) {
-        $("#createNewCreds").dialog({resizable: true, width: 600,
+      function createNewCredsFnc(event) {
+        $("#createNewCreds").dialog({resizable: true, width: 600, title: "<fmt:message key='credentials.create'/>",
             buttons: {
-                "<fmt:message key="common.cancel"/>": function() {
+                "<fmt:message key='common.cancel'/>": function() {
                     $(this).dialog("close");
                 },
                 "<fmt:message key='common.create'/>": function() {
                     document.getElementById("newCreds").submit();
                 }
             }});
-            
+
         event.preventDefault();  
       }
-      
-      function deleteCreds(credId, event) {
-        console.log(credId);
-        credId.childNodes[0].checked=true;
+
+      function deleteCreds(clickedButton, event) {
+        clickedButton.childNodes[0].checked=true;
       }
+
+      var appsSettings = ${appsCredsSettingsJson};
+      var decodableEncoders = ${decodableEncodersJson};
+      var defaultDecodableEncoder = "${defaultDecodableEncoder}";
+      var nonDecodableEncoders = ${nonDecodableEncodersJson};
+      var defaultEncoder = "${defaultEncoder}";
+      var encoderAliases = ${encoderAliasesJson};
+
+      function bindNewCredsForm() {
+          var location = $('#location').val();
+
+          // enable or disable user name field
+          if (appsSettings[location].usernameRequired) {
+            $('#username').prop('disabled', false);
+          } else {
+            $('#username').prop('disabled', true);
+          }
+
+          var el = $('#type');
+          el.empty();
+
+          var defaultOptionIncluded = false;
+          // add decodable options
+          el.append($("<option value='notselectable' disabled='disabled'>Decodable</option>"));
+          $.each(decodableEncoders, function(k, v) {
+            if (v == defaultEncoder) {
+              defaultOptionIncluded = true;
+            }
+            el.append($("<option></option>").attr("value", v).text(encoderAliases[v] != null ? encoderAliases[v] : v));
+          });
+
+          // enable or disable nondecodable options
+          if (appsSettings[location].nonDecodableEncodersAllowed) {
+            el.append($("<option value='notselectable' disabled='disabled'>Non-Decodable</option>"));
+            $.each(nonDecodableEncoders, function(k, v) {
+              if (v == defaultEncoder) {
+                defaultOptionIncluded = true;
+              }
+              el.append($("<option></option>").attr("value", v).text(encoderAliases[v] != null ? encoderAliases[v] : v));
+            });
+          }
+
+          el.val(defaultOptionIncluded ? defaultEncoder : defaultDecodableEncoder);
+      }
+
+      function bindComponentHandling() {
+        bindNewCredsForm();
+
+        // createNewCreds handling
+        $('#location').change(function(ev) {
+          bindNewCredsForm();
+        });
+      }
+
+      $(document).ready(bindComponentHandling);
     </script>
 </head>
 
@@ -38,19 +92,19 @@
 </c:import>
 
 <h2>Credentials Management</h2>
-<h3>Configuration</h3>
+<h3>Credentials</h3>
 <form:form method="put" action="credentialsSettings.view" modelAttribute="command">
 <table id="credentialsTable">
   <tr>
     <th style="padding:0 0.5em 0 0.5em;border-style:double">ID</th>
     <th style="padding:0 0.5em 0 0.5em;border-style:double">App</th>
     <th style="padding:0 0.5em 0 0.5em;border-style:double">User</th>
-    <th style="padding:0 0.5em 0 0.5em;border-style:double">Type</th>
-    <th style="padding:0 0.5em 0 0.5em;border-style:double">Expires</th>
+    <th style="padding:0 0.5em 0 0.5em;border-style:double">Comments</th>
     <th style="padding:0 0.5em 0 0.5em;border-style:double">Created</th>
     <th style="padding:0 0.5em 0 0.5em;border-style:double">Updated</th>
+    <th style="padding:0 0.5em 0 0.5em;border-style:double">Encoder</th>
+    <th style="padding:0 0.5em 0 0.5em;border-style:double">Expires</th>
     <th style="padding:0 0.5em 0 0.5em;border-style:double"><fmt:message key='common.delete'/></th>
-    <th style="padding:0 0.5em 0 0.5em;border-style:double">Comments</th>
   </tr>
   <tr>
     <td style="text-align:center;border-style:dotted" colspan=9>Airsonic Credentials</td>
@@ -61,30 +115,43 @@
       <td style="padding:0 0.5em 0 0.5em">${loopStatus.index}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.location}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.username}</td>
+      <td style="padding:0 0.5em 0 0.5em">${cred.comment}</td>
+      <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.created}" style="SS" /></td>
+      <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.updated}" style="SS" /></td>
       <td style="padding:0 0.5em 0 0.5em">
         <form:select path="credentials[${loopStatus.index}].type" cssStyle="width:9em">
-          <form:option value="${cred.type}" label="${cred.type}"/>
-          <c:if test="${  cred.displayComments.contains( 'decodablecred' ) }">
+          <c:if test="${ cred.displayComments.contains( 'decodablecred' ) }">
+            <c:if test="${!decodableEncoders.contains(cred.type) && !nonDecodableEncoders.contains(cred.type)}">
+              <form:option selected="selected" value="${cred.type}" label="${encoderAliases[cred.type] != null ? encoderAliases[cred.type] : cred.type}"/>
+            </c:if>
             <form:option value="notselectable" label="Decodable" disabled="true"/>
-            <c:forEach items="${command.decodableEncoders}" var="migratableType">
+            <c:forEach items="${decodableEncoders}" var="migratableType">
+              <c:set var="displayLabelValue" value="${encoderAliases[migratableType] != null ? encoderAliases[migratableType] : migratableType}"/>
               <c:if test="${migratableType != cred.type}" >
-                <form:option value="${migratableType}" label="${migratableType}"/>
+                <form:option value="${migratableType}" label="${displayLabelValue}"/>
+              </c:if>
+              <c:if test="${migratableType == cred.type}" >
+                <form:option selected="selected" value="${migratableType}" label="${displayLabelValue}"/>
               </c:if>
             </c:forEach>
-            <form:option value="notselectable2" label="Non-decodable" disabled="true"/>
-            <c:forEach items="${command.nonDecodableEncoders}" var="migratableType">
+            <form:option value="notselectable" label="Non-decodable" disabled="true"/>
+            <c:forEach items="${nonDecodableEncoders}" var="migratableType">
+              <c:set var="displayLabelValue" value="${encoderAliases[migratableType] != null ? encoderAliases[migratableType] : migratableType}"/>
               <c:if test="${migratableType != cred.type}" >
-                <form:option value="${migratableType}" label="${migratableType}"/>
+                <form:option value="${migratableType}" label="${displayLabelValue}"/>
+              </c:if>
+              <c:if test="${migratableType == cred.type}" >
+                <form:option selected="selected" value="${migratableType}" label="${displayLabelValue}"/>
               </c:if>
             </c:forEach>
+          </c:if>
+          <c:if test="${ !cred.displayComments.contains( 'decodablecred' ) }">
+            <form:option selected="selected" value="${cred.type}" label="${encoderAliases[cred.type] != null ? encoderAliases[cred.type] : cred.type}"/>
           </c:if>
         </form:select>
       </td>
       <td><form:input type="datetime-local" path="credentials[${loopStatus.index}].expiration" /></td>
-      <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.created}" style="SS" /></td>
-      <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.updated}" style="SS" /></td>
-      <td style="padding:0 0.5em 0 0.5em;text-align:center;"><form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" /></td>
-      <td style="padding:0 0.5em 0 0.5em">${cred.comment}</td>
+      <td style="text-align:center;"><button onclick="deleteCreds(this, event)"><form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="display:none" /><fmt:message key='common.delete'/></button></td>
       <form:hidden path="credentials[${loopStatus.index}].hash" />
     </tr>
     </c:if>
@@ -98,22 +165,28 @@
       <td style="padding:0 0.5em 0 0.5em">${loopStatus.index}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.location}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.username}</td>
+      <td style="padding:0 0.5em 0 0.5em">${cred.comment}</td>
+      <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.created}" style="SS" /></td>
+      <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.updated}" style="SS" /></td>
       <td style="padding:0 0.5em 0 0.5em">
         <form:select path="credentials[${loopStatus.index}].type" cssStyle="width:9em">
-          <form:option value="${cred.type}" label="${cred.type}"/>
+          <c:if test="${!decodableEncoders.contains(cred.type)}">
+            <form:option selected="selected" value="${cred.type}" label="${encoderAliases[cred.type] != null ? encoderAliases[cred.type] : cred.type}"/>
+          </c:if>
           <form:option value="notselectable" label="Decodable" disabled="true"/>
-          <c:forEach items="${command.decodableEncoders}" var="migratableType">
-            <c:if test="${migratableType != cred.type}" >
-              <form:option value="${migratableType}" label="${migratableType}"/>
-            </c:if>
+          <c:forEach items="${decodableEncoders}" var="migratableType">
+              <c:set var="displayLabelValue" value="${encoderAliases[migratableType] != null ? encoderAliases[migratableType] : migratableType}"/>
+              <c:if test="${migratableType != cred.type}" >
+                <form:option value="${migratableType}" label="${displayLabelValue}"/>
+              </c:if>
+              <c:if test="${migratableType == cred.type}" >
+                <form:option selected="selected" value="${migratableType}" label="${displayLabelValue}"/>
+              </c:if>
           </c:forEach>
         </form:select>
       </td>
       <td><form:input type="datetime-local" path="credentials[${loopStatus.index}].expiration" /></td>
-      <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.created}" style="SS" /></td>
-      <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.updated}" style="SS" /></td>
       <td style="text-align:center;"><button onclick="deleteCreds(this, event)"><form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="display:none" /><fmt:message key='common.delete'/></button></td>
-      <td style="padding:0 0.5em 0 0.5em">${cred.comment}</td>
       <form:hidden path="credentials[${loopStatus.index}].hash" />
     </tr>
     </c:if>
@@ -121,7 +194,7 @@
 </table>
 <p style="padding-top:1em;padding-bottom:1em">
     <input type="submit" value="<fmt:message key='common.save'/>" style="margin-right:0.3em"/>
-    <input type="button" value="<fmt:message key='common.create'/>" onclick="createNewCreds(event)"/>
+    <input type="button" value="<fmt:message key='common.create'/>" onclick="createNewCredsFnc(event)"/>
     <input type="reset" value="<fmt:message key='common.cancel'/>" />
 </p>
 </form:form>
@@ -133,50 +206,43 @@
         <td><fmt:message key="credentials.app"/></td>
         <td>
           <form:select path="location" cssStyle="width:15em">
-            <form:options items="${command.decodableEncoders}" />
+            <form:options items="${apps}" />
           </form:select>
-          <c:import url="helpToolTip.jsp"><c:param name="topic" value="language"/></c:import>
         </td>
       </tr>
-      
+
       <tr>
         <td><fmt:message key="credentials.user"/></td>
         <td><form:input path="username" size="20"/></td>
       </tr>
-      
+
       <tr>
         <td><fmt:message key="credentials.encoder"/></td>
         <td>
-          <form:select path="type" cssStyle="width:15em">
-            <form:options items="${command.decodableEncoders}" />
-          </form:select>
+          <form:select path="type" cssStyle="width:15em"></form:select>
           <c:import url="helpToolTip.jsp"><c:param name="topic" value="language"/></c:import>
         </td>
       </tr>
-      
+
       <tr>
         <td><fmt:message key="usersettings.newpassword"/></td>
         <td><form:password path="credential" size="20"/></td>
       </tr>
-      
+
       <tr>
         <td><fmt:message key="usersettings.confirmpassword"/></td>
         <td><form:password path="confirmCredential" size="20"/></td>
       </tr>
-      
+
       <tr>
         <td><fmt:message key="credentials.expiration"/></td>
-        <td><form:input type="datetime-local" path="expiration" /></td>
+        <td>
+          <form:input type="datetime-local" path="expiration" />
+          <c:import url="helpToolTip.jsp"><c:param name="topic" value="language"/></c:import>
+        </td>
       </tr>
-      
-    </table>
-  </form:form>
-</div>
 
-<div id="deleteCreds" style="display:none">
-  <form:form method="delete" action="credentialsSettings.view" modelAttribute="deletionForm">
-    <span><fmt:message key='common.confirm'/></span>
-    <input type="hidden" name="deletionHash" id="deletionHash" />
+    </table>
   </form:form>
 </div>
 
