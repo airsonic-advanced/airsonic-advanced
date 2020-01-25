@@ -184,6 +184,14 @@ public final class Util {
         }
     }
 
+    public static String toJson(Object object) {
+        try {
+            return objectMapper.writeValueAsString(object);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public static Map<String, String> objectToStringMap(Object object) {
         return objectMapper.convertValue(object, new TypeReference<Map<String, String>>() {});
     }
