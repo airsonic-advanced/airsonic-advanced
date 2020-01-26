@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -57,7 +58,12 @@ public class CredentialsManagementController {
     private static final Map<String, Object> ENCODER_ALIASES = ImmutableMap.of("noop", "plaintext");
 
     @GetMapping
-    protected ModelAndView displayForm(Authentication user, ModelMap map) {
+    protected String displayForm() {
+        return "credentialsSettings";
+    }
+
+    @ModelAttribute
+    protected void displayForm(Authentication user, ModelMap map) {
         List<CredentialsCommand> creds = securityService.getCredentials(user.getName(), null)
                 .parallelStream()
                 .map(CredentialsCommand::fromUserCredential)
@@ -116,11 +122,18 @@ public class CredentialsManagementController {
 
         map.addAttribute("adminRole", user.getAuthorities().parallelStream().anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_ADMIN")));
 
-        return new ModelAndView("credentialsSettings", map);
+        // return new ModelAndView("credentialsSettings", map);
     }
 
     @PostMapping
-    protected String createNewCreds(Principal user, @ModelAttribute @Validated(value = {Default.class, CredentialCreateChecks.class}) CredentialsCommand cc, RedirectAttributes redirectAttributes) {
+    protected String createNewCreds(Principal user,
+            @ModelAttribute("newCreds") @Validated(value = { Default.class, CredentialCreateChecks.class }) CredentialsCommand cc,
+            BindingResult br, RedirectAttributes redirectAttributes, ModelMap map) {
+        if (br.hasErrors()) {
+            map.addAttribute("open_CreateCredsDialog", true);
+            return "credentialsSettings";
+        }
+
         UserCredential uc = new UserCredential(user.getName(), cc.getUsername(), cc.getCredential(), cc.getType(), cc.getLocation(), cc.getComment(), cc.getExpirationInstant());
 
         if (!APPS_CREDS_SETTINGS.get(uc.getLocation()).getUsernameRequired()) {
@@ -138,7 +151,13 @@ public class CredentialsManagementController {
     }
 
     @PutMapping
-    protected String updateCreds(Principal user, @ModelAttribute @Validated(value = {Default.class, CredentialUpdateChecks.class}) CredentialsManagementCommand cmc, RedirectAttributes redirectAttributes) {
+    protected String updateCreds(Principal user,
+            @ModelAttribute("command") @Validated(value = { Default.class, CredentialUpdateChecks.class }) CredentialsManagementCommand cmc,
+            BindingResult br, RedirectAttributes redirectAttributes) {
+        if (br.hasErrors()) {
+            return "credentialsSettings";
+        }
+
         List<UserCredential> creds = securityService.getCredentials(user.getName(), null);
 
         cmc.getCredentials().forEach(c -> {

@@ -44,7 +44,7 @@ public class CredentialsManagementValidators {
     @Constraint(validatedBy = CredLocationValidValidator.class)
     @Documented
     public @interface CredLocationValid {
-        String message() default "{usersettings.wrongpassword0}";
+        String message() default "{credentials.invalidlocation}";
         Class<?>[] groups() default {};
         Class<? extends Payload>[] payload() default {};
     }
@@ -65,7 +65,7 @@ public class CredentialsManagementValidators {
     @Constraint(validatedBy = CredTypeValidValidator.class)
     @Documented
     public @interface CredTypeValid {
-        String message() default "{usersettings.wrongpassword9}";
+        String message() default "{credentials.invalidtype}";
         Class<?>[] groups() default {};
         Class<? extends Payload>[] payload() default {};
     }
@@ -86,7 +86,7 @@ public class CredentialsManagementValidators {
     @Constraint(validatedBy = CredTypeForLocationValidValidator.class)
     @Documented
     public @interface CredTypeForLocationValid {
-        String message() default "{usersettings.wrongpassword7}";
+        String message() default "{credentials.invalidtypeforlocation}";
         Class<?>[] groups() default {};
         Class<? extends Payload>[] payload() default {};
     }

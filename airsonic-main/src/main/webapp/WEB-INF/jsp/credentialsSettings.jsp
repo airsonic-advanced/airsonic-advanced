@@ -7,7 +7,7 @@
 
     <script type="text/javascript" language="javascript">
       function createNewCredsFnc(event) {
-        $("#createNewCreds").dialog({resizable: true, width: 600, title: "<fmt:message key='credentials.create'/>",
+        $("#createNewCreds").dialog({resizable: true, width: 600, title: "<fmt:message key='credentials.create'/>", position: { my: "top", at: "top", of: window },
             buttons: {
                 "<fmt:message key='common.cancel'/>": function() {
                     $(this).dialog("close");
@@ -81,6 +81,10 @@
         $('#location').change(function(ev) {
           bindNewCredsForm();
         });
+        
+        <c:if test="${open_CreateCredsDialog}">
+        $('#createcredsbutton').click();
+        </c:if>
       }
 
       $(document).ready(bindComponentHandling);
@@ -171,7 +175,7 @@
       <td style="padding:0 0.5em 0 0.5em">${loopStatus.index}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.location}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.username}</td>
-      <td style="padding:0 0.5em 0 0.5em">${cred.comment}</td>
+      <td style="padding:0 0.5em 0 0.5em">${cred.comment}<form:errors path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="width:15em"/></td>
       <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.created}" style="SS" /></td>
       <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.updated}" style="SS" /></td>
       <td style="padding:0 0.5em 0 0.5em">
@@ -200,7 +204,7 @@
 </table>
 <p style="padding-top:1em;padding-bottom:1em">
     <input type="submit" value="<fmt:message key='common.save'/>" style="margin-right:0.3em"/>
-    <input type="button" value="<fmt:message key='common.create'/>" onclick="createNewCredsFnc(event)"/>
+    <input type="button" id="createcredsbutton" value="<fmt:message key='common.create'/>" onclick="createNewCredsFnc(event)"/>
     <input type="reset" value="<fmt:message key='common.cancel'/>" />
 </p>
 </form:form>
@@ -215,11 +219,13 @@
             <form:options items="${apps}" />
           </form:select>
         </td>
+        <td class="warning"><form:errors path="location" cssStyle="width:15em"/></td>
       </tr>
 
       <tr>
-        <td><fmt:message key="credentials.user"/></td>
+        <td><fmt:message key="login.username"/></td>
         <td><form:input path="username" size="20"/></td>
+        <td class="warning"><form:errors path="username" cssStyle="width:15em"/></td>
       </tr>
 
       <tr>
@@ -227,17 +233,20 @@
         <td>
           <form:select path="type" cssStyle="width:15em"></form:select>
           <c:import url="helpToolTip.jsp"><c:param name="topic" value="language"/></c:import>
+          <td class="warning"><form:errors path="type" cssStyle="width:15em"/></td>
         </td>
       </tr>
 
       <tr>
         <td><fmt:message key="usersettings.newpassword"/></td>
         <td><form:password path="credential" size="20"/></td>
+        <td class="warning"><form:errors path="credential" cssStyle="width:15em"/></td>
       </tr>
 
       <tr>
         <td><fmt:message key="usersettings.confirmpassword"/></td>
         <td><form:password path="confirmCredential" size="20"/></td>
+       <td class="warning"><form:errors path="confirmCredential" cssStyle="width:15em"/></td>
       </tr>
 
       <tr>
@@ -247,8 +256,8 @@
           <c:import url="helpToolTip.jsp"><c:param name="topic" value="language"/></c:import>
         </td>
       </tr>
-
     </table>
+    <form:errors class="warning" cssStyle="width:15em"/>
   </form:form>
 </div>
 
