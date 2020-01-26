@@ -3,12 +3,15 @@ package org.airsonic.player.controller;
 import com.google.common.collect.ImmutableMap;
 
 import org.airsonic.player.command.CredentialsManagementCommand;
+import org.airsonic.player.command.CredentialsManagementCommand.AppCredSettings;
 import org.airsonic.player.command.CredentialsManagementCommand.CredentialsCommand;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.security.GlobalSecurityConfig;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.Util;
+import org.airsonic.player.validator.CredentialsManagementValidators.CredentialCreateChecks;
+import org.airsonic.player.validator.CredentialsManagementValidators.CredentialUpdateChecks;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +27,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import javax.validation.groups.Default;
 
 import java.security.Principal;
 import java.time.Instant;
@@ -44,13 +49,10 @@ public class CredentialsManagementController {
     @Autowired
     private SettingsService settingsService;
 
-    private static final Map<String, Object> APPS_CREDS_SETTINGS = ImmutableMap.of(
-            "airsonic",
-            ImmutableMap.of("usernameRequired", false, "nonDecodableEncodersAllowed", true),
-            "last.fm",
-            ImmutableMap.of("usernameRequired", true, "nonDecodableEncodersAllowed", false),
-            "listenbrainz",
-            ImmutableMap.of("usernameRequired", false, "nonDecodableEncodersAllowed", false));
+    public static final Map<String, AppCredSettings> APPS_CREDS_SETTINGS = ImmutableMap.of(
+            "airsonic", new AppCredSettings(false, true),
+            "last.fm", new AppCredSettings(true, false),
+            "listenbrainz", new AppCredSettings(false, false));
 
     private static final Map<String, Object> ENCODER_ALIASES = ImmutableMap.of("noop", "plaintext");
 
@@ -63,21 +65,21 @@ public class CredentialsManagementController {
                 .collect(Collectors.toList());
 
         creds = new ArrayList<>(creds);
-        creds.add(new CredentialsCommand("bla", "noop", "airsonic", null, null, null, null, null));
-        creds.add(new CredentialsCommand("bla", "noop", "last.fm", null, null, null, null, null));
-        creds.add(new CredentialsCommand("bla3", "noop", "last.fm", null, null, Instant.now(), null, null));
+        creds.add(new CredentialsCommand("bla", "noop", "airsonic", null, null, null, null, "4"));
+        creds.add(new CredentialsCommand("bla", "noop", "last.fm", null, null, null, null, "$"));
+        creds.add(new CredentialsCommand("bla3", "noop", "last.fm", null, null, Instant.now(), null, "%"));
         creds.add(new CredentialsCommand("bla3", "noop", "airsonic", null, null,
-                Instant.now().plusSeconds(86400), null, null));
+                Instant.now().plusSeconds(86400), null, "4"));
         creds.add(new CredentialsCommand("bla3", "bcrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
-                null, null));
+                null, "4"));
         creds.add(new CredentialsCommand("bla3", "scrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
-                null, null));
+                null, "5"));
         creds.add(new CredentialsCommand("bla3", "bcrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
-                null, null));
+                null, "6"));
         creds.add(new CredentialsCommand("bla3", "scrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
-                null, null));
+                null, "8"));
         creds.add(new CredentialsCommand("bla3", "legacyhex", "last.fm", null, null, Instant.now().plusSeconds(86400),
-                null, null));
+                null, "6"));
 
         creds.parallelStream().forEach(c -> {
             if (c.getType().startsWith("legacy")) {
@@ -117,28 +119,17 @@ public class CredentialsManagementController {
         return new ModelAndView("credentialsSettings", map);
     }
 
-    @DeleteMapping
-    public String deleteCred(Principal user, Map<String, Object> map, RedirectAttributes redirectAttributes) {
-        List<UserCredential> creds = securityService.getCredentials(user.getName(), null);
-
-        creds.parallelStream().filter(sc -> StringUtils.equals(String.valueOf(sc.hashCode()), "0")).findAny()
-                .ifPresent(dbCreds -> {
-                    if (!securityService.deleteCredential(dbCreds)) {
-                        LOG.warn("Could not delete creds for user {}", dbCreds.getUsername());
-                    }
-                });
-
-        redirectAttributes.addFlashAttribute("settings_reload", false);
-        redirectAttributes.addFlashAttribute("settings_toast", true);
-
-        return "redirect:credentialsSettings.view";
-    }
-
     @PostMapping
-    protected String createNewCreds(Principal user, @ModelAttribute CredentialsCommand cc, RedirectAttributes redirectAttributes) {
+    protected String createNewCreds(Principal user, @ModelAttribute @Validated(value = {Default.class, CredentialCreateChecks.class}) CredentialsCommand cc, RedirectAttributes redirectAttributes) {
         UserCredential uc = new UserCredential(user.getName(), cc.getUsername(), cc.getCredential(), cc.getType(), cc.getLocation(), cc.getComment(), cc.getExpirationInstant());
 
-        securityService.createCredential(uc);
+        if (!APPS_CREDS_SETTINGS.get(uc.getLocation()).getUsernameRequired()) {
+            uc.setLocationUsername(user.getName());
+        }
+
+        if (!securityService.createCredential(uc)) {
+            LOG.warn("Could not update creds for user {}", user.getName());
+        }
 
         redirectAttributes.addFlashAttribute("settings_reload", false);
         redirectAttributes.addFlashAttribute("settings_toast", true);
@@ -147,7 +138,7 @@ public class CredentialsManagementController {
     }
 
     @PutMapping
-    protected String updateCreds(Principal user, @ModelAttribute CredentialsManagementCommand cmc, RedirectAttributes redirectAttributes) {
+    protected String updateCreds(Principal user, @ModelAttribute @Validated(value = {Default.class, CredentialUpdateChecks.class}) CredentialsManagementCommand cmc, RedirectAttributes redirectAttributes) {
         List<UserCredential> creds = securityService.getCredentials(user.getName(), null);
 
         cmc.getCredentials().forEach(c -> {

@@ -13,7 +13,7 @@
                     $(this).dialog("close");
                 },
                 "<fmt:message key='common.create'/>": function() {
-                    document.getElementById("newCreds").submit();
+                    $(document.getElementById("newCreds")).submit();
                 }
             }});
 
@@ -36,9 +36,11 @@
 
           // enable or disable user name field
           if (appsSettings[location].usernameRequired) {
+            $('#username').val('').attr('value', '');
             $('#username').prop('disabled', false);
           } else {
             $('#username').prop('disabled', true);
+            $('#username').val('Not required').attr('value', 'Not required');
           }
 
           var el = $('#type');
@@ -70,6 +72,10 @@
 
       function bindComponentHandling() {
         bindNewCredsForm();
+
+        $('#newCreds').submit(function(e) {
+          $('#username').removeAttr('disabled');
+        });
 
         // createNewCreds handling
         $('#location').change(function(ev) {

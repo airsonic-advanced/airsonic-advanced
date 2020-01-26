@@ -1,7 +1,16 @@
 package org.airsonic.player.command;
 
 import org.airsonic.player.domain.UserCredential;
+import org.airsonic.player.validator.CredentialsManagementValidators.ConsistentPasswordConfirmation;
+import org.airsonic.player.validator.CredentialsManagementValidators.CredLocationValid;
+import org.airsonic.player.validator.CredentialsManagementValidators.CredTypeForLocationValid;
+import org.airsonic.player.validator.CredentialsManagementValidators.CredTypeValid;
+import org.airsonic.player.validator.CredentialsManagementValidators.CredentialCreateChecks;
+import org.airsonic.player.validator.CredentialsManagementValidators.CredentialUpdateChecks;
 import org.springframework.format.annotation.DateTimeFormat;
+
+import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
 
 import java.time.Instant;
 import java.util.Date;
@@ -11,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 
 public class CredentialsManagementCommand {
+    @Valid
     private List<CredentialsCommand> credentials;
 
     public CredentialsManagementCommand() {
@@ -29,20 +39,37 @@ public class CredentialsManagementCommand {
         this.credentials = credentials;
     }
 
+    @CredTypeForLocationValid(groups = CredentialCreateChecks.class)
+    @ConsistentPasswordConfirmation
     public static class CredentialsCommand {
+        @NotBlank(groups = CredentialCreateChecks.class)
         private String username;
+
+        @NotBlank(groups = CredentialCreateChecks.class)
         private String credential;
+
+        @NotBlank(groups = CredentialCreateChecks.class)
         private String confirmCredential;
-        private String type;
+
+        @NotBlank(groups = CredentialCreateChecks.class)
+        @CredLocationValid
         private String location;
-        private Instant created;
-        private Instant updated;
+
+        @NotBlank
+        @CredTypeValid
+        private String type;
+
+        @NotBlank(groups = CredentialUpdateChecks.class)
+        private String hash;
+
         @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
         private Date expiration;
+
+        private Instant created;
+        private Instant updated;
         private String comment;
         private Set<String> displayComments = new HashSet<>();
-        private Boolean markedForDeletion = Boolean.FALSE;
-        private String hash;
+        private boolean markedForDeletion;
 
         public CredentialsCommand(String username, String type, String location, Instant created,
                 Instant updated, Instant expiration, String comment, String hash) {
@@ -135,11 +162,11 @@ public class CredentialsManagementCommand {
             this.displayComments.add(comment);
         }
 
-        public Boolean getMarkedForDeletion() {
+        public boolean getMarkedForDeletion() {
             return markedForDeletion;
         }
 
-        public void setMarkedForDeletion(Boolean markedForDeletion) {
+        public void setMarkedForDeletion(boolean markedForDeletion) {
             this.markedForDeletion = markedForDeletion;
         }
 
@@ -166,6 +193,24 @@ public class CredentialsManagementCommand {
                     uc.getExpiration(),
                     uc.getComment(),
                     String.valueOf(uc.hashCode()));
+        }
+    }
+
+    public static class AppCredSettings {
+        private final boolean usernameRequired;
+        private final boolean nonDecodableEncodersAllowed;
+
+        public AppCredSettings(boolean usernameRequired, boolean nonDecodableEncodersAllowed) {
+            this.usernameRequired = usernameRequired;
+            this.nonDecodableEncodersAllowed = nonDecodableEncodersAllowed;
+        }
+
+        public boolean getUsernameRequired() {
+            return usernameRequired;
+        }
+
+        public boolean getNonDecodableEncodersAllowed() {
+            return nonDecodableEncodersAllowed;
         }
     }
 }
