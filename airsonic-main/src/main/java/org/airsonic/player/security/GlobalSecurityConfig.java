@@ -65,7 +65,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
             .put("argon2", new Argon2PasswordEncoder())
 
             // base decodable encoders
-            .put("noop", org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance())
+            .put("noop", new PasswordEncoderDecoderWrapper(org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance(), p -> p))
             .put("hex", HexPasswordEncoder.getInstance())
 
             // base decodable encoders that rely on salt+token being passed in (not stored in db with this type)
@@ -73,7 +73,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
             .put("hex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()))
 
             // TODO: legacy marked base encoders, to be upgraded to one-way formats at breaking version change
-            .put("legacynoop", org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance())
+            .put("legacynoop", new PasswordEncoderDecoderWrapper(org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance(), p -> p))
             .put("legacyhex", HexPasswordEncoder.getInstance())
 
             .put("legacynoop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p))
