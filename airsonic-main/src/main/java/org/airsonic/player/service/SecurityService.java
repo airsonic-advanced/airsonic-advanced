@@ -134,7 +134,6 @@ public class SecurityService implements UserDetailsService {
 
     public boolean createCredential(UserCredential newCreds) {
         newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
-        newCreds.setComment("New user created creds");
         return userDao.createCredential(newCreds);
     }
 
@@ -255,14 +254,15 @@ public class SecurityService implements UserDetailsService {
      * @param user       The user to create.
      * @param credential The raw credential (will be encoded)
      */
-    public void createUser(User user, String credential) {
+    public void createUser(User user, String credential, String comment) {
         String defaultEncoder = settingsService.getAirsonicPasswordEncoder();
         UserCredential uc = new UserCredential(
                 user.getUsername(),
                 user.getUsername(),
                 GlobalSecurityConfig.ENCODERS.get(defaultEncoder).encode(credential),
                 defaultEncoder,
-                "airsonic");
+                "airsonic",
+                comment);
         createUser(user, uc);
     }
 

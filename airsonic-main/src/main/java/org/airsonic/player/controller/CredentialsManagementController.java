@@ -133,7 +133,7 @@ public class CredentialsManagementController {
             return "credentialsSettings";
         }
 
-        UserCredential uc = new UserCredential(user.getName(), cc.getUsername(), cc.getCredential(), cc.getType(), cc.getLocation(), cc.getComment(), cc.getExpirationInstant());
+        UserCredential uc = new UserCredential(user.getName(), cc.getUsername(), cc.getCredential(), cc.getType(), cc.getLocation(), "Created by user", cc.getExpirationInstant());
 
         if (!APPS_CREDS_SETTINGS.get(uc.getLocation()).getUsernameRequired()) {
             uc.setLocationUsername(user.getName());
