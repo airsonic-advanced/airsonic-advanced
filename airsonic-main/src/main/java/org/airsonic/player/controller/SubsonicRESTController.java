@@ -2001,8 +2001,8 @@ public class SubsonicRESTController {
         }
 
         org.airsonic.player.domain.User user = securityService.getUserByName(username);
-        user.setPassword(password);
-        securityService.updateUser(user);
+        UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), password, settingsService.getAirsonicPasswordEncoder(), "airsonic", "Created via Subsonic REST API");
+        securityService.createCredential(uc);
 
         writeEmptyResponse(request, response);
     }
