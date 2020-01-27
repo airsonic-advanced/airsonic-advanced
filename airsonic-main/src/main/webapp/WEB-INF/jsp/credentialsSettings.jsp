@@ -162,7 +162,10 @@
       </td>
       <td><form:input type="datetime-local" path="credentials[${loopStatus.index}].expiration" /></td>
       <td style="text-align:center;"><button onclick="deleteCreds(this, event)"><form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="display:none" /><fmt:message key='common.delete'/></button></td>
-      <form:hidden path="credentials[${loopStatus.index}].hash" />
+      <td class="warning">
+        <form:hidden path="credentials[${loopStatus.index}].hash" />
+        <form:errors class="warning" path="credentials[${loopStatus.index}].hash" cssStyle="width:15em"/>
+      </td>
     </tr>
     </c:if>
   </c:forEach>
@@ -175,7 +178,7 @@
       <td style="padding:0 0.5em 0 0.5em">${loopStatus.index}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.location}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.username}</td>
-      <td style="padding:0 0.5em 0 0.5em">${cred.comment}<form:errors path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="width:15em"/></td>
+      <td style="padding:0 0.5em 0 0.5em">${cred.comment}</td>
       <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.created}" style="SS" /></td>
       <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.updated}" style="SS" /></td>
       <td style="padding:0 0.5em 0 0.5em">
@@ -197,7 +200,10 @@
       </td>
       <td><form:input type="datetime-local" path="credentials[${loopStatus.index}].expiration" /></td>
       <td style="text-align:center;"><button onclick="deleteCreds(this, event)"><form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="display:none" /><fmt:message key='common.delete'/></button></td>
-      <form:hidden path="credentials[${loopStatus.index}].hash" />
+      <td class="warning">
+        <form:hidden path="credentials[${loopStatus.index}].hash" />
+        <form:errors class="warning" path="credentials[${loopStatus.index}].hash" cssStyle="width:15em"/>
+      </td>
     </tr>
     </c:if>
   </c:forEach>

@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.validation.groups.Default;
@@ -85,7 +84,7 @@ public class CredentialsManagementController {
         creds.add(new CredentialsCommand("bla3", "scrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
                 null, "8"));
         creds.add(new CredentialsCommand("bla3", "legacyhex", "last.fm", null, null, Instant.now().plusSeconds(86400),
-                null, "6"));
+                null, "jk"));
 
         creds.parallelStream().forEach(c -> {
             if (c.getType().startsWith("legacy")) {
@@ -121,8 +120,6 @@ public class CredentialsManagementController {
         map.addAttribute("defaultEncoder", settingsService.getAirsonicPasswordEncoder());
 
         map.addAttribute("adminRole", user.getAuthorities().parallelStream().anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_ADMIN")));
-
-        // return new ModelAndView("credentialsSettings", map);
     }
 
     @PostMapping
