@@ -169,6 +169,13 @@
     </tr>
     </c:if>
   </c:forEach>
+  <c:if test="${ldapAuthEnabledForUser}">
+    <tr>
+      <td class="warning" style="text-align:center" colspan=9><i><fmt:message key="credentials.ldapauthenabledforuser"/></i></td>
+    </tr>
+  </c:if>
+  <tr><td> </td></tr>
+
   <tr>
     <td style="text-align:center;border-style:dotted" colspan=9>Third-party Credentials</td>
   </tr>

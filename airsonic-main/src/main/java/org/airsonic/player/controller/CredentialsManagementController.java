@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.command.CredentialsManagementCommand;
 import org.airsonic.player.command.CredentialsManagementCommand.AppCredSettings;
 import org.airsonic.player.command.CredentialsManagementCommand.CredentialsCommand;
+import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.security.GlobalSecurityConfig;
 import org.airsonic.player.service.SecurityService;
@@ -68,7 +69,7 @@ public class CredentialsManagementController {
                 .map(CredentialsCommand::fromUserCredential)
                 .sorted(Comparator.comparing(CredentialsCommand::getCreated))
                 .collect(Collectors.toList());
-
+        User userInDb = securityService.getUserByName(user.getName());
         creds = new ArrayList<>(creds);
         creds.add(new CredentialsCommand("bla", "noop", "airsonic", null, null, null, null, "4"));
         creds.add(new CredentialsCommand("bla", "noop", "last.fm", null, null, null, null, "$"));
@@ -119,7 +120,8 @@ public class CredentialsManagementController {
         map.addAttribute("defaultDecodableEncoder", "hex");
         map.addAttribute("defaultEncoder", settingsService.getAirsonicPasswordEncoder());
 
-        map.addAttribute("adminRole", user.getAuthorities().parallelStream().anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_ADMIN")));
+        map.addAttribute("adminRole", userInDb.isAdminRole());
+        map.addAttribute("ldapAuthEnabledForUser", userInDb.isLdapAuthenticated());
     }
 
     @PostMapping
