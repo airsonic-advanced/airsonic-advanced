@@ -74,12 +74,12 @@ public class CredentialsManagementController {
         creds.add(new CredentialsCommand("bla", "noop", "airsonic", null, null, null, null, "4"));
         creds.add(new CredentialsCommand("bla", "noop", "last.fm", null, null, null, null, "$"));
         creds.add(new CredentialsCommand("bla3", "noop", "last.fm", null, null, Instant.now(), null, "%"));
-        creds.add(new CredentialsCommand("bla3", "noop", "airsonic", null, null,
-                Instant.now().plusSeconds(86400), null, "4"));
-        creds.add(new CredentialsCommand("bla3", "bcrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
-                null, "4"));
-        creds.add(new CredentialsCommand("bla3", "scrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
-                null, "5"));
+//        creds.add(new CredentialsCommand("bla3", "noop", "airsonic", null, null,
+//                Instant.now().plusSeconds(86400), null, "4"));
+//        creds.add(new CredentialsCommand("bla3", "bcrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
+//                null, "4"));
+//        creds.add(new CredentialsCommand("bla3", "scrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
+//                null, "5"));
         creds.add(new CredentialsCommand("bla3", "bcrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
                 null, "6"));
         creds.add(new CredentialsCommand("bla3", "scrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
@@ -139,12 +139,14 @@ public class CredentialsManagementController {
             uc.setLocationUsername(user.getName());
         }
 
+        boolean success = true;
         if (!securityService.createCredential(uc)) {
-            LOG.warn("Could not update creds for user {}", user.getName());
+            LOG.warn("Could not create creds for user {}", user.getName());
+            success = false;
         }
 
         redirectAttributes.addFlashAttribute("settings_reload", false);
-        redirectAttributes.addFlashAttribute("settings_toast", true);
+        redirectAttributes.addFlashAttribute("settings_toast", success);
 
         return "redirect:credentialsSettings.view";
     }
@@ -157,6 +159,7 @@ public class CredentialsManagementController {
             return "credentialsSettings";
         }
 
+        List<Boolean> failures = new ArrayList<>();
         List<UserCredential> creds = securityService.getCredentials(user.getName(), null);
 
         cmc.getCredentials().forEach(c -> {
@@ -165,6 +168,7 @@ public class CredentialsManagementController {
                         if (c.getMarkedForDeletion()) {
                             if (!securityService.deleteCredential(dbCreds)) {
                                 LOG.warn("Could not delete creds for user {}", dbCreds.getUsername());
+                                failures.add(true);
                             }
                         } else {
                             UserCredential newCreds = new UserCredential(dbCreds);
@@ -173,15 +177,14 @@ public class CredentialsManagementController {
 
                             if (!securityService.updateCredentials(dbCreds, newCreds, "User updated", false)) {
                                 LOG.warn("Could not update creds for user {}", dbCreds.getUsername());
+                                failures.add(true);
                             }
-
                         }
                     });
-
         });
 
         redirectAttributes.addFlashAttribute("settings_reload", false);
-        redirectAttributes.addFlashAttribute("settings_toast", true);
+        redirectAttributes.addFlashAttribute("settings_toast", failures.isEmpty());
 
         return "redirect:credentialsSettings.view";
     }
