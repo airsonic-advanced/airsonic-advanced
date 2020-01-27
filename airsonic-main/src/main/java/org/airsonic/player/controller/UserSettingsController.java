@@ -23,6 +23,7 @@ import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.TranscodeScheme;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserSettings;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
@@ -186,11 +187,12 @@ public class UserSettingsController {
         user.setSettingsRole(command.isSettingsRole());
         user.setShareRole(command.isShareRole());
 
-        if (command.isPasswordChange()) {
-            user.setPassword(command.getPassword());
-        }
-
         securityService.updateUser(user);
+
+        if (command.isPasswordChange()) {
+            UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), command.getPassword(), settingsService.getAirsonicPasswordEncoder(), "airsonic", "Created by admin");
+            securityService.createCredential(uc);
+        }
 
         UserSettings userSettings = settingsService.getUserSettings(command.getUsername());
         userSettings.setTranscodeScheme(TranscodeScheme.valueOf(command.getTranscodeSchemeName()));
