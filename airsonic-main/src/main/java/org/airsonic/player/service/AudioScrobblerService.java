@@ -19,6 +19,10 @@
  */
 package org.airsonic.player.service;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.UserCredential;
+import org.airsonic.player.domain.UserCredential.App;
+import org.airsonic.player.security.GlobalSecurityConfig;
+import org.airsonic.player.security.PasswordDecoder;
 import org.airsonic.player.domain.UserSettings;
 import org.airsonic.player.service.scrobbler.LastFMScrobbler;
 import org.airsonic.player.service.scrobbler.ListenBrainzScrobbler;
@@ -26,6 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Provides services for "audioscrobbling", which is the process of
@@ -38,6 +44,21 @@ public class AudioScrobblerService {
     private ListenBrainzScrobbler listenBrainzScrobbler;
     @Autowired
     private SettingsService settingsService;
+    @Autowired
+    private SecurityService securityService;
+
+    private static final UserCredential getDecodableCredsForLocation(List<UserCredential> creds, App location) {
+        return creds.parallelStream()
+                .filter(c -> c.getLocation() == location)
+                .filter(c -> GlobalSecurityConfig.DECODABLE_ENCODERS.contains(c.getType()))
+                .sorted(Comparator.comparing(c -> c.getUpdated(), Comparator.reverseOrder()))
+                .findFirst().orElse(null);
+    }
+
+    private static final String decode(UserCredential uc) {
+        PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(uc.getType());
+        return decoder.decode(uc.getCredential());
+    }
 
     /**
      * Registers the given media file at audio scrobble service.
@@ -55,18 +76,32 @@ public class AudioScrobblerService {
         }
 
         UserSettings userSettings = settingsService.getUserSettings(username);
-        if (userSettings.isLastFmEnabled() && userSettings.getLastFmUsername() != null && userSettings.getLastFmPassword() != null) {
+        List<UserCredential> creds = securityService.getCredentials(username, App.LASTFM, App.LISTENBRAINZ);
+
+        if (userSettings.isLastFmEnabled() ) {
             if (lastFMScrobbler == null) {
                 lastFMScrobbler = new LastFMScrobbler();
             }
-            lastFMScrobbler.register(mediaFile, userSettings.getLastFmUsername(), userSettings.getLastFmPassword(), submission, time);
+            UserCredential cred = getDecodableCredsForLocation(creds, App.LASTFM);
+            if (cred != null) {
+                String decoded = decode(cred);
+                if (decoded != null) {
+                    lastFMScrobbler.register(mediaFile, cred.getLocationUsername(), cred.getCredential(), submission, time);
+                }
+            }
         }
 
-        if (userSettings.isListenBrainzEnabled() && userSettings.getListenBrainzToken() != null) {
+        if (userSettings.isListenBrainzEnabled()) {
             if (listenBrainzScrobbler == null) {
                 listenBrainzScrobbler = new ListenBrainzScrobbler();
             }
-            listenBrainzScrobbler.register(mediaFile, userSettings.getListenBrainzToken(), submission, time);
+            UserCredential cred = getDecodableCredsForLocation(creds, App.LISTENBRAINZ);
+            if (cred != null) {
+                String decoded = decode(cred);
+                if (decoded != null) {
+                    listenBrainzScrobbler.register(mediaFile, cred.getCredential(), submission, time);
+                }
+            }
         }
     }
 
