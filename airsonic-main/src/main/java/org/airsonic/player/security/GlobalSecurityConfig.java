@@ -229,7 +229,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
                             "/sonos/**", "/login", "/error")
                     .permitAll()
                     .antMatchers("/personalSettings*", "/passwordSettings*",
-                            "/playerSettings*", "/shareSettings*", "/passwordSettings*")
+                            "/playerSettings*", "/shareSettings*", "/credentialsSettings*")
                     .hasRole("SETTINGS")
                     .antMatchers("/generalSettings*", "/advancedSettings*", "/userSettings*",
                             "/musicFolderSettings*", "/databaseSettings*", "/transcodeSettings*", "/rest/startScan*")
