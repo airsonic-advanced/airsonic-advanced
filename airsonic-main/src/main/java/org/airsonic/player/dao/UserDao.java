@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -35,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Provides user-related database services.
@@ -148,7 +150,7 @@ public class UserDao extends AbstractDao {
                 credential.getComment()) == 1;
     }
 
-    public boolean deleteCredential(UserCredential credential) {
+    public boolean deleteCredential(UserCredential credential, Predicate<UserCredential> postDeletionCheck) {
         String sql = "delete from user_credentials where username=:username and location_username=:location_username and credential=:credential and type=:type and location=:location and created=:created and updated=:updated";
         Map<String, Object> args = new HashMap<>();
         args.put("username", credential.getUsername());
@@ -163,7 +165,12 @@ public class UserDao extends AbstractDao {
             args.put("expiration", credential.getExpiration());
         }
 
-        return namedUpdate(sql, args) == 1;
+        boolean deleteSuccess = namedUpdate(sql, args) == 1 && postDeletionCheck.test(credential);
+        if (!deleteSuccess) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+        }
+
+        return deleteSuccess;
     }
 
     public boolean checkNonErasedCredentialsStoredInVariousTables() {

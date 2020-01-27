@@ -47,6 +47,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -137,8 +138,13 @@ public class SecurityService implements UserDetailsService {
         return userDao.createCredential(newCreds);
     }
 
+    // ensure we can't delete all airsonic creds
+    private Predicate<UserCredential> retainOneAirsonicCred = c ->
+            !StringUtils.equals("airsonic", c.getLocation())
+            || !userDao.getCredentials(c.getUsername(), c.getLocation()).isEmpty();
+
     public boolean deleteCredential(UserCredential creds) {
-        return userDao.deleteCredential(creds);
+        return userDao.deleteCredential(creds, retainOneAirsonicCred);
     }
 
     public List<UserCredential> getCredentials(String username, String location) {

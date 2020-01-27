@@ -81,7 +81,12 @@
         $('#location').change(function(ev) {
           bindNewCredsForm();
         });
-        
+
+        // grey out last delete button
+        if ($('.airsonic-cred').length == 1) {
+          $('.airsonic-cred .delete-cred').attr('disabled', 'disabled');
+        }
+
         <c:if test="${open_CreateCredsDialog}">
         $('#createcredsbutton').click();
         </c:if>
@@ -121,7 +126,7 @@
   </tr>
   <c:forEach items="${command.credentials}" var="cred" varStatus="loopStatus">
     <c:if test="${cred.location == 'airsonic'}" >
-    <tr>
+    <tr class="airsonic-cred">
       <td style="padding:0 0.5em 0 0.5em">${loopStatus.index}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.location}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.username}</td>
@@ -161,7 +166,7 @@
         </form:select>
       </td>
       <td><form:input type="datetime-local" path="credentials[${loopStatus.index}].expiration" /></td>
-      <td style="text-align:center;"><button onclick="deleteCreds(this, event)"><form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="display:none" /><fmt:message key='common.delete'/></button></td>
+      <td style="text-align:center;"><button class="delete-cred" onclick="deleteCreds(this, event)"><form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="display:none" /><fmt:message key='common.delete'/></button></td>
       <td class="warning">
         <form:hidden path="credentials[${loopStatus.index}].hash" />
         <form:errors class="warning" path="credentials[${loopStatus.index}].hash" cssStyle="width:15em"/>
@@ -206,7 +211,7 @@
         </form:select>
       </td>
       <td><form:input type="datetime-local" path="credentials[${loopStatus.index}].expiration" /></td>
-      <td style="text-align:center;"><button onclick="deleteCreds(this, event)"><form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="display:none" /><fmt:message key='common.delete'/></button></td>
+      <td style="text-align:center;"><button class="delete-cred" onclick="deleteCreds(this, event)"><form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="display:none" /><fmt:message key='common.delete'/></button></td>
       <td class="warning">
         <form:hidden path="credentials[${loopStatus.index}].hash" />
         <form:errors class="warning" path="credentials[${loopStatus.index}].hash" cssStyle="width:15em"/>
