@@ -31,6 +31,7 @@ import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.Bookmark;
 import org.airsonic.player.domain.PlayQueue;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.search.IndexType;
@@ -2001,7 +2002,7 @@ public class SubsonicRESTController {
         }
 
         org.airsonic.player.domain.User user = securityService.getUserByName(username);
-        UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), password, settingsService.getAirsonicPasswordEncoder(), "airsonic", "Created via Subsonic REST API");
+        UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), password, settingsService.getAirsonicPasswordEncoder(), App.AIRSONIC, "Created via Subsonic REST API");
         securityService.createCredential(uc);
 
         writeEmptyResponse(request, response);

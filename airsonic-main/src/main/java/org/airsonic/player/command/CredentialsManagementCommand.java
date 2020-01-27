@@ -1,8 +1,8 @@
 package org.airsonic.player.command;
 
 import org.airsonic.player.domain.UserCredential;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.validator.CredentialsManagementValidators.ConsistentPasswordConfirmation;
-import org.airsonic.player.validator.CredentialsManagementValidators.CredLocationValid;
 import org.airsonic.player.validator.CredentialsManagementValidators.CredTypeForLocationValid;
 import org.airsonic.player.validator.CredentialsManagementValidators.CredTypeValid;
 import org.airsonic.player.validator.CredentialsManagementValidators.CredentialCreateChecks;
@@ -11,6 +11,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import java.time.Instant;
 import java.util.Date;
@@ -51,9 +52,8 @@ public class CredentialsManagementCommand {
         @NotBlank(groups = CredentialCreateChecks.class)
         private String confirmCredential;
 
-        @NotBlank(groups = CredentialCreateChecks.class)
-        @CredLocationValid
-        private String location;
+        @NotNull(groups = CredentialCreateChecks.class)
+        private App location;
 
         @NotBlank
         @CredTypeValid
@@ -71,7 +71,7 @@ public class CredentialsManagementCommand {
         private Set<String> displayComments = new HashSet<>();
         private boolean markedForDeletion;
 
-        public CredentialsCommand(String username, String type, String location, Instant created,
+        public CredentialsCommand(String username, String type, App location, Instant created,
                 Instant updated, Instant expiration, String comment, String hash) {
             this.username = username;
             this.type = type;
@@ -118,11 +118,11 @@ public class CredentialsManagementCommand {
             this.type = type;
         }
 
-        public String getLocation() {
+        public App getLocation() {
             return location;
         }
 
-        public void setLocation(String location) {
+        public void setLocation(App location) {
             this.location = location;
         }
 

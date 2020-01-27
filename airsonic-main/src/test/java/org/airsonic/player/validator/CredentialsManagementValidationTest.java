@@ -2,6 +2,7 @@ package org.airsonic.player.validator;
 
 import org.airsonic.player.command.CredentialsManagementCommand;
 import org.airsonic.player.command.CredentialsManagementCommand.CredentialsCommand;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.validator.CredentialsManagementValidators.CredentialCreateChecks;
 import org.airsonic.player.validator.CredentialsManagementValidators.CredentialUpdateChecks;
 import org.junit.Test;
@@ -19,7 +20,7 @@ public class CredentialsManagementValidationTest {
 
     @Test
     public void credCreation_correct() {
-        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", "airsonic", null, null, null, null, null);
+        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", App.AIRSONIC, null, null, null, null, null);
         cc.setCredential("c");
         cc.setConfirmCredential("c");
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isEmpty();
@@ -30,13 +31,13 @@ public class CredentialsManagementValidationTest {
         cc.setType("noop");
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isEmpty();
 
-        cc.setLocation("last.fm");
+        cc.setLocation(App.LASTFM);
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isEmpty();
     }
 
     @Test
     public void credCreation_emptyUser() {
-        CredentialsCommand cc = new CredentialsCommand(null, "bcrypt", "airsonic", null, null, null, null, null);
+        CredentialsCommand cc = new CredentialsCommand(null, "bcrypt", App.AIRSONIC, null, null, null, null, null);
         cc.setCredential("c");
         cc.setConfirmCredential("c");
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isNotEmpty();
@@ -47,7 +48,7 @@ public class CredentialsManagementValidationTest {
 
     @Test
     public void credCreation_mismatchedPasswords() {
-        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", "airsonic", null, null, null, null, null);
+        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", App.AIRSONIC, null, null, null, null, null);
         cc.setCredential("c");
         cc.setConfirmCredential("p");
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isNotEmpty();
@@ -55,7 +56,7 @@ public class CredentialsManagementValidationTest {
 
     @Test
     public void credCreation_emptyPassword() {
-        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", "airsonic", null, null, null, null, null);
+        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", App.AIRSONIC, null, null, null, null, null);
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isNotEmpty();
 
         cc.setCredential(" ");
@@ -65,18 +66,15 @@ public class CredentialsManagementValidationTest {
 
     @Test
     public void credCreation_unknownLocation() {
-        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", "airsonic2", null, null, null, null, null);
+        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", null, null, null, null, null, null);
         cc.setCredential("c");
         cc.setConfirmCredential("c");
-        assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isNotEmpty();
-
-        cc.setLocation(null);
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isNotEmpty();
     }
 
     @Test
     public void credCreation_unknownType() {
-        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt2", "airsonic", null, null, null, null, null);
+        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt2", App.AIRSONIC, null, null, null, null, null);
         cc.setCredential("c");
         cc.setConfirmCredential("c");
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isNotEmpty();
@@ -87,7 +85,7 @@ public class CredentialsManagementValidationTest {
 
     @Test
     public void credCreation_wrongTypeForLocation() {
-        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", "last.fm", null, null, null, null, null);
+        CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", App.LASTFM, null, null, null, null, null);
         cc.setCredential("c");
         cc.setConfirmCredential("c");
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isNotEmpty();

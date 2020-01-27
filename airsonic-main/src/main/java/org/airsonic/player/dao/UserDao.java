@@ -20,6 +20,7 @@
 package org.airsonic.player.dao;
 
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,7 +112,7 @@ public class UserDao extends AbstractDao {
         return user;
     }
 
-    public List<UserCredential> getCredentials(String username, String location) {
+    public List<UserCredential> getCredentials(String username, App location) {
         String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=:user";
         Map<String, Object> args = new HashMap<>();
         args.put("user", username);
@@ -419,7 +420,7 @@ public class UserDao extends AbstractDao {
                     rs.getString("location_username"),
                     rs.getString("credential"),
                     rs.getString("type"),
-                    rs.getString("location"),
+                    App.valueOf(rs.getString("location")),
                     rs.getString("comment"),
                     Optional.ofNullable(rs.getTimestamp("expiration")).map(x -> x.toInstant()).orElse(null),
                     rs.getTimestamp("created").toInstant(),

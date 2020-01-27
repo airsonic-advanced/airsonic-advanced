@@ -7,6 +7,7 @@ import org.airsonic.player.command.CredentialsManagementCommand.AppCredSettings;
 import org.airsonic.player.command.CredentialsManagementCommand.CredentialsCommand;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.security.GlobalSecurityConfig;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
@@ -50,10 +51,10 @@ public class CredentialsManagementController {
     @Autowired
     private SettingsService settingsService;
 
-    public static final Map<String, AppCredSettings> APPS_CREDS_SETTINGS = ImmutableMap.of(
-            "airsonic", new AppCredSettings(false, true),
-            "last.fm", new AppCredSettings(true, false),
-            "listenbrainz", new AppCredSettings(false, false));
+    public static final Map<App, AppCredSettings> APPS_CREDS_SETTINGS = ImmutableMap.of(
+            App.AIRSONIC, new AppCredSettings(false, true),
+            App.LASTFM, new AppCredSettings(true, false),
+            App.LISTENBRAINZ, new AppCredSettings(false, false));
 
     private static final Map<String, Object> ENCODER_ALIASES = ImmutableMap.of("noop", "plaintext");
 
@@ -70,22 +71,22 @@ public class CredentialsManagementController {
                 .sorted(Comparator.comparing(CredentialsCommand::getCreated))
                 .collect(Collectors.toList());
         User userInDb = securityService.getUserByName(user.getName());
-        creds = new ArrayList<>(creds);
-        creds.add(new CredentialsCommand("bla", "noop", "airsonic", null, null, null, null, "4"));
-        creds.add(new CredentialsCommand("bla", "noop", "last.fm", null, null, null, null, "$"));
-        creds.add(new CredentialsCommand("bla3", "noop", "last.fm", null, null, Instant.now(), null, "%"));
+//        creds = new ArrayList<>(creds);
+//        creds.add(new CredentialsCommand("bla", "noop", "airsonic", null, null, null, null, "4"));
+//        creds.add(new CredentialsCommand("bla", "noop", "last.fm", null, null, null, null, "$"));
+//        creds.add(new CredentialsCommand("bla3", "noop", "last.fm", null, null, Instant.now(), null, "%"));
 //        creds.add(new CredentialsCommand("bla3", "noop", "airsonic", null, null,
 //                Instant.now().plusSeconds(86400), null, "4"));
 //        creds.add(new CredentialsCommand("bla3", "bcrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
 //                null, "4"));
 //        creds.add(new CredentialsCommand("bla3", "scrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
 //                null, "5"));
-        creds.add(new CredentialsCommand("bla3", "bcrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
-                null, "6"));
-        creds.add(new CredentialsCommand("bla3", "scrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
-                null, "8"));
-        creds.add(new CredentialsCommand("bla3", "legacyhex", "last.fm", null, null, Instant.now().plusSeconds(86400),
-                null, "jk"));
+//        creds.add(new CredentialsCommand("bla3", "bcrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
+//                null, "6"));
+//        creds.add(new CredentialsCommand("bla3", "scrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
+//                null, "8"));
+//        creds.add(new CredentialsCommand("bla3", "legacyhex", "last.fm", null, null, Instant.now().plusSeconds(86400),
+//                null, "jk"));
 
         creds.parallelStream().forEach(c -> {
             if (c.getType().startsWith("legacy")) {

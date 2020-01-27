@@ -5,6 +5,7 @@ import org.airsonic.player.domain.TranscodeScheme;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserSettings;
+import org.airsonic.player.domain.UserCredential.App;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,12 +51,12 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         user.setStreamRole(true);
         user.setJukeboxRole(true);
         user.setSettingsRole(true);
-        UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", "airsonic");
+        UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC);
         userDao.createUser(user, uc);
 
         User newUser = userDao.getAllUsers().get(0);
         assertThat(newUser).isEqualToComparingFieldByField(user);
-        assertThat(userDao.getCredentials("sindre", "airsonic").get(0)).isEqualToComparingFieldByField(uc);
+        assertThat(userDao.getCredentials("sindre", App.AIRSONIC).get(0)).isEqualToComparingFieldByField(uc);
     }
 
     @Test
@@ -69,14 +70,14 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
 
         user.setAdminRole(true);
 
-        UserCredential uc = new UserCredential("muff1nman", "muff1nman", "secret", "noop", "airsonic");
+        UserCredential uc = new UserCredential("muff1nman", "muff1nman", "secret", "noop", App.AIRSONIC);
         int beforeSize = userDao.getAllUsers().size();
 
         assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> userDao.createUser(user, uc));
         assertEquals(beforeSize, userDao.getAllUsers().size());
 
         User user2 = new User("muff1nman", "noemail");
-        UserCredential uc2 = new UserCredential("muff1nman", "muff1nman", "secret", "noop", "airsonic") {
+        UserCredential uc2 = new UserCredential("muff1nman", "muff1nman", "secret", "noop", App.AIRSONIC) {
             @Override
             public String getCredential() {
                 throw new RuntimeException();
@@ -100,7 +101,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         user.setStreamRole(true);
         user.setJukeboxRole(true);
         user.setSettingsRole(true);
-        UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", "airsonic");
+        UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC);
         userDao.createUser(user, uc);
 
         user.setEmail("sindre@foo.bar");
@@ -121,7 +122,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         userDao.updateUser(user);
 
         assertThat(userDao.getAllUsers().get(0)).isEqualToComparingFieldByField(user);
-        assertThat(userDao.getCredentials("sindre", "airsonic").get(0)).isEqualToComparingFieldByField(uc);
+        assertThat(userDao.getCredentials("sindre", App.AIRSONIC).get(0)).isEqualToComparingFieldByField(uc);
     }
 
     @Test
@@ -131,7 +132,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         user.setCommentRole(true);
         user.setCoverArtRole(true);
         user.setDownloadRole(false);
-        UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", "airsonic");
+        UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC);
         userDao.createUser(user, uc);
 
         UserCredential newCreds = new UserCredential(uc);
@@ -140,13 +141,13 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         userDao.updateCredential(uc, newCreds);
 
         assertThat(userDao.getAllUsers().get(0)).isEqualToComparingFieldByField(user);
-        assertThat(userDao.getCredentials("sindre", "airsonic").get(0)).isEqualToComparingFieldByField(newCreds);
+        assertThat(userDao.getCredentials("sindre", App.AIRSONIC).get(0)).isEqualToComparingFieldByField(newCreds);
     }
 
     @Test
     public void testGetUserByName() {
         User user = new User("sindre", null);
-        userDao.createUser(user, new UserCredential("sindre", "sindre", "secret", "noop", "airsonic"));
+        userDao.createUser(user, new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC));
 
         assertThat(userDao.getUserByName("sindre", true)).isEqualToComparingFieldByField(user);
 
@@ -162,10 +163,10 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         assertEquals("Wrong number of users.", 0, userDao.getAllUsers().size());
 
         userDao.createUser(new User("sindre", null),
-                new UserCredential("sindre", "sindre", "secret", "noop", "airsonic"));
+                new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC));
         assertEquals("Wrong number of users.", 1, userDao.getAllUsers().size());
 
-        userDao.createUser(new User("bente", null), new UserCredential("bente", "bente", "secret", "noop", "airsonic"));
+        userDao.createUser(new User("bente", null), new UserCredential("bente", "bente", "secret", "noop", App.AIRSONIC));
         assertEquals("Wrong number of users.", 2, userDao.getAllUsers().size());
 
         userDao.deleteUser("sindre");
@@ -183,7 +184,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         user.setPodcastRole(true);
         user.setStreamRole(true);
         user.setSettingsRole(true);
-        userDao.createUser(user, new UserCredential("sindre", "sindre", "secret", "noop", "airsonic"));
+        userDao.createUser(user, new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC));
 
         List<String> roles = userDao.getRolesForUser("sindre");
         assertThat(roles).containsExactly("admin", "comment", "podcast", "stream", "settings");
@@ -197,7 +198,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
                 .isThrownBy(() -> userDao.updateUserSettings(new UserSettings("sindre")));
 
         userDao.createUser(new User("sindre", null),
-                new UserCredential("sindre", "sindre", "secret", "noop", "airsonic"));
+                new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC));
         assertNull("Error in getUserSettings.", userDao.getUserSettings("sindre"));
 
         UserSettings settings = new UserSettings("sindre");

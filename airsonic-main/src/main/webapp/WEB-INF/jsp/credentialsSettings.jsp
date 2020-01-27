@@ -125,10 +125,10 @@
     <td style="text-align:center;border-style:dotted" colspan=9>Airsonic Credentials</td>
   </tr>
   <c:forEach items="${command.credentials}" var="cred" varStatus="loopStatus">
-    <c:if test="${cred.location == 'airsonic'}" >
+    <c:if test="${cred.location == 'AIRSONIC'}" >
     <tr class="airsonic-cred">
       <td style="padding:0 0.5em 0 0.5em">${loopStatus.index}</td>
-      <td style="padding:0 0.5em 0 0.5em">${cred.location}</td>
+      <td style="padding:0 0.5em 0 0.5em">${cred.location.name}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.username}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.comment}</td>
       <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.created}" style="SS" /></td>
@@ -185,10 +185,10 @@
     <td style="text-align:center;border-style:dotted" colspan=9>Third-party Credentials</td>
   </tr>
   <c:forEach items="${command.credentials}" var="cred" varStatus="loopStatus">
-    <c:if test="${cred.location != 'airsonic'}" >
+    <c:if test="${cred.location != 'AIRSONIC'}" >
     <tr>
       <td style="padding:0 0.5em 0 0.5em">${loopStatus.index}</td>
-      <td style="padding:0 0.5em 0 0.5em">${cred.location}</td>
+      <td style="padding:0 0.5em 0 0.5em">${cred.location.name}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.username}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.comment}</td>
       <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.created}" style="SS" /></td>
@@ -234,7 +234,7 @@
         <td><fmt:message key="credentials.app"/></td>
         <td>
           <form:select path="location" cssStyle="width:15em">
-            <form:options items="${apps}" />
+            <form:options items="${apps}" itemLabel="name" />
           </form:select>
         </td>
         <td class="warning"><form:errors path="location" cssStyle="width:15em"/></td>

@@ -41,27 +41,6 @@ public class CredentialsManagementValidators {
 
     @Target({ ElementType.FIELD })
     @Retention(RetentionPolicy.RUNTIME)
-    @Constraint(validatedBy = CredLocationValidValidator.class)
-    @Documented
-    public @interface CredLocationValid {
-        String message() default "{credentials.invalidlocation}";
-        Class<?>[] groups() default {};
-        Class<? extends Payload>[] payload() default {};
-    }
-
-    public static class CredLocationValidValidator implements ConstraintValidator<CredLocationValid, String> {
-        @Override
-        public boolean isValid(String field, ConstraintValidatorContext context) {
-            if (field == null) {
-                return true;
-            }
-
-            return CredentialsManagementController.APPS_CREDS_SETTINGS.keySet().contains(field);
-        }
-    }
-
-    @Target({ ElementType.FIELD })
-    @Retention(RetentionPolicy.RUNTIME)
     @Constraint(validatedBy = CredTypeValidValidator.class)
     @Documented
     public @interface CredTypeValid {

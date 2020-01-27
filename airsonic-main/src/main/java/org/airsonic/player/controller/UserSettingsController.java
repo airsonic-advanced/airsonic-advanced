@@ -25,6 +25,7 @@ import org.airsonic.player.domain.TranscodeScheme;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserSettings;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
@@ -190,7 +191,7 @@ public class UserSettingsController {
         securityService.updateUser(user);
 
         if (command.isPasswordChange()) {
-            UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), command.getPassword(), settingsService.getAirsonicPasswordEncoder(), "airsonic", "Created by admin");
+            UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), command.getPassword(), settingsService.getAirsonicPasswordEncoder(), App.AIRSONIC, "Created by admin");
             securityService.createCredential(uc);
         }
 

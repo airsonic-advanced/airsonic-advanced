@@ -7,13 +7,13 @@ public class UserCredential {
     private String locationUsername;
     private String credential;
     private String type;
-    private String location;
+    private App location;
     private String comment;
     private Instant expiration;
     private Instant created;
     private Instant updated;
 
-    public UserCredential(String username, String locationUsername, String credential, String type, String location,
+    public UserCredential(String username, String locationUsername, String credential, String type, App location,
             String comment, Instant expiration, Instant created, Instant updated) {
         super();
         this.username = username;
@@ -27,7 +27,7 @@ public class UserCredential {
         this.updated = updated;
     }
 
-    public UserCredential(String username, String locationUsername, String credential, String type, String location,
+    public UserCredential(String username, String locationUsername, String credential, String type, App location,
             String comment, Instant expiration) {
         this(username, locationUsername, credential, type, location, comment, expiration, null, null);
         Instant now = Instant.now();
@@ -35,12 +35,12 @@ public class UserCredential {
         setUpdated(now);
     }
 
-    public UserCredential(String username, String locationUsername, String credential, String type, String location,
+    public UserCredential(String username, String locationUsername, String credential, String type, App location,
             String comment) {
         this(username, locationUsername, credential, type, location, comment, null);
     }
 
-    public UserCredential(String username, String locationUsername, String credential, String type, String location) {
+    public UserCredential(String username, String locationUsername, String credential, String type, App location) {
         this(username, locationUsername, credential, type, location, null);
     }
 
@@ -81,11 +81,11 @@ public class UserCredential {
         this.type = type;
     }
 
-    public String getLocation() {
+    public App getLocation() {
         return location;
     }
 
-    public void setLocation(String location) {
+    public void setLocation(App location) {
         this.location = location;
     }
 
@@ -192,5 +192,19 @@ public class UserCredential {
         } else if (!username.equals(other.username))
             return false;
         return true;
+    }
+
+    public enum App {
+        AIRSONIC("Airsonic"), LASTFM("Last.fm"), LISTENBRAINZ("Listenbrainz");
+
+        private String name;
+
+        App(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 }

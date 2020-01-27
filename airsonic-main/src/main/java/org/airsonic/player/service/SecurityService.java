@@ -25,6 +25,7 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.security.GlobalSecurityConfig;
 import org.airsonic.player.security.PasswordDecoder;
 import org.apache.commons.lang3.StringUtils;
@@ -92,7 +93,7 @@ public class SecurityService implements UserDetailsService {
 
         return new UserDetail(
                 username,
-                getCredentials(user.getUsername(), "airsonic"),
+                getCredentials(user.getUsername(), App.AIRSONIC),
                 !user.isLdapAuthenticated(),
                 true,
                 true,
@@ -139,19 +140,19 @@ public class SecurityService implements UserDetailsService {
 
     // ensure we can't delete all airsonic creds
     private Predicate<UserCredential> retainOneAirsonicCred = c ->
-            !StringUtils.equals("airsonic", c.getLocation())
+            !App.AIRSONIC.equals(c.getLocation())
             || !userDao.getCredentials(c.getUsername(), c.getLocation()).isEmpty();
 
     public boolean deleteCredential(UserCredential creds) {
         return userDao.deleteCredential(creds, retainOneAirsonicCred);
     }
 
-    public List<UserCredential> getCredentials(String username, String location) {
+    public List<UserCredential> getCredentials(String username, App location) {
         return userDao.getCredentials(username, location);
     }
 
     public boolean checkInsecureCreds() {
-        return userDao.getCredentials(User.USERNAME_ADMIN, "airsonic").parallelStream()
+        return userDao.getCredentials(User.USERNAME_ADMIN, App.AIRSONIC).parallelStream()
                 .map(UserCredential::getCredential)
                 .anyMatch(c -> StringUtils.equals(c, User.USERNAME_ADMIN))
                 || userDao.checkNonErasedCredentialsStoredInVariousTables();
@@ -261,7 +262,7 @@ public class SecurityService implements UserDetailsService {
                 user.getUsername(),
                 GlobalSecurityConfig.ENCODERS.get(defaultEncoder).encode(credential),
                 defaultEncoder,
-                "airsonic",
+                App.AIRSONIC,
                 comment);
         createUser(user, uc);
     }
