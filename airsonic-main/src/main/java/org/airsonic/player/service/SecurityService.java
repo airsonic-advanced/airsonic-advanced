@@ -147,8 +147,8 @@ public class SecurityService implements UserDetailsService {
         return userDao.deleteCredential(creds, retainOneAirsonicCred);
     }
 
-    public List<UserCredential> getCredentials(String username, App location) {
-        return userDao.getCredentials(username, location);
+    public List<UserCredential> getCredentials(String username, App... locations) {
+        return userDao.getCredentials(username, locations);
     }
 
     public boolean checkInsecureCreds() {

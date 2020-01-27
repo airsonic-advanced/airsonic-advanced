@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.dao;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.util.StringUtil;
@@ -33,6 +35,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,16 +115,9 @@ public class UserDao extends AbstractDao {
         return user;
     }
 
-    public List<UserCredential> getCredentials(String username, App location) {
-        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=:user";
-        Map<String, Object> args = new HashMap<>();
-        args.put("user", username);
-        if (location != null) {
-            sql = sql + " and location=:location";
-            args.put("location", location);
-        }
-
-        return namedQuery(sql, userCredentialRowMapper, args);
+    public List<UserCredential> getCredentials(String username, App... locations) {
+        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=:user and location in (:locations)";
+        return namedQuery(sql, userCredentialRowMapper, ImmutableMap.of("user", username, "locations", Arrays.asList(locations)));
     }
 
     public Integer getCredentialCountByType(String typeMatcher) {

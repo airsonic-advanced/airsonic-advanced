@@ -65,7 +65,7 @@ public class CredentialsManagementController {
 
     @ModelAttribute
     protected void displayForm(Authentication user, ModelMap map) {
-        List<CredentialsCommand> creds = securityService.getCredentials(user.getName(), null)
+        List<CredentialsCommand> creds = securityService.getCredentials(user.getName(), App.values())
                 .parallelStream()
                 .map(CredentialsCommand::fromUserCredential)
                 .sorted(Comparator.comparing(CredentialsCommand::getCreated))
@@ -161,7 +161,7 @@ public class CredentialsManagementController {
         }
 
         List<Boolean> failures = new ArrayList<>();
-        List<UserCredential> creds = securityService.getCredentials(user.getName(), null);
+        List<UserCredential> creds = securityService.getCredentials(user.getName(), App.values());
 
         cmc.getCredentials().forEach(c -> {
             creds.parallelStream().filter(sc -> StringUtils.equals(String.valueOf(sc.hashCode()), c.getHash()))
