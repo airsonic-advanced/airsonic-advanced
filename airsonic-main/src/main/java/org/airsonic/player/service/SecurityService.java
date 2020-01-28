@@ -47,7 +47,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -140,7 +142,7 @@ public class SecurityService implements UserDetailsService {
 
     // ensure we can't delete all airsonic creds
     private Predicate<UserCredential> retainOneAirsonicCred = c ->
-            !App.AIRSONIC.equals(c.getLocation())
+            App.AIRSONIC != c.getLocation()
             || !userDao.getCredentials(c.getUsername(), c.getLocation()).isEmpty();
 
     public boolean deleteCredential(UserCredential creds) {
@@ -149,6 +151,17 @@ public class SecurityService implements UserDetailsService {
 
     public List<UserCredential> getCredentials(String username, App... locations) {
         return userDao.getCredentials(username, locations);
+    }
+
+    public Map<App, UserCredential> getDecodableCredsForLocations(String username, App... locations) {
+        return getCredentials(username, locations).parallelStream()
+                .filter(c -> GlobalSecurityConfig.DECODABLE_ENCODERS.contains(c.getType()))
+                .filter(c -> c.getExpiration() == null || c.getExpiration().isAfter(Instant.now()))
+                .collect(Collectors.groupingByConcurrent(
+                        UserCredential::getLocation,
+                        Collectors.collectingAndThen(
+                                Collectors.maxBy(Comparator.comparing(c -> c.getUpdated())),
+                                o -> o.orElse(null))));
     }
 
     public boolean checkInsecureCreds() {
