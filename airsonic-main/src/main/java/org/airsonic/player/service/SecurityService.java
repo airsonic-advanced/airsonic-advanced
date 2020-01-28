@@ -114,13 +114,13 @@ public class SecurityService implements UserDetailsService {
                 newCreds.setType("legacynoop");
             }
         } else if (!StringUtils.equals(newCreds.getType(), oldCreds.getType()) || reencodePlaintextNewCreds) {
-            if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(oldCreds.getType())) {
+            if (reencodePlaintextNewCreds) {
+                newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
+            } else if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(oldCreds.getType())) {
                 // decode using original creds decoder
                 PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(oldCreds.getType());
                 newCreds.setCredential(decoder.decode(oldCreds.getCredential()));
                 // reencode
-                newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
-            } else if (reencodePlaintextNewCreds) {
                 newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
             }
         }

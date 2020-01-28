@@ -67,6 +67,15 @@ public class MultipleCredsMatchingAuthenticationProvider extends DaoAuthenticati
 
             throw new CredentialsExpiredException(messages.getMessage("AbstractUserDetailsAuthenticationProvider.credentialsExpired", "User credentials have expired"));
         }
+
+        // check if upgrade needed for password-based auth
+        if ("".equals(encoderSpecialization) && getPasswordEncoder().upgradeEncoding("{" + matchedCred.get().getType() + "}" + matchedCred.get().getCredential())) {
+            UserCredential upgraded = new UserCredential(matchedCred.get());
+            upgraded.setCredential(authentication.getCredentials().toString());
+            if (!securityService.updateCredentials(matchedCred.get(), upgraded, upgraded.getComment() + " | Automatically upgraded by system", true)) {
+                logger.debug("Password needs to be upgraded, but failed");
+            }
+        }
     }
 
     @Autowired
