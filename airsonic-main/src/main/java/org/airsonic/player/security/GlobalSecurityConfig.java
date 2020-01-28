@@ -228,7 +228,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
                             "/style/**", "/icons/**", "/flash/**", "/script/**",
                             "/sonos/**", "/login", "/error")
                     .permitAll()
-                    .antMatchers("/personalSettings*", "/passwordSettings*",
+                    .antMatchers("/personalSettings*",
                             "/playerSettings*", "/shareSettings*", "/credentialsSettings*")
                     .hasRole("SETTINGS")
                     .antMatchers("/generalSettings*", "/advancedSettings*", "/userSettings*",

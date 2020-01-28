@@ -30,7 +30,6 @@ public class User {
     public static final String USERNAME_GUEST = "guest";
 
     private final String username;
-    private String password;
     private String email;
     private boolean ldapAuthenticated;
     private long bytesStreamed;
@@ -65,10 +64,6 @@ public class User {
 
     public String getUsername() {
         return username;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public String getEmail() {
