@@ -58,7 +58,7 @@ public class UserDao extends AbstractDao {
             "main_year, main_bit_rate, main_duration, main_format, main_file_size, " +
             "playlist_track_number, playlist_artist, playlist_album, playlist_genre, " +
             "playlist_year, playlist_bit_rate, playlist_duration, playlist_format, playlist_file_size, " +
-            "last_fm_enabled, last_fm_username, last_fm_password, listenbrainz_enabled, listenbrainz_token, " +
+            "last_fm_enabled, listenbrainz_enabled, " +
             "transcode_scheme, show_now_playing, selected_music_folder_id, " +
             "party_mode_enabled, now_playing_allowed, avatar_scheme, system_avatar_id, changed, show_artist_info, auto_hide_play_queue, " +
             "view_as_list, default_album_list, queue_following_songs, show_side_bar, list_reload_delay, " +
@@ -301,8 +301,7 @@ public class UserDao extends AbstractDao {
                 playlist.isTrackNumberVisible(), playlist.isArtistVisible(), playlist.isAlbumVisible(),
                 playlist.isGenreVisible(), playlist.isYearVisible(), playlist.isBitRateVisible(), playlist.isDurationVisible(),
                 playlist.isFormatVisible(), playlist.isFileSizeVisible(),
-                settings.isLastFmEnabled(), settings.getLastFmUsername(), encrypt(settings.getLastFmPassword()),
-                settings.isListenBrainzEnabled(), settings.getListenBrainzToken(),
+                settings.isLastFmEnabled(), settings.isListenBrainzEnabled(),
                 settings.getTranscodeScheme().name(), settings.isShowNowPlayingEnabled(),
                 settings.getSelectedMusicFolderId(), settings.isPartyModeEnabled(), settings.isNowPlayingAllowed(),
                 settings.getAvatarScheme().name(), settings.getSystemAvatarId(), settings.getChanged(),
@@ -310,31 +309,6 @@ public class UserDao extends AbstractDao {
                 settings.isViewAsList(), settings.getDefaultAlbumList().getId(), settings.isQueueFollowingSongs(),
                 settings.isShowSideBar(), 60 /* Unused listReloadDelay */, settings.isKeyboardShortcutsEnabled(),
                 settings.getPaginationSize());
-    }
-
-    private static String encrypt(String s) {
-        if (s == null) {
-            return null;
-        }
-        try {
-            return "enc:" + StringUtil.utf8HexEncode(s);
-        } catch (Exception e) {
-            return s;
-        }
-    }
-
-    private static String decrypt(String s) {
-        if (s == null) {
-            return null;
-        }
-        if (!s.startsWith("enc:")) {
-            return s;
-        }
-        try {
-            return StringUtil.utf8HexDecode(s.substring(4));
-        } catch (Exception e) {
-            return s;
-        }
     }
 
     private void readRoles(User user) {
@@ -468,11 +442,7 @@ public class UserDao extends AbstractDao {
             settings.getPlaylistVisibility().setFileSizeVisible(rs.getBoolean(col++));
 
             settings.setLastFmEnabled(rs.getBoolean(col++));
-            settings.setLastFmUsername(rs.getString(col++));
-            settings.setLastFmPassword(decrypt(rs.getString(col++)));
-
             settings.setListenBrainzEnabled(rs.getBoolean(col++));
-            settings.setListenBrainzToken(rs.getString(col++));
 
             settings.setTranscodeScheme(TranscodeScheme.valueOf(rs.getString(col++)));
             settings.setShowNowPlayingEnabled(rs.getBoolean(col++));

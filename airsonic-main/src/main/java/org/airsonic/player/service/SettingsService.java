@@ -1144,9 +1144,6 @@ public class SettingsService {
         settings.setDefaultAlbumList(AlbumListType.RANDOM);
         settings.setLastFmEnabled(false);
         settings.setListenBrainzEnabled(false);
-        settings.setLastFmUsername(null);
-        settings.setLastFmPassword(null);
-        settings.setListenBrainzToken(null);
         settings.setChanged(Instant.now());
         settings.setPaginationSize(40);
 

@@ -197,21 +197,25 @@
     </table>
 
     <table id="lastFmTable" style="padding-left:2em">
+        <c:if test="${lastfmCredsAbsent}" >
         <tr>
-            <td><fmt:message key="personalsettings.lastfmusername"/></td>
-            <td><form:input path="lastFmUsername" size="24"/></td>
+            <td>
+              <fmt:message key="personalsettings.lastfmcredentials" var="lastfmCreds"/>
+              <fmt:message key="personalsettings.credsnotpresent"><fmt:param>${lastfmCreds}</fmt:param></fmt:message>
+            </td>
         </tr>
-        <tr>
-            <td><fmt:message key="personalsettings.lastfmpassword"/></td>
-            <td><form:password path="lastFmPassword" size="24"/></td>
-        </tr>
+        </c:if>
     </table>
 
     <table id="listenBrainzTable" style="padding-left:2em">
+        <c:if test="${listenBrainzCredsAbsent}" >
         <tr>
-            <td><fmt:message key="personalsettings.listenbrainztoken"/></td>
-            <td><form:input path="listenBrainzToken" size="36"/></td>
+            <td>
+              <fmt:message key="personalsettings.listenbrainztoken" var="listenbrainzToken"/>
+              <fmt:message key="personalsettings.credsnotpresent"><fmt:param>${listenbrainzToken}</fmt:param></fmt:message>
+            </td>
         </tr>
+        </c:if>
     </table>
 
     <p style="padding-top:1em;padding-bottom:1em">

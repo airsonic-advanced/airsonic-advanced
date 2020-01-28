@@ -215,10 +215,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         settings.getMainVisibility().setBitRateVisible(true);
         settings.getPlaylistVisibility().setYearVisible(true);
         settings.setLastFmEnabled(true);
-        settings.setLastFmUsername("last_user");
-        settings.setLastFmPassword("last_pass");
         settings.setListenBrainzEnabled(true);
-        settings.setListenBrainzToken("01234567-89ab-cdef-0123-456789abcdef");
         settings.setTranscodeScheme(TranscodeScheme.MAX_192);
         settings.setShowNowPlayingEnabled(false);
         settings.setSelectedMusicFolderId(3);
