@@ -105,15 +105,7 @@ public class SecurityService implements UserDetailsService {
 
     public boolean updateCredentials(UserCredential oldCreds, UserCredential newCreds, String comment,
             boolean reencodePlaintextNewCreds) {
-        // first check and upgrade legacy creds
-        if (StringUtils.equals(newCreds.getType(), "legacy")) {
-            if (StringUtils.startsWith(newCreds.getCredential(), "enc:")) {
-                newCreds.setType("legacyhex");
-                newCreds.setCredential(StringUtils.substring(newCreds.getCredential(), 4));
-            } else {
-                newCreds.setType("legacynoop");
-            }
-        } else if (!StringUtils.equals(newCreds.getType(), oldCreds.getType()) || reencodePlaintextNewCreds) {
+        if (!StringUtils.equals(newCreds.getType(), oldCreds.getType()) || reencodePlaintextNewCreds) {
             if (reencodePlaintextNewCreds) {
                 newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
             } else if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(oldCreds.getType())) {
