@@ -44,7 +44,7 @@ public class CredentialsManagementValidators {
     @Constraint(validatedBy = CredTypeValidValidator.class)
     @Documented
     public @interface CredTypeValid {
-        String message() default "{credentials.invalidtype}";
+        String message() default "{credentialsettings.invalidtype}";
         Class<?>[] groups() default {};
         Class<? extends Payload>[] payload() default {};
     }
@@ -65,7 +65,7 @@ public class CredentialsManagementValidators {
     @Constraint(validatedBy = CredTypeForLocationValidValidator.class)
     @Documented
     public @interface CredTypeForLocationValid {
-        String message() default "{credentials.invalidtypeforlocation}";
+        String message() default "{credentialsettings.invalidtypeforlocation}";
         Class<?>[] groups() default {};
         Class<? extends Payload>[] payload() default {};
     }
@@ -95,5 +95,41 @@ public class CredentialsManagementValidators {
     }
 
     public interface CredentialUpdateChecks {
+    }
+
+    @Target({ ElementType.FIELD })
+    @Retention(RetentionPolicy.RUNTIME)
+    @Constraint(validatedBy = EncoderTypeValidValidator.class)
+    @Documented
+    public @interface EncoderTypeValid {
+        String message() default "{credentialsettings.invalidtypeforlocation}";
+
+        Class<?>[] groups() default {};
+
+        Class<? extends Payload>[] payload() default {};
+
+        boolean decodable();
+    }
+
+    public static class EncoderTypeValidValidator implements ConstraintValidator<EncoderTypeValid, String> {
+        private boolean decodable;
+
+        @Override
+        public void initialize(EncoderTypeValid constraintAnnotation) {
+            this.decodable = constraintAnnotation.decodable();
+        }
+
+        @Override
+        public boolean isValid(String type, ConstraintValidatorContext context) {
+            if (type == null) {
+                return true;
+            }
+
+            if (decodable) {
+                return GlobalSecurityConfig.NONLEGACY_DECODABLE_ENCODERS.contains(type);
+            } else {
+                return GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS.contains(type);
+            }
+        }
     }
 }
