@@ -20,15 +20,15 @@
         event.preventDefault();  
       }
 
-      function deleteCreds(clickedButton, event) {
-        clickedButton.childNodes[0].checked=true;
+      function selectButtonCheckboxAndSubmit(clickedButton, event) {
+        clickedButton.childNodes[1].checked=true;
       }
 
       var appsSettings = ${appsCredsSettingsJson};
       var decodableEncoders = ${decodableEncodersJson};
-      var defaultDecodableEncoder = "${defaultDecodableEncoder}";
+      var defaultEncoderDecodableOnly = "${preferredEncoderDecodableOnly}";
       var nonDecodableEncoders = ${nonDecodableEncodersJson};
-      var defaultEncoder = "${defaultEncoder}";
+      var defaultEncoderNonDecodableAllowed = "${preferredEncoderNonDecodableAllowed}";
       var encoderAliases = ${encoderAliasesJson};
 
       function bindNewCredsForm() {
@@ -50,7 +50,7 @@
           // add decodable options
           el.append($("<option value='notselectable' disabled='disabled'>Decodable</option>"));
           $.each(decodableEncoders, function(k, v) {
-            if (v == defaultEncoder) {
+            if (v == defaultEncoderNonDecodableAllowed) {
               defaultOptionIncluded = true;
             }
             el.append($("<option></option>").attr("value", v).text(encoderAliases[v] != null ? encoderAliases[v] : v));
@@ -60,19 +60,20 @@
           if (appsSettings[location].nonDecodableEncodersAllowed) {
             el.append($("<option value='notselectable' disabled='disabled'>Non-Decodable</option>"));
             $.each(nonDecodableEncoders, function(k, v) {
-              if (v == defaultEncoder) {
+              if (v == defaultEncoderNonDecodableAllowed) {
                 defaultOptionIncluded = true;
               }
               el.append($("<option></option>").attr("value", v).text(encoderAliases[v] != null ? encoderAliases[v] : v));
             });
           }
 
-          el.val(defaultOptionIncluded ? defaultEncoder : defaultDecodableEncoder);
+          el.val(defaultOptionIncluded ? defaultEncoderNonDecodableAllowed : defaultEncoderDecodableOnly);
       }
 
       function bindComponentHandling() {
         bindNewCredsForm();
 
+        // need to submit all fields, so remove the disabled restriction
         $('#newCreds').submit(function(e) {
           $('#username').removeAttr('disabled');
         });
@@ -82,12 +83,20 @@
           bindNewCredsForm();
         });
 
-        // grey out last delete button
+        // grey out last delete button for airsonic creds
         if ($('.airsonic-cred').length == 1) {
-          $('.airsonic-cred .delete-cred').attr('disabled', 'disabled');
+          $('.airsonic-cred .delete-cred').prop('disabled', true);
         }
+        
+        // blur out sensitive data
+        $('.sensitive').hover(function() {
+          $(this).removeClass('blur');
+        }).mouseout(function() {
+          $(this).addClass('blur');
+        });
 
         <c:if test="${open_CreateCredsDialog}">
+        // open create dialog automatically if ordained by server
         $('#createcredsbutton').click();
         </c:if>
       }
@@ -107,22 +116,23 @@
 </c:import>
 
 <h2>Credentials Management</h2>
+<div>
 <h3>Credentials</h3>
 <form:form method="put" action="credentialsSettings.view" modelAttribute="command">
 <table id="credentialsTable">
   <tr>
     <th style="padding:0 0.5em 0 0.5em;border-style:double">ID</th>
-    <th style="padding:0 0.5em 0 0.5em;border-style:double">App</th>
-    <th style="padding:0 0.5em 0 0.5em;border-style:double">User</th>
-    <th style="padding:0 0.5em 0 0.5em;border-style:double">Comments</th>
-    <th style="padding:0 0.5em 0 0.5em;border-style:double">Created</th>
-    <th style="padding:0 0.5em 0 0.5em;border-style:double">Updated</th>
-    <th style="padding:0 0.5em 0 0.5em;border-style:double">Encoder</th>
-    <th style="padding:0 0.5em 0 0.5em;border-style:double">Expires</th>
+    <th style="padding:0 0.5em 0 0.5em;border-style:double"><fmt:message key='credentialsettings.app'/></th>
+    <th style="padding:0 0.5em 0 0.5em;border-style:double"><fmt:message key='credentialsettings.user'/></th>
+    <th style="padding:0 0.5em 0 0.5em;border-style:double"><fmt:message key='credentialsettings.comments'/></th>
+    <th style="padding:0 0.5em 0 0.5em;border-style:double"><fmt:message key='credentialsettings.created'/></th>
+    <th style="padding:0 0.5em 0 0.5em;border-style:double"><fmt:message key='credentialsettings.updated'/></th>
+    <th style="padding:0 0.5em 0 0.5em;border-style:double"><fmt:message key='credentialsettings.encoder'/></th>
+    <th style="padding:0 0.5em 0 0.5em;border-style:double"><fmt:message key='credentialsettings.expires'/><c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialsdates"/></c:import></th>
     <th style="padding:0 0.5em 0 0.5em;border-style:double"><fmt:message key='common.delete'/></th>
   </tr>
   <tr>
-    <td style="text-align:center;border-style:dotted" colspan=9>Airsonic Credentials</td>
+    <td style="text-align:center;border-style:dotted" colspan=9>Airsonic Credentials <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialsairsonic"/></c:import></td>
   </tr>
   <c:forEach items="${command.credentials}" var="cred" varStatus="loopStatus">
     <c:if test="${cred.location == 'AIRSONIC'}" >
@@ -166,7 +176,9 @@
         </form:select>
       </td>
       <td><form:input type="datetime-local" path="credentials[${loopStatus.index}].expiration" /></td>
-      <td style="text-align:center;"><button class="delete-cred" onclick="deleteCreds(this, event)"><form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="display:none" /><fmt:message key='common.delete'/></button></td>
+      <td style="text-align:center;">
+        <form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" class="delete-cred"/>
+      </td>
       <td class="warning">
         <form:hidden path="credentials[${loopStatus.index}].hash" />
         <form:errors class="warning" path="credentials[${loopStatus.index}].hash" cssStyle="width:15em"/>
@@ -176,13 +188,13 @@
   </c:forEach>
   <c:if test="${ldapAuthEnabledForUser}">
     <tr>
-      <td class="warning" style="text-align:center" colspan=9><i><fmt:message key="credentials.ldapauthenabledforuser"/></i></td>
+      <td class="warning" style="text-align:center" colspan=9><i><fmt:message key="credentialsettings.ldapauthenabledforuser"/></i></td>
     </tr>
   </c:if>
   <tr><td> </td></tr>
 
   <tr>
-    <td style="text-align:center;border-style:dotted" colspan=9>Third-party Credentials</td>
+    <td style="text-align:center;border-style:dotted" colspan=9>Third-party Credentials <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialsthirdparty"/></c:import></td>
   </tr>
   <c:forEach items="${command.credentials}" var="cred" varStatus="loopStatus">
     <c:if test="${cred.location != 'AIRSONIC'}" >
@@ -211,7 +223,9 @@
         </form:select>
       </td>
       <td><form:input type="datetime-local" path="credentials[${loopStatus.index}].expiration" /></td>
-      <td style="text-align:center;"><button class="delete-cred" onclick="deleteCreds(this, event)"><form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" cssStyle="display:none" /><fmt:message key='common.delete'/></button></td>
+      <td style="text-align:center;">
+        <form:checkbox path="credentials[${loopStatus.index}].markedForDeletion" class="delete-cred" />
+      </td>
       <td class="warning">
         <form:hidden path="credentials[${loopStatus.index}].hash" />
         <form:errors class="warning" path="credentials[${loopStatus.index}].hash" cssStyle="width:15em"/>
@@ -222,10 +236,11 @@
 </table>
 <p style="padding-top:1em;padding-bottom:1em">
     <input type="submit" value="<fmt:message key='common.save'/>" style="margin-right:0.3em"/>
-    <input type="button" id="createcredsbutton" value="<fmt:message key='common.create'/>" onclick="createNewCredsFnc(event)"/>
+    <input type="button" id="createcredsbutton" value="<fmt:message key='credentialsettings.addcredentials'/>" onclick="createNewCredsFnc(event)"/>
     <input type="reset" value="<fmt:message key='common.cancel'/>" />
 </p>
 </form:form>
+</div>
 
 <div id="createNewCreds" style="display:none">
   <form:form method="post" action="credentialsSettings.view" modelAttribute="newCreds">
@@ -250,7 +265,6 @@
         <td><fmt:message key="credentials.encoder"/></td>
         <td>
           <form:select path="type" cssStyle="width:15em"></form:select>
-          <c:import url="helpToolTip.jsp"><c:param name="topic" value="language"/></c:import>
           <td class="warning"><form:errors path="type" cssStyle="width:15em"/></td>
         </td>
       </tr>
@@ -271,7 +285,7 @@
         <td><fmt:message key="credentials.expiration"/></td>
         <td>
           <form:input type="datetime-local" path="expiration" />
-          <c:import url="helpToolTip.jsp"><c:param name="topic" value="language"/></c:import>
+          <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialsdates"/></c:import>
         </td>
       </tr>
     </table>
@@ -279,21 +293,160 @@
   </form:form>
 </div>
 
-<h3>Notes</h3>
-Airsonic supports two primary means of its own authentication for clients. Clients can send either the password openly (<code>p</code>), or can send an md5-hash of the password along with the salt (<code>t+s</code>).<br />
-By default, new passwords are stored in their hashed form, which is secure, cannot be decoded to the original password, and works for the <code>p</code> auth mechanism.<br />
-For technical reasons, supporting <code>t+s</code> method, however, requires storing the decodable non-hashed password itself, which may be less secure (especially if stored in an open form).<br />
-Therefore, store Airsonic passwords in a decodable manner ONLY if your client requires <code>t+s</code> auth to work.<br />
-<h4>Note for legacy passwords:</h4>
-Legacy passwords were stored in a decodable form.<br />
-You should migrate your legacy passwords to a non-decodable hashed form or confirm that you want them to remain in a decodable form (for <code>t+s</code> style auth).<br />
-All credentials that have not been explicitly migrated or confirmed WILL BE force-migrated to a nondecodable form in future versions.<br />
-<h4>Note for third-party credentials:</h4>
-These MUST be stored in a decodable format for Airsonic to send to third-parties.<br />
-<h4>Note for encryption:</h4>
-Airsonic will use the encryption keys provided, otherwise it will generate keys and use those. Make sure the keys are secured.<br />
-<h4>Note for entering dates</h4>
-Expiration dates may be entered as yyyy-MM-dd'T'HH:mm (e.g. 2025-01-15T23:03) if browser doesn't show a datetime-picker
+<c:if test="${adminRole}">
+<div>
+  <h3><fmt:message key='credentialsettings.admincontrols'/></h3>
+  <form:form method="post" action="credentialsSettings/admin" modelAttribute="adminControls">
+
+    <table style="white-space:nowrap" class="indent">
+      <tr><th style="text-align:left"><fmt:message key='credentialsettings.systemchecks'/></th></tr>
+      <c:if test="${adminControls.credsStoredInLegacyTables}">
+      <tr>
+        <td><fmt:message key="credentialsettings.storedinlegacytables"/> <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialslegacytables"/></c:import></td>
+        <td>
+          <button id="purgeLegacyTablesButton" onclick="selectButtonCheckboxAndSubmit(this, event)">
+            <form:checkbox path="purgeCredsInLegacyTables" cssStyle="display:none" />
+            <fmt:message key='common.delete'/>
+          </button>
+        </td>
+      </tr>
+      </c:if>
+      <c:if test="${adminControls.legacyCredsPresent}">
+      <tr>
+        <td><fmt:message key="credentialsettings.legacycredspresent"/><c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialslegacypasswords"/></c:import></td>
+        <td>
+          <button onclick="selectButtonCheckboxAndSubmit(this, event)">
+            <form:checkbox path="migrateLegacyCredsToNonLegacyDefault" cssStyle="display:none" />
+            <fmt:message key='credentialsettings.adminmigratelegacytononlegacydefault'/>
+          </button>
+        </td>
+        <td>
+          <button onclick="selectButtonCheckboxAndSubmit(this, event)">
+            <form:checkbox path="migrateLegacyCredsToNonLegacyDecodableOnly" cssStyle="display:none" />
+            <fmt:message key='credentialsettings.adminmigratelegacytononlegacydecodableonly'/>
+          </button>
+        </td>
+      </tr>
+      </c:if>
+      <c:if test="${adminControls.openCredsPresent}">
+      <tr>
+        <td colspan=4 class="warning"><fmt:message key="credentialsettings.opencredspresent"/></td>
+      </tr>
+      </c:if>
+      <c:if test="${adminControls.defaultAdminCredsPresent}">
+      <tr>
+        <td colspan=4 class="warning"><fmt:message key="credentialsettings.defaultadmincredspresent"/></td>
+      </tr>
+      </c:if>
+    </table>
+
+    <table style="white-space:nowrap" class="indent">
+      <tr><th style="text-align:left"><fmt:message key='credentialsettings.encoders'/></th></tr>
+      <tr>
+        <td><fmt:message key="credentialsettings.nondecodableencoder"/></td>
+        <td>
+          <form:select path="nonDecodableEncoder" style="width:12em">
+            <c:forEach items="${nonDecodableEncoders}" var="migratableType">
+              <c:set var="displayLabelValue" value="${encoderAliases[migratableType] != null ? encoderAliases[migratableType] : migratableType}"/>
+              <c:if test="${migratableType != nonDecodableEncoder}" >
+                <form:option value="${migratableType}" label="${displayLabelValue}"/>
+              </c:if>
+              <c:if test="${migratableType == nonDecodableEncoder}" >
+                <form:option selected="selected" value="${migratableType}" label="${displayLabelValue}"/>
+              </c:if>
+            </c:forEach>
+          </form:select>
+        </td>
+        <td>
+          <button onclick="selectButtonCheckboxAndSubmit(this, event)">
+            <form:checkbox path="nonDecodableEncoderChanged" cssStyle="display:none" />
+            <fmt:message key='common.save'/>
+          </button>
+        </td>
+        <td class="warning">
+          <form:errors path="nonDecodableEncoder"/>
+        </td>
+      </tr>
+      <tr>
+        <td><fmt:message key="credentialsettings.decodableencoder"/></td>
+        <td>
+          <form:select path="decodableEncoder" style="width:12em">
+            <c:forEach items="${decodableEncoders}" var="migratableType">
+              <c:set var="displayLabelValue" value="${encoderAliases[migratableType] != null ? encoderAliases[migratableType] : migratableType}"/>
+              <c:if test="${migratableType != decodableEncoder}" >
+                <form:option value="${migratableType}" label="${displayLabelValue}"/>
+              </c:if>
+              <c:if test="${migratableType == decodableEncoder}" >
+                <form:option selected="selected" value="${migratableType}" label="${displayLabelValue}"/>
+              </c:if>
+            </c:forEach>
+          </form:select>
+        </td>
+        <td>
+          <button onclick="selectButtonCheckboxAndSubmit(this, event)">
+            <form:checkbox path="decodableEncoderChanged" cssStyle="display:none" />
+            <fmt:message key='common.save'/>
+          </button>
+        </td>
+        <td class="warning">
+          <form:errors path="decodableEncoder"/>
+        </td>
+      </tr>
+      <tr>
+        <td><label for="preferNonDecodableCheckbox"><fmt:message key="credentialsettings.prefernondecodablepasswords"/>  </label></td>
+        <td style="text-align:center;">
+          <form:checkbox id="preferNonDecodableCheckbox" path="preferNonDecodable" />
+        </td>
+        <td>
+          <button onclick="selectButtonCheckboxAndSubmit(this, event)">
+            <form:checkbox path="nonDecodablePreferenceChanged" cssStyle="display:none" />
+            <fmt:message key='common.save'/>
+          </button>
+        </td>
+      </tr>
+      
+      <tr><td>&nbsp;</td></tr>
+
+      <tr><th style="text-align:left">Keys</th></tr>
+      <tr><td colspan=3><fmt:message key='credentialsettings.keepkeyssafe'/></td></tr>
+      <tr>
+        <td>JWT Key</td>
+        <td>
+          <form:input path="jwtKey" style="width:15em" class="sensitive blur"/>
+          <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialsjwtkey"/></c:import>
+        </td>
+        <td>
+          <button onclick="selectButtonCheckboxAndSubmit(this, event)">
+            <form:checkbox path="jwtKeyChanged" cssStyle="display:none" />
+            <fmt:message key='common.save'/>
+          </button>
+        </td>
+      </tr>
+      <tr>
+        <td>Encryption Key Password</td>
+        <td>
+          <form:input path="encryptionKey" style="width:15em" class="sensitive blur"/>
+          <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialsencryptionkey"/></c:import>
+        </td>
+        <td>
+          <button onclick="selectButtonCheckboxAndSubmit(this, event)">
+            <form:checkbox path="encryptionKeyChanged" cssStyle="display:none" />
+            <fmt:message key='common.save'/>
+          </button>
+        </td>
+      </tr>
+      <tr>
+        <td>Encryption Key Salt</td>
+        <td colspan=2 style="font-size:90%;" class="sensitive blur">
+          ${adminControls.encryptionKeySalt}
+        </td>
+      </tr>
+    </table>
+
+    <form:errors class="warning" cssStyle="width:15em"/>
+  </form:form>
+</div>
+</c:if>
 
 <c:if test="${settings_reload}">
     <script language="javascript" type="text/javascript">
