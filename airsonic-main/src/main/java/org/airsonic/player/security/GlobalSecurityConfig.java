@@ -3,6 +3,7 @@ package org.airsonic.player.security;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.io.BaseEncoding;
 
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.SettingsService;
@@ -25,6 +26,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.keygen.KeyGenerators;
 import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
@@ -35,6 +37,7 @@ import org.springframework.security.web.context.request.async.WebAsyncManagerInt
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,7 +56,8 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
     static final String DEVELOPMENT_REMEMBER_ME_KEY = "airsonic";
 
     @SuppressWarnings("deprecation")
-    public static final Map<String, PasswordEncoder> ENCODERS = ImmutableMap.<String, PasswordEncoder>builderWithExpectedSize(18)
+    public static final Map<String, PasswordEncoder> ENCODERS = new HashMap<>(ImmutableMap
+            .<String, PasswordEncoder>builderWithExpectedSize(19)
             .put("bcrypt", new BCryptPasswordEncoder())
             .put("ldap", new org.springframework.security.crypto.password.LdapShaPasswordEncoder())
             .put("MD4", new org.springframework.security.crypto.password.Md4PasswordEncoder())
@@ -67,10 +71,12 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
             // base decodable encoders
             .put("noop", new PasswordEncoderDecoderWrapper(org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance(), p -> p))
             .put("hex", HexPasswordEncoder.getInstance())
+            .put("encrypted-AES-GCM", new AesGcmPasswordEncoder()) // placeholder (real instance created below)
 
             // base decodable encoders that rely on salt+token being passed in (not stored in db with this type)
             .put("noop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p))
             .put("hex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()))
+            .put("encrypted-AES-GCM" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(new AesGcmPasswordEncoder())) // placeholder (real instance created below)
 
             // TODO: legacy marked base encoders, to be upgraded to one-way formats at breaking version change
             .put("legacynoop", new PasswordEncoderDecoderWrapper(org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance(), p -> p))
@@ -78,10 +84,10 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
 
             .put("legacynoop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p))
             .put("legacyhex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()))
-            .build();
+            .build());
 
     public static final Set<String> OPENTEXT_ENCODERS = ImmutableSet.of("noop", "hex", "legacynoop", "legacyhex");
-    public static final Set<String> DECODABLE_ENCODERS = ImmutableSet.<String>builder().addAll(OPENTEXT_ENCODERS).build();
+    public static final Set<String> DECODABLE_ENCODERS = ImmutableSet.<String>builder().addAll(OPENTEXT_ENCODERS).add("encrypted-AES-GCM").build();
     public static final Set<String> NONLEGACY_ENCODERS = ENCODERS.keySet().stream()
             .filter(e -> !StringUtils.containsAny(e, "legacy", SALT_TOKEN_MECHANISM_SPECIALIZATION))
             .collect(Collectors.toSet());
@@ -102,7 +108,43 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new DelegatingPasswordEncoder(settingsService.getAirsonicPasswordEncoder(), ENCODERS);
+        boolean generatedKeys = false;
+
+        String encryptionKeyPass = settingsService.getEncryptionPassword();
+        if (StringUtils.isBlank(encryptionKeyPass)) {
+            LOG.warn("Generating new encryption key password");
+            encryptionKeyPass = JWTSecurityService.generateKey();
+            settingsService.setEncryptionPassword(encryptionKeyPass);
+            generatedKeys = true;
+        }
+
+        String encryptionKeySalt = settingsService.getEncryptionSalt();
+        if (StringUtils.isBlank(encryptionKeySalt)) {
+            LOG.warn("Generating new encryption key salt");
+            encryptionKeySalt = BaseEncoding.base16().encode(KeyGenerators.secureRandom(16).generateKey());
+            settingsService.setEncryptionSalt(encryptionKeySalt);
+            generatedKeys = true;
+        }
+
+        if (generatedKeys) {
+            settingsService.save();
+        }
+
+        AesGcmPasswordEncoder encoder = new AesGcmPasswordEncoder(encryptionKeyPass, encryptionKeySalt);
+        ENCODERS.put("encrypted-AES-GCM", encoder);
+        ENCODERS.put("encrypted-AES-GCM" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(encoder));
+
+        return new DelegatingPasswordEncoder(settingsService.getNonDecodablePasswordEncoder(), ENCODERS) {
+            @Override
+            public boolean upgradeEncoding(String prefixEncodedPassword) {
+                PasswordEncoder encoder = ENCODERS.get(StringUtils.substringBetween(prefixEncodedPassword, "{", "}"));
+                if (encoder != null) {
+                    return encoder.upgradeEncoding(StringUtils.substringAfter(prefixEncodedPassword, "}"));
+                }
+
+                return false;
+            }
+        };
     }
 
     @EventListener
