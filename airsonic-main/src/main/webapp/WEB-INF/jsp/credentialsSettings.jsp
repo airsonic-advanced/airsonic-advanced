@@ -135,7 +135,7 @@
     <td style="text-align:center;border-style:dotted" colspan=9>Airsonic Credentials <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialsairsonic"/></c:import></td>
   </tr>
   <c:forEach items="${command.credentials}" var="cred" varStatus="loopStatus">
-    <c:if test="${cred.location == 'AIRSONIC'}" >
+    <c:if test="${cred.location == 'AIRSONIC'}">
     <tr class="airsonic-cred">
       <td style="padding:0 0.5em 0 0.5em">${loopStatus.index}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.location.name}</td>
@@ -299,7 +299,7 @@
   <form:form method="post" action="credentialsSettings/admin" modelAttribute="adminControls">
 
     <table style="white-space:nowrap" class="indent">
-      <tr><th style="text-align:left"><fmt:message key='credentialsettings.systemchecks'/></th></tr>
+      <tr><th colspan=4 style="text-align:left"><fmt:message key='credentialsettings.systemchecks'/></th></tr>
       <c:if test="${adminControls.credsStoredInLegacyTables}">
       <tr>
         <td><fmt:message key="credentialsettings.storedinlegacytables"/> <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialslegacytables"/></c:import></td>

@@ -44,9 +44,8 @@ public class MultipleCredsMatchingAuthenticationProvider extends DaoAuthenticati
 
         UserDetail userDetail = (UserDetail) userDetails;
 
-        Optional<UserCredential> matchedCred = userDetail.getCredentials().parallelStream().filter(
-                c -> getPasswordEncoder().matches(presentedPassword,
-                        "{" + c.getType() + encoderSpecialization + "}" + c.getCredential()))
+        Optional<UserCredential> matchedCred = userDetail.getCredentials().parallelStream()
+                .filter(c -> getPasswordEncoder().matches(presentedPassword, "{" + c.getType() + encoderSpecialization + "}" + c.getCredential()))
                 .findAny();
 
         if (matchedCred.isEmpty()) {
