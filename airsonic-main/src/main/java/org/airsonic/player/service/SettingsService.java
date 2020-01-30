@@ -113,7 +113,11 @@ public class SettingsService {
     private static final String KEY_SONOS_SERVICE_ID = "SonosServiceId";
     private static final String KEY_JWT_KEY = "JWTKey";
     private static final String KEY_REMEMBER_ME_KEY = "RememberMeKey";
-    private static final String KEY_AIRSONIC_PASSWORD_ENCODER = "AirsonicPasswordEncoder";
+    private static final String KEY_ENCRYPTION_PASSWORD = "EncryptionKeyPassword";
+    private static final String KEY_ENCRYPTION_SALT = "EncryptionKeySalt";
+    private static final String KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER = "DecodablePasswordEncoder";
+    private static final String KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER = "NonDecodablePasswordEncoder";
+    private static final String KEY_PREFER_NONDECODABLE_PASSWORDS = "PreferNonDecodablePasswords";
 
     private static final String KEY_SMTP_SERVER = "SmtpServer";
     private static final String KEY_SMTP_ENCRYPTION = "SmtpEncryption";
@@ -199,7 +203,9 @@ public class SettingsService {
     private static final String DEFAULT_EXPORT_PLAYLIST_FORMAT = "m3u";
     private static final boolean DEFAULT_IGNORE_SYMLINKS = false;
     private static final String DEFAULT_EXCLUDE_PATTERN_STRING = null;
-    private static final String DEFAULT_AIRSONIC_PASSWORD_ENCODER = "bcrypt";
+    private static final String DEFAULT_PREFERRED_NONDECODABLE_PASSWORD_ENCODER = "bcrypt";
+    private static final String DEFAULT_PREFERRED_DECODABLE_PASSWORD_ENCODER = "encrypted-AES-GCM";
+    private static final boolean DEFAULT_PREFER_NONDECODABLE_PASSWORDS = true;
 
     private static final String DEFAULT_SMTP_SERVER = null;
     private static final String DEFAULT_SMTP_ENCRYPTION = "None";
@@ -1440,12 +1446,44 @@ public class SettingsService {
         setString(KEY_JWT_KEY, jwtKey);
     }
 
-    public String getAirsonicPasswordEncoder() {
-        return getString(KEY_AIRSONIC_PASSWORD_ENCODER, DEFAULT_AIRSONIC_PASSWORD_ENCODER);
+    public String getEncryptionPassword() {
+        return getString(KEY_ENCRYPTION_PASSWORD, null);
     }
 
-    public void setAirsonicPasswordEncoder(String encoder) {
-        setString(KEY_AIRSONIC_PASSWORD_ENCODER, encoder);
+    public void setEncryptionPassword(String key) {
+        setString(KEY_ENCRYPTION_PASSWORD, key);
+    }
+
+    public String getEncryptionSalt() {
+        return getString(KEY_ENCRYPTION_SALT, null);
+    }
+
+    public void setEncryptionSalt(String salt) {
+        setString(KEY_ENCRYPTION_SALT, salt);
+    }
+
+    public String getDecodablePasswordEncoder() {
+        return getString(KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER, DEFAULT_PREFERRED_DECODABLE_PASSWORD_ENCODER);
+    }
+
+    public void setDecodablePasswordEncoder(String encoder) {
+        setString(KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER, encoder);
+    }
+
+    public String getNonDecodablePasswordEncoder() {
+        return getString(KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER, DEFAULT_PREFERRED_NONDECODABLE_PASSWORD_ENCODER);
+    }
+
+    public void setNonDecodablePasswordEncoder(String encoder) {
+        setString(KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER, encoder);
+    }
+
+    public boolean getPreferNonDecodablePasswords() {
+        return getBoolean(KEY_PREFER_NONDECODABLE_PASSWORDS, DEFAULT_PREFER_NONDECODABLE_PASSWORDS);
+    }
+
+    public void setPreferNonDecodablePasswords(boolean preference) {
+        setBoolean(KEY_PREFER_NONDECODABLE_PASSWORDS, preference);
     }
 
     public void setEnvironment(Environment env) {
