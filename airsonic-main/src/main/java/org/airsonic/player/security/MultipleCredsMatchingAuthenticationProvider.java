@@ -48,7 +48,7 @@ public class MultipleCredsMatchingAuthenticationProvider extends DaoAuthenticati
                 .filter(c -> getPasswordEncoder().matches(presentedPassword, "{" + c.getType() + encoderSpecialization + "}" + c.getCredential()))
                 .findAny();
 
-        if (matchedCred.isEmpty()) {
+        if (!matchedCred.isPresent()) {
             logger.debug("Authentication failed: password does not match any stored values");
 
             throw new BadCredentialsException(messages.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
