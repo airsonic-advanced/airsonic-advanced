@@ -69,41 +69,27 @@ public class CredentialsManagementController {
         List<CredentialsCommand> creds = securityService.getCredentials(user.getName(), App.values())
                 .parallelStream()
                 .map(CredentialsCommand::fromUserCredential)
+                .map(c -> {
+                    if (c.getType().startsWith("legacy")) {
+                        c.addDisplayComment("migratecred");
+                    }
+
+                    if (GlobalSecurityConfig.OPENTEXT_ENCODERS.contains(c.getType())) {
+                        c.addDisplayComment("opentextcred");
+                    }
+
+                    if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(c.getType())) {
+                        c.addDisplayComment("decodablecred");
+                    } else {
+                        c.addDisplayComment("nondecodablecred");
+                    }
+
+                    return c;
+                })
                 .sorted(Comparator.comparing(CredentialsCommand::getCreated))
                 .collect(Collectors.toList());
+
         User userInDb = securityService.getUserByName(user.getName());
-//        creds = new ArrayList<>(creds);
-//        creds.add(new CredentialsCommand("bla", "noop", "airsonic", null, null, null, null, "4"));
-//        creds.add(new CredentialsCommand("bla", "noop", "last.fm", null, null, null, null, "$"));
-//        creds.add(new CredentialsCommand("bla3", "noop", "last.fm", null, null, Instant.now(), null, "%"));
-//        creds.add(new CredentialsCommand("bla3", "noop", "airsonic", null, null,
-//                Instant.now().plusSeconds(86400), null, "4"));
-//        creds.add(new CredentialsCommand("bla3", "bcrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
-//                null, "4"));
-//        creds.add(new CredentialsCommand("bla3", "scrypt", "airsonic", null, null, Instant.now().plusSeconds(86400),
-//                null, "5"));
-//        creds.add(new CredentialsCommand("bla3", "bcrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
-//                null, "6"));
-//        creds.add(new CredentialsCommand("bla3", "scrypt", "last.fm", null, null, Instant.now().plusSeconds(86400),
-//                null, "8"));
-//        creds.add(new CredentialsCommand("bla3", "legacyhex", "last.fm", null, null, Instant.now().plusSeconds(86400),
-//                null, "jk"));
-
-        creds.parallelStream().forEach(c -> {
-            if (c.getType().startsWith("legacy")) {
-                c.addDisplayComment("migratecred");
-            }
-
-            if (GlobalSecurityConfig.OPENTEXT_ENCODERS.contains(c.getType())) {
-                c.addDisplayComment("opentextcred");
-            }
-
-            if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(c.getType())) {
-                c.addDisplayComment("decodablecred");
-            } else {
-                c.addDisplayComment("nondecodablecred");
-            }
-        });
 
         // for updates/deletes/read
         map.addAttribute("command", new CredentialsManagementCommand(creds));

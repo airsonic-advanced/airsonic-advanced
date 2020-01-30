@@ -7,7 +7,7 @@
 
     <script type="text/javascript" language="javascript">
       function createNewCredsFnc(event) {
-        $("#createNewCreds").dialog({resizable: true, width: 600, title: "<fmt:message key='credentials.create'/>", position: { my: "top", at: "top", of: window },
+        $("#createNewCreds").dialog({resizable: true, width: 600, title: "<fmt:message key='credentialsettings.addcredentials'/>", position: { my: "top", at: "top", of: window },
             buttons: {
                 "<fmt:message key='common.cancel'/>": function() {
                     $(this).dialog("close");
@@ -246,7 +246,7 @@
   <form:form method="post" action="credentialsSettings.view" modelAttribute="newCreds">
     <table style="white-space:nowrap" class="indent">
       <tr>
-        <td><fmt:message key="credentials.app"/></td>
+        <td><fmt:message key="credentialsettings.app"/></td>
         <td>
           <form:select path="location" cssStyle="width:15em">
             <form:options items="${apps}" itemLabel="name" />
@@ -262,7 +262,7 @@
       </tr>
 
       <tr>
-        <td><fmt:message key="credentials.encoder"/></td>
+        <td><fmt:message key="credentialsettings.encoder"/></td>
         <td>
           <form:select path="type" cssStyle="width:15em"></form:select>
           <td class="warning"><form:errors path="type" cssStyle="width:15em"/></td>
@@ -282,7 +282,7 @@
       </tr>
 
       <tr>
-        <td><fmt:message key="credentials.expiration"/></td>
+        <td><fmt:message key="credentialsettings.expires"/></td>
         <td>
           <form:input type="datetime-local" path="expiration" />
           <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialsdates"/></c:import>
