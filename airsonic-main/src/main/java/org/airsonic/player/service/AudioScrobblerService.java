@@ -27,6 +27,8 @@ import org.airsonic.player.security.PasswordDecoder;
 import org.airsonic.player.domain.UserSettings;
 import org.airsonic.player.service.scrobbler.LastFMScrobbler;
 import org.airsonic.player.service.scrobbler.ListenBrainzScrobbler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +42,7 @@ import java.util.Map;
  */
 @Service
 public class AudioScrobblerService {
+    private static final Logger LOG = LoggerFactory.getLogger(AudioScrobblerService.class);
 
     private LastFMScrobbler lastFMScrobbler;
     private ListenBrainzScrobbler listenBrainzScrobbler;
@@ -50,7 +53,12 @@ public class AudioScrobblerService {
 
     private static final String decode(UserCredential uc) {
         PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(uc.getType());
-        return decoder.decode(uc.getCredential());
+        try {
+            return decoder.decode(uc.getCredential());
+        } catch (Exception e) {
+            LOG.warn("Could not decode credentials for user {}, app {}", uc.getUsername(), uc.getLocation(), e);
+            return null;
+        }
     }
 
     /**

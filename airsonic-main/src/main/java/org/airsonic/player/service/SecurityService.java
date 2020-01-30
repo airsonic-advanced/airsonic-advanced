@@ -109,11 +109,17 @@ public class SecurityService implements UserDetailsService {
             if (reencodePlaintextNewCreds) {
                 newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
             } else if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(oldCreds.getType())) {
-                // decode using original creds decoder
-                PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(oldCreds.getType());
-                newCreds.setCredential(decoder.decode(oldCreds.getCredential()));
-                // reencode
-                newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
+                try {
+                    // decode using original creds decoder
+                    PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(oldCreds.getType());
+                    newCreds.setCredential(decoder.decode(oldCreds.getCredential()));
+                    // reencode
+                    newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
+                } catch (Exception e) {
+                    LOG.warn("Could not update credentials for user {}", oldCreds.getUsername(), e);
+                    // Do not try and save it
+                    return false;
+                }
             }
         }
 

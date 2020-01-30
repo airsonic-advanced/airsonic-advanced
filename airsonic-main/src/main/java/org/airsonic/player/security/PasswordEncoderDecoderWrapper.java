@@ -17,7 +17,7 @@ public class PasswordEncoderDecoderWrapper implements PasswordEncoder, PasswordD
     }
 
     @Override
-    public String decode(String encoded) {
+    public String decode(String encoded) throws Exception {
         return decoder.decode(encoded);
     }
 
