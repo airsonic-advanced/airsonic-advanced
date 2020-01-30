@@ -2002,7 +2002,7 @@ public class SubsonicRESTController {
         }
 
         org.airsonic.player.domain.User user = securityService.getUserByName(username);
-        UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), password, settingsService.getAirsonicPasswordEncoder(), App.AIRSONIC, "Created via Subsonic REST API");
+        UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), password, securityService.getPreferredPasswordEncoder(true), App.AIRSONIC, "Created via Subsonic REST API");
         securityService.createCredential(uc);
 
         writeEmptyResponse(request, response);

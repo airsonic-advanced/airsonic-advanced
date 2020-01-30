@@ -120,6 +120,11 @@ public class UserDao extends AbstractDao {
         return namedQuery(sql, userCredentialRowMapper, ImmutableMap.of("user", username, "locations", Arrays.asList(locations)));
     }
 
+    public List<UserCredential> getCredentialsByType(String typeMatcher) {
+        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where type like ?";
+        return query(sql, userCredentialRowMapper, typeMatcher);
+    }
+
     public Integer getCredentialCountByType(String typeMatcher) {
         String sql = "select count(*) from user_credentials where type like ?";
         return queryForInt(sql, 0, typeMatcher);
@@ -170,7 +175,7 @@ public class UserDao extends AbstractDao {
         return deleteSuccess;
     }
 
-    public boolean checkNonErasedCredentialsStoredInVariousTables() {
+    public boolean checkCredentialsStoredInLegacyTables() {
         String sql = "select count(*) from " + getUserTable() + " where password!=?";
         if (queryForInt(sql, 0, "") > 0) {
             return true;
@@ -182,6 +187,16 @@ public class UserDao extends AbstractDao {
         }
 
         return false;
+    }
+
+    public boolean purgeCredentialsStoredInLegacyTables() {
+        String sql = "update " + getUserTable() + " set password=''";
+        int updated = update(sql);
+
+        sql = "update user_settings set last_fm_username=NULL, last_fm_password=NULL, listenbrainz_token=NULL";
+        updated += update(sql);
+
+        return updated != 0;
     }
 
     /**

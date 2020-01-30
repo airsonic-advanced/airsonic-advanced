@@ -50,7 +50,7 @@ public class LoginController {
         map.put("brand", settingsService.getBrand());
         map.put("loginMessage", settingsService.getLoginMessage());
 
-        if (securityService.checkInsecureCreds()) {
+        if (securityService.checkDefaultAdminCredsPresent()) {
             map.put("insecure", true);
         }
 

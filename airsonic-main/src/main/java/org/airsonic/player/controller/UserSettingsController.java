@@ -191,7 +191,7 @@ public class UserSettingsController {
         securityService.updateUser(user);
 
         if (command.isPasswordChange()) {
-            UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), command.getPassword(), settingsService.getAirsonicPasswordEncoder(), App.AIRSONIC, "Created by admin");
+            UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), command.getPassword(), securityService.getPreferredPasswordEncoder(true), App.AIRSONIC, "Created by admin");
             securityService.createCredential(uc);
         }
 

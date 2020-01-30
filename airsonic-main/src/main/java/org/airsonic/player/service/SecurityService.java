@@ -46,6 +46,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -162,21 +163,58 @@ public class SecurityService implements UserDetailsService {
                                 o -> o.orElse(null))));
     }
 
-    public boolean checkInsecureCreds() {
+    public boolean checkDefaultAdminCredsPresent() {
         return userDao.getCredentials(User.USERNAME_ADMIN, App.AIRSONIC).parallelStream()
-                .map(UserCredential::getCredential)
-                .anyMatch(c -> StringUtils.equals(c, User.USERNAME_ADMIN))
-                || userDao.checkNonErasedCredentialsStoredInVariousTables();
+                .anyMatch(c -> GlobalSecurityConfig.ENCODERS.get(c.getType()).matches(User.USERNAME_ADMIN, c.getCredential()));
     }
 
-    public boolean checkCredsStoredOpenly() {
+    public boolean checkOpenCredsPresent() {
         return GlobalSecurityConfig.OPENTEXT_ENCODERS.parallelStream()
                 .mapToInt(userDao::getCredentialCountByType)
                 .anyMatch(i -> i > 0);
     }
 
-    public boolean checkCredsFullyMigrated() {
-        return userDao.getCredentialCountByType("legacy%") == 0;
+    public boolean checkLegacyCredsPresent() {
+        return userDao.getCredentialCountByType("legacy%") != 0;
+    }
+
+    public boolean checkCredentialsStoredInLegacyTables() {
+        return userDao.checkCredentialsStoredInLegacyTables();
+    }
+
+    public boolean purgeCredentialsStoredInLegacyTables() {
+        return userDao.purgeCredentialsStoredInLegacyTables();
+    }
+
+    public boolean migrateLegacyCredsToNonLegacy(boolean useDecodableOnly) {
+        String decodableEncoder = settingsService.getDecodablePasswordEncoder();
+        String nonDecodableEncoder = useDecodableOnly ? decodableEncoder
+                : settingsService.getNonDecodablePasswordEncoder();
+
+        List<UserCredential> failures = new ArrayList<>();
+
+        userDao.getCredentialsByType("legacy%").forEach(c -> {
+            UserCredential newCreds = new UserCredential(c);
+            if (App.AIRSONIC == c.getLocation()) {
+                newCreds.setType(nonDecodableEncoder);
+            } else {
+                newCreds.setType(decodableEncoder);
+            }
+            if (!updateCredentials(c, newCreds, c.getComment() + " | Migrated to nonlegacy by admin", false)) {
+                LOG.warn("System failed to migrate creds created on {} for user {}", c.getCreated(), c.getUsername());
+                failures.add(c);
+            }
+        });
+
+        return failures.isEmpty();
+    }
+
+    public String getPreferredPasswordEncoder(boolean nonDecodableAllowed) {
+        if (!nonDecodableAllowed || !settingsService.getPreferNonDecodablePasswords()) {
+            return settingsService.getDecodablePasswordEncoder();
+        } else {
+            return settingsService.getNonDecodablePasswordEncoder();
+        }
     }
 
     public List<GrantedAuthority> getGrantedAuthorities(String username) {
@@ -267,7 +305,7 @@ public class SecurityService implements UserDetailsService {
      * @param credential The raw credential (will be encoded)
      */
     public void createUser(User user, String credential, String comment) {
-        String defaultEncoder = settingsService.getAirsonicPasswordEncoder();
+        String defaultEncoder = getPreferredPasswordEncoder(true);
         UserCredential uc = new UserCredential(
                 user.getUsername(),
                 user.getUsername(),
