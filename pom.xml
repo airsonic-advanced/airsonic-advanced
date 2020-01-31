@@ -17,7 +17,7 @@
         <failOnDependencyWarning>true</failOnDependencyWarning>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <cxf.version>3.3.5</cxf.version>
-        <spring.boot.version>2.2.2.RELEASE</spring.boot.version>
+        <spring.boot.version>2.2.4.RELEASE</spring.boot.version>
     </properties>
 
     <repositories>
@@ -367,6 +367,7 @@
                                 <ignoredUnusedDeclaredDependency>org.springframework.security:*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>jakarta.xml.ws:jakarta.xml.ws-api</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>jakarta.xml.bind:jakarta.xml.bind-api*</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>
