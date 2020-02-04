@@ -649,6 +649,40 @@
                 <artifactId>checksum-maven-plugin</artifactId>
             </plugin>
             <plugin>
+                <!-- Change to non-snapshot version once it is released (change groupId) -->
+                <groupId>com.github.m50d</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.11.1</version>
+                <configuration>
+                    <source>${java.compiler.version}</source>
+                    <target>${java.compiler.version}</target>
+                    <proc>none</proc>
+                    <complianceLevel>${java.compiler.version}</complianceLevel>
+                    <showWeaveInfo>true</showWeaveInfo>
+                     <aspectLibraries>
+                         <aspectLibrary>
+                             <groupId>org.springframework</groupId>
+                             <artifactId>spring-aspects</artifactId>
+                         </aspectLibrary>
+                     </aspectLibraries>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>test-compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjtools</artifactId>
+                        <version>1.9.5</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-jspc-maven-plugin</artifactId>
                 <version>9.4.21.v20190926</version>
