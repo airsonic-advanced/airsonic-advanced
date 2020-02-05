@@ -96,9 +96,12 @@ public class CoverArtController implements LastModified {
         semaphore = new Semaphore(settingsService.getCoverArtConcurrency());
     }
 
+    @Override
     public long getLastModified(HttpServletRequest request) {
         CoverArtRequest coverArtRequest = createCoverArtRequest(request);
-        //        LOG.info("getLastModified - " + coverArtRequest + ": " + new Date(result));
+        if (coverArtRequest == null) {
+            return -1L;
+        }
         return coverArtRequest.lastModified().toEpochMilli();
     }
 
