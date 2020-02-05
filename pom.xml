@@ -16,6 +16,7 @@
     <properties>
         <failOnDependencyWarning>true</failOnDependencyWarning>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.compiler.version>1.8</java.compiler.version>
         <cxf.version>3.3.5</cxf.version>
         <spring.boot.version>2.2.4.RELEASE</spring.boot.version>
     </properties>
@@ -323,11 +324,11 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>${java.compiler.version}</source>
+                    <target>${java.compiler.version}</target>
                     <encoding>UTF-8</encoding>
                     <verbose>false</verbose>
-                    <compilerVersion>1.8</compilerVersion>
+                    <compilerVersion>${java.compiler.version}</compilerVersion>
                     <showWarnings>true</showWarnings>
                 </configuration>
             </plugin>
@@ -354,6 +355,7 @@
                                 <ignoredUsedUndeclaredDependency>*javax*:*</ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>org.hamcrest:*</ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>com.fasterxml.jackson.*:jackson-*</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>org.aspectj:aspectjweaver</ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                             <ignoredUnusedDeclaredDependencies>
                                 <ignoredUnusedDeclaredDependency>com.google.code.findbugs:jsr305:*</ignoredUnusedDeclaredDependency>
