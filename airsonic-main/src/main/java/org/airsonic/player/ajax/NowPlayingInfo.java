@@ -19,19 +19,16 @@
  */
 package org.airsonic.player.ajax;
 
-import org.airsonic.player.domain.Avatar;
 import org.airsonic.player.domain.AvatarScheme;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.PlayStatus;
 import org.airsonic.player.domain.Player;
-import org.airsonic.player.domain.TransferStatus;
 import org.airsonic.player.domain.UserSettings;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 
-import java.time.Duration;
 import java.util.UUID;
 
 /**
