@@ -19,17 +19,22 @@
  */
 package org.airsonic.player.service;
 
+import org.airsonic.player.ajax.NowPlayingInfo;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.PlayStatus;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.TransferStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,11 +51,20 @@ public class StatusService {
 
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private SettingsService settingsService;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
+    // cleanup task to remove stale remote plays (every 3 hours)
+    private Object cleanup = Executors.newSingleThreadScheduledExecutor()
+            .scheduleWithFixedDelay(() -> cleanupRemotePlays(), 3, 3, TimeUnit.HOURS);
 
     private final List<TransferStatus> streamStatuses = Collections.synchronizedList(new ArrayList<>());
     private final List<TransferStatus> downloadStatuses = Collections.synchronizedList(new ArrayList<>());
     private final List<TransferStatus> uploadStatuses = Collections.synchronizedList(new ArrayList<>());
-    private final List<PlayStatus> remotePlays = Collections.synchronizedList(new ArrayList<>());
+    private final Set<PlayStatus> remotePlays = ConcurrentHashMap.newKeySet();
+    private final Set<PlayStatus> activeLocalPlays = ConcurrentHashMap.newKeySet();
 
     // Maps from player ID to latest inactive stream status.
     private final Map<Integer, TransferStatus> inactiveStreamStatuses = new ConcurrentHashMap<>();
@@ -64,8 +78,12 @@ public class StatusService {
         inactiveStreamStatuses.compute(status.getPlayer().getId(), (k, v) -> {
             streamStatuses.remove(status);
             status.setActive(false);
+            if (v != null) {
+                broadcast(getPlayStatus(v), "recent/remove");
+            }
             return status;
         });
+        broadcast(getPlayStatus(status), "recent/add");
     }
 
     public List<TransferStatus> getAllStreamStatuses() {
@@ -119,9 +137,34 @@ public class StatusService {
         return new ArrayList<>(uploadStatuses);
     }
 
+    public void cleanupRemotePlays() {
+        Set<PlayStatus> expired = remotePlays.parallelStream().filter(PlayStatus::isExpired).collect(Collectors.toSet());
+        expired.forEach(e -> {
+            remotePlays.remove(e);
+            broadcast(e, "recent/remove");
+        });
+    }
+
     public void addRemotePlay(PlayStatus playStatus) {
-        remotePlays.removeIf(PlayStatus::isExpired);
         remotePlays.add(playStatus);
+        broadcast(playStatus, "recent/add");
+    }
+
+    public void addActiveLocalPlay(PlayStatus status) {
+        activeLocalPlays.add(status);
+        broadcast(status, "current/add");
+    }
+
+    public void removeActiveLocalPlay(PlayStatus status) {
+        activeLocalPlays.remove(status);
+        broadcast(status, "current/remove");
+    }
+
+    public PlayStatus getPlayStatus(TransferStatus status) {
+        return new PlayStatus(status.getId(),
+                Optional.ofNullable(status.getFile()).map(f -> mediaFileService.getMediaFile(f)).orElse(null),
+                status.getPlayer(),
+                status.getMillisSinceLastUpdate());
     }
 
     public List<PlayStatus> getPlayStatuses() {
@@ -140,7 +183,7 @@ public class StatusService {
                         return null;
                     }
                     Instant time = Instant.now().minusMillis(streamStatus.getMillisSinceLastUpdate());
-                    return new PlayStatus(mediaFile, player, time);
+                    return new PlayStatus(streamStatus.getId(), mediaFile, player, time);
                 }).filter(Objects::nonNull))
                 .collect(Collectors.toList());
     }
@@ -149,6 +192,32 @@ public class StatusService {
         TransferStatus status = new TransferStatus(player);
         statusList.add(status);
         return status;
+    }
+
+    private void broadcast(PlayStatus status, String location) {
+        CompletableFuture.runAsync(() -> {
+            NowPlayingInfo info = NowPlayingInfo.createForBroadcast(status, settingsService);
+
+            if (info != null) {
+                messagingTemplate.convertAndSend("/topic/nowPlaying/" + location, info);
+            }
+        });
+    }
+
+    public List<NowPlayingInfo> getActivePlays() {
+        return activeLocalPlays.parallelStream()
+                .map(s -> NowPlayingInfo.createForBroadcast(s, settingsService))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    public List<NowPlayingInfo> getInactivePlays() {
+        return Stream
+                .concat(remotePlays.parallelStream(),
+                        inactiveStreamStatuses.values().parallelStream().map(ts -> getPlayStatus(ts)))
+                .map(s -> NowPlayingInfo.createForBroadcast(s, settingsService))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     public void setMediaFileService(MediaFileService mediaFileService) {
