@@ -100,17 +100,13 @@ public class StatusService {
 
     public List<TransferStatus> getStreamStatusesForPlayer(Player player) {
         // unsynchronized stream access, but should be okay, we'll just be a bit behind
-        List<TransferStatus> result = streamStatuses.parallelStream()
+        return streamStatuses.parallelStream()
                 .filter(s -> s.getPlayer().getId().equals(player.getId()))
                 .collect(Collectors.toList());
+    }
 
-        if (!result.isEmpty()) {
-            return result;
-        }
-
-        return Optional.ofNullable(inactiveStreamStatuses.get(player.getId()))
-                .map(Collections::singletonList)
-                .orElseGet(Collections::emptyList);
+    public TransferStatus getInactiveStreamStatusForPlayer(Player player) {
+        return inactiveStreamStatuses.get(player.getId());
     }
 
     public TransferStatus createDownloadStatus(Player player) {

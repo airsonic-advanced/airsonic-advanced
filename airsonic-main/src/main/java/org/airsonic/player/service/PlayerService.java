@@ -198,12 +198,7 @@ public class PlayerService {
      * @return Whether the player is connected.
      */
     private boolean isPlayerConnected(Player player) {
-        for (TransferStatus status : statusService.getStreamStatusesForPlayer(player)) {
-            if (status.isActive()) {
-                return true;
-            }
-        }
-        return false;
+        return !statusService.getStreamStatusesForPlayer(player).isEmpty();
     }
 
     /**

@@ -195,10 +195,7 @@ public class StreamController {
 
         // Terminate any other streams to this player.
         if (!isPodcast && !isSingleFile) {
-            statusService.getStreamStatusesForPlayer(player)
-                    .parallelStream()
-                    .filter(TransferStatus::isActive)
-                    .forEach(TransferStatus::terminate);
+            statusService.getStreamStatusesForPlayer(player).forEach(TransferStatus::terminate);
         }
 
         // If playqueue is in auto-random mode, populate it with new random songs.
