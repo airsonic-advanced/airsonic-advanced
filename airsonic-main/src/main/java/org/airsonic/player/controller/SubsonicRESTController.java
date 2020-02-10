@@ -1469,11 +1469,9 @@ public class SubsonicRESTController {
             }
             Instant time = times.length == 0 ? null : Instant.ofEpochMilli(times[i]);
 
-            statusService.addRemotePlay(new PlayStatus(file, player, time == null ? Instant.now() : time));
+            statusService.addRemotePlay(new PlayStatus(UUID.randomUUID(), file, player, time == null ? Instant.now() : time));
             mediaFileService.incrementPlayCount(file);
-            if (settingsService.getUserSettings(player.getUsername()).isLastFmEnabled()) {
-                audioScrobblerService.register(file, player.getUsername(), submission, time);
-            }
+            audioScrobblerService.register(file, player.getUsername(), submission, time);
         }
 
         writeEmptyResponse(request, response);

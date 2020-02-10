@@ -215,8 +215,14 @@ public class StreamController {
             mediaFileService.incrementPlayCount(mediaFile);
             scrobble(mediaFile, player, false);
             status.setFile(mediaFile.getFile());
+            statusService.addActiveLocalPlay(
+                    new PlayStatus(status.getId(), mediaFile, player, status.getMillisSinceLastUpdate()));
         };
-        Consumer<MediaFile> fileEndListener = mediaFile -> scrobble(mediaFile, player, true);
+        Consumer<MediaFile> fileEndListener = mediaFile -> {
+            scrobble(mediaFile, player, true);
+            statusService.removeActiveLocalPlay(
+                    new PlayStatus(status.getId(), mediaFile, player, status.getMillisSinceLastUpdate()));
+        };
         Function<MediaFile, InputStream> streamGenerator = LambdaUtils.uncheckFunction(
             mediaFile -> transcodingService.getTranscodedInputStream(
                     transcodingService.getParameters(mediaFile, player, bitRate, targetFormat, videoTranscodingSettingsF)));

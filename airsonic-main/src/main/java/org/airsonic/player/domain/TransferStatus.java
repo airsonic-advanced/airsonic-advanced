@@ -22,6 +22,7 @@ package org.airsonic.player.domain;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -34,6 +35,7 @@ public class TransferStatus {
     private static final int HISTORY_LENGTH = 200;
     private static final long SAMPLE_INTERVAL_MILLIS = 5000;
 
+    private final UUID id = UUID.randomUUID();
     private final Player player;
     private Path file;
     private final AtomicLong bytesTransferred = new AtomicLong();
@@ -45,6 +47,10 @@ public class TransferStatus {
 
     public TransferStatus(Player player) {
         this.player = player;
+    }
+
+    public UUID getId() {
+        return id;
     }
 
     /**
