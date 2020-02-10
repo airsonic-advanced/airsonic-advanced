@@ -468,4 +468,8 @@ public class MediaScannerService {
     public void setPlaylistService(PlaylistService playlistService) {
         this.playlistService = playlistService;
     }
+
+    public void setMessagingTemplate(SimpMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
+    }
 }
