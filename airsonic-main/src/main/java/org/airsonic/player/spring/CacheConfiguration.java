@@ -45,22 +45,25 @@ public class CacheConfiguration {
         // .offheap(10L, MemoryUnit.MB)
         // .disk(20, MemoryUnit.MB, false);
 
+        DefaultCacheEventListenerConfiguration cacheLogging = new DefaultCacheEventListenerConfiguration(EnumSet.allOf(EventType.class), CacheLogger.class);
+
         return ConfigurationBuilder.newConfigurationBuilder()
                 .withService(new DefaultPersistenceConfiguration(SettingsService.getAirsonicHome().resolve("cache").toFile()))
                 .withCache("userCache",
                         CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, Object.class, pools)
                                 .withClassLoader(cl)
                                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(2)))
-                                .withService(new DefaultCacheEventListenerConfiguration(
-                                        EnumSet.allOf(EventType.class),
-                                        CacheLogger.class)))
+                                .withService(cacheLogging))
+                .withCache("userSettingsCache",
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, Object.class, pools)
+                                .withClassLoader(cl)
+                                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(2)))
+                                .withService(cacheLogging))
                 .withCache("mediaFileMemoryCache",
                         CacheConfigurationBuilder.newCacheConfigurationBuilder(Path.class, Object.class, pools)
                                 .withClassLoader(cl)
                                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofMinutes(10)))
-                                .withService(new DefaultCacheEventListenerConfiguration(
-                                        EnumSet.allOf(EventType.class),
-                                        CacheLogger.class)))
+                                .withService(cacheLogging))
                 .build();
     }
 
