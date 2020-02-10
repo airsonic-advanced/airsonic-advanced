@@ -22,7 +22,6 @@ package org.airsonic.player.service;
 import org.airsonic.player.dao.PlayerDao;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.Transcoding;
-import org.airsonic.player.domain.TransferStatus;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.RandomStringUtils;
@@ -198,12 +197,7 @@ public class PlayerService {
      * @return Whether the player is connected.
      */
     private boolean isPlayerConnected(Player player) {
-        for (TransferStatus status : statusService.getStreamStatusesForPlayer(player)) {
-            if (status.isActive()) {
-                return true;
-            }
-        }
-        return false;
+        return !statusService.getStreamStatusesForPlayer(player).isEmpty();
     }
 
     /**

@@ -3,8 +3,8 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
+    <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/nowPlayingService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/interface/playQueueService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
@@ -60,7 +60,7 @@
         <c:if test="${model.autoHide}">initAutoHide();</c:if>
 
         dwr.engine.setErrorHandler(null);
-        startTimer();
+        monitorNowPlaying();
 
         $("#dialog-select-playlist").dialog({resizable: true, height: 220, autoOpen: false,
             buttons: {
@@ -176,20 +176,33 @@
         });
     }
 
-    function startTimer() {
-        <!-- Periodically check if the current song has changed. -->
-        nowPlayingService.getNowPlayingForCurrentPlayer(nowPlayingCallback);
-        setTimeout("startTimer()", 10000);
+    function monitorNowPlaying() {
+        StompClient.connect({
+            '/topic/nowPlaying/current/add': function(msg) {
+                var nowPlayingInfo = JSON.parse(msg.body);
+                onNowPlayingChanged(nowPlayingInfo);
+            },
+            '/app/nowPlaying/current': function(msg) {
+                var nowPlayingInfos = JSON.parse(msg.body);
+                for (var i = 0; i < nowPlayingInfos.length; i++) {
+                    if (onNowPlayingChanged(nowPlayingInfos[i])) {
+                        break;
+                    }
+                }
+            }
+        });
     }
-
-    function nowPlayingCallback(nowPlayingInfo) {
-        if (nowPlayingInfo != null && nowPlayingInfo.streamUrl != currentStreamUrl) {
+    
+    function onNowPlayingChanged(nowPlayingInfo) {
+        if (nowPlayingInfo != null && nowPlayingInfo.streamUrl != currentStreamUrl && nowPlayingInfo.playerId == ${model.player.id}) {
             getPlayQueue();
         <c:if test="${not model.player.web}">
             currentStreamUrl = nowPlayingInfo.streamUrl;
             updateCurrentImage();
         </c:if>
+            return true;
         }
+        return false;
     }
 
     function onEnded() {

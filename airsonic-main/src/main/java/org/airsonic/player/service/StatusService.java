@@ -20,7 +20,6 @@
 package org.airsonic.player.service;
 
 import org.airsonic.player.ajax.NowPlayingInfo;
-import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.PlayStatus;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.TransferStatus;
@@ -28,9 +27,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -100,17 +103,13 @@ public class StatusService {
 
     public List<TransferStatus> getStreamStatusesForPlayer(Player player) {
         // unsynchronized stream access, but should be okay, we'll just be a bit behind
-        List<TransferStatus> result = streamStatuses.parallelStream()
+        return streamStatuses.parallelStream()
                 .filter(s -> s.getPlayer().getId().equals(player.getId()))
                 .collect(Collectors.toList());
+    }
 
-        if (!result.isEmpty()) {
-            return result;
-        }
-
-        return Optional.ofNullable(inactiveStreamStatuses.get(player.getId()))
-                .map(Collections::singletonList)
-                .orElseGet(Collections::emptyList);
+    public TransferStatus getInactiveStreamStatusForPlayer(Player player) {
+        return inactiveStreamStatuses.get(player.getId());
     }
 
     public TransferStatus createDownloadStatus(Player player) {
@@ -167,27 +166,6 @@ public class StatusService {
                 status.getMillisSinceLastUpdate());
     }
 
-    public List<PlayStatus> getPlayStatuses() {
-        List<PlayStatus> remotePlaySnapshot = new ArrayList<>(remotePlays);
-
-        return Stream.concat(
-                remotePlaySnapshot.parallelStream().filter(r -> !r.isExpired()),
-                getAllStreamStatuses().parallelStream().map(streamStatus -> {
-                    Path file = streamStatus.getFile();
-                    if (file == null) {
-                        return null;
-                    }
-                    Player player = streamStatus.getPlayer();
-                    MediaFile mediaFile = mediaFileService.getMediaFile(file);
-                    if (player == null || mediaFile == null) {
-                        return null;
-                    }
-                    Instant time = Instant.now().minusMillis(streamStatus.getMillisSinceLastUpdate());
-                    return new PlayStatus(streamStatus.getId(), mediaFile, player, time);
-                }).filter(Objects::nonNull))
-                .collect(Collectors.toList());
-    }
-
     private TransferStatus createStatus(Player player, List<TransferStatus> statusList) {
         TransferStatus status = new TransferStatus(player);
         statusList.add(status);
@@ -222,5 +200,13 @@ public class StatusService {
 
     public void setMediaFileService(MediaFileService mediaFileService) {
         this.mediaFileService = mediaFileService;
+    }
+
+    public void setSettingsService(SettingsService settingsService) {
+        this.settingsService = settingsService;
+    }
+
+    public void setMessagingTemplate(SimpMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
     }
 }
