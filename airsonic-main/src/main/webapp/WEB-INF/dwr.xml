@@ -11,10 +11,6 @@
             <param name="beanName" value="ajaxMultiService"/>
         </create>
 
-        <create creator="spring" javascript="nowPlayingService">
-            <param name="beanName" value="ajaxNowPlayingService"/>
-        </create>
-
         <create creator="spring" javascript="playQueueService">
             <param name="beanName" value="ajaxPlayQueueService"/>
         </create>
@@ -44,8 +40,6 @@
         </create>
 
         <convert converter="javaTimeInstant" match="java.time.Instant"/>
-        <convert converter="bean" match="org.airsonic.player.ajax.NowPlayingInfo"/>
-        <convert converter="bean" match="org.airsonic.player.ajax.ScanInfo"/>
         <convert converter="bean" match="org.airsonic.player.ajax.PlayQueueInfo"/>
         <convert converter="bean" match="org.airsonic.player.ajax.PlayQueueInfo$Entry"/>
         <convert converter="bean" match="org.airsonic.player.ajax.PlaylistInfo"/>

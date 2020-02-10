@@ -20,7 +20,6 @@
 package org.airsonic.player.service;
 
 import org.airsonic.player.ajax.NowPlayingInfo;
-import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.PlayStatus;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.TransferStatus;
@@ -28,9 +27,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -161,27 +164,6 @@ public class StatusService {
                 Optional.ofNullable(status.getFile()).map(f -> mediaFileService.getMediaFile(f)).orElse(null),
                 status.getPlayer(),
                 status.getMillisSinceLastUpdate());
-    }
-
-    public List<PlayStatus> getPlayStatuses() {
-        List<PlayStatus> remotePlaySnapshot = new ArrayList<>(remotePlays);
-
-        return Stream.concat(
-                remotePlaySnapshot.parallelStream().filter(r -> !r.isExpired()),
-                getAllStreamStatuses().parallelStream().map(streamStatus -> {
-                    Path file = streamStatus.getFile();
-                    if (file == null) {
-                        return null;
-                    }
-                    Player player = streamStatus.getPlayer();
-                    MediaFile mediaFile = mediaFileService.getMediaFile(file);
-                    if (player == null || mediaFile == null) {
-                        return null;
-                    }
-                    Instant time = Instant.now().minusMillis(streamStatus.getMillisSinceLastUpdate());
-                    return new PlayStatus(streamStatus.getId(), mediaFile, player, time);
-                }).filter(Objects::nonNull))
-                .collect(Collectors.toList());
     }
 
     private TransferStatus createStatus(Player player, List<TransferStatus> statusList) {
