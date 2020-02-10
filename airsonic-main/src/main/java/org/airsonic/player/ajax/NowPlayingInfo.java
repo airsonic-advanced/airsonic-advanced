@@ -50,17 +50,18 @@ public class NowPlayingInfo {
     private final String lyricsUrl;
     private final String coverArtUrl;
     private final String avatarUrl;
-    private final int minutesAgo;
+    private final long minutesAgo;
+    private final PlayStatus playStatus;
 
     public NowPlayingInfo(Integer playerId, String user, String artist, String title, String tooltip, String streamUrl, String albumUrl,
-                          String lyricsUrl, String coverArtUrl, String avatarUrl, int minutesAgo) {
+            String lyricsUrl, String coverArtUrl, String avatarUrl, long minutesAgo) {
         this(null, playerId, null, user, artist, title, tooltip, streamUrl, albumUrl, lyricsUrl, coverArtUrl, avatarUrl,
-                minutesAgo);
+                minutesAgo, null);
     }
 
     public NowPlayingInfo(UUID transferId, Integer playerId, Integer mediaFileId, String user, String artist, String title,
             String tooltip, String streamUrl, String albumUrl, String lyricsUrl, String coverArtUrl, String avatarUrl,
-            int minutesAgo) {
+            long minutesAgo, PlayStatus playStatus) {
         this.transferId = transferId;
         this.playerId = playerId;
         this.mediaFileId = mediaFileId;
@@ -74,6 +75,7 @@ public class NowPlayingInfo {
         this.coverArtUrl = coverArtUrl;
         this.avatarUrl = avatarUrl;
         this.minutesAgo = minutesAgo;
+        this.playStatus = playStatus;
     }
 
     public UUID getTransferId() {
@@ -124,8 +126,13 @@ public class NowPlayingInfo {
         return avatarUrl;
     }
 
-    public int getMinutesAgo() {
+    public long getMinutesAgo() {
         return minutesAgo;
+    }
+
+    // deliberately do not make it a getter so it doesn't serialize
+    public PlayStatus fromPlayStatus() {
+        return playStatus;
     }
 
     public static NowPlayingInfo createForBroadcast(PlayStatus status, SettingsService settingsService) {
@@ -140,13 +147,12 @@ public class NowPlayingInfo {
         if (username == null) {
             return null;
         }
-        UserSettings userSettings = settingsService.getUserSettings(username);
-        if (!userSettings.isNowPlayingAllowed()) {
-            return null;
-        }
-
         long minutesAgo = status.getMinutesAgo();
         if (minutesAgo > 60) {
+            return null;
+        }
+        UserSettings userSettings = settingsService.getUserSettings(username);
+        if (!userSettings.isNowPlayingAllowed()) {
             return null;
         }
 
@@ -179,6 +185,6 @@ public class NowPlayingInfo {
         username = StringEscapeUtils.escapeHtml(StringUtils.abbreviate(username, 25));
 
         return new NowPlayingInfo(status.getTransferId(), player.getId(), mediaFile.getId(), username, artist, title,
-                tooltip, streamUrl, albumUrl, lyricsUrl, coverArtUrl, avatarUrl, (int) minutesAgo);
+                tooltip, streamUrl, albumUrl, lyricsUrl, coverArtUrl, avatarUrl, minutesAgo, status);
     }
 }

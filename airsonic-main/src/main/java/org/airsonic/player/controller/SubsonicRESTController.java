@@ -65,6 +65,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Stream;
 
 import static org.airsonic.player.security.RESTRequestParameterProcessingFilter.decrypt;
 import static org.springframework.web.bind.ServletRequestUtils.*;
@@ -1213,30 +1214,17 @@ public class SubsonicRESTController {
         request = wrapRequest(request);
         NowPlaying result = new NowPlaying();
 
-        for (PlayStatus status : statusService.getPlayStatuses()) {
-
-            Player player = status.getPlayer();
-            MediaFile mediaFile = status.getMediaFile();
-            String username = player.getUsername();
-            if (username == null) {
-                continue;
-            }
-
-            UserSettings userSettings = settingsService.getUserSettings(username);
-            if (!userSettings.isNowPlayingAllowed()) {
-                continue;
-            }
-
-            long minutesAgo = status.getMinutesAgo();
-            if (minutesAgo < 60) {
+        Stream.concat(statusService.getActivePlays().parallelStream(),
+                statusService.getInactivePlays().parallelStream())
+            .map(info -> info.fromPlayStatus())
+            .forEach(s -> {
                 NowPlayingEntry entry = new NowPlayingEntry();
-                entry.setUsername(username);
-                entry.setPlayerId(player.getId());
-                entry.setPlayerName(player.getName());
-                entry.setMinutesAgo((int) minutesAgo);
-                result.getEntry().add(createJaxbChild(entry, player, mediaFile, username));
-            }
-        }
+                entry.setUsername(s.getPlayer().getUsername());
+                entry.setPlayerId(s.getPlayer().getId());
+                entry.setPlayerName(s.getPlayer().getName());
+                entry.setMinutesAgo((int) s.getMinutesAgo());
+                result.getEntry().add(createJaxbChild(entry, s.getPlayer(), s.getMediaFile(), entry.getUsername()));
+            });
 
         Response res = createResponse();
         res.setNowPlaying(result);
