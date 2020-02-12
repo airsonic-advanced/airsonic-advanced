@@ -5,8 +5,8 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
+    <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/starService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/interface/multiService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
@@ -105,11 +105,11 @@
     function toggleStar(mediaFileId, imageId) {
         if ($(imageId).attr("src").indexOf("<spring:theme code='ratingOnImage'/>") != -1) {
             $(imageId).attr("src", "<spring:theme code='ratingOffImage'/>");
-            starService.unstar(mediaFileId);
+            StompClient.send("/app/rate/unstar", mediaFileId);
         }
         else if ($(imageId).attr("src").indexOf("<spring:theme code='ratingOffImage'/>") != -1) {
             $(imageId).attr("src", "<spring:theme code='ratingOnImage'/>");
-            starService.star(mediaFileId);
+            StompClient.send("/app/rate/star", mediaFileId);
         }
     }
 

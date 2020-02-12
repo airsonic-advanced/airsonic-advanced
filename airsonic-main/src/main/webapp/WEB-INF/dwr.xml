@@ -27,10 +27,6 @@
             <param name="beanName" value="ajaxCoverArtService"/>
         </create>
 
-        <create creator="spring" javascript="starService">
-            <param name="beanName" value="ajaxStarService"/>
-        </create>
-
         <create creator="spring" javascript="tagService">
             <param name="beanName" value="ajaxTagService"/>
         </create>

@@ -4,20 +4,19 @@
 <head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
+    <%@ include file="websocket.jsp" %>
     <link rel="stylesheet" type="text/css" href="<c:url value='/style/videoPlayer.css'/>">
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/starService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/cast_sender-v1.js'/>"></script>
 
     <script type="text/javascript" language="javascript">
         function toggleStar(mediaFileId, imageId) {
             if ($(imageId).attr("src").indexOf("<spring:theme code='ratingOnImage'/>") != -1) {
                 $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-                starService.unstar(mediaFileId);
+                StompClient.send("/app/rate/unstar", mediaFileId);
             }
             else if ($(imageId).attr("src").indexOf("<spring:theme code='ratingOffImage'/>") != -1) {
                 $(imageId).attr("src", "<spring:theme code='ratingOnImage'/>");
-                starService.star(mediaFileId);
+                StompClient.send("/app/rate/star", mediaFileId);
             }
         }
         var model = {
