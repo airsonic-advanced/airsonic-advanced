@@ -2,81 +2,79 @@
 
 <html><head>
     <%@ include file="head.jsp" %>
+    <%@ include file="jquery.jsp" %>
     <script type="text/javascript" src="<c:url value='/dwr/interface/tagService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
-</head>
-<body class="mainframe bgcolor1">
-
 <script type="text/javascript" language="javascript">
     var index = 0;
     var fileCount = ${fn:length(model.songs)};
     function setArtist() {
-        var artist = dwr.util.getValue("artistAll");
+        var artist = $("input[name='artistAll']").val();
         for (var i = 0; i < fileCount; i++) {
-            dwr.util.setValue("artist" + i, artist);
+            $("input[name='artist" + i + "']").val(artist);
         }
     }
     function setAlbum() {
-        var album = dwr.util.getValue("albumAll");
+        var album = $("input[name='albumAll']").val();
         for (var i = 0; i < fileCount; i++) {
-            dwr.util.setValue("album" + i, album);
+            $("input[name='album" + i + "']").val(album);
         }
     }
     function setYear() {
-        var year = dwr.util.getValue("yearAll");
+        var year = $("input[name='yearAll']").val();
         for (var i = 0; i < fileCount; i++) {
-            dwr.util.setValue("year" + i, year);
+            $("input[name='year" + i + "']").val(year);
         }
     }
     function setGenre() {
-        var genre = dwr.util.getValue("genreAll");
+        var genre = $("input[name='genreAll']").val();
         for (var i = 0; i < fileCount; i++) {
-            dwr.util.setValue("genre" + i, genre);
+            $("input[name='genre" + i + "']").val(genre);
         }
     }
     function suggestTitle() {
         for (var i = 0; i < fileCount; i++) {
-            var title = dwr.util.getValue("suggestedTitle" + i);
-            dwr.util.setValue("title" + i, title);
+            var title = $("input[name='suggestedTitle" + i + "']").val();
+            $("input[name='title" + i + "']").val(title);
         }
     }
     function resetTitle() {
         for (var i = 0; i < fileCount; i++) {
-            var title = dwr.util.getValue("originalTitle" + i);
-            dwr.util.setValue("title" + i, title);
+            var title = $("input[name='originalTitle" + i + "']").val();
+            $("input[name='title" + i + "']").val(title);
         }
     }
     function suggestTrack() {
         for (var i = 0; i < fileCount; i++) {
-            var track = dwr.util.getValue("suggestedTrack" + i);
-            dwr.util.setValue("track" + i, track);
+            var track = $("input[name='suggestedTrack" + i + "']").val();
+            $("input[name='track" + i + "']").val(track);
         }
     }
     function resetTrack() {
         for (var i = 0; i < fileCount; i++) {
-            var track = dwr.util.getValue("originalTrack" + i);
-            dwr.util.setValue("track" + i, track);
+            var track = $("input[name='originalTrack" + i + "']").val();
+            $("input[name='track" + i + "']").val(track);
         }
     }
     function updateTags() {
         document.getElementById("save").disabled = true;
         index = 0;
-        dwr.util.setValue("errors", "");
+        $("#errors").empty();
         for (var i = 0; i < fileCount; i++) {
-            dwr.util.setValue("status" + i, "");
+            $("#status" + i).empty();
         }
         updateNextTag();
     }
     function updateNextTag() {
-        var id = dwr.util.getValue("id" + index);
-        var artist = dwr.util.getValue("artist" + index);
-        var track = dwr.util.getValue("track" + index);
-        var album = dwr.util.getValue("album" + index);
-        var title = dwr.util.getValue("title" + index);
-        var year = dwr.util.getValue("year" + index);
-        var genre = dwr.util.getValue("genre" + index);
-        dwr.util.setValue("status" + index, "<fmt:message key="edittags.working"/>");
+        var id = $("input[name='id" + index + "']").val();
+        var artist = $("input[name='artist" + index + "']").val();
+        var track = $("input[name='track" + index + "']").val();
+        var album = $("input[name='album" + index + "']").val();
+        var title = $("input[name='title" + index + "']").val();
+        var year = $("input[name='year" + index + "']").val();
+        var genre = $("input[name='genre" + index + "']").val();
+        $("#status" + index).append("<fmt:message key="edittags.working"/>");
         tagService.setTags(id, track, artist, album, title, year, genre, setTagsCallback);
     }
     function setTagsCallback(result) {
@@ -87,11 +85,9 @@
             message = "<b><fmt:message key="edittags.updated"/></b>";
         } else {
             message = "<div class='warning'><fmt:message key="edittags.error"/></div>";
-            var errors = dwr.util.getValue("errors");
-            errors += "<br>" + result + "<br>";
-            dwr.util.setValue("errors", errors, { escapeHtml:false });
+            $("#errors").append("<br>" + result + "<br>");
         }
-        dwr.util.setValue("status" + index, message, { escapeHtml:false });
+        $("#status" + index).empty().append(message);
         index++;
         if (index < fileCount) {
             updateNextTag();
@@ -99,8 +95,30 @@
             document.getElementById("save").disabled = false;
         }
     }
-</script>
 
+    function init() {
+        $("input[name='artistAll']").keyPress(function(event) {
+            if (e.which == 13) {
+                setArtist();
+                event.preventDefault();
+            }
+        });
+        $("input[name='albumAll']").keyPress(function(event) {
+            if (e.which == 13) {
+                setAlbum();
+                event.preventDefault();
+            }
+        });
+        $("input[name='yearAll']").keyPress(function(event) {
+            if (e.which == 13) {
+                setYear();
+                event.preventDefault();
+            }
+        });
+    }
+</script>
+</head>
+<body class="mainframe bgcolor1" onload="init()">
 <h1><fmt:message key="edittags.title"/></h1>
 <sub:url value="main.view" var="backUrl"><sub:param name="id" value="${model.id}"/></sub:url>
 <div class="back"><a href="${backUrl}"><fmt:message key="common.back"/></a></div>
@@ -122,9 +140,9 @@
             <a href="javascript:resetTrack()"><fmt:message key="edittags.reset.short"/></a></th>
         <th class="ruleTableHeader"><a href="javascript:suggestTitle()"><fmt:message key="edittags.suggest"/></a> |
             <a href="javascript:resetTitle()"><fmt:message key="edittags.reset"/></a></th>
-        <th class="ruleTableHeader" style="white-space: nowrap"><input type="text" name="artistAll" size="15" onkeypress="dwr.util.onReturn(event, setArtist)" value="${model.defaultArtist}"/>&nbsp;<a href="javascript:setArtist()"><fmt:message key="edittags.set"/></a></th>
-        <th class="ruleTableHeader" style="white-space: nowrap"><input type="text" name="albumAll" size="15" onkeypress="dwr.util.onReturn(event, setAlbum)" value="${model.defaultAlbum}"/>&nbsp;<a href="javascript:setAlbum()"><fmt:message key="edittags.set"/></a></th>
-        <th class="ruleTableHeader" style="white-space: nowrap"><input type="text" name="yearAll" size="5" onkeypress="dwr.util.onReturn(event, setYear)" value="${model.defaultYear}"/>&nbsp;<a href="javascript:setYear()"><fmt:message key="edittags.set"/></a></th>
+        <th class="ruleTableHeader" style="white-space: nowrap"><input type="text" name="artistAll" size="15" value="${model.defaultArtist}"/>&nbsp;<a href="javascript:setArtist()"><fmt:message key="edittags.set"/></a></th>
+        <th class="ruleTableHeader" style="white-space: nowrap"><input type="text" name="albumAll" size="15" value="${model.defaultAlbum}"/>&nbsp;<a href="javascript:setAlbum()"><fmt:message key="edittags.set"/></a></th>
+        <th class="ruleTableHeader" style="white-space: nowrap"><input type="text" name="yearAll" size="5" value="${model.defaultYear}"/>&nbsp;<a href="javascript:setYear()"><fmt:message key="edittags.set"/></a></th>
         <th class="ruleTableHeader" style="white-space: nowrap">
             <select name="genreAll" style="width:7em">
                 <option value=""/>
@@ -141,19 +159,19 @@
     <c:forEach items="${model.songs}" var="song" varStatus="loopStatus">
         <tr>
             <str:truncateNicely lower="25" upper="25" var="fileName">${song.fileName}</str:truncateNicely>
-            <input type="hidden" name="id${loopStatus.count - 1}" value="${song.id}"/>
-            <input type="hidden" name="suggestedTitle${loopStatus.count - 1}" value="${song.suggestedTitle}"/>
-            <input type="hidden" name="originalTitle${loopStatus.count - 1}" value="${song.title}"/>
-            <input type="hidden" name="suggestedTrack${loopStatus.count - 1}" value="${song.suggestedTrack}"/>
-            <input type="hidden" name="originalTrack${loopStatus.count - 1}" value="${song.track}"/>
+            <input type="hidden" name="id${loopStatus.index}" value="${song.id}"/>
+            <input type="hidden" name="suggestedTitle${loopStatus.index}" value="${song.suggestedTitle}"/>
+            <input type="hidden" name="originalTitle${loopStatus.index}" value="${song.title}"/>
+            <input type="hidden" name="suggestedTrack${loopStatus.index}" value="${song.suggestedTrack}"/>
+            <input type="hidden" name="originalTrack${loopStatus.index}" value="${song.track}"/>
             <td class="ruleTableCell" title="${song.fileName}">${fileName}</td>
-            <td class="ruleTableCell"><input type="text" size="5" name="track${loopStatus.count - 1}" value="${song.track}"/></td>
-            <td class="ruleTableCell"><input type="text" size="30" name="title${loopStatus.count - 1}" value="${song.title}"/></td>
-            <td class="ruleTableCell"><input type="text" size="15" name="artist${loopStatus.count - 1}" value="${song.artist}"/></td>
-            <td class="ruleTableCell"><input type="text" size="15" name="album${loopStatus.count - 1}" value="${song.album}"/></td>
-            <td class="ruleTableCell"><input type="text" size="5"  name="year${loopStatus.count - 1}" value="${song.year}"/></td>
-            <td class="ruleTableCell"><input type="text" name="genre${loopStatus.count - 1}" value="${song.genre}" style="width:7em"/></td>
-            <td class="ruleTableCell"><div id="status${loopStatus.count - 1}"/></td>
+            <td class="ruleTableCell"><input type="text" size="5" name="track${loopStatus.index}" value="${song.track}"/></td>
+            <td class="ruleTableCell"><input type="text" size="30" name="title${loopStatus.index}" value="${song.title}"/></td>
+            <td class="ruleTableCell"><input type="text" size="15" name="artist${loopStatus.index}" value="${song.artist}"/></td>
+            <td class="ruleTableCell"><input type="text" size="15" name="album${loopStatus.index}" value="${song.album}"/></td>
+            <td class="ruleTableCell"><input type="text" size="5"  name="year${loopStatus.index}" value="${song.year}"/></td>
+            <td class="ruleTableCell"><input type="text" name="genre${loopStatus.index}" value="${song.genre}" style="width:7em"/></td>
+            <td class="ruleTableCell"><div id="status${loopStatus.index}"/></td>
         </tr>
     </c:forEach>
 
