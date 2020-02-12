@@ -3,10 +3,10 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
+    <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/starService.js'/>"></script>
     <script type="text/javascript" language="javascript">
 
         var playlist;
@@ -143,7 +143,16 @@
             $().toastmessage('showSuccessToast', '<fmt:message key="main.addnext.toast"/>')
         }
         function onStar(index) {
-            playlistService.toggleStar(playlist.id, index, playlistCallback);
+            var imageId = "#starSong" + index;
+            var mediaFileId = songs[index].id
+            if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
+                $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
+                StompClient.send("/app/rate/unstar", mediaFileId);
+            }
+            else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
+                $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
+                StompClient.send("/app/rate/star", mediaFileId);
+            }
         }
         function onRemove(index) {
             playlistService.remove(playlist.id, index, function (playlistInfo){playlistCallback(playlistInfo); top.left.updatePlaylists()});
