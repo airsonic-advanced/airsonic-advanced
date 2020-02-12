@@ -3,9 +3,7 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/tagService.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
+    <%@ include file="websocket.jsp" %>
 <script type="text/javascript" language="javascript">
     var index = 0;
     var fileCount = ${fn:length(model.songs)};
@@ -75,7 +73,7 @@
         var year = $("input[name='year" + index + "']").val();
         var genre = $("input[name='genre" + index + "']").val();
         $("#status" + index).append("<fmt:message key="edittags.working"/>");
-        tagService.setTags(id, track, artist, album, title, year, genre, setTagsCallback);
+        StompClient.send("/app/tags/edit", JSON.stringify({mediaFileId: id, artist: artist, track: track, album: album, title: title, year: year, genre: genre}));
     }
     function setTagsCallback(result) {
         var message;
@@ -97,19 +95,24 @@
     }
 
     function init() {
-        $("input[name='artistAll']").keyPress(function(event) {
+        StompClient.subscribe({
+            "/user/queue/tags/edit": function(msg) {
+                setTagsCallback(msg.body);
+            }
+        });
+        $("input[name='artistAll']").keypress(function(event) {
             if (e.which == 13) {
                 setArtist();
                 event.preventDefault();
             }
         });
-        $("input[name='albumAll']").keyPress(function(event) {
+        $("input[name='albumAll']").keypress(function(event) {
             if (e.which == 13) {
                 setAlbum();
                 event.preventDefault();
             }
         });
-        $("input[name='yearAll']").keyPress(function(event) {
+        $("input[name='yearAll']").keypress(function(event) {
             if (e.which == 13) {
                 setYear();
                 event.preventDefault();
