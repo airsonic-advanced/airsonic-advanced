@@ -19,7 +19,7 @@
         }
 
         function init() {
-            StompClient.connect({
+            StompClient.subscribe({
                 // no need to populate initial because the updates will occur frequently enough and are self-sufficient
                 '/topic/scanStatus': scanningStatus
                 <c:if test="${model.showNowPlaying}">
@@ -38,12 +38,16 @@
 	            },
 	            // Add existing (initial population, one time)
 	            '/app/nowPlaying/current': function(msg) {
+	                $('#nowPlayingTable').empty();
+	                removeStatus({}, 'nowPlaying');
 	                var statuses = JSON.parse(msg.body);
 	                for (var i = 0; i < statuses.length; i++) {
 	                    addStatus(statuses[i], 'nowPlaying');
 	                }
 	            },
 	            '/app/nowPlaying/recent': function(msg) {
+	                $('#recentlyPlayedTable').empty();
+	                removeStatus({}, 'recentlyPlayed');
 	                var statuses = JSON.parse(msg.body);
 	                for (var i = 0; i < statuses.length; i++) {
 	                    addStatus(statuses[i], 'recentlyPlayed');
