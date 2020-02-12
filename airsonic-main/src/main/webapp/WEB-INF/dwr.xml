@@ -27,10 +27,6 @@
             <param name="beanName" value="ajaxCoverArtService"/>
         </create>
 
-        <create creator="spring" javascript="transferService">
-            <param name="beanName" value="ajaxTransferService"/>
-        </create>
-
         <convert converter="javaTimeInstant" match="java.time.Instant"/>
         <convert converter="bean" match="org.airsonic.player.ajax.PlayQueueInfo"/>
         <convert converter="bean" match="org.airsonic.player.ajax.PlayQueueInfo$Entry"/>
@@ -40,7 +36,6 @@
         <convert converter="bean" match="org.airsonic.player.domain.ArtistBio"/>
         <convert converter="bean" match="org.airsonic.player.domain.LastFmCoverArt"/>
 
-        <convert converter="bean" match="org.airsonic.player.ajax.UploadInfo"/>
         <convert converter="bean" match="org.airsonic.player.ajax.LyricsInfo"/>
         <convert converter="bean" match="org.airsonic.player.ajax.CoverArtInfo"/>
         <convert converter="bean" match="org.airsonic.player.ajax.SimilarArtist"/>

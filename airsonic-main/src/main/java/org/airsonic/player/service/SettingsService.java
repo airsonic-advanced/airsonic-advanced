@@ -245,6 +245,7 @@ public class SettingsService {
     private List<MusicFolder> cachedMusicFolders;
     private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
     private RateLimiter downloadRateLimiter;
+    private RateLimiter uploadRateLimiter;
     private Pattern excludePattern;
 
     // Array of obsolete keys.  Used to clean property file.
@@ -627,7 +628,7 @@ public class SettingsService {
      * @return The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public long getDownloadBitrateLimit() {
-        return Long.parseLong(getProperty(KEY_DOWNLOAD_BITRATE_LIMIT, "" + DEFAULT_DOWNLOAD_BITRATE_LIMIT));
+        return getLong(KEY_DOWNLOAD_BITRATE_LIMIT, DEFAULT_DOWNLOAD_BITRATE_LIMIT);
     }
 
     public RateLimiter getDownloadBitrateLimiter() {
@@ -653,7 +654,7 @@ public class SettingsService {
      * @param limit The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setDownloadBitrateLimit(long limit) {
-        setProperty(KEY_DOWNLOAD_BITRATE_LIMIT, String.valueOf(limit));
+        setLong(KEY_DOWNLOAD_BITRATE_LIMIT, limit);
         getDownloadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
@@ -664,11 +665,19 @@ public class SettingsService {
         return getLong(KEY_UPLOAD_BITRATE_LIMIT, DEFAULT_UPLOAD_BITRATE_LIMIT);
     }
 
+    public RateLimiter getUploadBitrateLimiter() {
+        if (uploadRateLimiter == null) {
+            uploadRateLimiter = RateLimiter.create(adjustBitrateLimit(getUploadBitrateLimit()));
+        }
+        return uploadRateLimiter;
+    }
+
     /**
      * @param limit The upload bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setUploadBitrateLimit(long limit) {
         setLong(KEY_UPLOAD_BITRATE_LIMIT, limit);
+        getUploadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
     public String getDownsamplingCommand() {
