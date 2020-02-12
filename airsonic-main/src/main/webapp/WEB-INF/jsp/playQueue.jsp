@@ -177,7 +177,7 @@
     }
 
     function monitorNowPlaying() {
-        StompClient.connect({
+        StompClient.subscribe({
             '/topic/nowPlaying/current/add': function(msg) {
                 var nowPlayingInfo = JSON.parse(msg.body);
                 onNowPlayingChanged(nowPlayingInfo);
@@ -192,7 +192,7 @@
             }
         });
     }
-    
+
     function onNowPlayingChanged(nowPlayingInfo) {
         if (nowPlayingInfo != null && nowPlayingInfo.streamUrl != currentStreamUrl && nowPlayingInfo.playerId == ${model.player.id}) {
             getPlayQueue();

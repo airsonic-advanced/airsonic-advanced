@@ -7,41 +7,78 @@
         onConnect: null,
         onDisconnect: null,
         onError: null,
-        connect: function(subscriptions) {
+        reconnectionRequired: function() {
+            return this.stompClient == null || !this.stompClient.connected;
+        },
+        send: function(dest, msg) {
+            if (this.reconnectionRequired()) {
+                this.connect(function(stompclient) {
+                    stompclient.send(location, msg);
+                });
+            } else {
+                this.stompClient.send(dest, {}, msg);
+            }
+        }, connect: function(runAfterConnect) {
             if (this.stompClient != null) {
                 this.disconnect();
             }
             var socket = new SockJS('/airsonic');
             this.stompClient = Stomp.over(socket);  
             this.stompClient.reconnect_delay = 30000;
+            var stompclient = this;
             this.stompClient.connect({}, function(frame) {
                 console.log('Connected', frame);
-                if (StompClient.onConnect) {
-                    StompClient.onConnect(frame);
+                if (stompclient.onConnect) {
+                    stompclient.onConnect(frame);
                 }
-                if (subscriptions) {
-                    for (var sub in subscriptions) {
-                        StompClient.stompClient.subscribe(sub, subscriptions[sub]);
-                    }
+                if (runAfterConnect) {
+                    runAfterConnect(stompclient);
                 }
             }, function(frame) {
                 console.log('Error', frame);
-                if (StompClient.onError) {
-                    StompClient.onError(frame);
+                if (stompclient.onError) {
+                    stompclient.onError(frame);
                 }
             }, function(frame) {
                 console.log('Disconnected', frame);
-                if (StompClient.onDisconnect) {
-                    StompClient.onDisconnect(frame);
+                if (stompclient.onDisconnect) {
+                    stompclient.onDisconnect(frame);
                 }
             });
         },
-        disconnect: function() {
+        // object containing:
+        // - 'subscription-location': callback(msg) (transformed to form below), or
+        // - 'subscription-location': {callback: fn(msg), subscriptionArgs: {}, subscription: obj (generated)}
+        subscriptions: {},
+        subscribe: function(subscriptions, resubscribeToEverything) {
+            resubscribeToEverything = (typeof resubscribeToEverything !== 'boolean') ? false : resubscribeToEverything;
+            var reconnect = this.reconnectionRequired();
+            for (var sub in subscriptions) {
+                // unsubscribe if already subscribed and connected
+                if (this.subscriptions[sub] && !reconnect && this.subscriptions[sub].subscription) {
+                    this.subscriptions[sub].subscription.unsubscribe();
+                }
+                var subArg = (typeof subscriptions[sub] == 'function') ? {callback: subscriptions[sub], subArgs: {}} : subscriptions[sub];
+                this.subscriptions[sub] = subArg;
+            }
+            if (reconnect) {
+                this.connect(function(stompclient) {
+                    stompclient.subscribe({}, true);
+                });
+            } else {
+                subscriptions = resubscribeToEverything ? this.subscriptions : subscriptions;
+                for (var sub in subscriptions) {
+                    var subscription = this.stompClient.subscribe(sub, this.subscriptions[sub].callback);
+                    this.subscriptions[sub].subscription = subscription;
+                }
+            }
+        }, disconnect: function() {
             if (this.stompClient != null) {
+                var stompclient = this;
                 this.stompClient.disconnect(function() {
                     console.log('Disconnected from Airsonic websocket');
-                    if (StompClient.onDisconnect) {
-                        StompClient.onDisconnect();
+                    if (stompclient.onDisconnect) {
+                        stompclient.onDisconnect();
                     }
                 });
             }
