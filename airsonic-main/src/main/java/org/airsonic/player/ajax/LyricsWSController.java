@@ -46,7 +46,7 @@ import java.net.SocketException;
 import static org.airsonic.player.util.XMLUtil.createSAXBuilder;
 
 /**
- * Provides AJAX-enabled services for retrieving song lyrics from chartlyrics.com.
+ * Provides services for retrieving song lyrics from chartlyrics.com.
  * <p/>
  * See http://www.chartlyrics.com/api.aspx for details.
  *
