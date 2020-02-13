@@ -98,7 +98,7 @@
             $("#playlistBody").children().not("#pattern").remove();
 
             // Create a new set cloned from the pattern row
-            var id = topSongs.length;
+            var id = songs.length;
             while (id--) {
                 var song  = songs[id];
                 var node = cloneNodeBySelector("#pattern", id);

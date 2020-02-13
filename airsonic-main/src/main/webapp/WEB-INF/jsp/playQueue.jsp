@@ -541,7 +541,7 @@
         $("#playlistBody").children().not("#pattern").remove();
 
         // Create a new set cloned from the pattern row
-        var id = topSongs.length;
+        var id = songs.length;
         while (id--) {
             var song  = songs[id];
             var node = cloneNodeBySelector("#pattern", id);
@@ -717,8 +717,7 @@
     function updateCurrentImage() {
         for (var i = 0; i < songs.length; i++) {
             var song  = songs[i];
-            var id = i + 1;
-            var image = $("#currentImage" + id);
+            var image = $("#currentImage" + i);
 
             if (image) {
                 if (song.streamUrl == currentStreamUrl) {
