@@ -54,7 +54,7 @@ public class CoverArtWSController {
         try {
             MediaFile mediaFile = mediaFileService.getMediaFile(req.getAlbumId());
             saveCoverArt(mediaFile.getPath(), req.getUrl());
-            return null;
+            return "OK";
         } catch (Exception e) {
             LOG.warn("Failed to save cover art for album {}", req.getAlbumId(), e);
             return e.toString();
@@ -62,7 +62,8 @@ public class CoverArtWSController {
     }
 
     private void saveCoverArt(String path, String url) throws Exception {
-        RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(20 * 1000) // 20 seconds
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(20 * 1000) // 20 seconds
                 .setSocketTimeout(20 * 1000) // 20 seconds
                 .build();
         HttpGet method = new HttpGet(url);
@@ -104,8 +105,7 @@ public class CoverArtWSController {
             while (true) {
                 Path coverFile = mediaFileService.getCoverArt(dir);
                 if (coverFile != null && !isMediaFile(coverFile) && !newCoverFile.equals(coverFile)) {
-                    Files.move(coverFile, Paths.get(coverFile.toRealPath().toString() + ".old"),
-                            StandardCopyOption.REPLACE_EXISTING);
+                    Files.move(coverFile, Paths.get(coverFile.toRealPath().toString() + ".old"), StandardCopyOption.REPLACE_EXISTING);
                     LOG.info("Renamed old image file " + coverFile);
 
                     // Must refresh again.

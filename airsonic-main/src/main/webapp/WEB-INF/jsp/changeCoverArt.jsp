@@ -19,11 +19,9 @@
 
         function setImageComplete(errorDetails) {
             $("#wait").hide();
-            if (errorDetails != null) {
-                var details = $("#errorDetails");
-                details.text(errorDetails);
+            if (errorDetails != "OK") {
+                $("#errorDetails").text(errorDetails).show();
                 $("#error").show();
-                details.show();
             } else {
                 $("#success").show();
             }
