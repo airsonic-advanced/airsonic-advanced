@@ -46,7 +46,7 @@ public class CoverArtWSController {
     /**
      * Downloads and saves the cover art at the given URL.
      *
-     * @return The error string if something goes wrong, <code>null</code> otherwise.
+     * @return The error string if something goes wrong, <code>"OK"</code> otherwise.
      */
     @MessageMapping("/coverart/set")
     @SendToUser(broadcast = false)
