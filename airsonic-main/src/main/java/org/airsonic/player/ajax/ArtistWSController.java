@@ -12,7 +12,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
-
 import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
