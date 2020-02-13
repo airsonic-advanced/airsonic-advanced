@@ -50,7 +50,7 @@
         // - 'subscription-location': callback(msg) (transformed to form below), or
         // - 'subscription-location': {callback: fn(msg), subscriptionArgs: {}, subscription: obj (generated)}
         subscriptions: {},
-        subscribe: function(subscriptions, resubscribeToEverything) {
+        subscribe: function(subscriptions, resubscribeToEverything, afterSubscription) {
             resubscribeToEverything = (typeof resubscribeToEverything !== 'boolean') ? false : resubscribeToEverything;
             var reconnect = this.reconnectionRequired();
             for (var sub in subscriptions) {
@@ -64,12 +64,18 @@
             if (reconnect) {
                 this.connect(function(stompclient) {
                     stompclient.subscribe({}, true);
+                    if (afterSubscription) {
+                        afterSubscription();
+                    }
                 });
             } else {
                 subscriptions = resubscribeToEverything ? this.subscriptions : subscriptions;
                 for (var sub in subscriptions) {
                     var subscription = this.stompClient.subscribe(sub, this.subscriptions[sub].callback);
                     this.subscriptions[sub].subscription = subscription;
+                }
+                if (afterSubscription) {
+                    afterSubscription();
                 }
             }
         }, disconnect: function() {

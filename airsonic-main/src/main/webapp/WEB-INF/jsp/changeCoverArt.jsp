@@ -3,16 +3,9 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/coverArtService.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
+    <%@ include file="websocket.jsp" %>
 
     <script type="text/javascript" language="javascript">
-        dwr.engine.setErrorHandler(function() {
-            $("#wait").hide();
-            dwr.util.setValue("errorDetails", "Sorry, an error occurred while searching for cover art.");
-            $("#errorDetails").show();
-        });
 
         function setImage(imageUrl) {
             $("#wait").show();
@@ -21,15 +14,14 @@
             $("#error").hide();
             $("#errorDetails").hide();
             $("#noImagesFound").hide();
-            coverArtService.setCoverArtImage(${model.id}, imageUrl, setImageComplete);
+            StompClient.send("/app/coverart/set", JSON.stringify({albumId: ${model.id}, url: imageUrl}));
         }
 
         function setImageComplete(errorDetails) {
             $("#wait").hide();
-            if (errorDetails != null) {
-                dwr.util.setValue("errorDetails", errorDetails, { escapeHtml:false });
+            if (errorDetails != "OK") {
+                $("#errorDetails").text(errorDetails).show();
                 $("#error").show();
-                $("#errorDetails").show();
             } else {
                 $("#success").show();
             }
@@ -69,13 +61,24 @@
             $("#errorDetails").hide();
             $("#noImagesFound").hide();
 
-            var artist = dwr.util.getValue("artist");
-            var album = dwr.util.getValue("album");
-            coverArtService.searchCoverArt(artist, album, searchComplete);
+            var artist = $("#artist").val();
+            var album = $("#album").val();
+            StompClient.send("/app/coverart/search", JSON.stringify({artist: artist, album: album}));
+        }
+
+        function init() {
+            StompClient.subscribe({
+                "/user/queue/coverart/search": function(msg) {
+                    searchComplete(JSON.parse(msg.body));
+                },
+                "/user/queue/coverart/set": function(msg) {
+                    setImageComplete(msg.body);
+                }
+            }, false, search);
         }
     </script>
 </head>
-<body class="mainframe bgcolor1" onload="search()">
+<body class="mainframe bgcolor1" onload="init()">
 <h1><fmt:message key="changecoverart.title"/></h1>
 <form action="javascript:search()">
     <sec:csrfInput />
@@ -86,7 +89,7 @@
     </tr></table>
 </form>
 
-<form action="javascript:setImage(dwr.util.getValue('url'))">
+<form action="javascript:setImage($('input[name=\'url\']').val())">
     <sec:csrfInput />
     <table><tr>
         <td><label for="url"><fmt:message key="changecoverart.address"/></label></td>
