@@ -35,7 +35,9 @@ import org.jdom2.Namespace;
 import org.jdom2.input.SAXBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.annotation.SendToUser;
+import org.springframework.stereotype.Controller;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -47,15 +49,13 @@ import static org.airsonic.player.util.XMLUtil.createSAXBuilder;
  * Provides AJAX-enabled services for retrieving song lyrics from chartlyrics.com.
  * <p/>
  * See http://www.chartlyrics.com/api.aspx for details.
- * <p/>
- * This class is used by the DWR framework (http://getahead.ltd.uk/dwr/).
  *
- * @author Sindre Mehus
  */
-@Service("ajaxLyricsService")
-public class LyricsService {
+@Controller
+@MessageMapping("/lyrics")
+public class LyricsWSController {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LyricsService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LyricsWSController.class);
 
     /**
      * Returns lyrics for the given song and artist.
@@ -64,6 +64,12 @@ public class LyricsService {
      * @param song   The song.
      * @return The lyrics, never <code>null</code> .
      */
+    @MessageMapping("/get")
+    @SendToUser(broadcast = false)
+    public LyricsInfo getLyrics(LyricsGetRequest req) {
+        return getLyrics(req.getArtist(), req.getSong());
+    }
+
     public LyricsInfo getLyrics(String artist, String song) {
         LyricsInfo lyrics = new LyricsInfo();
         try {
@@ -113,6 +119,35 @@ public class LyricsService {
         try (CloseableHttpClient client = HttpClients.createDefault()) {
             ResponseHandler<String> responseHandler = new BasicResponseHandler();
             return client.execute(method, responseHandler);
+        }
+    }
+
+    public static class LyricsGetRequest {
+        private String artist;
+        private String song;
+
+        public LyricsGetRequest() {
+        }
+
+        public LyricsGetRequest(String artist, String song) {
+            this.artist = artist;
+            this.song = song;
+        }
+
+        public String getArtist() {
+            return artist;
+        }
+
+        public void setArtist(String artist) {
+            this.artist = artist;
+        }
+
+        public String getSong() {
+            return song;
+        }
+
+        public void setSong(String song) {
+            this.song = song;
         }
     }
 }
