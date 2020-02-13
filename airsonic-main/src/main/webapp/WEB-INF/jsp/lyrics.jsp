@@ -2,46 +2,48 @@
 
 <html><head>
     <%@ include file="head.jsp" %>
+    <%@ include file="jquery.jsp" %>
+    <%@ include file="websocket.jsp" %>
     <title><fmt:message key="lyrics.title"/></title>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/lyricsService.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
 
     <script type="text/javascript" language="javascript">
-
-        dwr.engine.setErrorHandler(null);
-
         function init() {
-            getLyrics('${model.artist}', '${model.song}');
+            StompClient.subscribe({
+                "/user/queue/lyrics/get": function(msg) {
+                    getLyricsCallback(JSON.parse(msg.body));
+                }
+            }, false, function() {
+                getLyrics('${model.artist}', '${model.song}');
+            });
         }
 
         function getLyrics(artist, song) {
-            $("wait").style.display = "inline";
-            $("lyrics").style.display = "none";
-            $("noLyricsFound").style.display = "none";
-            $("tryLater").style.display = "none";
-            lyricsService.getLyrics(artist, song, getLyricsCallback);
+            $("#wait").css("display", "inline");
+            $("#lyrics").css("display", "none");
+            $("#noLyricsFound").css("display", "none");
+            $("#tryLater").css("display", "none");
+            StompClient.send("/app/lyrics/get", JSON.stringify({artist: artist, song: song}));
         }
 
         function getLyricsCallback(lyricsInfo) {
-            dwr.util.setValue("lyricsHeader", lyricsInfo.artist + " - " + lyricsInfo.title);
+            $("#lyricsHeader").text(lyricsInfo.artist + " - " + lyricsInfo.title);
             var lyrics;
             if (lyricsInfo.lyrics != null) {
                 lyrics = lyricsInfo.lyrics.replace(/\n/g, "<br>");
             }
-            dwr.util.setValue("lyricsText", lyrics, { escapeHtml:false });
-            $("wait").style.display = "none";
+            $("#lyricsText").html(lyrics);
+            $("#wait").css("display", "none");
             if (lyricsInfo.tryLater) {
-                $("tryLater").style.display = "inline";
+                $("#tryLater").css("display", "inline");
             } else if (lyrics != null) {
-                $("lyrics").style.display = "inline";
+                $("#lyrics").css("display", "inline");
             } else {
-                $("noLyricsFound").style.display = "inline";
+                $("#noLyricsFound").css("display", "inline");
             }
         }
 
         function search() {
-            getLyrics(dwr.util.getValue('artist'), dwr.util.getValue('song'));
+            getLyrics($('#artist').val(), $('#song').val());
         }
     </script>
 

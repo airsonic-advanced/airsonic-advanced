@@ -20,7 +20,7 @@
 package org.airsonic.player.controller;
 
 import org.airsonic.player.ajax.LyricsInfo;
-import org.airsonic.player.ajax.LyricsService;
+import org.airsonic.player.ajax.LyricsWSController;
 import org.airsonic.player.ajax.PlayQueueService;
 import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.dao.AlbumDao;
@@ -120,7 +120,7 @@ public class SubsonicRESTController {
     @Autowired
     private PlaylistService playlistService;
     @Autowired
-    private LyricsService lyricsService;
+    private LyricsWSController lyricsWSController;
     @Autowired
     private PlayQueueService playQueueService;
     @Autowired
@@ -2196,7 +2196,7 @@ public class SubsonicRESTController {
         request = wrapRequest(request);
         String artist = request.getParameter("artist");
         String title = request.getParameter("title");
-        LyricsInfo lyrics = lyricsService.getLyrics(artist, title);
+        LyricsInfo lyrics = lyricsWSController.getLyrics(artist, title);
 
         Lyrics result = new Lyrics();
         result.setArtist(lyrics.getArtist());
