@@ -8,7 +8,6 @@
     <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/multiService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
@@ -35,28 +34,36 @@
             }});
 
         <c:if test="${model.showArtistInfo}">
-        loadArtistInfo();
+        StompClient.subscribe({
+            "/user/queue/artist/info": function(msg) {
+                loadArtistInfoCallback(JSON.parse(msg.body));
+            }
+        }, false, loadArtistInfo);
         </c:if>
     }
 
+    <c:if test="${model.showArtistInfo}">
     function loadArtistInfo() {
-        multiService.getArtistInfo(${model.dir.id}, 8, 0, function (artistInfo) {
-            if (artistInfo.similarArtists.length > 0) {
-                var html = "";
-                for (var i = 0; i < artistInfo.similarArtists.length; i++) {
-                    html += "<a href='main.view?id=" + artistInfo.similarArtists[i].mediaFileId + "' target='main'>" +
-                            escapeHtml(artistInfo.similarArtists[i].artistName) + "</a>";
-                    if (i < artistInfo.similarArtists.length - 1) {
-                        html += " <span class='similar-artist-divider'>|</span> ";
-                    }
-                }
-                $("#similarArtists").append(html);
-                $("#similarArtists").show();
-                $("#similarArtistsTitle").show();
-                $("#similarArtistsRadio").show();
-            }
-        });
+        StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: ${model.dir.id}, maxSimilarArtists: 8, maxTopSongs: 0}));
     }
+
+    function loadArtistInfoCallback(artistInfo) {
+        if (artistInfo.similarArtists.length > 0) {
+            var html = "";
+            for (var i = 0; i < artistInfo.similarArtists.length; i++) {
+                html += "<a href='main.view?id=" + artistInfo.similarArtists[i].mediaFileId + "' target='main'>" +
+                        escapeHtml(artistInfo.similarArtists[i].artistName) + "</a>";
+                if (i < artistInfo.similarArtists.length - 1) {
+                    html += " <span class='similar-artist-divider'>|</span> ";
+                }
+            }
+            $("#similarArtists").append(html);
+            $("#similarArtists").show();
+            $("#similarArtistsTitle").show();
+            $("#similarArtistsRadio").show();
+        }
+    }
+    </c:if>
 
     <!-- actionSelected() is invoked when the users selects from the "More actions..." combo box. -->
     function actionSelected(id) {

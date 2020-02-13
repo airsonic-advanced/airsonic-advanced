@@ -7,10 +7,6 @@
     </init>
     <allow>
 
-        <create creator="spring" javascript="multiService">
-            <param name="beanName" value="ajaxMultiService"/>
-        </create>
-
         <create creator="spring" javascript="playQueueService">
             <param name="beanName" value="ajaxPlayQueueService"/>
         </create>
@@ -26,10 +22,6 @@
         <convert converter="bean" match="org.airsonic.player.ajax.PlaylistInfo$Entry"/>
         <convert converter="bean" match="org.airsonic.player.domain.Playlist"/>
         <convert converter="bean" match="org.airsonic.player.domain.ArtistBio"/>
-
-        <convert converter="bean" match="org.airsonic.player.ajax.SimilarArtist"/>
-        <convert converter="bean" match="org.airsonic.player.ajax.ArtistInfo"/>
-        <convert converter="bean" match="org.airsonic.player.ajax.TopSong"/>
 
     </allow>
 </dwr>

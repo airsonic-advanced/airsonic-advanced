@@ -27,7 +27,6 @@
     <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/multiService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
@@ -43,79 +42,85 @@
         });
 
         <c:if test="${model.showArtistInfo}">
-        loadArtistInfo();
+        StompClient.subscribe({
+            "/user/queue/artist/info": function(msg) {
+                loadArtistInfoCallback(JSON.parse(msg.body));
+            }
+        }, false, loadArtistInfo);
         </c:if>
     }
 
+    <c:if test="${model.showArtistInfo}">
     function loadArtistInfo() {
-        multiService.getArtistInfo(${model.dir.id}, 8, 50, function (artistInfo) {
-            if (artistInfo.similarArtists.length > 0) {
+        StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: ${model.dir.id}, maxSimilarArtists: 8, maxTopSongs: 50}));
+    }
 
-                var html = "";
-                for (var i = 0; i < artistInfo.similarArtists.length; i++) {
-                    html += "<a href='main.view?id=" + artistInfo.similarArtists[i].mediaFileId + "' target='main'>" +
-                            escapeHtml(artistInfo.similarArtists[i].artistName) + "</a>";
-                    if (i < artistInfo.similarArtists.length - 1) {
-                        html += " <span class='similar-artist-divider'>|</span> ";
-                    }
+    function loadArtistInfoCallback(artistInfo) {
+        if (artistInfo.similarArtists.length > 0) {
+
+            var html = "";
+            for (var i = 0; i < artistInfo.similarArtists.length; i++) {
+                html += "<a href='main.view?id=" + artistInfo.similarArtists[i].mediaFileId + "' target='main'>" +
+                        escapeHtml(artistInfo.similarArtists[i].artistName) + "</a>";
+                if (i < artistInfo.similarArtists.length - 1) {
+                    html += " <span class='similar-artist-divider'>|</span> ";
                 }
-                $("#similarArtists").append(html);
-                $("#similarArtists").show();
-                $("#similarArtistsTitle").show();
-                $("#similarArtistsRadio").show();
+            }
+            $("#similarArtists").append(html);
+            $("#similarArtists").show();
+            $("#similarArtistsTitle").show();
+            $("#similarArtistsRadio").show();
+            $("#artistInfoTable").show();
+        }
+
+        if (artistInfo.artistBio && artistInfo.artistBio.biography) {
+            $("#artistBio").append(artistInfo.artistBio.biography);
+            if (artistInfo.artistBio.largeImageUrl) {
+                $("#artistImage").attr({
+                      "src": artistInfo.artistBio.largeImageUrl,
+                      "class": "fancy"
+                });
+                $("#artistImageZoom").attr("href", artistInfo.artistBio.largeImageUrl);
+                $("#artistImage").show();
                 $("#artistInfoTable").show();
             }
+        }
 
-            if (artistInfo.artistBio && artistInfo.artistBio.biography) {
-                $("#artistBio").append(artistInfo.artistBio.biography);
-                if (artistInfo.artistBio.largeImageUrl) {
-                    $("#artistImage").attr({
-                          "src": artistInfo.artistBio.largeImageUrl,
-                          "class": "fancy"
-                    });
-                    $("#artistImageZoom").attr("href", artistInfo.artistBio.largeImageUrl);
-                    $("#artistImage").show();
-                    $("#artistInfoTable").show();
+        this.topSongs = artistInfo.topSongs;
+
+        if (topSongs.length > 0) {
+            $("#topSongsHeader").show();
+            $("#playTopSongs").show();
+
+            // Delete all the rows except for the "pattern" row
+            $("#topSongsBody").children().not("#pattern").remove();
+
+            // Create a new set cloned from the pattern row
+            for (var i = 0; i < topSongs.length; i++) {
+                var song  = topSongs[i];
+                var id = i + 1;
+                dwr.util.cloneNode("pattern", { idSuffix:id });
+                if (song.starred) {
+                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
+                } else {
+                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
                 }
+                $("#rank" + id).text(i + 1);
+                $("#title" + id).text(song.title);
+                $("#title" + id).attr("title", song.title);
+                $("#album" + id).text(song.album);
+                $("#album" + id).attr("title", song.album);
+                $("#albumUrl" + id).attr("href", "main.view?id=" + song.id);
+                $("#artist" + id).text(song.artist);
+                $("#artist" + id).attr("title", song.artist);
+                $("#songDuration" + id).text(song.durationAsString);
+
+                // Note: show() method causes page to scroll to top.
+                $("#pattern" + id).css("display", "table-row");
             }
-
-            this.topSongs = artistInfo.topSongs;
-
-            if (topSongs.length > 0) {
-                $("#topSongsHeader").show();
-                $("#playTopSongs").show();
-
-                // Delete all the rows except for the "pattern" row
-                dwr.util.removeAllRows("topSongsBody", { filter:function(tr) {
-                    return (tr.id != "pattern");
-                }});
-
-                // Create a new set cloned from the pattern row
-                for (var i = 0; i < topSongs.length; i++) {
-                    var song  = topSongs[i];
-                    var id = i + 1;
-                    dwr.util.cloneNode("pattern", { idSuffix:id });
-                    if (song.starred) {
-                        $("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
-                    } else {
-                        $("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
-                    }
-                    $("#rank" + id).text(i + 1);
-                    $("#title" + id).text(song.title);
-                    $("#title" + id).attr("title", song.title);
-                    $("#album" + id).text(song.album);
-                    $("#album" + id).attr("title", song.album);
-                    $("#albumUrl" + id).attr("href", "main.view?id=" + song.id);
-                    $("#artist" + id).text(song.artist);
-                    $("#artist" + id).attr("title", song.artist);
-                    $("#songDuration" + id).text(song.durationAsString);
-
-                    // Note: show() method causes page to scroll to top.
-                    $("#pattern" + id).css("display", "table-row");
-                }
-            }
-        });
+        }
     }
+    </c:if>
 
     function toggleStarTopSong(index, imageId) {
         toggleStar(topSongs[index].id, imageId);
