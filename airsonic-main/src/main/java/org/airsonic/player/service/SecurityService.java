@@ -143,7 +143,7 @@ public class SecurityService implements UserDetailsService {
      * @param caseSensitive If false, will do a case insensitive search
      * @return The corresponding User
      */
-    @Cacheable(key = "#username", condition = "#caseSensitive")
+    @Cacheable(key = "#username", condition = "#caseSensitive", unless = "#result == null")
     public User getUserByName(String username, boolean caseSensitive) {
         return userDao.getUserByName(username, caseSensitive);
     }
