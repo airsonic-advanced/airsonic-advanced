@@ -36,7 +36,7 @@
 
                 for (var i = 0; i < searchResults.length; i++) {
                     var result = searchResults[i];
-                    var node = $("#template").clone();
+                    var node = cloneNodeBySelector("#template", i);
 
                     node.find(".search-result-link").attr("href", "javascript:setImage('" + result.imageUrl + "');");
                     node.find(".search-result-image").attr("src", result.imageUrl);

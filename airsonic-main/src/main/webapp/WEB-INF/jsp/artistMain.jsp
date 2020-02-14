@@ -25,8 +25,6 @@
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
     <%@ include file="websocket.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
@@ -96,27 +94,29 @@
             $("#topSongsBody").children().not("#pattern").remove();
 
             // Create a new set cloned from the pattern row
-            for (var i = 0; i < topSongs.length; i++) {
-                var song  = topSongs[i];
-                var id = i + 1;
-                dwr.util.cloneNode("pattern", { idSuffix:id });
+            var id = topSongs.length;
+            while (id--) {
+                var song  = topSongs[id];
+
+                var node = cloneNodeBySelector("#pattern", id);
                 if (song.starred) {
-                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
+                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
                 } else {
-                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
+                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
                 }
-                $("#rank" + id).text(i + 1);
-                $("#title" + id).text(song.title);
-                $("#title" + id).attr("title", song.title);
-                $("#album" + id).text(song.album);
-                $("#album" + id).attr("title", song.album);
-                $("#albumUrl" + id).attr("href", "main.view?id=" + song.id);
-                $("#artist" + id).text(song.artist);
-                $("#artist" + id).attr("title", song.artist);
-                $("#songDuration" + id).text(song.durationAsString);
+                node.find("#rank" + id).text(i + 1);
+                node.find("#title" + id).text(song.title);
+                node.find("#title" + id).attr("title", song.title);
+                node.find("#album" + id).text(song.album);
+                node.find("#album" + id).attr("title", song.album);
+                node.find("#albumUrl" + id).attr("href", "main.view?id=" + song.id);
+                node.find("#artist" + id).text(song.artist);
+                node.find("#artist" + id).attr("title", song.artist);
+                node.find("#songDuration" + id).text(song.durationAsString);
 
                 // Note: show() method causes page to scroll to top.
-                $("#pattern" + id).css("display", "table-row");
+                node.css("display", "table-row");
+                node.insertAfter("#pattern")
             }
         }
     }
@@ -325,17 +325,17 @@
     <tbody id="topSongsBody">
     <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
         <td class="fit">
-            <img id="starSong" style="height:18px;" onclick="toggleStarTopSong(this.id.substring(8) - 1, '#starSong' + this.id.substring(8))" src="<spring:theme code='ratingOffImage'/>"
+            <img id="starSong" style="height:18px;" onclick="toggleStarTopSong(this.id.substring(8), '#starSong' + this.id.substring(8))" src="<spring:theme code='ratingOffImage'/>"
                  style="cursor:pointer" alt="" title=""></td>
         <td class="fit">
             <img id="play" src="<spring:theme code='playImage'/>" alt="<fmt:message key='common.play'/>" title="<fmt:message key='common.play'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="playTopSong(this.id.substring(4) - 1)"></td>
+                 style="padding-right:0.1em;cursor:pointer" onclick="playTopSong(this.id.substring(4))"></td>
         <td class="fit">
             <img id="add" src="<spring:theme code='addImage'/>" alt="<fmt:message key='common.add'/>" title="<fmt:message key='common.add'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="addTopSong(this.id.substring(3) - 1)"></td>
+                 style="padding-right:0.1em;cursor:pointer" onclick="addTopSong(this.id.substring(3))"></td>
         <td class="fit" style="padding-right:30px">
             <img id="addNext" src="<spring:theme code='addNextImage'/>" alt="<fmt:message key='main.addnext'/>" title="<fmt:message key='main.addnext'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="addNextTopSong(this.id.substring(7) - 1)"></td>
+                 style="padding-right:0.1em;cursor:pointer" onclick="addNextTopSong(this.id.substring(7))"></td>
         <td class="fit rightalign"><span id="rank" class="detail">Rank</span></td>
         <td class="truncate"><span id="title" class="songTitle">Title</span></td>
         <td class="truncate"><a id="albumUrl" target="main"><span id="album" class="detail">Album</span></a></td>

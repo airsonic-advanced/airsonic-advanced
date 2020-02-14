@@ -4,7 +4,6 @@
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
     <%@ include file="websocket.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
     <script type="text/javascript" language="javascript">
@@ -47,7 +46,7 @@
                     $("#playlistBody").children().each(function() {
                         var id = $(this).attr("id").replace("pattern", "");
                         if (id.length > 0) {
-                            indexes.push(parseInt(id) - 1);
+                            indexes.push(parseInt(id));
                         }
                     });
                     onRearrange(indexes);
@@ -96,35 +95,34 @@
             }
 
             // Delete all the rows except for the "pattern" row
-            dwr.util.removeAllRows("playlistBody", { filter:function(tr) {
-                return (tr.id != "pattern");
-            }});
+            $("#playlistBody").children().not("#pattern").remove();
 
             // Create a new set cloned from the pattern row
-            for (var i = 0; i < songs.length; i++) {
-                var song  = songs[i];
-                var id = i + 1;
-                dwr.util.cloneNode("pattern", { idSuffix:id });
+            var id = songs.length;
+            while (id--) {
+                var song  = songs[id];
+                var node = cloneNodeBySelector("#pattern", id);
                 if (song.starred) {
-                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
+                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
                 } else {
-                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
+                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
                 }
                 if (!song.present) {
-                    $("#missing" + id).show();
+                    node.find("#missing" + id).show();
                 }
-                $("#index" + id).text(id);
-                $("#title" + id).text(song.title);
-                $("#title" + id).attr("title", song.title);
-                $("#album" + id).text(song.album);
-                $("#album" + id).attr("title", song.album);
-                $("#albumUrl" + id).attr("href", "main.view?id=" + song.id);
-                $("#artist" + id).text(song.artist);
-                $("#artist" + id).attr("title", song.artist);
-                $("#songDuration" + id).text(song.durationAsString);
+                node.find("#index" + id).text(id);
+                node.find("#title" + id).text(song.title);
+                node.find("#title" + id).attr("title", song.title);
+                node.find("#album" + id).text(song.album);
+                node.find("#album" + id).attr("title", song.album);
+                node.find("#albumUrl" + id).attr("href", "main.view?id=" + song.id);
+                node.find("#artist" + id).text(song.artist);
+                node.find("#artist" + id).attr("title", song.artist);
+                node.find("#songDuration" + id).text(song.durationAsString);
 
                 // Note: show() method causes page to scroll to top.
-                $("#pattern" + id).css("display", "table-row");
+                node.css("display", "table-row");
+                node.insertAfter("#pattern");
             }
         }
 
@@ -236,17 +234,17 @@
     <tbody id="playlistBody">
     <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
         <td class="fit">
-            <img id="starSong" onclick="onStar(this.id.substring(8) - 1)" src="<spring:theme code='ratingOffImage'/>"
+            <img id="starSong" onclick="onStar(this.id.substring(8))" src="<spring:theme code='ratingOffImage'/>"
                  style="cursor:pointer;height:18px;" alt="" title=""></td>
         <td class="fit">
             <img id="play" src="<spring:theme code='playImage'/>" alt="<fmt:message key='common.play'/>" title="<fmt:message key='common.play'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onPlay(this.id.substring(4) - 1)"></td>
+                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onPlay(this.id.substring(4))"></td>
         <td class="fit">
             <img id="add" src="<spring:theme code='addImage'/>" alt="<fmt:message key='common.add'/>" title="<fmt:message key='common.add'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAdd(this.id.substring(3) - 1)"></td>
+                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAdd(this.id.substring(3))"></td>
         <td class="fit" style="padding-right:30px">
             <img id="addNext" src="<spring:theme code='addNextImage'/>" alt="<fmt:message key='main.addnext'/>" title="<fmt:message key='main.addnext'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAddNext(this.id.substring(7) - 1)"></td>
+                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAddNext(this.id.substring(7))"></td>
 
         <td class="fit rightalign"><span id="index">1</span></td>
         <td class="fit"><span id="missing" class="playlist-missing"><fmt:message key="playlist.missing"/></span></td>
@@ -257,7 +255,7 @@
 
         <c:if test="${model.editAllowed}">
             <td class="fit">
-                <img id="removeSong" onclick="onRemove(this.id.substring(10) - 1)" src="<spring:theme code='removeImage'/>"
+                <img id="removeSong" onclick="onRemove(this.id.substring(10))" src="<spring:theme code='removeImage'/>"
                      style="cursor:pointer;height:18px;" alt="<fmt:message key='playlist.remove'/>" title="<fmt:message key='playlist.remove'/>"></td>
         </c:if>
     </tr>

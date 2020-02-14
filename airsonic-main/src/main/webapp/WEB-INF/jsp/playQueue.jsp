@@ -8,7 +8,6 @@
     <script type="text/javascript" src="<c:url value='/dwr/interface/playQueueService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/playQueueCast.js'/>"></script>
     <style type="text/css">
@@ -77,7 +76,7 @@
                 $("#playlistBody").children().each(function() {
                     var id = $(this).attr("id").replace("pattern", "");
                     if (id.length > 0) {
-                        indexes.push(parseInt(id) - 1);
+                        indexes.push(parseInt(id));
                     }
                 });
                 onRearrange(indexes);
@@ -539,98 +538,66 @@
         }
 
         // Delete all the rows except for the "pattern" row
-        dwr.util.removeAllRows("playlistBody", { filter:function(tr) {
-            return (tr.id != "pattern");
-        }});
+        $("#playlistBody").children().not("#pattern").remove();
 
         // Create a new set cloned from the pattern row
-        for (var i = 0; i < songs.length; i++) {
-            var song  = songs[i];
-            var id = i + 1;
-            dwr.util.cloneNode("pattern", { idSuffix:id });
-            if ($("#trackNumber" + id)) {
-                $("#trackNumber" + id).text(song.trackNumber);
-            }
+        var id = songs.length;
+        while (id--) {
+            var song  = songs[id];
+            var node = cloneNodeBySelector("#pattern", id);
+            node.find("#trackNumber" + id).text(song.trackNumber);
 
             if (!internetRadioEnabled) {
                 // Show star/remove buttons in all cases...
-                $("#starSong" + id).show();
-                $("#removeSong" + id).show();
-                $("#songIndex" + id).show();
+                node.find("#starSong" + id).show();
+                node.find("#removeSong" + id).show();
+                node.find("#songIndex" + id).show();
 
                 // Show star rating
                 if (song.starred) {
-                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
+                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
                 } else {
-                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
+                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
                 }
             } else {
                 // ...except from when internet radio is playing.
-                $("#starSong" + id).hide();
-                $("#removeSong" + id).hide();
-                $("#songIndex" + id).hide();
+                node.find("#starSong" + id).hide();
+                node.find("#removeSong" + id).hide();
+                node.find("#songIndex" + id).hide();
             }
 
-            if ($("#currentImage" + id) && song.streamUrl == currentStreamUrl) {
-                $("#currentImage" + id).show();
+            if (node.find("#currentImage" + id) && song.streamUrl == currentStreamUrl) {
+                node.find("#currentImage" + id).show();
                 if (isJavaJukeboxPresent()) {
                     updateJavaJukeboxPlayerControlBar(song);
                 }
             }
-            if ($("#title" + id)) {
-                $("#title" + id).text(song.title);
-                $("#title" + id).attr("title", song.title);
-            }
-            if ($("#titleUrl" + id)) {
-                $("#titleUrl" + id).text(song.title);
-                $("#titleUrl" + id).attr("title", song.title);
-                $("#titleUrl" + id).click(function () {onSkip(this.id.substring(8) - 1)});
-            }
-            if ($("#album" + id)) {
-                $("#album" + id).text(song.album);
-                $("#album" + id).attr("title", song.album);
-                $("#albumUrl" + id).attr("href", song.albumUrl);
-                // Open external internet radio links in new windows
-                if (internetRadioEnabled) {
-                    $("#albumUrl" + id).attr({
-                        target: "_blank",
-                        rel: "noopener noreferrer",
-                    });
-                }
-            }
-            if ($("#artist" + id)) {
-                $("#artist" + id).text(song.artist);
-                $("#artist" + id).attr("title", song.artist);
-            }
-            if ($("#genre" + id)) {
-                $("#genre" + id).text(song.genre);
-            }
-            if ($("#year" + id)) {
-                // If song.year is not an int, this will return NaN, which
-                // conveniently returns false in all boolean operations.
-                if (parseInt(song.year) > 0) {
-                    $("#year" + id).text(song.year);
-                } else {
-                    $("#year" + id).text("");
-                }
-            }
-            if ($("#bitRate" + id)) {
-                $("#bitRate" + id).text(song.bitRate);
-            }
-            if ($("#duration" + id)) {
-                $("#duration" + id).text(song.durationAsString);
-            }
-            if ($("#format" + id)) {
-                $("#format" + id).text(song.format);
-            }
-            if ($("#fileSize" + id)) {
-                $("#fileSize" + id).text(song.fileSize);
-            }
 
-            $("#pattern" + id).addClass((i % 2 == 0) ? "bgcolor1" : "bgcolor2");
+            node.find("#title" + id).text(song.title).attr("title", song.title);
+            node.find("#titleUrl" + id).text(song.title).attr("title", song.title).click(function () {onSkip(this.id.substring(8))});
+
+            node.find("#album" + id).text(song.album).attr("title", song.album);
+            node.find("#albumUrl" + id).attr("href", song.albumUrl);
+            // Open external internet radio links in new windows
+            if (internetRadioEnabled) {
+                node.find("#albumUrl" + id).attr({
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                });
+            }
+            node.find("#artist" + id).text(song.artist).attr("title", song.artist);
+            node.find("#genre" + id).text(song.genre);
+            node.find("#year" + id).text(parseInt(song.year) ? song.year : "");
+            node.find("#bitRate" + id).text(song.bitRate);
+            node.find("#duration" + id).text(song.durationAsString)
+            node.find("#format" + id).text(song.format);
+            node.find("#fileSize" + id).text(song.fileSize);
+
+            node.addClass((id % 2 == 0) ? "bgcolor1" : "bgcolor2");
 
             // Note: show() method causes page to scroll to top.
-            $("#pattern" + id).css("display", "table-row");
+            node.css("display", "table-row");
+            node.insertAfter("#pattern");
         }
 
         if (playQueue.sendM3U) {
@@ -750,8 +717,7 @@
     function updateCurrentImage() {
         for (var i = 0; i < songs.length; i++) {
             var song  = songs[i];
-            var id = i + 1;
-            var image = $("#currentImage" + id);
+            var image = $("#currentImage" + i);
 
             if (image) {
                 if (song.streamUrl == currentStreamUrl) {
@@ -984,10 +950,10 @@
     <tbody id="playlistBody">
         <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
             <td class="fit">
-                <img id="starSong" onclick="onStar(this.id.substring(8) - 1)" src="<spring:theme code='ratingOffImage'/>"
+                <img id="starSong" onclick="onStar(this.id.substring(8))" src="<spring:theme code='ratingOffImage'/>"
                      style="cursor:pointer;height:18px;" alt="" title=""></td>
             <td class="fit">
-                <img id="removeSong" onclick="onRemove(this.id.substring(10) - 1)" src="<spring:theme code='removeImage'/>"
+                <img id="removeSong" onclick="onRemove(this.id.substring(10))" src="<spring:theme code='removeImage'/>"
                      style="cursor:pointer; height:18px;" alt="<fmt:message key='playlist.remove'/>" title="<fmt:message key='playlist.remove'/>"></td>
             <td class="fit"><input type="checkbox" class="checkbox" id="songIndex"></td>
 
