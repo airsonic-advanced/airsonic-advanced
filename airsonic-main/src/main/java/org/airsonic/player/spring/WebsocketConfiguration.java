@@ -13,6 +13,10 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic", "/queue");
         config.setApplicationDestinationPrefixes("/app");
+
+        // this ensures publish order is serial at the cost of no parallelization and
+        // performance - if performance is bad, this should be turned off
+        config.setPreservePublishOrder(true);
     }
 
     @Override
