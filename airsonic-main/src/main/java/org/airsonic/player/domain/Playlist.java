@@ -56,6 +56,11 @@ public class Playlist {
         this.importedFrom = importedFrom;
     }
 
+    public Playlist(Playlist p) {
+        this(p.getId(), p.getUsername(), p.isShared(), p.getName(), p.getComment(), p.getFileCount(), p.getDuration(),
+                p.getCreated(), p.getChanged(), p.getImportedFrom());
+    }
+
     public int getId() {
         return id;
     }

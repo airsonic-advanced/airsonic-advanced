@@ -172,7 +172,7 @@ public class PlaylistService {
     }
 
     private List<PlaylistInfo.Entry> createEntries(List<MediaFile> files) {
-        List<PlaylistInfo.Entry> result = new ArrayList<PlaylistInfo.Entry>();
+        List<PlaylistInfo.Entry> result = new ArrayList<>();
         for (MediaFile file : files) {
             result.add(new PlaylistInfo.Entry(file.getId(), file.getTitle(), file.getArtist(), file.getAlbumName(),
                     file.getDurationString(), file.getStarredDate() != null, file.isPresent()));
@@ -238,7 +238,8 @@ public class PlaylistService {
     }
 
     public PlaylistInfo updatePlaylist(int id, String name, String comment, boolean shared) {
-        Playlist playlist = playlistService.getPlaylist(id);
+        // create new object to not mutate the cached value
+        Playlist playlist = new Playlist(playlistService.getPlaylist(id));
         playlist.setName(name);
         playlist.setComment(comment);
         playlist.setShared(shared);

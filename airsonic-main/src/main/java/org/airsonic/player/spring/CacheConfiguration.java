@@ -64,6 +64,16 @@ public class CacheConfiguration {
                                 .withClassLoader(cl)
                                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofMinutes(10)))
                                 .withService(cacheLogging))
+                .withCache("playlistCache",
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(Integer.class, Object.class, pools)
+                                .withClassLoader(cl)
+                                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(10)))
+                                .withService(cacheLogging))
+                .withCache("playlistUsersCache",
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(Integer.class, Object.class, pools)
+                                .withClassLoader(cl)
+                                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(10)))
+                                .withService(cacheLogging))
                 .build();
     }
 

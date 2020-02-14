@@ -405,12 +405,10 @@
         playQueueService.remove(index, playQueueCallback);
     }
     function onRemoveSelected() {
-        var indexes = new Array();
-        var counter = 0;
+        var indexes = [];
         for (var i = 0; i < songs.length; i++) {
-            var index = i + 1;
-            if ($("#songIndex" + index).is(":checked")) {
-                indexes[counter++] = i;
+            if ($("#songIndex" + i).is(":checked")) {
+                indexes.push(i);
             }
         }
         playQueueService.removeMany(indexes, playQueueCallback);
@@ -465,9 +463,9 @@
     function appendPlaylist(playlistId) {
         $("#dialog-select-playlist").dialog("close");
 
-        var mediaFileIds = new Array();
+        var mediaFileIds = [];
         for (var i = 0; i < songs.length; i++) {
-            if ($("#songIndex" + (i + 1)).is(":checked")) {
+            if ($("#songIndex" + i).is(":checked")) {
                 mediaFileIds.push(songs[i].id);
             }
         }
@@ -776,7 +774,7 @@
     function getSelectedIndexes() {
         var result = "";
         for (var i = 0; i < songs.length; i++) {
-            if ($("#songIndex" + (i + 1)).is(":checked")) {
+            if ($("#songIndex" + i).is(":checked")) {
                 result += "i=" + i + "&";
             }
         }
@@ -786,9 +784,9 @@
     function selectAll(b) {
         for (var i = 0; i < songs.length; i++) {
             if (b) {
-                $("#songIndex" + (i + 1)).attr("checked", "checked");
+                $("#songIndex" + i).attr("checked", "checked");
             } else {
-                $("#songIndex" + (i + 1)).removeAttr("checked");
+                $("#songIndex" + i).removeAttr("checked");
             }
         }
     }

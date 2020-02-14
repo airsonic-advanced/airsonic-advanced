@@ -83,8 +83,7 @@ public class PlaylistWSController {
     }
 
     @MessageMapping("/create/empty")
-    @SendToUser("/queue/playlists/added")
-    public Playlist createEmptyPlaylist(Principal p) {
+    public void createEmptyPlaylist(Principal p) {
         Locale locale = localeResolver.resolveLocale(p.getName());
         DateTimeFormatter dateFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(locale);
 
@@ -97,8 +96,6 @@ public class PlaylistWSController {
         playlist.setName(dateFormat.format(now.atZone(ZoneId.systemDefault())));
 
         playlistService.createPlaylist(playlist);
-
-        return playlist;
     }
 
     public int createPlaylistForPlayQueue() throws Exception {
@@ -226,7 +223,7 @@ public class PlaylistWSController {
     }
 
     public PlaylistInfo updatePlaylist(int id, String name, String comment, boolean shared) {
-        Playlist playlist = playlistService.getPlaylist(id);
+        Playlist playlist = new Playlist(playlistService.getPlaylist(id));
         playlist.setName(name);
         playlist.setComment(comment);
         playlist.setShared(shared);

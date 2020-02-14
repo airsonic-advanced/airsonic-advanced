@@ -999,6 +999,9 @@ public class SubsonicRESTController {
             return;
         }
 
+        // create new object to not mutate the cache
+        playlist = new org.airsonic.player.domain.Playlist(playlist);
+
         String name = request.getParameter("name");
         if (name != null) {
             playlist.setName(name);
