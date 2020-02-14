@@ -3,16 +3,25 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
+    <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
     <script type="text/javascript" language="javascript">
-
-        var playlists;
-
         function init() {
-            dwr.engine.setErrorHandler(null);
-            updatePlaylists();
+            StompClient.subscribe({
+                '/user/queue/playlists/added': function(msg) {
+                    addedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/user/queue/playlists/deleted': function(msg) {
+	                deletedPlaylistCallback(JSON.parse(msg.body));
+	            },
+	            '/user/queue/playlists/updated': function(msg) {
+	                updatedPlaylistCallback(JSON.parse(msg.body));
+	            },
+	            // Add existing (initial population, one time)
+	            '/app/playlists/readable': function(msg) {
+	                populatePlaylistCallback(JSON.parse(msg.body));
+	            }
+            });
 
             var mainLocation = top.main.location.href;
             if (${model.musicFolderChanged}) {
@@ -27,13 +36,9 @@
             });
         }
 
-        function updatePlaylists() {
-            playlistService.getReadablePlaylists(playlistCallback);
-        }
-
         function createEmptyPlaylist() {
             showAllPlaylists();
-            playlistService.createEmptyPlaylist(playlistCallback);
+            StompClient.send("/app/playlists/create/empty", "empty");
         }
 
         function showAllPlaylists() {
@@ -41,21 +46,47 @@
             $('#showAllPlaylists').hide('blind');
         }
 
-        function playlistCallback(playlists) {
-            this.playlists = playlists;
-
+        function populatePlaylistCallback(playlists) {
             $("#playlists").empty();
             $("#playlistOverflow").empty();
             for (var i = 0; i < playlists.length; i++) {
                 var playlist = playlists[i];
                 var overflow = i > 9;
-                $("<p class='dense'><a target='main' href='playlist.view?id=" +
-                        playlist.id + "'>" + escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")</a></p>").appendTo(overflow ? "#playlistOverflow" : "#playlists");
+                var node = $("<p class='dense playlist' id='playlistid-" + playlist.id + "'><a target='main' href='playlist.view?id=" +
+                        playlist.id + "'>" + escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")</a></p>");
+
+                if (!overflow) {
+                    node.toggleClass("nonoverflown");
+                }
+                node.appendTo(overflow ? "#playlistOverflow" : "#playlists");
             }
 
             if (playlists.length > 10 && !$('#playlistOverflow').is(":visible")) {
                 $('#showAllPlaylists').show();
             }
+        }
+
+        function deletedPlaylistCallback(playlist) {
+            var node = $("#playlist-" + playlist.id);
+            if (node.hasClass("nonoverflown")) {
+                // move one element over to take the place
+                $("#playlistOverflow").children().first().toggleClass("nonoverflown").appendTo("#playlists");
+            }
+            node.remove();
+        }
+
+        function addedPlaylistCallback(playlist) {
+            var node = $("#playlist-" + playlist.id);
+            if (node.length == 0) {
+                var node = $("<p class='dense playlist' id='playlistid-" + playlist.id + "'><a target='main' href='playlist.view?id=" +
+                        playlist.id + "'>" + escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")</a></p>");
+                node.appendTo(($(".playlist").length > 10) ? "#playlistOverflow" : "#playlists");
+            }
+        }
+
+        function updatedPlaylistCallback(playlist) {
+            deletedPlaylistCallback(playlist);
+            addedPlaylistCallback(playlist);
         }
     </script>
 </head>
