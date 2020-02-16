@@ -6,8 +6,6 @@
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
     <%@ include file="websocket.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
@@ -32,6 +30,15 @@
                     $(this).dialog("close");
                 }
             }});
+
+        StompClient.subscribe({
+            '/user/queue/playlists/writable': function(msg) {
+                playlistSelectionCallback(JSON.parse(msg.body));
+            },
+            '/user/queue/playlists/files/append': function(msg) {
+                $().toastmessage("showSuccessToast", "<fmt:message key='playlist.toast.appendtoplaylist'/>");
+            }
+        });
 
         <c:if test="${model.showArtistInfo}">
         StompClient.subscribe({
@@ -137,9 +144,10 @@
     }
 
     function onAppendPlaylist() {
-        playlistService.getWritablePlaylists(playlistCallback);
+        // retrieve writable lists so we can open dialog to ask user which playlist to append to
+        StompClient.send("/app/playlists/writable", "");
     }
-    function playlistCallback(playlists) {
+    function playlistSelectionCallback(playlists) {
         $("#dialog-select-playlist-list").empty();
         for (var i = 0; i < playlists.length; i++) {
             var playlist = playlists[i];
@@ -151,17 +159,15 @@
     function appendPlaylist(playlistId) {
         $("#dialog-select-playlist").dialog("close");
 
-        var mediaFileIds = new Array();
+        var mediaFileIds = [];
         for (var i = 0; i < ${fn:length(model.files)}; i++) {
             var checkbox = $("#songIndex" + i);
             if (checkbox && checkbox.is(":checked")) {
                 mediaFileIds.push($("#songId" + i).html());
             }
         }
-        playlistService.appendToPlaylist(playlistId, mediaFileIds, function (){
-            top.left.updatePlaylists();
-            $().toastmessage("showSuccessToast", "<fmt:message key='playlist.toast.appendtoplaylist'/>");
-        });
+
+        StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
     }
     function showAllAlbums() {
         window.location.href = updateQueryStringParameter(window.location.href, "showAll", "1");
@@ -328,8 +334,8 @@
                             <c:param name="asTable" value="true"/>
                         </c:import>
 
-                        <td class="fit"><input type="checkbox" id="songIndex${loopStatus.count - 1}">
-                            <span id="songId${loopStatus.count - 1}" style="display: none">${song.id}</span></td>
+                        <td class="fit"><input type="checkbox" id="songIndex${loopStatus.index}">
+                            <span id="songId${loopStatus.index}" style="display: none">${song.id}</span></td>
 
                         <c:if test="${model.visibility.trackNumberVisible}">
                             <td class="fit rightalign">

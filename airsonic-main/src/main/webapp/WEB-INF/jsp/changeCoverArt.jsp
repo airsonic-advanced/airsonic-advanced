@@ -37,6 +37,7 @@
                 for (var i = 0; i < searchResults.length; i++) {
                     var result = searchResults[i];
                     var node = cloneNodeBySelector("#template", i);
+                    node.appendTo(images);
 
                     node.find(".search-result-link").attr("href", "javascript:setImage('" + result.imageUrl + "');");
                     node.find(".search-result-image").attr("src", result.imageUrl);
@@ -44,7 +45,6 @@
                     node.find(".search-result-album").text(result.album);
 
                     node.show();
-                    node.appendTo(images);
                 }
 
                 $("#result").show();

@@ -144,7 +144,7 @@ public class PlaylistService {
         double duration = files.parallelStream().filter(f -> f.getDuration() != null).mapToDouble(f -> f.getDuration()).sum();
         playlist.setFileCount(files.size());
         playlist.setDuration(duration);
-        updatePlaylist(playlist);
+        updatePlaylist(playlist, true);
     }
 
     public void createPlaylist(Playlist playlist) {
@@ -191,24 +191,42 @@ public class PlaylistService {
         runAsync(() -> brokerTemplate.convertAndSend("/topic/playlists/deleted", id));
     }
 
+    public void updatePlaylist(Playlist playlist) {
+        updatePlaylist(playlist, false);
+    }
+
     /**
      * DO NOT pass in the mutated cache value. This method relies on the existing
      * cached value to check the differences
      */
     @CacheEvict(cacheNames = "playlistCache", key = "#playlist.id")
-    public void updatePlaylist(Playlist playlist) {
+    public void updatePlaylist(Playlist playlist, boolean filesChangedBroadcastContext) {
         Playlist oldPlaylist = getPlaylist(playlist.getId());
         playlistDao.updatePlaylist(playlist);
-        if (playlist.isShared()) {
-            runAsync(() -> brokerTemplate.convertAndSend("/topic/playlists/updated", playlist));
-        } else {
-            runAsync(() -> {
+        runAsync(() -> {
+            BroadcastedPlaylist bp = new BroadcastedPlaylist(playlist, filesChangedBroadcastContext);
+            if (playlist.isShared()) {
+                brokerTemplate.convertAndSend("/topic/playlists/updated", bp);
+            } else {
                 if (oldPlaylist.isShared()) {
                     brokerTemplate.convertAndSend("/topic/playlists/deleted", playlist.getId());
                 }
                 Stream.concat(Stream.of(playlist.getUsername()), getPlaylistUsers(playlist.getId()).stream())
-                        .forEach(u -> brokerTemplate.convertAndSendToUser(u, "/queue/playlists/updated", playlist));
-            });
+                        .forEach(u -> brokerTemplate.convertAndSendToUser(u, "/queue/playlists/updated", bp));
+            }
+        });
+    }
+
+    public static class BroadcastedPlaylist extends Playlist {
+        private final boolean filesChanged;
+
+        public BroadcastedPlaylist(Playlist p, boolean filesChanged) {
+            super(p);
+            this.filesChanged = filesChanged;
+        }
+
+        public boolean getFilesChanged() {
+            return filesChanged;
         }
     }
 

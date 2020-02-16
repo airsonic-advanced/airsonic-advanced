@@ -99,6 +99,7 @@
                 var song  = topSongs[id];
 
                 var node = cloneNodeBySelector("#pattern", id);
+                node.insertAfter("#pattern");
                 if (song.starred) {
                     node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
                 } else {
@@ -116,7 +117,6 @@
 
                 // Note: show() method causes page to scroll to top.
                 node.css("display", "table-row");
-                node.insertAfter("#pattern")
             }
         }
     }

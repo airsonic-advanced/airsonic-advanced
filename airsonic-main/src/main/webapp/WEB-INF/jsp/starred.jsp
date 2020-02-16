@@ -5,8 +5,6 @@
     <%@ include file="jquery.jsp" %>
     <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
     <script type="text/javascript" language="javascript">
 
         function toggleStar(mediaFileId, imageId) {
@@ -21,11 +19,16 @@
         }
 
         function onSavePlaylist() {
-            playlistService.createPlaylistForStarredSongs(function (playlistId) {
-                top.left.updatePlaylists();
-                top.left.showAllPlaylists();
-                top.main.location.href = "playlist.view?id=" + playlistId;
-                $().toastmessage("showSuccessToast", "<fmt:message key="playlist.toast.saveasplaylist"/>");
+            StompClient.send("/app/playlists/create/starred", "");
+        }
+
+        function init() {
+            StompClient.subscribe({
+                '/user/queue/playlists/create/starred': function(msg) {
+                    var playlistId = JSON.parse(msg.body);
+                    top.main.location.href = "playlist.view?id=" + playlistId;
+                    $().toastmessage("showSuccessToast", "<fmt:message key="playlist.toast.saveasplaylist"/>");
+                }
             });
         }
 
@@ -35,7 +38,7 @@
 
     </script>
 </head>
-<body class="mainframe bgcolor1">
+<body class="mainframe bgcolor1" onload="init()">
 
 <h1>
     <img src="<spring:theme code='starredImage'/>" alt="">

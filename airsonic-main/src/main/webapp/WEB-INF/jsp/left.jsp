@@ -22,7 +22,7 @@
                 },
                 // Add existing (initial population, one time)
                 '/app/playlists/readable': function(msg) {
-                     populatePlaylistCallback(JSON.parse(msg.body));
+                    populatePlaylistCallback(JSON.parse(msg.body));
                 }
             });
 
@@ -41,7 +41,7 @@
 
         function createEmptyPlaylist() {
             showAllPlaylists();
-            StompClient.send("/app/playlists/create/empty", "empty");
+            StompClient.send("/app/playlists/create/empty", "");
         }
 
         function showAllPlaylists() {
