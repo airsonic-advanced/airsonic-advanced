@@ -86,7 +86,7 @@
             });
             </c:if>
         }
-        
+
         function updatePlaylistEntries() {
             StompClient.send("/app/playlists/files/" + playlistId, "");
         }
