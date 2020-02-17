@@ -40,7 +40,7 @@
     var currentStreamUrl = null;
 
     // Is autorepeat enabled?
-    var repeatEnabled = false;
+    var repeatStatus = 'OFF';
 
     // Is the "shuffle radio" playing? (More > Shuffle Radio)
     var shuffleRadioEnabled = false;
@@ -216,7 +216,7 @@
     }
 
     function onEnded() {
-        onNext(repeatEnabled);
+        onNext(repeatStatus);
     }
 
     function createMediaElementPlayer() {
@@ -348,7 +348,7 @@
     </c:otherwise>
     </c:choose>
     }
-    function onNext(wrap) {
+    function onNext(repeatStatus) {
         var index = parseInt(getCurrentSongIndex()) + 1;
         if (shuffleRadioEnabled && index >= songs.length) {
             playQueueService.reloadSearchCriteria(function(playQueue) {
@@ -356,7 +356,9 @@
                 onSkip(index);
             });
             return;
-        } else if (wrap) {
+        } else if (repeatStatus == 'TRACK') {
+            index = index - 1;
+        } else if (repeatStatus == 'QUEUE') {
             index = index % songs.length;
         }
         onSkip(index);
@@ -491,7 +493,7 @@
 
     function playQueueCallback(playQueue) {
         songs = playQueue.entries;
-        repeatEnabled = playQueue.repeatEnabled;
+        repeatStatus = playQueue.repeatStatus;
         shuffleRadioEnabled = playQueue.shuffleRadioEnabled;
         internetRadioEnabled = playQueue.internetRadioEnabled;
 
@@ -509,12 +511,15 @@
         if ($("#toggleRepeat")) {
             if (shuffleRadioEnabled) {
                 $("#toggleRepeat").html("<fmt:message key="playlist.repeat_radio"/>");
-            } else if (repeatEnabled) {
-                $("#toggleRepeat").attr('src', '<spring:theme code="repeatOn"/>');
-                $("#toggleRepeat").attr('alt', 'Repeat On');
-            } else {
+            } else if (repeatStatus == 'QUEUE') {
+                $("#toggleRepeat").attr('src', '<spring:theme code="repeatAll"/>');
+                $("#toggleRepeat").attr('alt', 'Repeat All/Queue');
+            } else if (repeatStatus == 'OFF') {
                 $("#toggleRepeat").attr('src', '<spring:theme code="repeatOff"/>');
                 $("#toggleRepeat").attr('alt', 'Repeat Off');
+            } else if (repeatStatus == 'TRACK') {
+                $("#toggleRepeat").attr('src', '<spring:theme code="repeatOne"/>');
+                $("#toggleRepeat").attr('alt', 'Repeat One/Track');
             }
         }
 
@@ -894,7 +899,7 @@
                         <td style="white-space:nowrap;">
                           <span class="header">
                             <a href="javascript:onToggleRepeat()" id="repeatQueue" class="player-control">
-                              <img id="toggleRepeat" src="<spring:theme code='repeatOn'/>" alt="Toggle repeat" title="Toggle repeat" style="cursor:pointer; height:18px">
+                              <img id="toggleRepeat" src="<spring:theme code='repeatOff'/>" alt="Toggle repeat" title="Toggle repeat" style="cursor:pointer; height:18px">
                             </a>
                           </span> |</td>
                     </c:if>

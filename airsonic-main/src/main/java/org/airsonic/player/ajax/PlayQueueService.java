@@ -24,6 +24,7 @@ import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.dao.PlayQueueDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.PlayQueue.RepeatStatus;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.PlaylistService;
 import org.airsonic.player.util.StringUtil;
@@ -616,9 +617,9 @@ public class PlayQueueService {
         PlayQueue playQueue = player.getPlayQueue();
         if (playQueue.isShuffleRadioEnabled()) {
             playQueue.setRandomSearchCriteria(null);
-            playQueue.setRepeatEnabled(false);
+            playQueue.setRepeatStatus(RepeatStatus.OFF);
         } else {
-            playQueue.setRepeatEnabled(!player.getPlayQueue().isRepeatEnabled());
+            playQueue.setRepeatStatus(RepeatStatus.getNext(playQueue.getRepeatStatus()));
         }
         return convert(request, player, false);
     }
@@ -681,7 +682,7 @@ public class PlayQueueService {
         return new PlayQueueInfo(
             entries,
             isStopEnabled,
-            playQueue.isRepeatEnabled(),
+            playQueue.getRepeatStatus(),
             playQueue.isShuffleRadioEnabled(),
             playQueue.isInternetRadioEnabled(),
             serverSidePlaylist,

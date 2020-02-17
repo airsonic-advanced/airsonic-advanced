@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.ajax;
 
+import org.airsonic.player.domain.PlayQueue.RepeatStatus;
 import org.airsonic.player.util.StringUtil;
 
 import java.util.List;
@@ -32,7 +33,7 @@ public class PlayQueueInfo {
 
     private final List<Entry> entries;
     private final boolean stopEnabled;
-    private final boolean repeatEnabled;
+    private final RepeatStatus repeatStatus;
     private final boolean shuffleRadioEnabled;
     private final boolean internetRadioEnabled;
     private final boolean sendM3U;
@@ -40,10 +41,11 @@ public class PlayQueueInfo {
     private int startPlayerAt = -1;
     private long startPlayerAtPosition; // millis
 
-    public PlayQueueInfo(List<Entry> entries, boolean stopEnabled, boolean repeatEnabled, boolean shuffleRadioEnabled, boolean internetRadioEnabled, boolean sendM3U, float gain) {
+    public PlayQueueInfo(List<Entry> entries, boolean stopEnabled, RepeatStatus repeatStatus,
+            boolean shuffleRadioEnabled, boolean internetRadioEnabled, boolean sendM3U, float gain) {
         this.entries = entries;
         this.stopEnabled = stopEnabled;
-        this.repeatEnabled = repeatEnabled;
+        this.repeatStatus = repeatStatus;
         this.shuffleRadioEnabled = shuffleRadioEnabled;
         this.internetRadioEnabled = internetRadioEnabled;
         this.sendM3U = sendM3U;
@@ -66,8 +68,8 @@ public class PlayQueueInfo {
         return sendM3U;
     }
 
-    public boolean isRepeatEnabled() {
-        return repeatEnabled;
+    public RepeatStatus getRepeatStatus() {
+        return repeatStatus;
     }
 
     public boolean isShuffleRadioEnabled() {
