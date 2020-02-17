@@ -480,7 +480,7 @@ public class PlayQueue {
             switch (status) {
                 case OFF: return TRACK;
                 case TRACK: return QUEUE;
-                case QUEUE:
+                case QUEUE: return OFF;
                 default: return OFF;
             }
         }
