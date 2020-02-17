@@ -14,6 +14,6 @@
         <convert converter="javaTimeInstant" match="java.time.Instant"/>
         <convert converter="bean" match="org.airsonic.player.ajax.PlayQueueInfo"/>
         <convert converter="bean" match="org.airsonic.player.ajax.PlayQueueInfo$Entry"/>
-
+        <convert converter="enum" match="org.airsonic.player.domain.PlayQueue$RepeatStatus"/>
     </allow>
 </dwr>
