@@ -303,7 +303,7 @@ public class PlayerService {
         playerDao.createPlayer(player);
 
         List<Transcoding> transcodings = transcodingService.getAllTranscodings();
-        List<Transcoding> defaultActiveTranscodings = new ArrayList<Transcoding>();
+        List<Transcoding> defaultActiveTranscodings = new ArrayList<>(transcodings.size());
         for (Transcoding transcoding : transcodings) {
             if (transcoding.isDefaultActive()) {
                 defaultActiveTranscodings.add(transcoding);

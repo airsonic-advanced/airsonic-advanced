@@ -21,10 +21,14 @@ package org.airsonic.player.domain;
 
 import junit.framework.TestCase;
 
+import org.airsonic.player.domain.PlayQueue.RepeatStatus;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Objects;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit test of {@link PlayQueue}.
@@ -119,7 +123,7 @@ public class PlayQueueTestCase extends TestCase {
 
     public void testNext() {
         PlayQueue playQueue = createPlaylist(0, "A", "B", "C");
-        assertFalse(playQueue.isRepeatEnabled());
+        assertThat(playQueue.getRepeatStatus()).isEqualTo(RepeatStatus.OFF);
         playQueue.next();
         assertPlaylistEquals(playQueue, 1, "A", "B", "C");
         playQueue.next();
@@ -128,12 +132,22 @@ public class PlayQueueTestCase extends TestCase {
         assertPlaylistEquals(playQueue, -1, "A", "B", "C");
 
         playQueue = createPlaylist(0, "A", "B", "C");
-        playQueue.setRepeatEnabled(true);
-        assertTrue(playQueue.isRepeatEnabled());
+        playQueue.setRepeatStatus(RepeatStatus.QUEUE);
+        assertThat(playQueue.getRepeatStatus()).isEqualTo(RepeatStatus.QUEUE);
         playQueue.next();
         assertPlaylistEquals(playQueue, 1, "A", "B", "C");
         playQueue.next();
         assertPlaylistEquals(playQueue, 2, "A", "B", "C");
+        playQueue.next();
+        assertPlaylistEquals(playQueue, 0, "A", "B", "C");
+
+        playQueue = createPlaylist(0, "A", "B", "C");
+        playQueue.setRepeatStatus(RepeatStatus.TRACK);
+        assertThat(playQueue.getRepeatStatus()).isEqualTo(RepeatStatus.TRACK);
+        playQueue.next();
+        assertPlaylistEquals(playQueue, 0, "A", "B", "C");
+        playQueue.next();
+        assertPlaylistEquals(playQueue, 0, "A", "B", "C");
         playQueue.next();
         assertPlaylistEquals(playQueue, 0, "A", "B", "C");
     }

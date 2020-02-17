@@ -31,7 +31,7 @@ import java.util.*;
 public class PlayQueue {
 
     private List<MediaFile> files = new ArrayList<>();
-    private boolean repeatEnabled;
+    private RepeatStatus repeatStatus = RepeatStatus.OFF;
     private String name = "(unnamed)";
     private Status status = Status.PLAYING;
 
@@ -115,11 +115,15 @@ public class PlayQueue {
      * Skip to the next song in the playlist.
      */
     public synchronized void next() {
+        if (getRepeatStatus() == RepeatStatus.TRACK) {
+            return;
+        }
+
         index++;
 
         // Reached the end?
         if (index >= size()) {
-            index = isRepeatEnabled() ? 0 : -1;
+            index = (getRepeatStatus() == RepeatStatus.QUEUE) ? 0 : -1;
         }
     }
 
@@ -332,22 +336,17 @@ public class PlayQueue {
         }
     }
 
-    /**
-     * Returns whether the playlist is repeating.
-     *
-     * @return Whether the playlist is repeating.
-     */
-    public boolean isRepeatEnabled() {
-        return repeatEnabled;
+    public RepeatStatus getRepeatStatus() {
+        return repeatStatus;
     }
 
     /**
      * Sets whether the playlist is repeating.
      *
-     * @param repeatEnabled Whether the playlist is repeating.
+     * @param repeatStatus Whether the playlist is repeating (and how)
      */
-    public void setRepeatEnabled(boolean repeatEnabled) {
-        this.repeatEnabled = repeatEnabled;
+    public void setRepeatStatus(RepeatStatus repeatStatus) {
+        this.repeatStatus = repeatStatus;
     }
 
     /**
@@ -472,5 +471,18 @@ public class PlayQueue {
         TRACK,
         ARTIST,
         ALBUM
+    }
+
+    public enum RepeatStatus {
+        OFF, TRACK, QUEUE;
+
+        public static RepeatStatus getNext(RepeatStatus status) {
+            switch (status) {
+                case OFF: return TRACK;
+                case TRACK: return QUEUE;
+                case QUEUE: return OFF;
+                default: return OFF;
+            }
+        }
     }
 }
