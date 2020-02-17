@@ -4,15 +4,34 @@
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
     <%@ include file="websocket.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
     <script type="text/javascript" language="javascript">
-
-        var playlist;
+        var playlistId = ${model.playlist.id};
         var songs;
 
         function init() {
-            dwr.engine.setErrorHandler(null);
+            StompClient.subscribe({
+                '/user/queue/playlists/deleted': function(msg) {
+                    deletedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/topic/playlists/deleted': function(msg) {
+                    deletedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/user/queue/playlists/updated': function(msg) {
+                    updatedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/topic/playlists/updated': function(msg) {
+                    updatedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/user/queue/playlists/files/${model.playlist.id}': function(msg) {
+                    updatedPlaylistEntriesCallback(JSON.parse(msg.body));
+                },
+                //one-time population only
+                '/app/playlists/${model.playlist.id}': function(msg) {
+                    updatedPlaylistCallback(JSON.parse(msg.body));
+                }
+            }, false, updatePlaylistEntries);
+
+            <c:if test="${model.editAllowed}">
             $("#dialog-edit").dialog({resizable: true, width:400, autoOpen: false,
                 buttons: {
                     "<fmt:message key="common.save"/>": function() {
@@ -20,9 +39,7 @@
                         var name = $("#newName").val();
                         var comment = $("#newComment").val();
                         var shared = $("#newShared").is(":checked");
-                        $("#name").text(name);
-                        $("#comment").text(comment);
-                        playlistService.updatePlaylist(playlist.id, name, comment, shared, function (playlistInfo){playlistCallback(playlistInfo); top.left.updatePlaylists()});
+                        StompClient.send("/app/playlists/update", JSON.stringify({id: playlistId, name: name, comment: comment, shared: shared}));
                     },
                     "<fmt:message key="common.cancel"/>": function() {
                         $(this).dialog("close");
@@ -33,7 +50,7 @@
                 buttons: {
                     "<fmt:message key="common.delete"/>": function() {
                         $(this).dialog("close");
-                        playlistService.deletePlaylist(playlist.id, function (){top.left.updatePlaylists(); location = "playlists.view";});
+                        StompClient.send("/app/playlists/delete", playlistId);
                     },
                     "<fmt:message key="common.cancel"/>": function() {
                         $(this).dialog("close");
@@ -67,31 +84,51 @@
                     return trclone;
                 }
             });
-
-            getPlaylist();
+            </c:if>
         }
 
-        function getPlaylist() {
-            playlistService.getPlaylist(${model.playlist.id}, playlistCallback);
+        function updatePlaylistEntries() {
+            StompClient.send("/app/playlists/files/" + playlistId, "");
         }
 
-        function playlistCallback(playlistInfo) {
-            this.playlist = playlistInfo.playlist;
-            this.songs = playlistInfo.entries;
+        function deletedPlaylistCallback(id) {
+            $().toastmessage('showSuccessToast', '<fmt:message key="playlist.toast.deletedplaylist"/> ' + id);
+            if (playlistId == id) {
+                location = "playlists.view";
+            }
+        }
+
+        function updatedPlaylistCallback(playlist) {
+            if (playlistId == playlist.id) {
+                if (playlist.filesChanged) {
+                    updatePlaylistEntries();
+                }
+
+                $("#name").text(playlist.name);
+                $("#songCount").text(playlist.fileCount);
+                $("#duration").text(playlist.durationAsString);
+                $("#comment").text(playlist.comment);
+                $("#lastupdated").text('<fmt:message key="playlist2.lastupdated"/> ' + new Date(playlist.changed));
+
+                if (playlist.shared) {
+                    $("#shared").html("<fmt:message key="playlist2.shared"/>");
+                } else {
+                    $("#shared").html("<fmt:message key="playlist2.notshared"/>");
+                }
+
+                $("#newName").val(playlist.name);
+                $("#newComment").val(playlist.comment);
+                $("#newShared").prop("checked", playlist.shared);
+            }
+        }
+
+        function updatedPlaylistEntriesCallback(entries) {
+            this.songs = entries
 
             if (songs.length == 0) {
                 $("#empty").show();
             } else {
                 $("#empty").hide();
-            }
-
-            $("#songCount").text(playlist.fileCount);
-            $("#duration").text(playlist.durationAsString);
-
-            if (playlist.shared) {
-                $("#shared").html("<fmt:message key="playlist2.shared"/>");
-            } else {
-                $("#shared").html("<fmt:message key="playlist2.notshared"/>");
             }
 
             // Delete all the rows except for the "pattern" row
@@ -102,6 +139,8 @@
             while (id--) {
                 var song  = songs[id];
                 var node = cloneNodeBySelector("#pattern", id);
+                node.insertAfter("#pattern");
+
                 if (song.starred) {
                     node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
                 } else {
@@ -109,6 +148,9 @@
                 }
                 if (!song.present) {
                     node.find("#missing" + id).show();
+                    node.find("#play" + id).hide();
+                    node.find("#add" + id).hide();
+                    node.find("#addNext" + id).hide();
                 }
                 node.find("#index" + id).text(id);
                 node.find("#title" + id).text(song.title);
@@ -122,15 +164,14 @@
 
                 // Note: show() method causes page to scroll to top.
                 node.css("display", "table-row");
-                node.insertAfter("#pattern");
             }
         }
 
         function onPlay(index) {
-            top.playQueue.onPlayPlaylist(playlist.id, index);
+            top.playQueue.onPlayPlaylist(playlistId, index);
         }
         function onPlayAll() {
-            top.playQueue.onPlayPlaylist(playlist.id);
+            top.playQueue.onPlayPlaylist(playlistId);
         }
         function onAdd(index) {
             top.playQueue.onAdd(songs[index].id);
@@ -152,11 +193,12 @@
                 StompClient.send("/app/rate/star", mediaFileId);
             }
         }
+        <c:if test="${model.editAllowed}">
         function onRemove(index) {
-            playlistService.remove(playlist.id, index, function (playlistInfo){playlistCallback(playlistInfo); top.left.updatePlaylists()});
+            StompClient.send("/app/playlists/files/remove", JSON.stringify({id: playlistId, modifierIds: [index]}));
         }
         function onRearrange(indexes) {
-            playlistService.rearrange(playlist.id, indexes, playlistCallback);
+            StompClient.send("/app/playlists/files/rearrange", JSON.stringify({id: playlistId, modifierIds: indexes}));
         }
         function onEditPlaylist() {
             $("#dialog-edit").dialog("open");
@@ -164,6 +206,7 @@
         function onDeletePlaylist() {
             $("#dialog-delete").dialog("open");
         }
+        </c:if>
 
     </script>
 
@@ -189,7 +232,7 @@
 </c:import>
 </div>
 
-<h1><a href="playlists.view"><fmt:message key="left.playlists"/></a> &raquo; <span id="name">${fn:escapeXml(model.playlist.name)}</span></h1>
+<h1><a href="playlists.view"><fmt:message key="left.playlists"/></a> &raquo; <span id="name"></span></h1>
 <h2>
     <span class="header"><a href="javascript:void(0)" onclick="onPlayAll();"><fmt:message key="common.play"/></a></span>
 
@@ -210,7 +253,7 @@
 
 </h2>
 
-<div id="comment" class="detail" style="padding-top:0.2em">${fn:escapeXml(model.playlist.comment)}</div>
+<div id="comment" class="detail" style="padding-top:0.2em"></div>
 
 <div class="detail" style="padding-top:0.2em">
     <span id="songCount"></span> <fmt:message key="playlist2.songs"/> &ndash; <span id="duration"></span>
@@ -221,6 +264,9 @@
         <fmt:param><javatime:format style="L-" value="${model.playlist.created}"/></fmt:param>
     </fmt:message>
     ${fn:escapeXml(created)}.
+</div>
+<div class="detail" style="padding-top:0.2em">
+    <span id="lastupdated"></span>.
 </div>
 <div class="detail" style="padding-top:0.2em">
     <span id="shared"></span>.
@@ -262,6 +308,7 @@
     </tbody>
 </table>
 
+<c:if test="${model.editAllowed}">
 <div id="dialog-delete" title="<fmt:message key='common.confirm'/>" style="display: none;">
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>
         <fmt:message key="playlist2.confirmdelete"/></p>
@@ -270,14 +317,15 @@
 <div id="dialog-edit" title="<fmt:message key='common.edit'/>" style="display: none;">
     <form>
         <label for="newName" style="display:block;"><fmt:message key="playlist2.name"/></label>
-        <input type="text" name="newName" id="newName" value="${fn:escapeXml(model.playlist.name)}" class="ui-widget-content"
+        <input type="text" name="newName" id="newName" value="" class="ui-widget-content"
                style="display:block;width:95%;"/>
         <label for="newComment" style="display:block;margin-top:1em"><fmt:message key="playlist2.comment"/></label>
-        <input type="text" name="newComment" id="newComment" value="${fn:escapeXml(model.playlist.comment)}" class="ui-widget-content"
+        <input type="text" name="newComment" id="newComment" value="" class="ui-widget-content"
                style="display:block;width:95%;"/>
-        <input type="checkbox" name="newShared" id="newShared" ${model.playlist.shared ? "checked='checked'" : ""} style="margin-top:1.5em" class="ui-widget-content"/>
+        <input type="checkbox" name="newShared" id="newShared" style="margin-top:1.5em" class="ui-widget-content"/>
         <label for="newShared"><fmt:message key="playlist2.public"/></label>
     </form>
 </div>
+</c:if>
 
 </body></html>

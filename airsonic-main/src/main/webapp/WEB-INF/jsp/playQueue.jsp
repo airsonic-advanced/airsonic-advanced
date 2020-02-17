@@ -6,7 +6,6 @@
     <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/interface/playQueueService.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/playQueueCast.js'/>"></script>
@@ -57,6 +56,18 @@
 
     function init() {
         <c:if test="${model.autoHide}">initAutoHide();</c:if>
+
+        StompClient.subscribe({
+            '/user/queue/playlists/writable': function(msg) {
+                playlistSelectionCallback(JSON.parse(msg.body));
+            },
+            '/user/queue/playlists/files/append': function(msg) {
+                playlistUpdatedCallback(JSON.parse(msg.body), "<fmt:message key="playlist.toast.appendtoplaylist"/>");
+            },
+            '/user/queue/playlists/create/playqueue': function(msg) {
+                playlistUpdatedCallback(JSON.parse(msg.body), "<fmt:message key="playlist.toast.saveasplaylist"/>");
+            }
+        });
 
         dwr.engine.setErrorHandler(null);
         monitorNowPlaying();
@@ -405,12 +416,10 @@
         playQueueService.remove(index, playQueueCallback);
     }
     function onRemoveSelected() {
-        var indexes = new Array();
-        var counter = 0;
+        var indexes = [];
         for (var i = 0; i < songs.length; i++) {
-            var index = i + 1;
-            if ($("#songIndex" + index).is(":checked")) {
-                indexes[counter++] = i;
+            if ($("#songIndex" + i).is(":checked")) {
+                indexes.push(i);
             }
         }
         playQueueService.removeMany(indexes, playQueueCallback);
@@ -443,17 +452,13 @@
         playQueueService.loadPlayQueue(playQueueCallback);
     }
     function onSavePlaylist() {
-        playlistService.createPlaylistForPlayQueue(function (playlistId) {
-            top.left.updatePlaylists();
-            top.left.showAllPlaylists();
-            top.main.location.href = "playlist.view?id=" + playlistId;
-            $().toastmessage("showSuccessToast", "<fmt:message key="playlist.toast.saveasplaylist"/>");
-        });
+        StompClient.send("/app/playlists/create/playqueue", "${model.player.id}");
     }
     function onAppendPlaylist() {
-        playlistService.getWritablePlaylists(playlistCallback);
+        // retrieve writable lists so we can open dialog to ask user which playlist to append to
+        StompClient.send("/app/playlists/writable", "");
     }
-    function playlistCallback(playlists) {
+    function playlistSelectionCallback(playlists) {
         $("#dialog-select-playlist-list").empty();
         for (var i = 0; i < playlists.length; i++) {
             var playlist = playlists[i];
@@ -465,17 +470,19 @@
     function appendPlaylist(playlistId) {
         $("#dialog-select-playlist").dialog("close");
 
-        var mediaFileIds = new Array();
+        var mediaFileIds = [];
         for (var i = 0; i < songs.length; i++) {
-            if ($("#songIndex" + (i + 1)).is(":checked")) {
+            if ($("#songIndex" + i).is(":checked")) {
                 mediaFileIds.push(songs[i].id);
             }
         }
-        playlistService.appendToPlaylist(playlistId, mediaFileIds, function (){
-            top.left.updatePlaylists();
-            top.main.location.href = "playlist.view?id=" + playlistId;
-            $().toastmessage("showSuccessToast", "<fmt:message key="playlist.toast.appendtoplaylist"/>");
-        });
+
+        StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
+    }
+
+    function playlistUpdatedCallback(playerId, toastMsg) {
+        top.main.location.href = "playlist.view?id=" + playlistId;
+        $().toastmessage("showSuccessToast", toastMsg);
     }
 
     function isJavaJukeboxPresent() {
@@ -545,6 +552,8 @@
         while (id--) {
             var song  = songs[id];
             var node = cloneNodeBySelector("#pattern", id);
+            node.insertAfter("#pattern");
+
             node.find("#trackNumber" + id).text(song.trackNumber);
 
             if (!internetRadioEnabled) {
@@ -597,7 +606,6 @@
 
             // Note: show() method causes page to scroll to top.
             node.css("display", "table-row");
-            node.insertAfter("#pattern");
         }
 
         if (playQueue.sendM3U) {
@@ -776,7 +784,7 @@
     function getSelectedIndexes() {
         var result = "";
         for (var i = 0; i < songs.length; i++) {
-            if ($("#songIndex" + (i + 1)).is(":checked")) {
+            if ($("#songIndex" + i).is(":checked")) {
                 result += "i=" + i + "&";
             }
         }
@@ -786,9 +794,9 @@
     function selectAll(b) {
         for (var i = 0; i < songs.length; i++) {
             if (b) {
-                $("#songIndex" + (i + 1)).attr("checked", "checked");
+                $("#songIndex" + i).attr("checked", "checked");
             } else {
-                $("#songIndex" + (i + 1)).removeAttr("checked");
+                $("#songIndex" + i).removeAttr("checked");
             }
         }
     }

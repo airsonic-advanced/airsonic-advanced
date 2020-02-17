@@ -11,17 +11,9 @@
             <param name="beanName" value="ajaxPlayQueueService"/>
         </create>
 
-        <create creator="spring" javascript="playlistService">
-            <param name="beanName" value="ajaxPlaylistService"/>
-        </create>
-
         <convert converter="javaTimeInstant" match="java.time.Instant"/>
         <convert converter="bean" match="org.airsonic.player.ajax.PlayQueueInfo"/>
         <convert converter="bean" match="org.airsonic.player.ajax.PlayQueueInfo$Entry"/>
-        <convert converter="bean" match="org.airsonic.player.ajax.PlaylistInfo"/>
-        <convert converter="bean" match="org.airsonic.player.ajax.PlaylistInfo$Entry"/>
-        <convert converter="bean" match="org.airsonic.player.domain.Playlist"/>
-        <convert converter="bean" match="org.airsonic.player.domain.ArtistBio"/>
 
     </allow>
 </dwr>
