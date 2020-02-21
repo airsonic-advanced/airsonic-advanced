@@ -32,10 +32,10 @@
       var encoderAliases = ${encoderAliasesJson};
 
       function bindNewCredsForm() {
-          var location = $('#location').val();
+          var app = $('#app').val();
 
           // enable or disable user name field
-          if (appsSettings[location].usernameRequired) {
+          if (appsSettings[app].usernameRequired) {
             $('#username').val('').attr('value', '');
             $('#username').prop('disabled', false);
           } else {
@@ -43,7 +43,7 @@
             $('#username').val('Not required').attr('value', 'Not required');
           }
 
-          var el = $('#type');
+          var el = $('#encoder');
           el.empty();
 
           var defaultOptionIncluded = false;
@@ -57,7 +57,7 @@
           });
 
           // enable or disable nondecodable options
-          if (appsSettings[location].nonDecodableEncodersAllowed) {
+          if (appsSettings[app].nonDecodableEncodersAllowed) {
             el.append($("<option value='notselectable' disabled='disabled'>Non-Decodable</option>"));
             $.each(nonDecodableEncoders, function(k, v) {
               if (v == defaultEncoderNonDecodableAllowed) {
@@ -79,7 +79,7 @@
         });
 
         // createNewCreds handling
-        $('#location').change(function(ev) {
+        $('#app').change(function(ev) {
           bindNewCredsForm();
         });
 
@@ -135,43 +135,43 @@
     <td style="text-align:center;border-style:dotted" colspan=9>Airsonic Credentials <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialsairsonic"/></c:import></td>
   </tr>
   <c:forEach items="${command.credentials}" var="cred" varStatus="loopStatus">
-    <c:if test="${cred.location == 'AIRSONIC'}">
+    <c:if test="${cred.app == 'AIRSONIC'}">
     <tr class="airsonic-cred">
       <td style="padding:0 0.5em 0 0.5em">${loopStatus.index}</td>
-      <td style="padding:0 0.5em 0 0.5em">${cred.location.name}</td>
+      <td style="padding:0 0.5em 0 0.5em">${cred.app.name}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.username}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.comment}</td>
       <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.created}" style="SS" /></td>
       <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.updated}" style="SS" /></td>
       <td style="padding:0 0.5em 0 0.5em">
-        <form:select path="credentials[${loopStatus.index}].type" cssStyle="width:9em">
+        <form:select path="credentials[${loopStatus.index}].encoder" cssStyle="width:9em">
           <c:if test="${ cred.displayComments.contains( 'decodablecred' ) }">
-            <c:if test="${!decodableEncoders.contains(cred.type) && !nonDecodableEncoders.contains(cred.type)}">
-              <form:option selected="selected" value="${cred.type}" label="${encoderAliases[cred.type] != null ? encoderAliases[cred.type] : cred.type}"/>
+            <c:if test="${!decodableEncoders.contains(cred.encoder) && !nonDecodableEncoders.contains(cred.encoder)}">
+              <form:option selected="selected" value="${cred.encoder}" label="${encoderAliases[cred.encoder] != null ? encoderAliases[cred.encoder] : cred.encoder}"/>
             </c:if>
             <form:option value="notselectable" label="Decodable" disabled="true"/>
             <c:forEach items="${decodableEncoders}" var="migratableType">
               <c:set var="displayLabelValue" value="${encoderAliases[migratableType] != null ? encoderAliases[migratableType] : migratableType}"/>
-              <c:if test="${migratableType != cred.type}" >
+              <c:if test="${migratableType != cred.encoder}" >
                 <form:option value="${migratableType}" label="${displayLabelValue}"/>
               </c:if>
-              <c:if test="${migratableType == cred.type}" >
+              <c:if test="${migratableType == cred.encoder}" >
                 <form:option selected="selected" value="${migratableType}" label="${displayLabelValue}"/>
               </c:if>
             </c:forEach>
             <form:option value="notselectable" label="Non-decodable" disabled="true"/>
             <c:forEach items="${nonDecodableEncoders}" var="migratableType">
               <c:set var="displayLabelValue" value="${encoderAliases[migratableType] != null ? encoderAliases[migratableType] : migratableType}"/>
-              <c:if test="${migratableType != cred.type}" >
+              <c:if test="${migratableType != cred.encoder}" >
                 <form:option value="${migratableType}" label="${displayLabelValue}"/>
               </c:if>
-              <c:if test="${migratableType == cred.type}" >
+              <c:if test="${migratableType == cred.encoder}" >
                 <form:option selected="selected" value="${migratableType}" label="${displayLabelValue}"/>
               </c:if>
             </c:forEach>
           </c:if>
           <c:if test="${ !cred.displayComments.contains( 'decodablecred' ) }">
-            <form:option selected="selected" value="${cred.type}" label="${encoderAliases[cred.type] != null ? encoderAliases[cred.type] : cred.type}"/>
+            <form:option selected="selected" value="${cred.encoder}" label="${encoderAliases[cred.encoder] != null ? encoderAliases[cred.encoder] : cred.encoder}"/>
           </c:if>
         </form:select>
       </td>
@@ -197,26 +197,26 @@
     <td style="text-align:center;border-style:dotted" colspan=9>Third-party Credentials <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialsthirdparty"/></c:import></td>
   </tr>
   <c:forEach items="${command.credentials}" var="cred" varStatus="loopStatus">
-    <c:if test="${cred.location != 'AIRSONIC'}" >
+    <c:if test="${cred.app != 'AIRSONIC'}" >
     <tr>
       <td style="padding:0 0.5em 0 0.5em">${loopStatus.index}</td>
-      <td style="padding:0 0.5em 0 0.5em">${cred.location.name}</td>
+      <td style="padding:0 0.5em 0 0.5em">${cred.app.name}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.username}</td>
       <td style="padding:0 0.5em 0 0.5em">${cred.comment}</td>
       <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.created}" style="SS" /></td>
       <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${cred.updated}" style="SS" /></td>
       <td style="padding:0 0.5em 0 0.5em">
-        <form:select path="credentials[${loopStatus.index}].type" cssStyle="width:9em">
-          <c:if test="${!decodableEncoders.contains(cred.type)}">
-            <form:option selected="selected" value="${cred.type}" label="${encoderAliases[cred.type] != null ? encoderAliases[cred.type] : cred.type}"/>
+        <form:select path="credentials[${loopStatus.index}].encoder" cssStyle="width:9em">
+          <c:if test="${!decodableEncoders.contains(cred.encoder)}">
+            <form:option selected="selected" value="${cred.encoder}" label="${encoderAliases[cred.encoder] != null ? encoderAliases[cred.encoder] : cred.encoder}"/>
           </c:if>
           <form:option value="notselectable" label="Decodable" disabled="true"/>
           <c:forEach items="${decodableEncoders}" var="migratableType">
               <c:set var="displayLabelValue" value="${encoderAliases[migratableType] != null ? encoderAliases[migratableType] : migratableType}"/>
-              <c:if test="${migratableType != cred.type}" >
+              <c:if test="${migratableType != cred.encoder}" >
                 <form:option value="${migratableType}" label="${displayLabelValue}"/>
               </c:if>
-              <c:if test="${migratableType == cred.type}" >
+              <c:if test="${migratableType == cred.encoder}" >
                 <form:option selected="selected" value="${migratableType}" label="${displayLabelValue}"/>
               </c:if>
           </c:forEach>
@@ -248,11 +248,11 @@
       <tr>
         <td><fmt:message key="credentialsettings.app"/></td>
         <td>
-          <form:select path="location" cssStyle="width:15em">
+          <form:select path="app" cssStyle="width:15em">
             <form:options items="${apps}" itemLabel="name" />
           </form:select>
         </td>
-        <td class="warning"><form:errors path="location" cssStyle="width:15em"/></td>
+        <td class="warning"><form:errors path="app" cssStyle="width:15em"/></td>
       </tr>
 
       <tr>
@@ -264,8 +264,8 @@
       <tr>
         <td><fmt:message key="credentialsettings.encoder"/></td>
         <td>
-          <form:select path="type" cssStyle="width:15em"></form:select>
-          <td class="warning"><form:errors path="type" cssStyle="width:15em"/></td>
+          <form:select path="encoder" cssStyle="width:15em"></form:select>
+          <td class="warning"><form:errors path="encoder" cssStyle="width:15em"/></td>
         </td>
       </tr>
 

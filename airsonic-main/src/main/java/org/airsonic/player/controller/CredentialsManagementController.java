@@ -70,15 +70,15 @@ public class CredentialsManagementController {
                 .parallelStream()
                 .map(CredentialsCommand::fromUserCredential)
                 .map(c -> {
-                    if (c.getType().startsWith("legacy")) {
+                    if (c.getEncoder().startsWith("legacy")) {
                         c.addDisplayComment("migratecred");
                     }
 
-                    if (GlobalSecurityConfig.OPENTEXT_ENCODERS.contains(c.getType())) {
+                    if (GlobalSecurityConfig.OPENTEXT_ENCODERS.contains(c.getEncoder())) {
                         c.addDisplayComment("opentextcred");
                     }
 
-                    if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(c.getType())) {
+                    if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(c.getEncoder())) {
                         c.addDisplayComment("decodablecred");
                     } else {
                         c.addDisplayComment("nondecodablecred");
@@ -139,10 +139,10 @@ public class CredentialsManagementController {
             return "credentialsSettings";
         }
 
-        UserCredential uc = new UserCredential(user.getName(), cc.getUsername(), cc.getCredential(), cc.getType(), cc.getLocation(), "Created by user", cc.getExpirationInstant());
+        UserCredential uc = new UserCredential(user.getName(), cc.getUsername(), cc.getCredential(), cc.getEncoder(), cc.getApp(), "Created by user", cc.getExpirationInstant());
 
-        if (!APPS_CREDS_SETTINGS.get(uc.getLocation()).getUsernameRequired()) {
-            uc.setLocationUsername(user.getName());
+        if (!APPS_CREDS_SETTINGS.get(uc.getApp()).getUsernameRequired()) {
+            uc.setAppUsername(user.getName());
         }
 
         boolean success = true;
@@ -178,7 +178,7 @@ public class CredentialsManagementController {
                             }
                         } else {
                             UserCredential newCreds = new UserCredential(dbCreds);
-                            newCreds.setType(c.getType());
+                            newCreds.setEncoder(c.getEncoder());
                             newCreds.setExpiration(c.getExpirationInstant());
 
                             if (!securityService.updateCredentials(dbCreds, newCreds, "User updated", false)) {

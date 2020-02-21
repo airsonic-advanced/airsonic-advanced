@@ -107,7 +107,7 @@ public class PersonalSettingsController {
 
         model.addAttribute("command", command);
 
-        Map<App, UserCredential> thirdPartyCreds = securityService.getDecodableCredsForLocations(user.getUsername(), App.LASTFM, App.LISTENBRAINZ);
+        Map<App, UserCredential> thirdPartyCreds = securityService.getDecodableCredsForApps(user.getUsername(), App.LASTFM, App.LISTENBRAINZ);
 
         model.addAttribute("lastfmCredsAbsent", thirdPartyCreds.get(App.LASTFM) == null);
         model.addAttribute("listenBrainzCredsAbsent", thirdPartyCreds.get(App.LISTENBRAINZ) == null);

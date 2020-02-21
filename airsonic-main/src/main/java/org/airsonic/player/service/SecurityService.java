@@ -107,16 +107,16 @@ public class SecurityService implements UserDetailsService {
 
     public boolean updateCredentials(UserCredential oldCreds, UserCredential newCreds, String comment,
             boolean reencodePlaintextNewCreds) {
-        if (!StringUtils.equals(newCreds.getType(), oldCreds.getType()) || reencodePlaintextNewCreds) {
+        if (!StringUtils.equals(newCreds.getEncoder(), oldCreds.getEncoder()) || reencodePlaintextNewCreds) {
             if (reencodePlaintextNewCreds) {
-                newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
-            } else if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(oldCreds.getType())) {
+                newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getEncoder()).encode(newCreds.getCredential()));
+            } else if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(oldCreds.getEncoder())) {
                 try {
                     // decode using original creds decoder
-                    PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(oldCreds.getType());
+                    PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(oldCreds.getEncoder());
                     newCreds.setCredential(decoder.decode(oldCreds.getCredential()));
                     // reencode
-                    newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
+                    newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getEncoder()).encode(newCreds.getCredential()));
                 } catch (Exception e) {
                     LOG.warn("Could not update credentials for user {}", oldCreds.getUsername(), e);
                     // Do not try and save it
@@ -136,46 +136,46 @@ public class SecurityService implements UserDetailsService {
     }
 
     public boolean createCredential(UserCredential newCreds) {
-        newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getType()).encode(newCreds.getCredential()));
+        newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getEncoder()).encode(newCreds.getCredential()));
         return userDao.createCredential(newCreds);
     }
 
     // ensure we can't delete all airsonic creds
     private Predicate<UserCredential> retainOneAirsonicCred = c ->
-            App.AIRSONIC != c.getLocation()
-            || !userDao.getCredentials(c.getUsername(), c.getLocation()).isEmpty();
+            App.AIRSONIC != c.getApp()
+            || !userDao.getCredentials(c.getUsername(), c.getApp()).isEmpty();
 
     public boolean deleteCredential(UserCredential creds) {
         return userDao.deleteCredential(creds, retainOneAirsonicCred);
     }
 
-    public List<UserCredential> getCredentials(String username, App... locations) {
-        return userDao.getCredentials(username, locations);
+    public List<UserCredential> getCredentials(String username, App... apps) {
+        return userDao.getCredentials(username, apps);
     }
 
-    public Map<App, UserCredential> getDecodableCredsForLocations(String username, App... locations) {
-        return getCredentials(username, locations).parallelStream()
-                .filter(c -> GlobalSecurityConfig.DECODABLE_ENCODERS.contains(c.getType()))
+    public Map<App, UserCredential> getDecodableCredsForApps(String username, App... apps) {
+        return getCredentials(username, apps).parallelStream()
+                .filter(c -> GlobalSecurityConfig.DECODABLE_ENCODERS.contains(c.getEncoder()))
                 .filter(c -> c.getExpiration() == null || c.getExpiration().isAfter(Instant.now()))
                 .collect(Collectors.groupingByConcurrent(
-                        UserCredential::getLocation,
+                        UserCredential::getApp,
                         Collectors.collectingAndThen(
                                 Collectors.maxBy(Comparator.comparing(c -> c.getUpdated())), o -> o.orElse(null))));
     }
 
     public boolean checkDefaultAdminCredsPresent() {
         return userDao.getCredentials(User.USERNAME_ADMIN, App.AIRSONIC).parallelStream()
-                .anyMatch(c -> GlobalSecurityConfig.ENCODERS.get(c.getType()).matches(User.USERNAME_ADMIN, c.getCredential()));
+                .anyMatch(c -> GlobalSecurityConfig.ENCODERS.get(c.getEncoder()).matches(User.USERNAME_ADMIN, c.getCredential()));
     }
 
     public boolean checkOpenCredsPresent() {
         return GlobalSecurityConfig.OPENTEXT_ENCODERS.parallelStream()
-                .mapToInt(userDao::getCredentialCountByType)
+                .mapToInt(userDao::getCredentialCountByEncoder)
                 .anyMatch(i -> i > 0);
     }
 
     public boolean checkLegacyCredsPresent() {
-        return userDao.getCredentialCountByType("legacy%") != 0;
+        return userDao.getCredentialCountByEncoder("legacy%") != 0;
     }
 
     public boolean checkCredentialsStoredInLegacyTables() {
@@ -193,12 +193,12 @@ public class SecurityService implements UserDetailsService {
 
         List<UserCredential> failures = new ArrayList<>();
 
-        userDao.getCredentialsByType("legacy%").forEach(c -> {
+        userDao.getCredentialsByEncoder("legacy%").forEach(c -> {
             UserCredential newCreds = new UserCredential(c);
-            if (App.AIRSONIC == c.getLocation()) {
-                newCreds.setType(nonDecodableEncoder);
+            if (App.AIRSONIC == c.getApp()) {
+                newCreds.setEncoder(nonDecodableEncoder);
             } else {
-                newCreds.setType(decodableEncoder);
+                newCreds.setEncoder(decodableEncoder);
             }
             if (!updateCredentials(c, newCreds, c.getComment() + " | Migrated to nonlegacy by admin", false)) {
                 LOG.warn("System failed to migrate creds created on {} for user {}", c.getCreated(), c.getUsername());

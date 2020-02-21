@@ -4,48 +4,48 @@ import java.time.Instant;
 
 public class UserCredential {
     private String username;
-    private String locationUsername;
+    private String appUsername;
     private String credential;
-    private String type;
-    private App location;
+    private String encoder;
+    private App app;
     private String comment;
     private Instant expiration;
     private Instant created;
     private Instant updated;
 
-    public UserCredential(String username, String locationUsername, String credential, String type, App location,
+    public UserCredential(String username, String appUsername, String credential, String encoder, App app,
             String comment, Instant expiration, Instant created, Instant updated) {
         super();
         this.username = username;
-        this.locationUsername = locationUsername;
+        this.appUsername = appUsername;
         this.credential = credential;
-        this.type = type;
-        this.location = location;
+        this.encoder = encoder;
+        this.app = app;
         this.comment = comment;
         this.expiration = expiration;
         this.created = created;
         this.updated = updated;
     }
 
-    public UserCredential(String username, String locationUsername, String credential, String type, App location,
+    public UserCredential(String username, String appUsername, String credential, String encoder, App app,
             String comment, Instant expiration) {
-        this(username, locationUsername, credential, type, location, comment, expiration, null, null);
+        this(username, appUsername, credential, encoder, app, comment, expiration, null, null);
         Instant now = Instant.now();
         setCreated(now);
         setUpdated(now);
     }
 
-    public UserCredential(String username, String locationUsername, String credential, String type, App location,
+    public UserCredential(String username, String appUsername, String credential, String encoder, App app,
             String comment) {
-        this(username, locationUsername, credential, type, location, comment, null);
+        this(username, appUsername, credential, encoder, app, comment, null);
     }
 
-    public UserCredential(String username, String locationUsername, String credential, String type, App location) {
-        this(username, locationUsername, credential, type, location, null);
+    public UserCredential(String username, String appUsername, String credential, String encoder, App app) {
+        this(username, appUsername, credential, encoder, app, null);
     }
 
     public UserCredential(UserCredential uc) {
-        this(uc.getUsername(), uc.getLocationUsername(), uc.getCredential(), uc.getType(), uc.getLocation(),
+        this(uc.getUsername(), uc.getAppUsername(), uc.getCredential(), uc.getEncoder(), uc.getApp(),
                 uc.getComment(), uc.getExpiration(), uc.getCreated(), uc.getUpdated());
     }
 
@@ -57,12 +57,12 @@ public class UserCredential {
         this.username = username;
     }
 
-    public String getLocationUsername() {
-        return locationUsername;
+    public String getAppUsername() {
+        return appUsername;
     }
 
-    public void setLocationUsername(String locationUsername) {
-        this.locationUsername = locationUsername;
+    public void setAppUsername(String appUsername) {
+        this.appUsername = appUsername;
     }
 
     public String getCredential() {
@@ -73,20 +73,20 @@ public class UserCredential {
         this.credential = credential;
     }
 
-    public String getType() {
-        return type;
+    public String getEncoder() {
+        return encoder;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void setEncoder(String encoder) {
+        this.encoder = encoder;
     }
 
-    public App getLocation() {
-        return location;
+    public App getApp() {
+        return app;
     }
 
-    public void setLocation(App location) {
-        this.location = location;
+    public void setApp(App app) {
+        this.app = app;
     }
 
     public Instant getCreated() {
@@ -129,9 +129,9 @@ public class UserCredential {
         result = prime * result + ((created == null) ? 0 : created.hashCode());
         result = prime * result + ((credential == null) ? 0 : credential.hashCode());
         result = prime * result + ((expiration == null) ? 0 : expiration.hashCode());
-        result = prime * result + ((location == null) ? 0 : location.hashCode());
-        result = prime * result + ((locationUsername == null) ? 0 : locationUsername.hashCode());
-        result = prime * result + ((type == null) ? 0 : type.hashCode());
+        result = prime * result + ((app == null) ? 0 : app.hashCode());
+        result = prime * result + ((appUsername == null) ? 0 : appUsername.hashCode());
+        result = prime * result + ((encoder == null) ? 0 : encoder.hashCode());
         result = prime * result + ((updated == null) ? 0 : updated.hashCode());
         result = prime * result + ((username == null) ? 0 : username.hashCode());
         return result;
@@ -166,20 +166,20 @@ public class UserCredential {
                 return false;
         } else if (!expiration.equals(other.expiration))
             return false;
-        if (location == null) {
-            if (other.location != null)
+        if (app == null) {
+            if (other.app != null)
                 return false;
-        } else if (!location.equals(other.location))
+        } else if (!app.equals(other.app))
             return false;
-        if (locationUsername == null) {
-            if (other.locationUsername != null)
+        if (appUsername == null) {
+            if (other.appUsername != null)
                 return false;
-        } else if (!locationUsername.equals(other.locationUsername))
+        } else if (!appUsername.equals(other.appUsername))
             return false;
-        if (type == null) {
-            if (other.type != null)
+        if (encoder == null) {
+            if (other.encoder != null)
                 return false;
-        } else if (!type.equals(other.type))
+        } else if (!encoder.equals(other.encoder))
             return false;
         if (updated == null) {
             if (other.updated != null)

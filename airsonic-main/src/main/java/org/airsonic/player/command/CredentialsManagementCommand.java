@@ -3,11 +3,10 @@ package org.airsonic.player.command;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.validator.CredentialsManagementValidators.ConsistentPasswordConfirmation;
-import org.airsonic.player.validator.CredentialsManagementValidators.CredTypeForLocationValid;
-import org.airsonic.player.validator.CredentialsManagementValidators.CredTypeValid;
+import org.airsonic.player.validator.CredentialsManagementValidators.CredEncoderForAppValid;
 import org.airsonic.player.validator.CredentialsManagementValidators.CredentialCreateChecks;
 import org.airsonic.player.validator.CredentialsManagementValidators.CredentialUpdateChecks;
-import org.airsonic.player.validator.CredentialsManagementValidators.EncoderTypeValid;
+import org.airsonic.player.validator.CredentialsManagementValidators.EncoderValid;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.Valid;
@@ -41,7 +40,7 @@ public class CredentialsManagementCommand {
         this.credentials = credentials;
     }
 
-    @CredTypeForLocationValid(groups = CredentialCreateChecks.class)
+    @CredEncoderForAppValid(groups = CredentialCreateChecks.class)
     @ConsistentPasswordConfirmation
     public static class CredentialsCommand {
         @NotBlank(groups = CredentialCreateChecks.class)
@@ -54,11 +53,11 @@ public class CredentialsManagementCommand {
         private String confirmCredential;
 
         @NotNull(groups = CredentialCreateChecks.class)
-        private App location;
+        private App app;
 
         @NotBlank
-        @CredTypeValid
-        private String type;
+        @EncoderValid
+        private String encoder;
 
         @NotBlank(groups = CredentialUpdateChecks.class)
         private String hash;
@@ -72,11 +71,11 @@ public class CredentialsManagementCommand {
         private Set<String> displayComments = new HashSet<>();
         private boolean markedForDeletion;
 
-        public CredentialsCommand(String username, String type, App location, Instant created,
+        public CredentialsCommand(String username, String encoder, App app, Instant created,
                 Instant updated, Instant expiration, String comment, String hash) {
             this.username = username;
-            this.type = type;
-            this.location = location;
+            this.encoder = encoder;
+            this.app = app;
             this.created = created;
             this.updated = updated;
             this.expiration = Optional.ofNullable(expiration).map(e -> new Date(e.toEpochMilli())).orElse(null);
@@ -111,20 +110,20 @@ public class CredentialsManagementCommand {
             this.confirmCredential = confirmCredential;
         }
 
-        public String getType() {
-            return type;
+        public String getEncoder() {
+            return encoder;
         }
 
-        public void setType(String type) {
-            this.type = type;
+        public void setEncoder(String encoder) {
+            this.encoder = encoder;
         }
 
-        public App getLocation() {
-            return location;
+        public App getApp() {
+            return app;
         }
 
-        public void setLocation(App location) {
-            this.location = location;
+        public void setApp(App app) {
+            this.app = app;
         }
 
         public Instant getCreated() {
@@ -189,7 +188,7 @@ public class CredentialsManagementCommand {
 
         public static CredentialsCommand fromUserCredential(UserCredential uc) {
             // do not copy credential itself and leave comments blank
-            return new CredentialsCommand(uc.getLocationUsername(), uc.getType(), uc.getLocation(),
+            return new CredentialsCommand(uc.getAppUsername(), uc.getEncoder(), uc.getApp(),
                     uc.getCreated(), uc.getUpdated(),
                     uc.getExpiration(),
                     uc.getComment(),
@@ -224,9 +223,9 @@ public class CredentialsManagementCommand {
         private String jwtKey;
         private String encryptionKey;
         private String encryptionKeySalt;
-        @EncoderTypeValid(decodable = false)
+        @EncoderValid(type = "nonlegacynondecodable")
         private String nonDecodableEncoder;
-        @EncoderTypeValid(decodable = true)
+        @EncoderValid(type = "nonlegacydecodable")
         private String decodableEncoder;
         private boolean preferNonDecodable;
 

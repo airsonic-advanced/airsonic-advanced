@@ -63,7 +63,7 @@ public class UserDao extends AbstractDao {
             "party_mode_enabled, now_playing_allowed, avatar_scheme, system_avatar_id, changed, show_artist_info, auto_hide_play_queue, " +
             "view_as_list, default_album_list, queue_following_songs, show_side_bar, list_reload_delay, " +
             "keyboard_shortcuts_enabled, pagination_size";
-    private static final String USER_CREDENTIALS_COLUMNS = "username, location_username, credential, type, location, created, updated, expiration, comment";
+    private static final String USER_CREDENTIALS_COLUMNS = "username, app_username, credential, encoder, app, created, updated, expiration, comment";
 
     private static final Integer ROLE_ID_ADMIN = 1;
     private static final Integer ROLE_ID_DOWNLOAD = 2;
@@ -115,26 +115,26 @@ public class UserDao extends AbstractDao {
         return user;
     }
 
-    public List<UserCredential> getCredentials(String username, App... locations) {
-        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=:user and location in (:locations)";
-        return namedQuery(sql, userCredentialRowMapper, ImmutableMap.of("user", username, "locations", Arrays.asList(locations)));
+    public List<UserCredential> getCredentials(String username, App... apps) {
+        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=:user and app in (:apps)";
+        return namedQuery(sql, userCredentialRowMapper, ImmutableMap.of("user", username, "apps", Arrays.asList(apps)));
     }
 
-    public List<UserCredential> getCredentialsByType(String typeMatcher) {
-        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where type like ?";
-        return query(sql, userCredentialRowMapper, typeMatcher);
+    public List<UserCredential> getCredentialsByEncoder(String encoderPatternMatcher) {
+        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where encoder like ?";
+        return query(sql, userCredentialRowMapper, encoderPatternMatcher);
     }
 
-    public Integer getCredentialCountByType(String typeMatcher) {
-        String sql = "select count(*) from user_credentials where type like ?";
-        return queryForInt(sql, 0, typeMatcher);
+    public Integer getCredentialCountByEncoder(String encoderPatternMatcher) {
+        String sql = "select count(*) from user_credentials where encoder like ?";
+        return queryForInt(sql, 0, encoderPatternMatcher);
     }
 
     public boolean updateCredential(UserCredential oldCreds, UserCredential newCreds) {
-        String sql = "update user_credentials set location_username=?, credential=?, type=?, location=?, updated=?, expiration=? where username=? and location_username=? and credential=? and type=? and location=? and created=? and updated=?";
-        return update(sql, newCreds.getLocationUsername(), newCreds.getCredential(), newCreds.getType(),
-                newCreds.getLocation(), newCreds.getUpdated(), newCreds.getExpiration(), oldCreds.getUsername(),
-                oldCreds.getLocationUsername(), oldCreds.getCredential(), oldCreds.getType(), oldCreds.getLocation(),
+        String sql = "update user_credentials set app_username=?, credential=?, encoder=?, app=?, updated=?, expiration=? where username=? and app_username=? and credential=? and encoder=? and app=? and created=? and updated=?";
+        return update(sql, newCreds.getAppUsername(), newCreds.getCredential(), newCreds.getEncoder(),
+                newCreds.getApp(), newCreds.getUpdated(), newCreds.getExpiration(), oldCreds.getUsername(),
+                oldCreds.getAppUsername(), oldCreds.getCredential(), oldCreds.getEncoder(), oldCreds.getApp(),
                 oldCreds.getCreated(), oldCreds.getUpdated()) == 1;
     }
 
@@ -142,10 +142,10 @@ public class UserDao extends AbstractDao {
         String sql = "insert into user_credentials (" + USER_CREDENTIALS_COLUMNS + ") values (" + questionMarks(USER_CREDENTIALS_COLUMNS) + ')';
         return update(sql,
                 credential.getUsername(),
-                credential.getLocationUsername(),
+                credential.getAppUsername(),
                 credential.getCredential(),
-                credential.getType(),
-                credential.getLocation(),
+                credential.getEncoder(),
+                credential.getApp(),
                 credential.getCreated(),
                 credential.getUpdated(),
                 credential.getExpiration(),
@@ -153,13 +153,13 @@ public class UserDao extends AbstractDao {
     }
 
     public boolean deleteCredential(UserCredential credential, Predicate<UserCredential> postDeletionCheck) {
-        String sql = "delete from user_credentials where username=:username and location_username=:location_username and credential=:credential and type=:type and location=:location and created=:created and updated=:updated";
+        String sql = "delete from user_credentials where username=:username and app_username=:app_username and credential=:credential and encoder=:encoder and app=:app and created=:created and updated=:updated";
         Map<String, Object> args = new HashMap<>();
         args.put("username", credential.getUsername());
-        args.put("location_username", credential.getLocationUsername());
+        args.put("app_username", credential.getAppUsername());
         args.put("credential", credential.getCredential());
-        args.put("type", credential.getType());
-        args.put("location", credential.getLocation());
+        args.put("encoder", credential.getEncoder());
+        args.put("app", credential.getApp());
         args.put("created", credential.getCreated());
         args.put("updated", credential.getUpdated());
         if (credential.getExpiration() != null) {
@@ -402,10 +402,10 @@ public class UserDao extends AbstractDao {
         public UserCredential mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new UserCredential(
                     rs.getString("username"),
-                    rs.getString("location_username"),
+                    rs.getString("app_username"),
                     rs.getString("credential"),
-                    rs.getString("type"),
-                    App.valueOf(rs.getString("location")),
+                    rs.getString("encoder"),
+                    App.valueOf(rs.getString("app")),
                     rs.getString("comment"),
                     Optional.ofNullable(rs.getTimestamp("expiration")).map(x -> x.toInstant()).orElse(null),
                     rs.getTimestamp("created").toInstant(),

@@ -52,11 +52,11 @@ public class AudioScrobblerService {
     private SecurityService securityService;
 
     private static final String decode(UserCredential uc) {
-        PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(uc.getType());
+        PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(uc.getEncoder());
         try {
             return decoder.decode(uc.getCredential());
         } catch (Exception e) {
-            LOG.warn("Could not decode credentials for user {}, app {}", uc.getUsername(), uc.getLocation(), e);
+            LOG.warn("Could not decode credentials for user {}, app {}", uc.getUsername(), uc.getApp(), e);
             return null;
         }
     }
@@ -87,7 +87,7 @@ public class AudioScrobblerService {
             enabledApps.add(App.LISTENBRAINZ);
         }
 
-        Map<App, UserCredential> creds = securityService.getDecodableCredsForLocations(username, enabledApps.toArray(new App[0]));
+        Map<App, UserCredential> creds = securityService.getDecodableCredsForApps(username, enabledApps.toArray(new App[0]));
 
         UserCredential cred = creds.get(App.LASTFM);
         if (cred != null) {
@@ -96,7 +96,7 @@ public class AudioScrobblerService {
             }
             String decoded = decode(cred);
             if (decoded != null) {
-                lastFMScrobbler.register(mediaFile, cred.getLocationUsername(), cred.getCredential(), submission, time);
+                lastFMScrobbler.register(mediaFile, cred.getAppUsername(), cred.getCredential(), submission, time);
             }
         }
 

@@ -25,13 +25,13 @@ public class CredentialsManagementValidationTest {
         cc.setConfirmCredential("c");
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isEmpty();
 
-        cc.setType("legacyhex");
+        cc.setEncoder("legacyhex");
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isEmpty();
 
-        cc.setType("noop");
+        cc.setEncoder("noop");
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isEmpty();
 
-        cc.setLocation(App.LASTFM);
+        cc.setApp(App.LASTFM);
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isEmpty();
     }
 
@@ -65,7 +65,7 @@ public class CredentialsManagementValidationTest {
     }
 
     @Test
-    public void credCreation_unknownLocation() {
+    public void credCreation_unknownApp() {
         CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", null, null, null, null, null, null);
         cc.setCredential("c");
         cc.setConfirmCredential("c");
@@ -73,18 +73,18 @@ public class CredentialsManagementValidationTest {
     }
 
     @Test
-    public void credCreation_unknownType() {
+    public void credCreation_unknownEncoder() {
         CredentialsCommand cc = new CredentialsCommand("username", "bcrypt2", App.AIRSONIC, null, null, null, null, null);
         cc.setCredential("c");
         cc.setConfirmCredential("c");
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isNotEmpty();
 
-        cc.setType(null);
+        cc.setEncoder(null);
         assertThat(v.validate(cc, Default.class, CredentialCreateChecks.class)).isNotEmpty();
     }
 
     @Test
-    public void credCreation_wrongTypeForLocation() {
+    public void credCreation_wrongEncoderForApp() {
         CredentialsCommand cc = new CredentialsCommand("username", "bcrypt", App.LASTFM, null, null, null, null, null);
         cc.setCredential("c");
         cc.setConfirmCredential("c");
@@ -104,11 +104,11 @@ public class CredentialsManagementValidationTest {
     }
 
     @Test
-    public void credUpdate_unknownType() {
+    public void credUpdate_unknownEncoder() {
         CredentialsCommand cc = new CredentialsCommand(null, "bcrypt2", null, null, null, null, null, "hash");
         assertThat(v.validate(cc, Default.class, CredentialUpdateChecks.class)).isNotEmpty();
 
-        cc.setType(null);
+        cc.setEncoder(null);
         assertThat(v.validate(cc, Default.class, CredentialUpdateChecks.class)).isNotEmpty();
     }
 
@@ -123,7 +123,7 @@ public class CredentialsManagementValidationTest {
         CredentialsCommand cc = new CredentialsCommand(null, "bcrypt2", null, null, null, null, null, "hash");
         assertThat(v.validate(new CredentialsManagementCommand(Collections.singletonList(cc)), Default.class, CredentialUpdateChecks.class)).isNotEmpty();
 
-        cc.setType("bcrypt");
+        cc.setEncoder("bcrypt");
         cc.setHash(null);
         assertThat(v.validate(new CredentialsManagementCommand(Collections.singletonList(cc)), Default.class, CredentialUpdateChecks.class)).isNotEmpty();
     }

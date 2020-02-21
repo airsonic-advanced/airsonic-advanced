@@ -41,19 +41,36 @@ public class CredentialsManagementValidators {
 
     @Target({ ElementType.FIELD })
     @Retention(RetentionPolicy.RUNTIME)
-    @Constraint(validatedBy = CredTypeValidValidator.class)
+    @Constraint(validatedBy = EncoderValidValidator.class)
     @Documented
-    public @interface CredTypeValid {
-        String message() default "{credentialsettings.invalidtype}";
+    public @interface EncoderValid {
+        String message() default "{credentialsettings.invalidencoder}";
+
         Class<?>[] groups() default {};
+
         Class<? extends Payload>[] payload() default {};
+
+        String type() default "all";
     }
 
-    public static class CredTypeValidValidator implements ConstraintValidator<CredTypeValid, String> {
+    public static class EncoderValidValidator implements ConstraintValidator<EncoderValid, String> {
+        private String type;
+
+        @Override
+        public void initialize(EncoderValid constraintAnnotation) {
+            this.type = constraintAnnotation.type();
+        }
+
         @Override
         public boolean isValid(String field, ConstraintValidatorContext context) {
-            if (field == null) {
+            if (type == null) {
                 return true;
+            }
+
+            if (StringUtils.equals("nonlegacydecodable", type)) {
+                return GlobalSecurityConfig.NONLEGACY_DECODABLE_ENCODERS.contains(type);
+            } else if (StringUtils.equals("nonlegacynondecodable", type)) {
+                return GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS.contains(type);
             }
 
             return GlobalSecurityConfig.ENCODERS.keySet().contains(field);
@@ -62,29 +79,29 @@ public class CredentialsManagementValidators {
 
     @Target({ ElementType.TYPE })
     @Retention(RetentionPolicy.RUNTIME)
-    @Constraint(validatedBy = CredTypeForLocationValidValidator.class)
+    @Constraint(validatedBy = CredEncoderForAppValidValidator.class)
     @Documented
-    public @interface CredTypeForLocationValid {
-        String message() default "{credentialsettings.invalidtypeforlocation}";
+    public @interface CredEncoderForAppValid {
+        String message() default "{credentialsettings.invalidencoder}";
         Class<?>[] groups() default {};
         Class<? extends Payload>[] payload() default {};
     }
 
-    public static class CredTypeForLocationValidValidator implements ConstraintValidator<CredTypeForLocationValid, CredentialsCommand> {
+    public static class CredEncoderForAppValidValidator implements ConstraintValidator<CredEncoderForAppValid, CredentialsCommand> {
         @Override
         public boolean isValid(CredentialsCommand creds, ConstraintValidatorContext context) {
             if (creds == null) {
                 return true;
             }
 
-            AppCredSettings appSettings = CredentialsManagementController.APPS_CREDS_SETTINGS.get(creds.getLocation());
+            AppCredSettings appSettings = CredentialsManagementController.APPS_CREDS_SETTINGS.get(creds.getApp());
             if (appSettings == null) {
                 return true;
             }
 
             boolean valid = true;
             if (!appSettings.getNonDecodableEncodersAllowed()) {
-                valid = !GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS.contains(creds.getType());
+                valid = !GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS.contains(creds.getEncoder());
             }
 
             return valid;
@@ -95,41 +112,5 @@ public class CredentialsManagementValidators {
     }
 
     public interface CredentialUpdateChecks {
-    }
-
-    @Target({ ElementType.FIELD })
-    @Retention(RetentionPolicy.RUNTIME)
-    @Constraint(validatedBy = EncoderTypeValidValidator.class)
-    @Documented
-    public @interface EncoderTypeValid {
-        String message() default "{credentialsettings.invalidtypeforlocation}";
-
-        Class<?>[] groups() default {};
-
-        Class<? extends Payload>[] payload() default {};
-
-        boolean decodable();
-    }
-
-    public static class EncoderTypeValidValidator implements ConstraintValidator<EncoderTypeValid, String> {
-        private boolean decodable;
-
-        @Override
-        public void initialize(EncoderTypeValid constraintAnnotation) {
-            this.decodable = constraintAnnotation.decodable();
-        }
-
-        @Override
-        public boolean isValid(String type, ConstraintValidatorContext context) {
-            if (type == null) {
-                return true;
-            }
-
-            if (decodable) {
-                return GlobalSecurityConfig.NONLEGACY_DECODABLE_ENCODERS.contains(type);
-            } else {
-                return GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS.contains(type);
-            }
-        }
     }
 }
