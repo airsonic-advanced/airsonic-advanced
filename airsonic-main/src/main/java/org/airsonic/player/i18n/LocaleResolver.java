@@ -53,24 +53,26 @@ public class LocaleResolver implements org.springframework.web.servlet.LocaleRes
     * @param request Request to be used for resolution.
     * @return The current locale.
     */
+    @Override
     public Locale resolveLocale(HttpServletRequest request) {
         Locale locale = (Locale) request.getAttribute("airsonic.locale");
         if (locale != null) {
             return locale;
         }
 
+        // Look for user-specific locale.
+        String username = securityService.getCurrentUsername(request);
+
+        locale = resolveLocale(username);
+
         // Optimization: Cache locale in the request.
-        locale = doResolveLocale(request);
         request.setAttribute("airsonic.locale", locale);
 
         return locale;
     }
 
-    private Locale doResolveLocale(HttpServletRequest request) {
+    public Locale resolveLocale(String username) {
         Locale locale = null;
-
-        // Look for user-specific locale.
-        String username = securityService.getCurrentUsername(request);
         if (username != null) {
             UserSettings userSettings = settingsService.getUserSettings(username);
             if (userSettings != null) {
@@ -101,6 +103,7 @@ public class LocaleResolver implements org.springframework.web.servlet.LocaleRes
         return locales.contains(locale);
     }
 
+    @Override
     public void setLocale(HttpServletRequest request, HttpServletResponse response, Locale locale) {
         throw new UnsupportedOperationException("Cannot change locale - use a different locale resolution strategy");
     }

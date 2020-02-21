@@ -4,13 +4,30 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/multiService.js'/>"></script>
+    <%@ include file="websocket.jsp" %>
 
     <script type="text/javascript">
         var previousQuery = "";
         var instantSearchTimeout;
         var showSideBar = ${model.showSideBar ? 'true' : 'false'};
+
+        function init() {
+            StompClient.subscribe({
+                "/user/queue/settings/sidebar": function(msg) {
+                    toggleLeftFrameCallback(JSON.parse(msg.body));
+                }
+            });
+        }
+
+        function toggleLeftFrameCallback(show) {
+            if (showSideBar != show) {
+                if (show) {
+                    doShowLeftFrame();
+                } else {
+                    doHideLeftFrame();
+                }
+            }
+        }
 
         function triggerInstantSearch() {
             if (instantSearchTimeout) {
@@ -28,18 +45,26 @@
         }
 
         function showLeftFrame() {
+            doShowLeftFrame();
+            StompClient.send("/app/settings/sidebar", true);
+        }
+
+        function doShowLeftFrame() {
             $("#show-left-frame").hide();
             $("#hide-left-frame").show();
             toggleLeftFrame(230);
-            multiService.setShowSideBar(true);
             showSideBar = true;
         }
 
         function hideLeftFrame() {
+            doHideLeftFrame();
+            StompClient.send("/app/settings/sidebar", false);
+        }
+
+        function doHideLeftFrame() {
             $("#hide-left-frame").hide();
             $("#show-left-frame").show();
             toggleLeftFrame(0);
-            multiService.setShowSideBar(false);
             showSideBar = false;
         }
 
@@ -63,7 +88,7 @@
     </script>
 </head>
 
-<body class="bgcolor2 topframe" style="margin:0.4em 1em 0 1em;">
+<body class="bgcolor2 topframe" style="margin:0.4em 1em 0 1em;" onload="init()">
 
 <span id="dummy-animation-target" style="max-width:0;display: none"></span>
 

@@ -19,7 +19,6 @@
  */
 package org.airsonic.player.service;
 
-import net.sf.ehcache.Ehcache;
 import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
@@ -32,6 +31,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -61,6 +63,7 @@ import java.util.stream.Stream;
  * @author Sindre Mehus
  */
 @Service
+@CacheConfig(cacheNames = "userCache")
 public class SecurityService implements UserDetailsService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SecurityService.class);
@@ -69,8 +72,6 @@ public class SecurityService implements UserDetailsService {
     private UserDao userDao;
     @Autowired
     private SettingsService settingsService;
-    @Autowired
-    private Ehcache userCache;
 
     /**
      * Locates the user based on the username.
@@ -258,11 +259,14 @@ public class SecurityService implements UserDetailsService {
     }
 
     /**
-     * Returns the user with the given username
-     * @param username The username to look for
+     * Returns the user with the given username<br>
+     * Cache note: Will only cache if case-sensitive. Otherwise, cache eviction is difficult
+     *
+     * @param username      The username to look for
      * @param caseSensitive If false, will do a case insensitive search
      * @return The corresponding User
      */
+    @Cacheable(key = "#username", condition = "#caseSensitive", unless = "#result == null")
     public User getUserByName(String username, boolean caseSensitive) {
         return userDao.getUserByName(username, caseSensitive);
     }
@@ -326,10 +330,10 @@ public class SecurityService implements UserDetailsService {
      *
      * @param username The username.
      */
+    @CacheEvict
     public void deleteUser(String username) {
         userDao.deleteUser(username);
         LOG.info("Deleted user " + username);
-        userCache.remove(username);
     }
 
     /**
@@ -337,9 +341,9 @@ public class SecurityService implements UserDetailsService {
      *
      * @param user The user to update.
      */
+    @CacheEvict(key = "#user.username")
     public void updateUser(User user) {
         userDao.updateUser(user);
-        userCache.remove(user.getUsername());
     }
 
     /**
@@ -350,6 +354,7 @@ public class SecurityService implements UserDetailsService {
      * @param bytesDownloadedDelta Increment bytes downloaded count with this value.
      * @param bytesUploadedDelta   Increment bytes uploaded count with this value.
      */
+    @CacheEvict(key = "#user.username")
     public void updateUserByteCounts(User user, long bytesStreamedDelta, long bytesDownloadedDelta, long bytesUploadedDelta) {
         if (user == null) {
             return;
@@ -471,10 +476,6 @@ public class SecurityService implements UserDetailsService {
         this.userDao = userDao;
     }
 
-    public void setUserCache(Ehcache userCache) {
-        this.userCache = userCache;
-    }
-
     public static class UserDetail extends org.springframework.security.core.userdetails.User {
         private List<UserCredential> creds;
 
@@ -494,6 +495,5 @@ public class SecurityService implements UserDetailsService {
         public void eraseCredentials() {
             creds = null;
         }
-
     }
 }

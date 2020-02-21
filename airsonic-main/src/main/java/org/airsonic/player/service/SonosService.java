@@ -364,7 +364,7 @@ public class SonosService implements SonosSoap {
     public RenameContainerResult renameContainer(String id, String title) {
         if (id.startsWith(ID_PLAYLIST_PREFIX)) {
             int playlistId = Integer.parseInt(id.replace(ID_PLAYLIST_PREFIX, ""));
-            Playlist playlist = playlistService.getPlaylist(playlistId);
+            Playlist playlist = new Playlist(playlistService.getPlaylist(playlistId));
             if (playlist != null && playlist.getUsername().equals(getUsername())) {
                 playlist.setName(title);
                 playlistService.updatePlaylist(playlist);

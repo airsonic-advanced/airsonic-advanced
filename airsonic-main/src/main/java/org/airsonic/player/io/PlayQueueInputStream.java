@@ -79,8 +79,10 @@ public class PlayQueueInputStream extends InputStream {
             currentStream.close();
             currentStream = null;
         }
-        fileEndListener.accept(currentFile);
-        currentFile = null;
+        if (currentFile != null) {
+            fileEndListener.accept(currentFile);
+            currentFile = null;
+        }
     }
 
     @Override

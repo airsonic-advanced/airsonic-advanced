@@ -1,13 +1,50 @@
 <!--
 # README.md
-# airsonic/airsonic
+# airsonic-advanced/airsonic-advanced
 -->
-Airsonic
-========
-[![Build Status](https://travis-ci.org/airsonic/airsonic.svg?branch=master)](https://travis-ci.org/airsonic/airsonic)
+Airsonic-Advanced
+=================
+[![Build Status](https://travis-ci.org/airsonic-advanced/airsonic-advanced.svg?branch=master)](https://travis-ci.org/airsonic-advanced/airsonic-advanced)
 [![Coverity scan](https://scan.coverity.com/projects/17971/badge.svg)](https://scan.coverity.com/projects/airsonic)
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/airsonic/airsonic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic/airsonic/context:javascript)
 [![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/airsonic/airsonic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic/airsonic/context:java)
+
+What is Airsonic-Advanced?
+--------------------------
+Airsonic-Advanced is a more modern implementation of the Airsonic fork with several key performance and feature enhancements. It adds and supercedes several features in Airsonic.
+
+The following is an incomplete list of features that are enhanced from Airsonic:
+- More modern base frameworks and libraries
+  - Spring Boot 2.x (instead of 1.x), Spring Framework 5.x (instead of 4.x). Plus all the additional dependency upgrades due to the base libaries being upgraded (including EhCache, upgraded SQL connectors etc)
+- More compliant with web specs and utilizes frameworks to apply them instead of a custom home-implemented solutions
+  - RFC 7233
+- Performance enhancements
+  - A more efficient and compliant streaming engine
+  - Removal of pessimistic locking throughout the software in favor of more modern concurrency techniques
+  - Aggressively uses multi-threading and parallelization for most operations, including but not limited to:
+    - Massively parallelized engine for media scanning (media scanning is done much much faster)
+    - Other various use cases utilizing async or parallel options via fork-join pools
+  - Uses websockets to communicate with web-clients instead of polling, making it much lighter on resource utilization as well as more dynamic
+    - Does not have to keep running the same command again every 10 seconds to check statuses
+    - Pushes status updates when they're needed when something has changed
+    - Web clients can update UIs immediately (live views)
+    - Removal of DWR (10 year old technology used as an interface between the web-client and the server)
+- Bugfixes:
+  - Several race condition fixes
+- Security
+  - A completely revamped credential system that actually stores credentials securely instead of openly. Includes encryption for credentials that need to be retrievable later (such as for third-party locations), and backwards compatility (PR pending)
+- Miscellaneous
+  - Uses JSR 310 (Java time) instead of older packages for time tracking
+  - Uses Java's NIO for handling files instead of the older packages
+  - More precise song duration calculation
+  - Ability to use Repeat-One in play queues in web-clients
+- Build and deployment
+  - A more advanced build pipeline including automatic releases and deploys at merge
+    - Allows people to grab the newest build without compiling from source as soon as features/enhancements are merged, instead of waiting for the next stable build (which may be months away)
+
+The complete list of PRs that were used to enhance Airsonic can be seen on the PRs page. At some point an automatic changelog generator will be added to keep track.
+
+Airsonic-Advanced will occasionally backport features introduced in the base Airsonic fork, but is generally much more modern and bleeding edge than Airsonic.
 
 What is Airsonic?
 -----------------
@@ -40,6 +77,8 @@ To reiterate this more clearly:
 Airsonic's goal is to provide a full-featured, stable, self-hosted media server
 based on the Subsonic codebase that is free, open source, and community driven.
 
+Around November 2019, Airsonic-Advanced was forked off the base Airsonic fork due to differences in pace and review of development. Several key features of the framework were outdated, and attempts to upgrade them occasionally took upto a year. Airsonic-Advanced tries a modern implementation and bleeding edge approach to development, and is thus usually ahead of the base fork in dependencies.
+
 Pull Requests are always welcome. Keep in mind that we strive to balance
 stability with new features. As such, all Pull Requests are reviewed before
 being merged to ensure we continue to meet our goals.
@@ -59,6 +98,11 @@ and are licensed under [MIT license](https://github.com/feathericons/feather/blo
 
 Usage
 -----
+Airsonic-Advanced can be downloaded from
+[GitHub](https://github.com/airsonic-advanced/airsonic-advanced/releases).
+
+Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced).
+
 
 Airsonic can be downloaded from
 [GitHub](https://github.com/airsonic/airsonic/releases).

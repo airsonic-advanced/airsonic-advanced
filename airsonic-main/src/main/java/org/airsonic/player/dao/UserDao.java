@@ -301,14 +301,14 @@ public class UserDao extends AbstractDao {
      *
      * @param settings The user-specific settings.
      */
-    public void updateUserSettings(UserSettings settings) {
+    public boolean updateUserSettings(UserSettings settings) {
         update("delete from user_settings where username=?", settings.getUsername());
 
         String sql = "insert into user_settings (" + USER_SETTINGS_COLUMNS + ") values (" + questionMarks(USER_SETTINGS_COLUMNS) + ')';
         String locale = settings.getLocale() == null ? null : settings.getLocale().toString();
         UserSettings.Visibility main = settings.getMainVisibility();
         UserSettings.Visibility playlist = settings.getPlaylistVisibility();
-        update(sql, settings.getUsername(), locale, settings.getThemeId(),
+        return update(sql, settings.getUsername(), locale, settings.getThemeId(),
                 settings.isFinalVersionNotificationEnabled(), settings.isBetaVersionNotificationEnabled(),
                 settings.isSongNotificationEnabled(), main.isTrackNumberVisible(),
                 main.isArtistVisible(), main.isAlbumVisible(), main.isGenreVisible(), main.isYearVisible(),
@@ -323,7 +323,7 @@ public class UserDao extends AbstractDao {
                 settings.isShowArtistInfoEnabled(), settings.isAutoHidePlayQueue(),
                 settings.isViewAsList(), settings.getDefaultAlbumList().getId(), settings.isQueueFollowingSongs(),
                 settings.isShowSideBar(), 60 /* Unused listReloadDelay */, settings.isKeyboardShortcutsEnabled(),
-                settings.getPaginationSize());
+                settings.getPaginationSize()) == 1;
     }
 
     private void readRoles(User user) {

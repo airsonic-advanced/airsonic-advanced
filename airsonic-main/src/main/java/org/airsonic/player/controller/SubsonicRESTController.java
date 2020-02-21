@@ -19,9 +19,10 @@
  */
 package org.airsonic.player.controller;
 
+import com.google.common.primitives.Ints;
+
 import org.airsonic.player.ajax.LyricsInfo;
-import org.airsonic.player.ajax.LyricsService;
-import org.airsonic.player.ajax.PlayQueueService;
+import org.airsonic.player.ajax.LyricsWSController;
 import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.ArtistDao;
@@ -66,6 +67,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Stream;
 
 import static org.airsonic.player.security.RESTRequestParameterProcessingFilter.decrypt;
 import static org.springframework.web.bind.ServletRequestUtils.*;
@@ -120,7 +122,7 @@ public class SubsonicRESTController {
     @Autowired
     private PlaylistService playlistService;
     @Autowired
-    private LyricsService lyricsService;
+    private LyricsWSController lyricsWSController;
     @Autowired
     private PlayQueueService playQueueService;
     @Autowired
@@ -856,40 +858,37 @@ public class SubsonicRESTController {
 
         switch (action) {
             case "start":
-                player.getPlayQueue().setStatus(PlayQueue.Status.PLAYING);
-                jukeboxService.start(player);
+                playQueueService.start(player);
                 break;
             case "stop":
-                player.getPlayQueue().setStatus(PlayQueue.Status.STOPPED);
-                jukeboxService.stop(player);
+                playQueueService.stop(player);
                 break;
             case "skip":
                 int index = getRequiredIntParameter(request, "index");
-                int offset = getIntParameter(request, "offset", 0);
-                player.getPlayQueue().setIndex(index);
-                jukeboxService.skip(player,index,offset);
+                long offset = getLongParameter(request, "offset", 0) * 1000;
+                playQueueService.skip(player, index, offset);
                 break;
             case "add":
                 int[] ids = getIntParameters(request, "id");
-                playQueueService.addMediaFilesToPlayQueue(player.getPlayQueue(),ids,null,true);
+                playQueueService.add(player, Ints.asList(ids), null, true, true);
                 break;
             case "set":
                 ids = getIntParameters(request, "id");
-                playQueueService.resetPlayQueue(player.getPlayQueue(),ids,true);
+                playQueueService.reset(player, Ints.asList(ids), true);
                 break;
             case "clear":
-                player.getPlayQueue().clear();
+                playQueueService.clear(player);
                 break;
             case "remove":
                 index = getRequiredIntParameter(request, "index");
-                player.getPlayQueue().removeFileAt(index);
+                playQueueService.remove(player, Arrays.asList(index));
                 break;
             case "shuffle":
-                player.getPlayQueue().shuffle();
+                playQueueService.shuffle(player);
                 break;
             case "setGain":
                 float gain = getRequiredFloatParameter(request, "gain");
-                jukeboxService.setGain(player,gain);
+                playQueueService.setJukeboxGain(player, gain);
                 break;
             case "get":
                 returnPlaylist = true;
@@ -998,6 +997,9 @@ public class SubsonicRESTController {
             error(request, response, ErrorCode.NOT_AUTHORIZED, "Permission denied for playlist " + id);
             return;
         }
+
+        // create new object to not mutate the cache
+        playlist = new org.airsonic.player.domain.Playlist(playlist);
 
         String name = request.getParameter("name");
         if (name != null) {
@@ -1214,30 +1216,17 @@ public class SubsonicRESTController {
         request = wrapRequest(request);
         NowPlaying result = new NowPlaying();
 
-        for (PlayStatus status : statusService.getPlayStatuses()) {
-
-            Player player = status.getPlayer();
-            MediaFile mediaFile = status.getMediaFile();
-            String username = player.getUsername();
-            if (username == null) {
-                continue;
-            }
-
-            UserSettings userSettings = settingsService.getUserSettings(username);
-            if (!userSettings.isNowPlayingAllowed()) {
-                continue;
-            }
-
-            long minutesAgo = status.getMinutesAgo();
-            if (minutesAgo < 60) {
+        Stream.concat(statusService.getActivePlays().parallelStream(),
+                statusService.getInactivePlays().parallelStream())
+            .map(info -> info.fromPlayStatus())
+            .forEach(s -> {
                 NowPlayingEntry entry = new NowPlayingEntry();
-                entry.setUsername(username);
-                entry.setPlayerId(player.getId());
-                entry.setPlayerName(player.getName());
-                entry.setMinutesAgo((int) minutesAgo);
-                result.getEntry().add(createJaxbChild(entry, player, mediaFile, username));
-            }
-        }
+                entry.setUsername(s.getPlayer().getUsername());
+                entry.setPlayerId(s.getPlayer().getId());
+                entry.setPlayerName(s.getPlayer().getName());
+                entry.setMinutesAgo((int) s.getMinutesAgo());
+                result.getEntry().add(createJaxbChild(entry, s.getPlayer(), s.getMediaFile(), entry.getUsername()));
+            });
 
         Response res = createResponse();
         res.setNowPlaying(result);
@@ -1474,11 +1463,9 @@ public class SubsonicRESTController {
             }
             Instant time = times.length == 0 ? null : Instant.ofEpochMilli(times[i]);
 
-            statusService.addRemotePlay(new PlayStatus(file, player, time == null ? Instant.now() : time));
+            statusService.addRemotePlay(new PlayStatus(UUID.randomUUID(), file, player, time == null ? Instant.now() : time));
             mediaFileService.incrementPlayCount(file);
-            if (settingsService.getUserSettings(player.getUsername()).isLastFmEnabled()) {
-                audioScrobblerService.register(file, player.getUsername(), submission, time);
-            }
+            audioScrobblerService.register(file, player.getUsername(), submission, time);
         }
 
         writeEmptyResponse(request, response);
@@ -2159,7 +2146,7 @@ public class SubsonicRESTController {
         command.setShareRole(getBooleanParameter(request, "shareRole", u.isShareRole()));
 
         int maxBitRate = getIntParameter(request, "maxBitRate", s.getTranscodeScheme().getMaxBitRate());
-        command.setTranscodeSchemeName(TranscodeScheme.fromMaxBitRate(maxBitRate).name());
+        command.setTranscodeSchemeName(Optional.ofNullable(TranscodeScheme.fromMaxBitRate(maxBitRate)).map(TranscodeScheme::name).orElse(null));
 
         if (hasParameter(request, "password")) {
             command.setPassword(decrypt(getRequiredStringParameter(request, "password")));
@@ -2215,7 +2202,7 @@ public class SubsonicRESTController {
         request = wrapRequest(request);
         String artist = request.getParameter("artist");
         String title = request.getParameter("title");
-        LyricsInfo lyrics = lyricsService.getLyrics(artist, title);
+        LyricsInfo lyrics = lyricsWSController.getLyrics(artist, title);
 
         Lyrics result = new Lyrics();
         result.setArtist(lyrics.getArtist());

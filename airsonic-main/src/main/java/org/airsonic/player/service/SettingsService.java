@@ -33,6 +33,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -164,7 +166,7 @@ public class SettingsService {
             "Use it to share your music with friends, or to listen to your own music while at work. You can stream to multiple " +
             "players simultaneously, for instance to one player in your kitchen and another in your living room.\n" +
             "\\\\ \\\\\n" +
-            "To change or remove this message, log in with administrator rights and go to {link:Settings > General|generalSettings.view}.";
+            "To change or remove this message, log in with administrator rights and go to <a href='settings.view'>Settings</a> > <a href='generalSettings.view'>General</a>.";
     private static final String DEFAULT_LOGIN_MESSAGE = null;
     private static final String DEFAULT_LOCALE_LANGUAGE = "en";
     private static final String DEFAULT_LOCALE_COUNTRY = "";
@@ -251,6 +253,7 @@ public class SettingsService {
     private List<MusicFolder> cachedMusicFolders;
     private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
     private RateLimiter downloadRateLimiter;
+    private RateLimiter uploadRateLimiter;
     private Pattern excludePattern;
 
     // Array of obsolete keys.  Used to clean property file.
@@ -633,7 +636,7 @@ public class SettingsService {
      * @return The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public long getDownloadBitrateLimit() {
-        return Long.parseLong(getProperty(KEY_DOWNLOAD_BITRATE_LIMIT, "" + DEFAULT_DOWNLOAD_BITRATE_LIMIT));
+        return getLong(KEY_DOWNLOAD_BITRATE_LIMIT, DEFAULT_DOWNLOAD_BITRATE_LIMIT);
     }
 
     public RateLimiter getDownloadBitrateLimiter() {
@@ -659,7 +662,7 @@ public class SettingsService {
      * @param limit The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setDownloadBitrateLimit(long limit) {
-        setProperty(KEY_DOWNLOAD_BITRATE_LIMIT, String.valueOf(limit));
+        setLong(KEY_DOWNLOAD_BITRATE_LIMIT, limit);
         getDownloadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
@@ -670,11 +673,19 @@ public class SettingsService {
         return getLong(KEY_UPLOAD_BITRATE_LIMIT, DEFAULT_UPLOAD_BITRATE_LIMIT);
     }
 
+    public RateLimiter getUploadBitrateLimiter() {
+        if (uploadRateLimiter == null) {
+            uploadRateLimiter = RateLimiter.create(adjustBitrateLimit(getUploadBitrateLimit()));
+        }
+        return uploadRateLimiter;
+    }
+
     /**
      * @param limit The upload bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setUploadBitrateLimit(long limit) {
         setLong(KEY_UPLOAD_BITRATE_LIMIT, limit);
+        getUploadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
     public String getDownsamplingCommand() {
@@ -1128,6 +1139,7 @@ public class SettingsService {
      * @param username The username.
      * @return User-specific settings. Never <code>null</code>.
      */
+    @Cacheable(cacheNames = "userSettingsCache")
     public UserSettings getUserSettings(String username) {
         UserSettings settings = userDao.getUserSettings(username);
         return settings == null ? createDefaultUserSettings(username) : settings;
@@ -1175,6 +1187,7 @@ public class SettingsService {
      *
      * @param settings The user-specific settings.
      */
+    @CacheEvict(cacheNames = "userSettingsCache", key = "#settings.username")
     public void updateUserSettings(UserSettings settings) {
         userDao.updateUserSettings(settings);
     }

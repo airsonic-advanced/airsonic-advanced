@@ -22,6 +22,7 @@ package org.airsonic.player.domain;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * A play queue is a list of music files that are associated to a remote player.
@@ -31,7 +32,7 @@ import java.util.*;
 public class PlayQueue {
 
     private List<MediaFile> files = new ArrayList<>();
-    private boolean repeatEnabled;
+    private RepeatStatus repeatStatus = RepeatStatus.OFF;
     private String name = "(unnamed)";
     private Status status = Status.PLAYING;
 
@@ -115,11 +116,15 @@ public class PlayQueue {
      * Skip to the next song in the playlist.
      */
     public synchronized void next() {
+        if (getRepeatStatus() == RepeatStatus.TRACK) {
+            return;
+        }
+
         index++;
 
         // Reached the end?
         if (index >= size()) {
-            index = isRepeatEnabled() ? 0 : -1;
+            index = (getRepeatStatus() == RepeatStatus.QUEUE) ? 0 : -1;
         }
     }
 
@@ -167,12 +172,9 @@ public class PlayQueue {
      * @param mediaFiles The music files to add.
      * @param index Where to add them.
      */
-    public synchronized void addFilesAt(Iterable<MediaFile> mediaFiles, int index) {
+    public synchronized void addFilesAt(Collection<MediaFile> mediaFiles, int index) {
         makeBackup();
-        for (MediaFile mediaFile : mediaFiles) {
-            files.add(index, mediaFile);
-            index++;
-        }
+        files.addAll(index, mediaFiles);
         setStatus(Status.PLAYING);
     }
 
@@ -182,15 +184,13 @@ public class PlayQueue {
      * @param append     Whether existing songs in the playlist should be kept.
      * @param mediaFiles The music files to add.
      */
-    public synchronized void addFiles(boolean append, Iterable<MediaFile> mediaFiles) {
+    public synchronized void addFiles(boolean append, Collection<MediaFile> mediaFiles) {
         makeBackup();
         if (!append) {
             index = 0;
             files.clear();
         }
-        for (MediaFile mediaFile : mediaFiles) {
-            files.add(mediaFile);
-        }
+        files.addAll(mediaFiles);
         setStatus(Status.PLAYING);
     }
 
@@ -284,21 +284,18 @@ public class PlayQueue {
     /**
      * Rearranges the playlist using the provided indexes.
      */
-    public synchronized void rearrange(int[] indexes) {
-        if (indexes == null || indexes.length != size()) {
+    public synchronized void rearrange(List<Integer> indexes) {
+        if (indexes == null || indexes.size() != size()) {
             return;
         }
         makeBackup();
         MediaFile[] newFiles = new MediaFile[files.size()];
-        for (int i = 0; i < indexes.length; i++) {
-            newFiles[i] = files.get(indexes[i]);
-        }
-        for (int i = 0; i < indexes.length; i++) {
-            if (index == indexes[i]) {
+        IntStream.range(0, size()).parallel().forEach(i -> {
+            newFiles[i] = files.get(indexes.get(i));
+            if (index == indexes.get(i)) {
                 index = i;
-                break;
             }
-        }
+        });
 
         files.clear();
         files.addAll(Arrays.asList(newFiles));
@@ -332,22 +329,17 @@ public class PlayQueue {
         }
     }
 
-    /**
-     * Returns whether the playlist is repeating.
-     *
-     * @return Whether the playlist is repeating.
-     */
-    public boolean isRepeatEnabled() {
-        return repeatEnabled;
+    public RepeatStatus getRepeatStatus() {
+        return repeatStatus;
     }
 
     /**
      * Sets whether the playlist is repeating.
      *
-     * @param repeatEnabled Whether the playlist is repeating.
+     * @param repeatStatus Whether the playlist is repeating (and how)
      */
-    public void setRepeatEnabled(boolean repeatEnabled) {
-        this.repeatEnabled = repeatEnabled;
+    public void setRepeatStatus(RepeatStatus repeatStatus) {
+        this.repeatStatus = repeatStatus;
     }
 
     /**
@@ -472,5 +464,18 @@ public class PlayQueue {
         TRACK,
         ARTIST,
         ALBUM
+    }
+
+    public enum RepeatStatus {
+        OFF, TRACK, QUEUE;
+
+        public static RepeatStatus getNext(RepeatStatus status) {
+            switch (status) {
+                case OFF: return TRACK;
+                case TRACK: return QUEUE;
+                case QUEUE: return OFF;
+                default: return OFF;
+            }
+        }
     }
 }
