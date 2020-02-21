@@ -22,6 +22,7 @@ package org.airsonic.player.domain;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * A play queue is a list of music files that are associated to a remote player.
@@ -171,12 +172,9 @@ public class PlayQueue {
      * @param mediaFiles The music files to add.
      * @param index Where to add them.
      */
-    public synchronized void addFilesAt(Iterable<MediaFile> mediaFiles, int index) {
+    public synchronized void addFilesAt(Collection<MediaFile> mediaFiles, int index) {
         makeBackup();
-        for (MediaFile mediaFile : mediaFiles) {
-            files.add(index, mediaFile);
-            index++;
-        }
+        files.addAll(index, mediaFiles);
         setStatus(Status.PLAYING);
     }
 
@@ -186,15 +184,13 @@ public class PlayQueue {
      * @param append     Whether existing songs in the playlist should be kept.
      * @param mediaFiles The music files to add.
      */
-    public synchronized void addFiles(boolean append, Iterable<MediaFile> mediaFiles) {
+    public synchronized void addFiles(boolean append, Collection<MediaFile> mediaFiles) {
         makeBackup();
         if (!append) {
             index = 0;
             files.clear();
         }
-        for (MediaFile mediaFile : mediaFiles) {
-            files.add(mediaFile);
-        }
+        files.addAll(mediaFiles);
         setStatus(Status.PLAYING);
     }
 
@@ -288,21 +284,18 @@ public class PlayQueue {
     /**
      * Rearranges the playlist using the provided indexes.
      */
-    public synchronized void rearrange(int[] indexes) {
-        if (indexes == null || indexes.length != size()) {
+    public synchronized void rearrange(List<Integer> indexes) {
+        if (indexes == null || indexes.size() != size()) {
             return;
         }
         makeBackup();
         MediaFile[] newFiles = new MediaFile[files.size()];
-        for (int i = 0; i < indexes.length; i++) {
-            newFiles[i] = files.get(indexes[i]);
-        }
-        for (int i = 0; i < indexes.length; i++) {
-            if (index == indexes[i]) {
+        IntStream.range(0, size()).parallel().forEach(i -> {
+            newFiles[i] = files.get(indexes.get(i));
+            if (index == indexes.get(i)) {
                 index = i;
-                break;
             }
-        }
+        });
 
         files.clear();
         files.addAll(Arrays.asList(newFiles));
