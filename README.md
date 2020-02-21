@@ -19,10 +19,11 @@ The following is an incomplete list of features that are enhanced from Airsonic:
 - More compliant with web specs and utilizes frameworks to apply them instead of a custom home-implemented solutions
   - RFC 7233
 - Performance enhancements
+  - A more efficient and compliant streaming engine
+  - Removal of pessimistic locking throughout the software in favor of more modern concurrency techniques
   - Aggressively uses multi-threading and parallelization for most operations, including but not limited to:
     - Massively parallelized engine for media scanning (media scanning is done much much faster)
     - Other various use cases utilizing async or parallel options via fork-join pools
-  - Removal of pessimistic locking throughout the software in favor of more modern concurrency techniques
   - Uses websockets to communicate with web-clients instead of polling, making it much lighter on resource utilization as well as more dynamic
     - Does not have to keep running the same command again every 10 seconds to check statuses
     - Pushes status updates when they're needed when something has changed

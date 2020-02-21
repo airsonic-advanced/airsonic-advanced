@@ -2,9 +2,9 @@ package org.airsonic.player.ajax;
 
 import org.airsonic.player.domain.PlayQueue;
 import org.airsonic.player.domain.Player;
+import org.airsonic.player.service.PlayQueueService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.spring.WebsocketConfiguration;
-import org.airsonic.player.service.PlayQueueService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
