@@ -510,6 +510,9 @@
     function onAddNext(id) {
         StompClient.send("/app/playqueues/${model.player.id}/add", JSON.stringify({ids: [id], index: currentSongIndex + 1}));
     }
+    function onAddPlaylist(id) {
+        StompClient.send("/app/playqueues/${model.player.id}/add/playlist", JSON.stringify({id: id}));
+    }
     function onShuffle() {
         StompClient.send("/app/playqueues/${model.player.id}/shuffle", "");
     }

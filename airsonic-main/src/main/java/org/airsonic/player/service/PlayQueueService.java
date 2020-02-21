@@ -379,6 +379,21 @@ public class PlayQueueService {
         }
     }
 
+    public void addPlaylist(Player player, int id, boolean removeVideoFiles) {
+        PlayQueue playQueue = player.getPlayQueue();
+
+        List<MediaFile> files = playlistService.getFilesInPlaylist(id);
+        if (removeVideoFiles) {
+            mediaFileService.removeVideoFiles(files);
+        }
+
+        playQueue.addFiles(true, files);
+
+        playQueue.setRandomSearchCriteria(null);
+        playQueue.setInternetRadio(null);
+        broadcastPlayQueue(player, !player.isExternalWithPlaylist());
+    }
+
     public void reset(Player player, List<Integer> ids, boolean removeVideoFiles) {
         PlayQueue playQueue = player.getPlayQueue();
         MediaFile currentFile = playQueue.getCurrentFile();
