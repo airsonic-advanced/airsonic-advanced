@@ -7,7 +7,6 @@ import org.airsonic.player.filter.ParameterDecodingFilter;
 import org.airsonic.player.filter.RESTFilter;
 import org.airsonic.player.filter.RequestEncodingFilter;
 import org.airsonic.player.filter.ResponseHeaderFilter;
-import org.directwebremoting.servlet.DwrServlet;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -25,17 +24,6 @@ import java.util.Properties;
 
 @Configuration
 public class ServletConfiguration implements WebMvcConfigurer {
-    /**
-     * Registers the DWR servlet.
-     *
-     * @return a registration bean.
-     */
-    @Bean
-    public ServletRegistrationBean<Servlet> dwrServletRegistrationBean() {
-        ServletRegistrationBean<Servlet> servlet = new ServletRegistrationBean<>(new DwrServlet(), "/dwr/*");
-        servlet.addInitParameter("crossDomainSessionSecurity","false");
-        return servlet;
-    }
 
     @Bean
     public ServletRegistrationBean<Servlet> cxfServletBean() {
@@ -103,7 +91,7 @@ public class ServletConfiguration implements WebMvcConfigurer {
     @Bean
     public FilterRegistrationBean<Filter> cacheFilterRegistration() {
         FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>(cacheFilter());
-        registration.addUrlPatterns("/icons/*", "/style/*", "/script/*", "/dwr/*", "/icons/*", "/coverArt.view", "/avatar.view");
+        registration.addUrlPatterns("/icons/*", "/style/*", "/script/*", "/icons/*", "/coverArt.view", "/avatar.view");
         registration.addInitParameter("Cache-Control", "max-age=36000");
         registration.setName("CacheFilter");
         registration.setOrder(5);
