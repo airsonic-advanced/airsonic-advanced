@@ -173,6 +173,9 @@
         function onPlayAll() {
             top.playQueue.onPlayPlaylist(playlistId);
         }
+        function onAddAll() {
+            top.playQueue.onAddPlaylist(playlistId);
+        }
         function onAdd(index) {
             top.playQueue.onAdd(songs[index].id);
             $().toastmessage('showSuccessToast', '<fmt:message key="main.addlast.toast"/>')
@@ -235,7 +238,7 @@
 <h1><a href="playlists.view"><fmt:message key="left.playlists"/></a> &raquo; <span id="name"></span></h1>
 <h2>
     <span class="header"><a href="javascript:void(0)" onclick="onPlayAll();"><fmt:message key="common.play"/></a></span>
-
+        | <span class="header"><a href="javascript:void(0)" onclick="onAddAll();"><fmt:message key="main.addall"/></a></span>
     <c:if test="${model.user.downloadRole}">
         <c:url value="download.view" var="downloadUrl"><c:param name="playlist" value="${model.playlist.id}"/></c:url>
         | <span class="header"><a href="${downloadUrl}"><fmt:message key="common.download"/></a></span>
