@@ -10,11 +10,11 @@
         function toggleStar(mediaFileId, imageId) {
             if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
                 $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-                StompClient.send("/app/rate/unstar", mediaFileId);
+                StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
             }
             else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
                 $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-                StompClient.send("/app/rate/star", mediaFileId);
+                StompClient.send("/app/rate/mediafile/star", mediaFileId);
             }
         }
 
