@@ -19,9 +19,10 @@
  */
 package org.airsonic.player.controller;
 
+import com.google.common.primitives.Ints;
+
 import org.airsonic.player.ajax.LyricsInfo;
 import org.airsonic.player.ajax.LyricsWSController;
-import org.airsonic.player.ajax.PlayQueueService;
 import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.ArtistDao;
@@ -856,40 +857,37 @@ public class SubsonicRESTController {
 
         switch (action) {
             case "start":
-                player.getPlayQueue().setStatus(PlayQueue.Status.PLAYING);
-                jukeboxService.start(player);
+                playQueueService.start(player);
                 break;
             case "stop":
-                player.getPlayQueue().setStatus(PlayQueue.Status.STOPPED);
-                jukeboxService.stop(player);
+                playQueueService.stop(player);
                 break;
             case "skip":
                 int index = getRequiredIntParameter(request, "index");
-                int offset = getIntParameter(request, "offset", 0);
-                player.getPlayQueue().setIndex(index);
-                jukeboxService.skip(player,index,offset);
+                long offset = getLongParameter(request, "offset", 0) * 1000;
+                playQueueService.skip(player, index, offset);
                 break;
             case "add":
                 int[] ids = getIntParameters(request, "id");
-                playQueueService.addMediaFilesToPlayQueue(player.getPlayQueue(),ids,null,true);
+                playQueueService.add(player, Ints.asList(ids), null, true, true);
                 break;
             case "set":
                 ids = getIntParameters(request, "id");
-                playQueueService.resetPlayQueue(player.getPlayQueue(),ids,true);
+                playQueueService.reset(player, Ints.asList(ids), true);
                 break;
             case "clear":
-                player.getPlayQueue().clear();
+                playQueueService.clear(player);
                 break;
             case "remove":
                 index = getRequiredIntParameter(request, "index");
-                player.getPlayQueue().removeFileAt(index);
+                playQueueService.remove(player, Arrays.asList(index));
                 break;
             case "shuffle":
-                player.getPlayQueue().shuffle();
+                playQueueService.shuffle(player);
                 break;
             case "setGain":
                 float gain = getRequiredFloatParameter(request, "gain");
-                jukeboxService.setGain(player,gain);
+                playQueueService.setJukeboxGain(player, gain);
                 break;
             case "get":
                 returnPlaylist = true;
