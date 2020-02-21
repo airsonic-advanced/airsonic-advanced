@@ -280,17 +280,17 @@
     <tbody id="playlistBody">
     <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
         <td class="fit">
-            <img id="starSong" onclick="onStar(this.id.substring(8))" src="<spring:theme code='ratingOffImage'/>"
+            <img id="starSong" onclick="onStar(parseInt(this.id.substring(8)))" src="<spring:theme code='ratingOffImage'/>"
                  style="cursor:pointer;height:18px;" alt="" title=""></td>
         <td class="fit">
             <img id="play" src="<spring:theme code='playImage'/>" alt="<fmt:message key='common.play'/>" title="<fmt:message key='common.play'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onPlay(this.id.substring(4))"></td>
+                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onPlay(parseInt(this.id.substring(4)))"></td>
         <td class="fit">
             <img id="add" src="<spring:theme code='addImage'/>" alt="<fmt:message key='common.add'/>" title="<fmt:message key='common.add'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAdd(this.id.substring(3))"></td>
+                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAdd(parseInt(this.id.substring(3)))"></td>
         <td class="fit" style="padding-right:30px">
             <img id="addNext" src="<spring:theme code='addNextImage'/>" alt="<fmt:message key='main.addnext'/>" title="<fmt:message key='main.addnext'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAddNext(this.id.substring(7))"></td>
+                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAddNext(parseInt(this.id.substring(7)))"></td>
 
         <td class="fit rightalign"><span id="index">1</span></td>
         <td class="fit"><span id="missing" class="playlist-missing"><fmt:message key="playlist.missing"/></span></td>
@@ -301,7 +301,7 @@
 
         <c:if test="${model.editAllowed}">
             <td class="fit">
-                <img id="removeSong" onclick="onRemove(this.id.substring(10))" src="<spring:theme code='removeImage'/>"
+                <img id="removeSong" onclick="onRemove(parseInt(this.id.substring(10)))" src="<spring:theme code='removeImage'/>"
                      style="cursor:pointer;height:18px;" alt="<fmt:message key='playlist.remove'/>" title="<fmt:message key='playlist.remove'/>"></td>
         </c:if>
     </tr>
