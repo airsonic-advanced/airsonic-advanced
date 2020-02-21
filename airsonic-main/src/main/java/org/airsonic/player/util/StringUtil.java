@@ -140,7 +140,11 @@ public final class StringUtil {
      * @param locale    The locale used for formatting.
      * @return The formatted string.
      */
-    public static synchronized String formatBytes(long byteCount, Locale locale) {
+    public static synchronized String formatBytes(Long byteCount, Locale locale) {
+
+        if (byteCount == null) {
+            return null;
+        }
 
         // More than 1 TB?
         if (byteCount >= 1024L * 1024 * 1024 * 1024) {

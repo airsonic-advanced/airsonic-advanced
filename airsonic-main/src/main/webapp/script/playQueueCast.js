@@ -159,7 +159,7 @@
 
         var request = new chrome.cast.media.LoadRequest(mediaInfo);
         request.autoplay = true;
-        request.currentTime = position;
+        request.currentTime = position || 0;
 
         this.castSession.loadMedia(request,
                 this.onMediaDiscovered.bind(this, 'loadMedia'),
