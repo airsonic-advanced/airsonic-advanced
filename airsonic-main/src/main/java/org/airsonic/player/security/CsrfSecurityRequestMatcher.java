@@ -24,7 +24,6 @@ public class CsrfSecurityRequestMatcher implements RequestMatcher {
 
     public CsrfSecurityRequestMatcher() {
         this.whiteListedMatchers = Arrays.asList(
-            new RegexRequestMatcher("/dwr/.*\\.dwr", "POST"),
             new RegexRequestMatcher("/rest/.*\\.view(\\?.*)?", "POST"),
             new RegexRequestMatcher("/search(?:\\.view)?", "POST")
         );

@@ -129,11 +129,11 @@
     function toggleStar(mediaFileId, imageId) {
         if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
             $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-            StompClient.send("/app/rate/unstar", mediaFileId);
+            StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
         }
         else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
             $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-            StompClient.send("/app/rate/star", mediaFileId);
+            StompClient.send("/app/rate/mediafile/star", mediaFileId);
         }
     }
     function playAll() {
@@ -325,17 +325,17 @@
     <tbody id="topSongsBody">
     <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
         <td class="fit">
-            <img id="starSong" style="height:18px;" onclick="toggleStarTopSong(this.id.substring(8), '#starSong' + this.id.substring(8))" src="<spring:theme code='ratingOffImage'/>"
+            <img id="starSong" style="height:18px;" onclick="toggleStarTopSong(parseInt(this.id.substring(8)), '#starSong' + this.id.substring(8))" src="<spring:theme code='ratingOffImage'/>"
                  style="cursor:pointer" alt="" title=""></td>
         <td class="fit">
             <img id="play" src="<spring:theme code='playImage'/>" alt="<fmt:message key='common.play'/>" title="<fmt:message key='common.play'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="playTopSong(this.id.substring(4))"></td>
+                 style="padding-right:0.1em;cursor:pointer" onclick="playTopSong(parseInt(this.id.substring(4)))"></td>
         <td class="fit">
             <img id="add" src="<spring:theme code='addImage'/>" alt="<fmt:message key='common.add'/>" title="<fmt:message key='common.add'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="addTopSong(this.id.substring(3))"></td>
+                 style="padding-right:0.1em;cursor:pointer" onclick="addTopSong(parseInt(this.id.substring(3)))"></td>
         <td class="fit" style="padding-right:30px">
             <img id="addNext" src="<spring:theme code='addNextImage'/>" alt="<fmt:message key='main.addnext'/>" title="<fmt:message key='main.addnext'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="addNextTopSong(this.id.substring(7))"></td>
+                 style="padding-right:0.1em;cursor:pointer" onclick="addNextTopSong(parseInt(this.id.substring(7)))"></td>
         <td class="fit rightalign"><span id="rank" class="detail">Rank</span></td>
         <td class="truncate"><span id="title" class="songTitle">Title</span></td>
         <td class="truncate"><a id="albumUrl" target="main"><span id="album" class="detail">Album</span></a></td>

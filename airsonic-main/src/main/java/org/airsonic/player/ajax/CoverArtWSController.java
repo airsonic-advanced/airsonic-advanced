@@ -27,6 +27,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 @Controller
+@MessageMapping("/coverart")
 public class CoverArtWSController {
     private static final Logger LOG = LoggerFactory.getLogger(CoverArtWSController.class);
 
@@ -37,7 +38,7 @@ public class CoverArtWSController {
     @Autowired
     private LastFmService lastFmService;
 
-    @MessageMapping("/coverart/search")
+    @MessageMapping("/search")
     @SendToUser(broadcast = false)
     public List<LastFmCoverArt> searchCoverArt(CoverArtSearchRequest req) {
         return lastFmService.searchCoverArt(req.getArtist(), req.getAlbum());
@@ -48,7 +49,7 @@ public class CoverArtWSController {
      *
      * @return The error string if something goes wrong, <code>"OK"</code> otherwise.
      */
-    @MessageMapping("/coverart/set")
+    @MessageMapping("/set")
     @SendToUser(broadcast = false)
     public String setCoverArtImage(CoverArtSetRequest req) {
         try {

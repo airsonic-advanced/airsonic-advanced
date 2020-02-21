@@ -19,6 +19,7 @@ import org.springframework.validation.annotation.Validated;
 import javax.validation.constraints.NotNull;
 
 @Controller
+@MessageMapping("/tags")
 public class TagWSController {
     private static final Logger LOG = LoggerFactory.getLogger(TagWSController.class);
 
@@ -33,7 +34,7 @@ public class TagWSController {
      * @return "UPDATED" if the new tags were updated, "SKIPPED" if no update was necessary.
      *         Otherwise the error message is returned.
      */
-    @MessageMapping("/tags/edit")
+    @MessageMapping("/edit")
     @SendToUser(broadcast = false)
     public String setTags(@Validated TagData data) {
         try {

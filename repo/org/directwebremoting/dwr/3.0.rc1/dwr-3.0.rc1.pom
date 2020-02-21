@@ -1,6 +1,0 @@
-<project>
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>org.directwebremoting</groupId>
-    <artifactId>dwr</artifactId>
-    <version>3.0.rc1</version>
-</project>

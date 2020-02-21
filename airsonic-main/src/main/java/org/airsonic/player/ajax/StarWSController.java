@@ -8,7 +8,7 @@ import org.springframework.stereotype.Controller;
 import java.security.Principal;
 
 @Controller
-@MessageMapping("/rate")
+@MessageMapping("/rate/mediafile")
 public class StarWSController {
     @Autowired
     private MediaFileDao mediaFileDao;
