@@ -146,7 +146,7 @@ public class PlayQueueWSController {
         Player player = getPlayer(playerId, headers);
         playQueueService.add(player, req.getIds(), req.getIndex(), player.isWeb(), true);
     }
-    
+
     @MessageMapping("/add/playlist")
     public void addPlaylist(@DestinationVariable int playerId, PlayQueueRequest req, SimpMessageHeaderAccessor headers) throws Exception {
         Player player = getPlayer(playerId, headers);
