@@ -197,6 +197,8 @@
     function onHidePlayQueue() {
       setFrameHeight(50);
       isVisible = false;
+      $(".playqueue-shown").hide();
+      $(".playqueue-hidden").show();
     }
 
     function onShowPlayQueue() {
@@ -204,6 +206,8 @@
       height = Math.min(height, window.top.innerHeight * 0.8);
       setFrameHeight(height);
       isVisible = true;
+      $(".playqueue-shown").show();
+      $(".playqueue-hidden").hide();
     }
 
     function onTogglePlayQueue() {
@@ -983,6 +987,15 @@
                         </optgroup>
                     </select>
                     </td>
+
+                    <c:if test="${not model.autoHide}">
+                    <td style="white-space:nowrap; text-align:right; width:100%; padding-right:1.5em">
+                      <a href="javascript:onTogglePlayQueue()">
+                        <img class="playqueue-shown" src="<spring:theme code='playQueueHide'/>" alt="Hide play queue" title="Hide play queue" style="cursor:pointer; height:18px;"/>
+                        <img class="playqueue-hidden" src="<spring:theme code='playQueueShow'/>" alt="Show play queue" title="Show play queue" style="cursor:pointer; height:18px; display: none;"/>
+                      </a>
+                    </td>
+                    </c:if>
 
                 </tr></table>
         </div>
