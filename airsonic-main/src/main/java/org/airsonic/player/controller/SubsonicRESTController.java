@@ -32,6 +32,7 @@ import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.Bookmark;
 import org.airsonic.player.domain.PlayQueue;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.search.IndexType;
@@ -1374,6 +1375,10 @@ public class SubsonicRESTController {
             this.error = error;
         }
 
+        public APIException(ErrorCode error) {
+            this(error, error.getMessage());
+        }
+
         @Override
         public String getMessage() {
             return message;
@@ -1984,8 +1989,8 @@ public class SubsonicRESTController {
         }
 
         org.airsonic.player.domain.User user = securityService.getUserByName(username);
-        user.setPassword(password);
-        securityService.updateUser(user);
+        UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), password, securityService.getPreferredPasswordEncoder(true), App.AIRSONIC, "Created via Subsonic REST API");
+        securityService.createCredential(uc);
 
         writeEmptyResponse(request, response);
     }

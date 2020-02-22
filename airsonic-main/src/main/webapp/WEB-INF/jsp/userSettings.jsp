@@ -189,7 +189,7 @@
             <table id="passwordChangeCheckboxTable">
                 <tr>
                     <td><form:checkbox path="passwordChange" id="passwordChange" onclick="enablePasswordChangeFields();" cssClass="checkbox"/></td>
-                    <td><label for="passwordChange"><fmt:message key="usersettings.changepassword"/></label></td>
+                    <td><label for="passwordChange"><fmt:message key="credentialsettings.addcredentials"/></label></td>
                 </tr>
             </table>
 

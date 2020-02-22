@@ -22,7 +22,6 @@ package org.airsonic.player.controller;
 import com.google.common.net.MediaType;
 
 import org.airsonic.player.controller.SubsonicRESTController.APIException;
-import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.persistence.jaxb.JAXBContext;
@@ -63,13 +62,12 @@ public class JAXBWriter {
 
     private final javax.xml.bind.JAXBContext jaxbContext;
     private final DatatypeFactory datatypeFactory;
-    private final String restProtocolVersion;
+    private static final String restProtocolVersion = parseRESTProtocolVersion();
 
     public JAXBWriter() {
         try {
             jaxbContext = JAXBContext.newInstance(Response.class);
             datatypeFactory = DatatypeFactory.newInstance();
-            restProtocolVersion = getRESTProtocolVersion();
         } catch (Exception x) {
             throw new RuntimeException(x);
         }
@@ -101,19 +99,17 @@ public class JAXBWriter {
         }
     }
 
-    private String getRESTProtocolVersion() throws Exception {
-        InputStream in = null;
-        try {
-            in = StringUtil.class.getResourceAsStream("/subsonic-rest-api.xsd");
+    private static String parseRESTProtocolVersion() {
+        try (InputStream in = StringUtil.class.getResourceAsStream("/subsonic-rest-api.xsd")) {
             Document document = createSAXBuilder().build(in);
             Attribute version = document.getRootElement().getAttribute("version");
             return version.getValue();
-        } finally {
-            FileUtil.closeQuietly(in);
+        } catch (Exception x) {
+            throw new RuntimeException(x);
         }
     }
 
-    public String getRestProtocolVersion() {
+    public static String getRestProtocolVersion() {
         return restProtocolVersion;
     }
 

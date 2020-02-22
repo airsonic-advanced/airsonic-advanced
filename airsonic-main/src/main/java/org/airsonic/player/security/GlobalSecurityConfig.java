@@ -1,28 +1,48 @@
 package org.airsonic.player.security;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import com.google.common.io.BaseEncoding;
+
 import org.airsonic.player.service.JWTSecurityService;
-import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.GlobalAuthenticationConfigurerAdapter;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.keygen.KeyGenerators;
+import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
+import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.security.SecureRandom;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.airsonic.player.security.MultipleCredsMatchingAuthenticationProvider.SALT_TOKEN_MECHANISM_SPECIALIZATION;
 
 @Configuration
 @Order(SecurityProperties.BASIC_AUTH_ORDER - 2)
@@ -35,8 +55,44 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
 
     static final String DEVELOPMENT_REMEMBER_ME_KEY = "airsonic";
 
-    @Autowired
-    private SecurityService securityService;
+    @SuppressWarnings("deprecation")
+    public static final Map<String, PasswordEncoder> ENCODERS = new HashMap<>(ImmutableMap
+            .<String, PasswordEncoder>builderWithExpectedSize(19)
+            .put("bcrypt", new BCryptPasswordEncoder())
+            .put("ldap", new org.springframework.security.crypto.password.LdapShaPasswordEncoder())
+            .put("MD4", new org.springframework.security.crypto.password.Md4PasswordEncoder())
+            .put("MD5", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("MD5"))
+            .put("pbkdf2", new Pbkdf2PasswordEncoder()).put("scrypt", new SCryptPasswordEncoder())
+            .put("SHA-1", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-1"))
+            .put("SHA-256", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-256"))
+            .put("sha256", new org.springframework.security.crypto.password.StandardPasswordEncoder())
+            .put("argon2", new Argon2PasswordEncoder())
+
+            // base decodable encoders
+            .put("noop", new PasswordEncoderDecoderWrapper(org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance(), p -> p))
+            .put("hex", HexPasswordEncoder.getInstance())
+            .put("encrypted-AES-GCM", new AesGcmPasswordEncoder()) // placeholder (real instance created below)
+
+            // base decodable encoders that rely on salt+token being passed in (not stored in db with this type)
+            .put("noop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p))
+            .put("hex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()))
+            .put("encrypted-AES-GCM" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(new AesGcmPasswordEncoder())) // placeholder (real instance created below)
+
+            // TODO: legacy marked base encoders, to be upgraded to one-way formats at breaking version change
+            .put("legacynoop", new PasswordEncoderDecoderWrapper(org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance(), p -> p))
+            .put("legacyhex", HexPasswordEncoder.getInstance())
+
+            .put("legacynoop" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(p -> p))
+            .put("legacyhex" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(HexPasswordEncoder.getInstance()))
+            .build());
+
+    public static final Set<String> OPENTEXT_ENCODERS = ImmutableSet.of("noop", "hex", "legacynoop", "legacyhex");
+    public static final Set<String> DECODABLE_ENCODERS = ImmutableSet.<String>builder().addAll(OPENTEXT_ENCODERS).add("encrypted-AES-GCM").build();
+    public static final Set<String> NONLEGACY_ENCODERS = ENCODERS.keySet().stream()
+            .filter(e -> !StringUtils.containsAny(e, "legacy", SALT_TOKEN_MECHANISM_SPECIALIZATION))
+            .collect(Collectors.toSet());
+    public static final Set<String> NONLEGACY_DECODABLE_ENCODERS = Sets.intersection(DECODABLE_ENCODERS, NONLEGACY_ENCODERS);
+    public static final Set<String> NONLEGACY_NONDECODABLE_ENCODERS = Sets.difference(NONLEGACY_ENCODERS, DECODABLE_ENCODERS);
 
     @Autowired
     private CsrfSecurityRequestMatcher csrfSecurityRequestMatcher;
@@ -48,10 +104,62 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
     CustomUserDetailsContextMapper customUserDetailsContextMapper;
 
     @Autowired
-    ApplicationEventPublisher eventPublisher;
+    MultipleCredsMatchingAuthenticationProvider multipleCredsProvider;
 
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        boolean generatedKeys = false;
+
+        String encryptionKeyPass = settingsService.getEncryptionPassword();
+        if (StringUtils.isBlank(encryptionKeyPass)) {
+            LOG.warn("Generating new encryption key password");
+            encryptionKeyPass = JWTSecurityService.generateKey();
+            settingsService.setEncryptionPassword(encryptionKeyPass);
+            generatedKeys = true;
+        }
+
+        String encryptionKeySalt = settingsService.getEncryptionSalt();
+        if (StringUtils.isBlank(encryptionKeySalt)) {
+            LOG.warn("Generating new encryption key salt");
+            encryptionKeySalt = BaseEncoding.base16().encode(KeyGenerators.secureRandom(16).generateKey());
+            settingsService.setEncryptionSalt(encryptionKeySalt);
+            generatedKeys = true;
+        }
+
+        if (generatedKeys) {
+            settingsService.save();
+        }
+
+        AesGcmPasswordEncoder encoder = new AesGcmPasswordEncoder(encryptionKeyPass, encryptionKeySalt);
+        ENCODERS.put("encrypted-AES-GCM", encoder);
+        ENCODERS.put("encrypted-AES-GCM" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(encoder));
+
+        return new DelegatingPasswordEncoder(settingsService.getNonDecodablePasswordEncoder(), ENCODERS) {
+            @Override
+            public boolean upgradeEncoding(String prefixEncodedPassword) {
+                PasswordEncoder encoder = ENCODERS.get(StringUtils.substringBetween(prefixEncodedPassword, "{", "}"));
+                if (encoder != null) {
+                    return encoder.upgradeEncoding(StringUtils.substringAfter(prefixEncodedPassword, "}"));
+                }
+
+                return false;
+            }
+        };
+    }
+
+    @EventListener
+    public void loginFailureListener(AbstractAuthenticationFailureEvent event) {
+        if (event.getSource() instanceof AbstractAuthenticationToken) {
+            AbstractAuthenticationToken token = (AbstractAuthenticationToken) event.getSource();
+            Object details = token.getDetails();
+            if (details instanceof WebAuthenticationDetails) {
+                LOG.info("Login failed from [" + ((WebAuthenticationDetails) details).getRemoteAddress() + "]");
+            }
+        }
+    }
+
+    @Override
+    public void configure(AuthenticationManagerBuilder auth) throws Exception {
         if (settingsService.isLdapEnabled()) {
             auth.ldapAuthentication()
                     .contextSource()
@@ -62,7 +170,6 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
                     .userSearchFilter(settingsService.getLdapSearchFilter())
                     .userDetailsContextMapper(customUserDetailsContextMapper);
         }
-        auth.userDetailsService(securityService);
         String jwtKey = settingsService.getJWTKey();
         if (StringUtils.isBlank(jwtKey)) {
             LOG.warn("Generating new jwt key");
@@ -71,6 +178,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
             settingsService.save();
         }
         auth.authenticationProvider(new JWTAuthenticationProvider(jwtKey));
+        auth.authenticationProvider(multipleCredsProvider);
     }
 
     private static String generateRememberMeKey() {
@@ -123,8 +231,6 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
 
             RESTRequestParameterProcessingFilter restAuthenticationFilter = new RESTRequestParameterProcessingFilter();
             restAuthenticationFilter.setAuthenticationManager(authenticationManagerBean());
-            restAuthenticationFilter.setSecurityService(securityService);
-            restAuthenticationFilter.setEventPublisher(eventPublisher);
             http = http.addFilterBefore(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
             // Try to load the 'remember me' key.
@@ -164,8 +270,8 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
                             "/style/**", "/icons/**", "/flash/**", "/script/**",
                             "/sonos/**", "/login", "/error")
                     .permitAll()
-                    .antMatchers("/personalSettings*", "/passwordSettings*",
-                            "/playerSettings*", "/shareSettings*", "/passwordSettings*")
+                    .antMatchers("/personalSettings*",
+                            "/playerSettings*", "/shareSettings*", "/credentialsSettings*")
                     .hasRole("SETTINGS")
                     .antMatchers("/generalSettings*", "/advancedSettings*", "/userSettings*",
                             "/musicFolderSettings*", "/databaseSettings*", "/transcodeSettings*", "/rest/startScan*")

@@ -23,6 +23,11 @@ import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.UserCredential;
+import org.airsonic.player.domain.UserCredential.App;
+import org.airsonic.player.security.GlobalSecurityConfig;
+import org.airsonic.player.security.PasswordDecoder;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +47,13 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -84,14 +95,131 @@ public class SecurityService implements UserDetailsService {
 
         List<GrantedAuthority> authorities = getGrantedAuthorities(username);
 
-        return new org.springframework.security.core.userdetails.User(
+        return new UserDetail(
                 username,
-                "{noop}" + user.getPassword(),
+                getCredentials(user.getUsername(), App.AIRSONIC),
                 !user.isLdapAuthenticated(),
                 true,
                 true,
                 true,
                 authorities);
+    }
+
+    public boolean updateCredentials(UserCredential oldCreds, UserCredential newCreds, String comment,
+            boolean reencodePlaintextNewCreds) {
+        if (!StringUtils.equals(newCreds.getEncoder(), oldCreds.getEncoder()) || reencodePlaintextNewCreds) {
+            if (reencodePlaintextNewCreds) {
+                newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getEncoder()).encode(newCreds.getCredential()));
+            } else if (GlobalSecurityConfig.DECODABLE_ENCODERS.contains(oldCreds.getEncoder())) {
+                try {
+                    // decode using original creds decoder
+                    PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(oldCreds.getEncoder());
+                    newCreds.setCredential(decoder.decode(oldCreds.getCredential()));
+                    // reencode
+                    newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getEncoder()).encode(newCreds.getCredential()));
+                } catch (Exception e) {
+                    LOG.warn("Could not update credentials for user {}", oldCreds.getUsername(), e);
+                    // Do not try and save it
+                    return false;
+                }
+            }
+        }
+
+        if (!newCreds.equals(oldCreds)) {
+            newCreds.setComment(comment);
+            newCreds.setUpdated(Instant.now());
+
+            return userDao.updateCredential(oldCreds, newCreds);
+        }
+
+        return true;
+    }
+
+    public boolean createCredential(UserCredential newCreds) {
+        newCreds.setCredential(GlobalSecurityConfig.ENCODERS.get(newCreds.getEncoder()).encode(newCreds.getCredential()));
+        return userDao.createCredential(newCreds);
+    }
+
+    // ensure we can't delete all airsonic creds
+    private Predicate<UserCredential> retainOneAirsonicCred = c ->
+            App.AIRSONIC != c.getApp()
+            || !userDao.getCredentials(c.getUsername(), c.getApp()).isEmpty();
+
+    public boolean deleteCredential(UserCredential creds) {
+        try {
+            return userDao.deleteCredential(creds, retainOneAirsonicCred);
+        } catch (Exception e) {
+            LOG.info("Can't delete a credential", e);
+            return false;
+        }
+    }
+
+    public List<UserCredential> getCredentials(String username, App... apps) {
+        return userDao.getCredentials(username, apps);
+    }
+
+    public Map<App, UserCredential> getDecodableCredsForApps(String username, App... apps) {
+        return getCredentials(username, apps).parallelStream()
+                .filter(c -> GlobalSecurityConfig.DECODABLE_ENCODERS.contains(c.getEncoder()))
+                .filter(c -> c.getExpiration() == null || c.getExpiration().isAfter(Instant.now()))
+                .collect(Collectors.groupingByConcurrent(
+                        UserCredential::getApp,
+                        Collectors.collectingAndThen(
+                                Collectors.maxBy(Comparator.comparing(c -> c.getUpdated())), o -> o.orElse(null))));
+    }
+
+    public boolean checkDefaultAdminCredsPresent() {
+        return userDao.getCredentials(User.USERNAME_ADMIN, App.AIRSONIC).parallelStream()
+                .anyMatch(c -> GlobalSecurityConfig.ENCODERS.get(c.getEncoder()).matches(User.USERNAME_ADMIN, c.getCredential()));
+    }
+
+    public boolean checkOpenCredsPresent() {
+        return GlobalSecurityConfig.OPENTEXT_ENCODERS.parallelStream()
+                .mapToInt(userDao::getCredentialCountByEncoder)
+                .anyMatch(i -> i > 0);
+    }
+
+    public boolean checkLegacyCredsPresent() {
+        return userDao.getCredentialCountByEncoder("legacy%") != 0;
+    }
+
+    public boolean checkCredentialsStoredInLegacyTables() {
+        return userDao.checkCredentialsStoredInLegacyTables();
+    }
+
+    public boolean purgeCredentialsStoredInLegacyTables() {
+        return userDao.purgeCredentialsStoredInLegacyTables();
+    }
+
+    public boolean migrateLegacyCredsToNonLegacy(boolean useDecodableOnly) {
+        String decodableEncoder = settingsService.getDecodablePasswordEncoder();
+        String nonDecodableEncoder = useDecodableOnly ? decodableEncoder
+                : settingsService.getNonDecodablePasswordEncoder();
+
+        List<UserCredential> failures = new ArrayList<>();
+
+        userDao.getCredentialsByEncoder("legacy%").forEach(c -> {
+            UserCredential newCreds = new UserCredential(c);
+            if (App.AIRSONIC == c.getApp()) {
+                newCreds.setEncoder(nonDecodableEncoder);
+            } else {
+                newCreds.setEncoder(decodableEncoder);
+            }
+            if (!updateCredentials(c, newCreds, c.getComment() + " | Migrated to nonlegacy by admin", false)) {
+                LOG.warn("System failed to migrate creds created on {} for user {}", c.getCreated(), c.getUsername());
+                failures.add(c);
+            }
+        });
+
+        return failures.isEmpty();
+    }
+
+    public String getPreferredPasswordEncoder(boolean nonDecodableAllowed) {
+        if (!nonDecodableAllowed || !settingsService.getPreferNonDecodablePasswords()) {
+            return settingsService.getDecodablePasswordEncoder();
+        } else {
+            return settingsService.getNonDecodablePasswordEncoder();
+        }
     }
 
     public List<GrantedAuthority> getGrantedAuthorities(String username) {
@@ -181,10 +309,23 @@ public class SecurityService implements UserDetailsService {
     /**
      * Creates a new user.
      *
-     * @param user The user to create.
+     * @param user       The user to create.
+     * @param credential The raw credential (will be encoded)
      */
-    public void createUser(User user) {
-        userDao.createUser(user);
+    public void createUser(User user, String credential, String comment) {
+        String defaultEncoder = getPreferredPasswordEncoder(true);
+        UserCredential uc = new UserCredential(
+                user.getUsername(),
+                user.getUsername(),
+                GlobalSecurityConfig.ENCODERS.get(defaultEncoder).encode(credential),
+                defaultEncoder,
+                App.AIRSONIC,
+                comment);
+        createUser(user, uc);
+    }
+
+    public void createUser(User user, UserCredential credential) {
+        userDao.createUser(user, credential);
         settingsService.setMusicFoldersForUser(user.getUsername(), MusicFolder.toIdList(settingsService.getAllMusicFolders()));
         LOG.info("Created user " + user.getUsername());
     }
@@ -338,5 +479,26 @@ public class SecurityService implements UserDetailsService {
 
     public void setUserDao(UserDao userDao) {
         this.userDao = userDao;
+    }
+
+    public static class UserDetail extends org.springframework.security.core.userdetails.User {
+        private List<UserCredential> creds;
+
+        public UserDetail(String username, List<UserCredential> creds, boolean enabled, boolean accountNonExpired,
+                boolean credentialsNonExpired, boolean accountNonLocked,
+                Collection<? extends GrantedAuthority> authorities) {
+            super(username, "", enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
+
+            this.creds = creds;
+        }
+
+        public List<UserCredential> getCredentials() {
+            return creds;
+        }
+
+        @Override
+        public void eraseCredentials() {
+            creds = null;
+        }
     }
 }
