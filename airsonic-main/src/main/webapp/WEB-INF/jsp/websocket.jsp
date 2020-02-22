@@ -22,7 +22,7 @@
             if (this.stompClient != null) {
                 this.disconnect();
             }
-            var socket = new SockJS('/airsonic');
+            var socket = new SockJS("<c:url value='/airsonic'/>");
             this.stompClient = Stomp.over(socket);  
             this.stompClient.reconnect_delay = 30000;
             var stompclient = this;
