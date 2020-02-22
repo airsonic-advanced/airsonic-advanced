@@ -31,7 +31,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -167,9 +166,10 @@ public class UserDao extends AbstractDao {
             args.put("expiration", credential.getExpiration());
         }
 
-        boolean deleteSuccess = namedUpdate(sql, args) == 1 && postDeletionCheck.test(credential);
-        if (!deleteSuccess) {
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+        boolean deleteSuccess = namedUpdate(sql, args) == 1;
+
+        if (!postDeletionCheck.test(credential)) {
+            throw new RuntimeException("Cannot delete a credential due to failed post deletion check");
         }
 
         return deleteSuccess;

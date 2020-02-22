@@ -146,7 +146,12 @@ public class SecurityService implements UserDetailsService {
             || !userDao.getCredentials(c.getUsername(), c.getApp()).isEmpty();
 
     public boolean deleteCredential(UserCredential creds) {
-        return userDao.deleteCredential(creds, retainOneAirsonicCred);
+        try {
+            return userDao.deleteCredential(creds, retainOneAirsonicCred);
+        } catch (Exception e) {
+            LOG.info("Can't delete a credential", e);
+            return false;
+        }
     }
 
     public List<UserCredential> getCredentials(String username, App... apps) {
