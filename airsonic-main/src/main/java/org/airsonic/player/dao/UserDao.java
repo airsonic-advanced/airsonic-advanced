@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +116,9 @@ public class UserDao extends AbstractDao {
     }
 
     public List<UserCredential> getCredentials(String username, App... apps) {
+        if (apps.length == 0) {
+            return Collections.emptyList();
+        }
         String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=:user and app in (:apps)";
         return namedQuery(sql, userCredentialRowMapper, ImmutableMap.of("user", username, "apps", Arrays.asList(apps)));
     }
