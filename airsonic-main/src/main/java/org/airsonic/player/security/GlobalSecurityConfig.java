@@ -6,6 +6,7 @@ import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
 
 import org.airsonic.player.service.JWTSecurityService;
+import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -96,6 +97,9 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
 
     @Autowired
     private CsrfSecurityRequestMatcher csrfSecurityRequestMatcher;
+
+    @Autowired
+    private SecurityService securityService;
 
     @Autowired
     SettingsService settingsService;
@@ -303,8 +307,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
                     // see http://docs.spring.io/spring-security/site/docs/3.2.4.RELEASE/reference/htmlsingle/#csrf-logout
                     .and().logout().logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")).logoutSuccessUrl(
                     "/login?logout")
-                    .and().rememberMe().key(rememberMeKey);
+                    .and().rememberMe().key(rememberMeKey).userDetailsService(securityService);
         }
-
     }
 }
