@@ -32,8 +32,11 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/airsonic").setAllowedOrigins("*")
-                .addInterceptors(new ServletRequestCaptureHandshakeInterceptor()).withSockJS();
+        registry.addEndpoint("/airsonic")
+                .setAllowedOrigins("*")
+                .addInterceptors(new ServletRequestCaptureHandshakeInterceptor())
+                .withSockJS()
+                .setClientLibraryUrl("../../script/sockjs-client-1.4.0.min.js");
     }
 
     public static class ServletRequestCaptureHandshakeInterceptor implements HandshakeInterceptor {
