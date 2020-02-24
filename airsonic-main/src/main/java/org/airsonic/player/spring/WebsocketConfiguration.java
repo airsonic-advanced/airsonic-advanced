@@ -1,10 +1,12 @@
 package org.airsonic.player.spring;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -20,9 +22,18 @@ import java.util.Map;
 public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer {
     public static final String UNDERLYING_SERVLET_REQUEST = "servletRequest";
 
+    private TaskScheduler messageBrokerTaskScheduler;
+
+    @Autowired
+    public void setMessageBrokerTaskScheduler(TaskScheduler taskScheduler) {
+        this.messageBrokerTaskScheduler = taskScheduler;
+    }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic", "/queue");
+        config.enableSimpleBroker("/topic", "/queue")
+                .setHeartbeatValue(new long[] { 25000, 25000 })
+                .setTaskScheduler(messageBrokerTaskScheduler);
         config.setApplicationDestinationPrefixes("/app");
 
         // this ensures publish order is serial at the cost of no parallelization and
@@ -32,7 +43,7 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/airsonic")
+        registry.addEndpoint("/websocket")
                 .setAllowedOrigins("*")
                 .addInterceptors(new ServletRequestCaptureHandshakeInterceptor())
                 .withSockJS()

@@ -24,7 +24,6 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
@@ -40,17 +39,17 @@
         });
 
         <c:if test="${model.showArtistInfo}">
-        StompClient.subscribe({
+        top.StompClient.subscribe("artistMain.jsp", {
             "/user/queue/artist/info": function(msg) {
                 loadArtistInfoCallback(JSON.parse(msg.body));
             }
-        }, false, loadArtistInfo);
+        }, loadArtistInfo);
         </c:if>
     }
 
     <c:if test="${model.showArtistInfo}">
     function loadArtistInfo() {
-        StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: ${model.dir.id}, maxSimilarArtists: 8, maxTopSongs: 50}));
+        top.StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: ${model.dir.id}, maxSimilarArtists: 8, maxTopSongs: 50}));
     }
 
     function loadArtistInfoCallback(artistInfo) {
@@ -129,11 +128,11 @@
     function toggleStar(mediaFileId, imageId) {
         if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
             $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-            StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
+            top.StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
         }
         else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
             $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-            StompClient.send("/app/rate/mediafile/star", mediaFileId);
+            top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
         }
     }
     function playAll() {

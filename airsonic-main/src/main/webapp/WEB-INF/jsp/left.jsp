@@ -3,11 +3,10 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" language="javascript">
         function init() {
-            StompClient.subscribe({
+            top.StompClient.subscribe("left.jsp", {
                 '/user/queue/playlists/deleted': function(msg) {
                     deletedPlaylistCallback(JSON.parse(msg.body));
                 },
@@ -41,7 +40,7 @@
 
         function createEmptyPlaylist() {
             showAllPlaylists();
-            StompClient.send("/app/playlists/create/empty", "");
+            top.StompClient.send("/app/playlists/create/empty", "");
         }
 
         function showAllPlaylists() {

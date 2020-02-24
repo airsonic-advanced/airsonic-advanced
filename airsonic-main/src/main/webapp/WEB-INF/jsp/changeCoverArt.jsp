@@ -3,7 +3,6 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
 
     <script type="text/javascript" language="javascript">
 
@@ -14,7 +13,7 @@
             $("#error").hide();
             $("#errorDetails").hide();
             $("#noImagesFound").hide();
-            StompClient.send("/app/coverart/set", JSON.stringify({albumId: ${model.id}, url: imageUrl}));
+            top.StompClient.send("/app/coverart/set", JSON.stringify({albumId: ${model.id}, url: imageUrl}));
         }
 
         function setImageComplete(errorDetails) {
@@ -63,18 +62,18 @@
 
             var artist = $("#artist").val();
             var album = $("#album").val();
-            StompClient.send("/app/coverart/search", JSON.stringify({artist: artist, album: album}));
+            top.StompClient.send("/app/coverart/search", JSON.stringify({artist: artist, album: album}));
         }
 
         function init() {
-            StompClient.subscribe({
+            top.StompClient.subscribe("changeCoverArt.jsp", {
                 "/user/queue/coverart/search": function(msg) {
                     searchComplete(JSON.parse(msg.body));
                 },
                 "/user/queue/coverart/set": function(msg) {
                     setImageComplete(msg.body);
                 }
-            }, false, search);
+            }, search);
         }
     </script>
 </head>

@@ -3,16 +3,15 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
     <title><fmt:message key="lyrics.title"/></title>
 
     <script type="text/javascript" language="javascript">
         function init() {
-            StompClient.subscribe({
+            top.StompClient.subscribe("lyrics.jsp", {
                 "/user/queue/lyrics/get": function(msg) {
                     getLyricsCallback(JSON.parse(msg.body));
                 }
-            }, false, function() {
+            }, function() {
                 getLyrics('${model.artist}', '${model.song}');
             });
         }
@@ -22,7 +21,7 @@
             $("#lyrics").css("display", "none");
             $("#noLyricsFound").css("display", "none");
             $("#tryLater").css("display", "none");
-            StompClient.send("/app/lyrics/get", JSON.stringify({artist: artist, song: song}));
+            top.StompClient.send("/app/lyrics/get", JSON.stringify({artist: artist, song: song}));
         }
 
         function getLyricsCallback(lyricsInfo) {

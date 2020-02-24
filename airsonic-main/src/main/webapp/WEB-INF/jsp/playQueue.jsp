@@ -3,7 +3,6 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/playQueueCast.js'/>"></script>
@@ -58,7 +57,7 @@
     function init() {
         <c:if test="${model.autoHide}">initAutoHide();</c:if>
 
-        StompClient.subscribe({
+        top.StompClient.subscribe("playQueue.jsp", {
             // Now playing
             '/topic/nowPlaying/current/add': function(msg) {
                 var nowPlayingInfo = JSON.parse(msg.body);
@@ -273,7 +272,7 @@
         ok = confirm("<fmt:message key="playlist.confirmclear"/>");
     </c:if>
         if (ok) {
-            StompClient.send("/app/playqueues/${model.player.id}/clear", "");
+            top.StompClient.send("/app/playqueues/${model.player.id}/clear", "");
         }
     }
 
@@ -290,7 +289,7 @@
                 skip(0);  // Start the first track if the player was not yet loaded
             }
         } else {
-            StompClient.send("/app/playqueues/${model.player.id}/start", "");
+            top.StompClient.send("/app/playqueues/${model.player.id}/start", "");
         }
     }
 
@@ -303,7 +302,7 @@
         } else if ($('#audioPlayer').get(0)) {
             $('#audioPlayer').get(0).pause();
         } else {
-            StompClient.send("/app/playqueues/${model.player.id}/stop", "");
+            top.StompClient.send("/app/playqueues/${model.player.id}/stop", "");
         }
     }
 
@@ -328,7 +327,7 @@
                 onStart();
             }
         } else {
-            StompClient.send("/app/playqueues/${model.player.id}/toggleStartStop", "");
+            top.StompClient.send("/app/playqueues/${model.player.id}/toggleStartStop", "");
         }
     }
 
@@ -345,7 +344,7 @@
     }
     function onJukeboxVolumeChanged() {
         var value = parseInt($("#jukeboxVolume").slider("option", "value"));
-        StompClient.send("/app/playqueues/${model.player.id}/jukebox/gain", value / 100);
+        top.StompClient.send("/app/playqueues/${model.player.id}/jukebox/gain", value / 100);
     }
     function onCastVolumeChanged() {
         var value = parseInt($("#castVolume").slider("option", "value"));
@@ -373,7 +372,7 @@
             var volume = parseInt($("#jukeboxVolume").slider("option", "value")) + gain;
             if (volume > 100) volume = 100;
             if (volume < 0) volume = 0;
-            StompClient.send("/app/playqueues/${model.player.id}/jukebox/gain", volume / 100);
+            top.StompClient.send("/app/playqueues/${model.player.id}/jukebox/gain", volume / 100);
             // UI updated at callback
         }
     }
@@ -399,7 +398,7 @@
         playQueueSkipCallback({index: index, offset: offset});
     </c:when>
     <c:otherwise>
-        StompClient.send("/app/playqueues/${model.player.id}/skip", JSON.stringify({index: index, offset: offset}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/skip", JSON.stringify({index: index, offset: offset}));
     </c:otherwise>
     </c:choose>
     }
@@ -461,7 +460,7 @@
     function onNext(repeatStatus) {
         var index = currentSongIndex;
         if (shuffleRadioEnabled && (index + 1) >= songs.length) {
-            StompClient.send("/app/playqueues/${model.player.id}/reloadsearch", "");
+            top.StompClient.send("/app/playqueues/${model.player.id}/reloadsearch", "");
         } else if (repeatStatus == 'TRACK') {
             onSkip(index);
         } else {
@@ -476,58 +475,58 @@
         onSkip(currentSongIndex - 1);
     }
     function onPlay(id) {
-        StompClient.send("/app/playqueues/${model.player.id}/play/mediafile", JSON.stringify({id: id}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/mediafile", JSON.stringify({id: id}));
     }
     function onPlayShuffle(albumListType, offset, count, genre, decade) {
-        StompClient.send("/app/playqueues/${model.player.id}/play/shuffle", JSON.stringify({albumListType: albumListType, offset: offset, count: count, genre: genre, decade: decade}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/shuffle", JSON.stringify({albumListType: albumListType, offset: offset, count: count, genre: genre, decade: decade}));
     }
     function onPlayPlaylist(id, index) {
-        StompClient.send("/app/playqueues/${model.player.id}/play/playlist", JSON.stringify({id: id, index: index}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/playlist", JSON.stringify({id: id, index: index}));
     }
     function onPlayInternetRadio(id, index) {
-        StompClient.send("/app/playqueues/${model.player.id}/play/radio", JSON.stringify({id: id, index: index}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/radio", JSON.stringify({id: id, index: index}));
     }
     function onPlayTopSong(id, index) {
-        StompClient.send("/app/playqueues/${model.player.id}/play/topsongs", JSON.stringify({id: id, index: index}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/topsongs", JSON.stringify({id: id, index: index}));
     }
     function onPlayPodcastChannel(id) {
-        StompClient.send("/app/playqueues/${model.player.id}/play/podcastchannel", JSON.stringify({id: id}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/podcastchannel", JSON.stringify({id: id}));
     }
     function onPlayPodcastEpisode(id) {
-        StompClient.send("/app/playqueues/${model.player.id}/play/podcastepisode", JSON.stringify({id: id}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/podcastepisode", JSON.stringify({id: id}));
     }
     function onPlayNewestPodcastEpisode(index) {
-        StompClient.send("/app/playqueues/${model.player.id}/play/podcastepisode/newest", JSON.stringify({index: index}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/podcastepisode/newest", JSON.stringify({index: index}));
     }
     function onPlayStarred() {
-        StompClient.send("/app/playqueues/${model.player.id}/play/starred", "");
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/starred", "");
     }
     function onPlayRandom(id, count) {
-        StompClient.send("/app/playqueues/${model.player.id}/play/random", JSON.stringify({id: id, count: count}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/random", JSON.stringify({id: id, count: count}));
     }
     function onPlaySimilar(id, count) {
-        StompClient.send("/app/playqueues/${model.player.id}/play/similar", JSON.stringify({id: id, count: count}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/similar", JSON.stringify({id: id, count: count}));
     }
     function onAdd(id) {
-        StompClient.send("/app/playqueues/${model.player.id}/add", JSON.stringify({ids: [id]}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/add", JSON.stringify({ids: [id]}));
     }
     function onAddNext(id) {
-        StompClient.send("/app/playqueues/${model.player.id}/add", JSON.stringify({ids: [id], index: currentSongIndex + 1}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/add", JSON.stringify({ids: [id], index: currentSongIndex + 1}));
     }
     function onAddPlaylist(id) {
-        StompClient.send("/app/playqueues/${model.player.id}/add/playlist", JSON.stringify({id: id}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/add/playlist", JSON.stringify({id: id}));
     }
     function onShuffle() {
-        StompClient.send("/app/playqueues/${model.player.id}/shuffle", "");
+        top.StompClient.send("/app/playqueues/${model.player.id}/shuffle", "");
     }
     function toggleStar(mediaFileId, imageId) {
         if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
             $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-            StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
+            top.StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
         }
         else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
             $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-            StompClient.send("/app/rate/mediafile/star", mediaFileId);
+            top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
         }
     }
     function onStar(index) {
@@ -537,7 +536,7 @@
         onStar(currentSongIndex);
     }
     function onRemove(index) {
-        StompClient.send("/app/playqueues/${model.player.id}/remove", JSON.stringify([index]));
+        top.StompClient.send("/app/playqueues/${model.player.id}/remove", JSON.stringify([index]));
     }
     function onRemoveSelected() {
         var indexes = [];
@@ -546,40 +545,40 @@
                 indexes.push(i);
             }
         }
-        StompClient.send("/app/playqueues/${model.player.id}/remove", JSON.stringify(indexes));
+        top.StompClient.send("/app/playqueues/${model.player.id}/remove", JSON.stringify(indexes));
     }
 
     function onRearrange(indexes) {
-        StompClient.send("/app/playqueues/${model.player.id}/rearrange", JSON.stringify(indexes));
+        top.StompClient.send("/app/playqueues/${model.player.id}/rearrange", JSON.stringify(indexes));
     }
     function onToggleRepeat() {
-        StompClient.send("/app/playqueues/${model.player.id}/toggleRepeat", "");
+        top.StompClient.send("/app/playqueues/${model.player.id}/toggleRepeat", "");
     }
     function onUndo() {
-        StompClient.send("/app/playqueues/${model.player.id}/undo", "");
+        top.StompClient.send("/app/playqueues/${model.player.id}/undo", "");
     }
     function onSortByTrack() {
-        StompClient.send("/app/playqueues/${model.player.id}/sort", "TRACK");
+        top.StompClient.send("/app/playqueues/${model.player.id}/sort", "TRACK");
     }
     function onSortByArtist() {
-        StompClient.send("/app/playqueues/${model.player.id}/sort", "ARTIST");
+        top.StompClient.send("/app/playqueues/${model.player.id}/sort", "ARTIST");
     }
     function onSortByAlbum() {
-        StompClient.send("/app/playqueues/${model.player.id}/sort", "ALBUM");
+        top.StompClient.send("/app/playqueues/${model.player.id}/sort", "ALBUM");
     }
     function onSavePlayQueue() {
         var positionMillis = $('#audioPlayer').get(0) ? Math.round(1000.0 * $('#audioPlayer').get(0).currentTime) : 0;
-        StompClient.send("/app/playqueues/${model.player.id}/save", JSON.stringify({index: currentSongIndex, offset: positionMillis}));
+        top.StompClient.send("/app/playqueues/${model.player.id}/save", JSON.stringify({index: currentSongIndex, offset: positionMillis}));
     }
     function onLoadPlayQueue() {
-        StompClient.send("/app/playqueues/${model.player.id}/play/saved", "");
+        top.StompClient.send("/app/playqueues/${model.player.id}/play/saved", "");
     }
     function onSavePlaylist() {
-        StompClient.send("/app/playlists/create/playqueue", "${model.player.id}");
+        top.StompClient.send("/app/playlists/create/playqueue", "${model.player.id}");
     }
     function onAppendPlaylist() {
         // retrieve writable lists so we can open dialog to ask user which playlist to append to
-        StompClient.send("/app/playlists/writable", "");
+        top.StompClient.send("/app/playlists/writable", "");
     }
     function playlistSelectionCallback(playlists) {
         $("#dialog-select-playlist-list").empty();
@@ -600,11 +599,14 @@
             }
         }
 
-        StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
+        top.StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
     }
 
-    function playlistUpdatedCallback(playerId, toastMsg) {
-        top.main.location.href = "playlist.view?id=" + playlistId;
+    function playlistUpdatedCallback(playlistId, toastMsg) {
+        if (!top.main.location.href.endsWith("playlist.view?id=" + playlistId)) {
+            // change page
+            top.main.location.href = "playlist.view?id=" + playlistId;
+        }
         $().toastmessage("showSuccessToast", toastMsg);
     }
 

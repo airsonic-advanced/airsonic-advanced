@@ -5,7 +5,6 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
@@ -31,7 +30,7 @@
                 }
             }});
 
-        StompClient.subscribe({
+        top.StompClient.subscribe("albumMain.jsp", {
             '/user/queue/playlists/writable': function(msg) {
                 playlistSelectionCallback(JSON.parse(msg.body));
             },
@@ -41,7 +40,7 @@
         });
 
         <c:if test="${model.showArtistInfo}">
-        StompClient.subscribe({
+        top.StompClient.subscribe("albumMain.jsp", {
             "/user/queue/artist/info": function(msg) {
                 loadArtistInfoCallback(JSON.parse(msg.body));
             }
@@ -51,7 +50,7 @@
 
     <c:if test="${model.showArtistInfo}">
     function loadArtistInfo() {
-        StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: ${model.dir.id}, maxSimilarArtists: 8, maxTopSongs: 0}));
+        top.StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: ${model.dir.id}, maxSimilarArtists: 8, maxTopSongs: 0}));
     }
 
     function loadArtistInfoCallback(artistInfo) {
@@ -119,11 +118,11 @@
     function toggleStar(mediaFileId, imageId) {
         if ($(imageId).attr("src").indexOf("<spring:theme code='ratingOnImage'/>") != -1) {
             $(imageId).attr("src", "<spring:theme code='ratingOffImage'/>");
-            StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
+            top.StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
         }
         else if ($(imageId).attr("src").indexOf("<spring:theme code='ratingOffImage'/>") != -1) {
             $(imageId).attr("src", "<spring:theme code='ratingOnImage'/>");
-            StompClient.send("/app/rate/mediafile/star", mediaFileId);
+            top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
         }
     }
 
@@ -145,7 +144,7 @@
 
     function onAppendPlaylist() {
         // retrieve writable lists so we can open dialog to ask user which playlist to append to
-        StompClient.send("/app/playlists/writable", "");
+        top.StompClient.send("/app/playlists/writable", "");
     }
     function playlistSelectionCallback(playlists) {
         $("#dialog-select-playlist-list").empty();
@@ -167,7 +166,7 @@
             }
         }
 
-        StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
+        top.StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
     }
     function showAllAlbums() {
         window.location.href = updateQueryStringParameter(window.location.href, "showAll", "1");
