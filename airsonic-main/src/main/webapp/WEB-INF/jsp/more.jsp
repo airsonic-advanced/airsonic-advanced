@@ -3,7 +3,6 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
     <style type="text/css">
         .progress-bar {width: 350px; height: 10px; border: 1px solid black; display:block;}
         .progress-bar-content {width: 0; height: 10px; background: url("<c:url value="/icons/default_light/progress.png"/>") repeat;}
@@ -104,7 +103,7 @@
 
         $(function() {
             <c:if test="${model.user.uploadRole}">
-            StompClient.subscribe({
+            top.StompClient.subscribe("more.jsp", {
                 '/user/queue/uploads/status': uploadStatus
             });
             </c:if>

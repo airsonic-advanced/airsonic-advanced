@@ -7,12 +7,13 @@
     <title><fmt:message key="lyrics.title"/></title>
 
     <script type="text/javascript" language="javascript">
+        // independent page, so StompClient does not belong to window.top
         function init() {
-            StompClient.subscribe({
+            StompClient.subscribe("lyrics.jsp", {
                 "/user/queue/lyrics/get": function(msg) {
                     getLyricsCallback(JSON.parse(msg.body));
                 }
-            }, false, function() {
+            }, function() {
                 getLyrics('${model.artist}', '${model.song}');
             });
         }

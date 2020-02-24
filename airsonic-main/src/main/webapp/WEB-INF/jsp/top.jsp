@@ -4,7 +4,6 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
 
     <script type="text/javascript">
         var previousQuery = "";
@@ -12,7 +11,7 @@
         var showSideBar = ${model.showSideBar ? 'true' : 'false'};
 
         function init() {
-            StompClient.subscribe({
+            top.StompClient.subscribe("top.jsp", {
                 "/user/queue/settings/sidebar": function(msg) {
                     toggleLeftFrameCallback(JSON.parse(msg.body));
                 }
@@ -46,7 +45,7 @@
 
         function showLeftFrame() {
             doShowLeftFrame();
-            StompClient.send("/app/settings/sidebar", true);
+            top.StompClient.send("/app/settings/sidebar", true);
         }
 
         function doShowLeftFrame() {
@@ -58,7 +57,7 @@
 
         function hideLeftFrame() {
             doHideLeftFrame();
-            StompClient.send("/app/settings/sidebar", false);
+            top.StompClient.send("/app/settings/sidebar", false);
         }
 
         function doHideLeftFrame() {

@@ -3,7 +3,6 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
 <script type="text/javascript" language="javascript">
     var index = 0;
     var fileCount = ${fn:length(model.songs)};
@@ -73,7 +72,7 @@
         var year = $("input[name='year" + index + "']").val();
         var genre = $("input[name='genre" + index + "']").val();
         $("#status" + index).append("<fmt:message key="edittags.working"/>");
-        StompClient.send("/app/tags/edit", JSON.stringify({mediaFileId: id, artist: artist, track: track, album: album, title: title, year: year, genre: genre}));
+        top.StompClient.send("/app/tags/edit", JSON.stringify({mediaFileId: id, artist: artist, track: track, album: album, title: title, year: year, genre: genre}));
     }
     function setTagsCallback(result) {
         var message;
@@ -95,7 +94,7 @@
     }
 
     function init() {
-        StompClient.subscribe({
+        top.StompClient.subscribe("editTags.jsp", {
             "/user/queue/tags/edit": function(msg) {
                 setTagsCallback(msg.body);
             }

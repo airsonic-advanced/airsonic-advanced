@@ -4,7 +4,6 @@
 <head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
     <script type="text/javascript">
@@ -19,7 +18,7 @@
         }
 
         function init() {
-            StompClient.subscribe({
+            top.StompClient.subscribe("right.jsp", {
                 // no need to populate initial because the updates will occur frequently enough and are self-sufficient
                 '/topic/scanStatus': scanningStatus
                 <c:if test="${model.showNowPlaying}">

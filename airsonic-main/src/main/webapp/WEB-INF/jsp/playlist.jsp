@@ -3,13 +3,12 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
     <script type="text/javascript" language="javascript">
         var playlistId = ${model.playlist.id};
         var songs;
 
         function init() {
-            StompClient.subscribe({
+            top.StompClient.subscribe("playlist.jsp", {
                 '/user/queue/playlists/deleted': function(msg) {
                     deletedPlaylistCallback(JSON.parse(msg.body));
                 },
@@ -29,7 +28,7 @@
                 '/app/playlists/${model.playlist.id}': function(msg) {
                     updatedPlaylistCallback(JSON.parse(msg.body));
                 }
-            }, false, updatePlaylistEntries);
+            }, updatePlaylistEntries);
 
             <c:if test="${model.editAllowed}">
             $("#dialog-edit").dialog({resizable: true, width:400, autoOpen: false,
@@ -39,7 +38,7 @@
                         var name = $("#newName").val();
                         var comment = $("#newComment").val();
                         var shared = $("#newShared").is(":checked");
-                        StompClient.send("/app/playlists/update", JSON.stringify({id: playlistId, name: name, comment: comment, shared: shared}));
+                        top.StompClient.send("/app/playlists/update", JSON.stringify({id: playlistId, name: name, comment: comment, shared: shared}));
                     },
                     "<fmt:message key="common.cancel"/>": function() {
                         $(this).dialog("close");
@@ -50,7 +49,7 @@
                 buttons: {
                     "<fmt:message key="common.delete"/>": function() {
                         $(this).dialog("close");
-                        StompClient.send("/app/playlists/delete", playlistId);
+                        top.StompClient.send("/app/playlists/delete", playlistId);
                     },
                     "<fmt:message key="common.cancel"/>": function() {
                         $(this).dialog("close");
@@ -88,7 +87,7 @@
         }
 
         function updatePlaylistEntries() {
-            StompClient.send("/app/playlists/files/" + playlistId, "");
+            top.StompClient.send("/app/playlists/files/" + playlistId, "");
         }
 
         function deletedPlaylistCallback(id) {
@@ -189,19 +188,19 @@
             var mediaFileId = songs[index].id
             if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
                 $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-                StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
+                top.StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
             }
             else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
                 $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-                StompClient.send("/app/rate/mediafile/star", mediaFileId);
+                top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
             }
         }
         <c:if test="${model.editAllowed}">
         function onRemove(index) {
-            StompClient.send("/app/playlists/files/remove", JSON.stringify({id: playlistId, modifierIds: [index]}));
+            top.StompClient.send("/app/playlists/files/remove", JSON.stringify({id: playlistId, modifierIds: [index]}));
         }
         function onRearrange(indexes) {
-            StompClient.send("/app/playlists/files/rearrange", JSON.stringify({id: playlistId, modifierIds: indexes}));
+            top.StompClient.send("/app/playlists/files/rearrange", JSON.stringify({id: playlistId, modifierIds: indexes}));
         }
         function onEditPlaylist() {
             $("#dialog-edit").dialog("open");

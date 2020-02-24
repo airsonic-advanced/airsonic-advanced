@@ -3,27 +3,26 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <%@ include file="websocket.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" language="javascript">
 
         function toggleStar(mediaFileId, imageId) {
             if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
                 $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-                StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
+                top.StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
             }
             else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
                 $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-                StompClient.send("/app/rate/mediafile/star", mediaFileId);
+                top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
             }
         }
 
         function onSavePlaylist() {
-            StompClient.send("/app/playlists/create/starred", "");
+            top.StompClient.send("/app/playlists/create/starred", "");
         }
 
         function init() {
-            StompClient.subscribe({
+            top.StompClient.subscribe("starred.jsp", {
                 '/user/queue/playlists/create/starred': function(msg) {
                     var playlistId = JSON.parse(msg.body);
                     top.main.location.href = "playlist.view?id=" + playlistId;
