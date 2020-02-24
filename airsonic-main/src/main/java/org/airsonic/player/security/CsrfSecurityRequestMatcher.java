@@ -1,5 +1,6 @@
 package org.airsonic.player.security;
 
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
@@ -20,12 +21,14 @@ import java.util.List;
 @Component
 public class CsrfSecurityRequestMatcher implements RequestMatcher {
     static private List<String> allowedMethods = Arrays.asList("GET", "HEAD", "TRACE", "OPTIONS");
-    private List<RegexRequestMatcher> whiteListedMatchers;
+    private List<RequestMatcher> whiteListedMatchers;
 
     public CsrfSecurityRequestMatcher() {
         this.whiteListedMatchers = Arrays.asList(
             new RegexRequestMatcher("/rest/.*\\.view(\\?.*)?", "POST"),
-            new RegexRequestMatcher("/search(?:\\.view)?", "POST")
+            new RegexRequestMatcher("/search(?:\\.view)?", "POST"),
+            // websockets are protected by stomp headers
+            new AntPathRequestMatcher("/websocket/**")
         );
     }
 
