@@ -3,11 +3,13 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
+    <%@ include file="websocket.jsp" %>
     <title><fmt:message key="lyrics.title"/></title>
 
     <script type="text/javascript" language="javascript">
+        // independent page, so StompClient does not belong to window.top
         function init() {
-            top.StompClient.subscribe("lyrics.jsp", {
+            StompClient.subscribe("lyrics.jsp", {
                 "/user/queue/lyrics/get": function(msg) {
                     getLyricsCallback(JSON.parse(msg.body));
                 }
@@ -21,7 +23,7 @@
             $("#lyrics").css("display", "none");
             $("#noLyricsFound").css("display", "none");
             $("#tryLater").css("display", "none");
-            top.StompClient.send("/app/lyrics/get", JSON.stringify({artist: artist, song: song}));
+            StompClient.send("/app/lyrics/get", JSON.stringify({artist: artist, song: song}));
         }
 
         function getLyricsCallback(lyricsInfo) {
