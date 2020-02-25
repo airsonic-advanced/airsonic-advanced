@@ -44,7 +44,7 @@
             "/user/queue/artist/info": function(msg) {
                 loadArtistInfoCallback(JSON.parse(msg.body));
             }
-        }, false, loadArtistInfo);
+        }, loadArtistInfo);
         </c:if>
     }
 

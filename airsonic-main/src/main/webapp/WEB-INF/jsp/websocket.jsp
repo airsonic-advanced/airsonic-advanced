@@ -6,12 +6,10 @@
     var csrftoken = "${_csrf.token}";
     var StompClient = {
         stompClient: null,
-        onConnect: null,
-        onDisconnect: null,
-        onError: null,
-        reconnectionRequired: function() {
-            return this.stompClient == null || !this.stompClient.connected;
-        },
+        onConnect: [],
+        onConnecting: [],
+        onDisconnect: [],
+        onError: [],
         send: function(dest, msg) {
             this.connect(function(stompclient) {
                 stompclient.stompClient.send(dest, {}, msg);
@@ -25,49 +23,74 @@
                 try {
                     callback(stompclient);
                 } catch(e) {
-                    console.log("Could not do postConnectCallback", e);
+                    console.log("Could not execute a postConnect callback", e);
                 }
             }
         },
         connect: function(postConnectCallback) {
+            var stompclient = this;
             if (postConnectCallback) {
-                this.outstandingConnectionCallbacks.push(postConnectCallback);
+                stompclient.outstandingConnectionCallbacks.push(postConnectCallback);
             }
-            if (this.stompClient == null) {
+            if (stompclient.stompClient == null) {
                 var socket = new SockJS("<c:url value='/websocket'/>");
-                this.stompClient = Stomp.over(socket);
-                this.stompClient.reconnect_delay = 30000;
-                this.stompClient.heartbeat.incoming = 25000;
-                this.stompClient.heartbeat.outgoing = 25000;
+                stompclient.stompClient = Stomp.over(socket);
+                stompclient.stompClient.heartbeat.incoming = 25000;
+                stompclient.stompClient.heartbeat.outgoing = 25000;
+                // resubscribe to everything again
+                stompclient.outstandingConnectionCallbacks.splice(0, 0, function() {
+                    for (var topic in stompclient.subscriptions) {
+                        stompclient.__doSubscription(stompclient, topic, stompclient.subscriptions[topic]);
+                    }
+                });
             }
 
-            if (this.state == 'connecting') {
+            if (stompclient.state == 'connecting') {
                 // whenever the connections is made, the callbacks will happen
                 return;
-            } else if (this.state == 'connected') {
-                this.__doConnectionCallbacks(this);
+            } else if (stompclient.state == 'connected') {
+                stompclient.__doConnectionCallbacks(stompclient);
             } else {
-                this.state = 'connecting';
-                var stompclient = this;
+                stompclient.state = 'connecting';
+                for (var i = 0; i < stompclient.onConnecting.length; i++) {
+                    try {
+                        stompclient.onConnecting[i](stompclient);
+                    } catch (e) {
+                        console.log("Could not execute an onConnecting callback", e);
+                    }
+                }
                 var headers = {};
                 headers[csrfheaderName] = csrftoken;
-                this.stompClient.connect(headers, function(frame) {
+                stompclient.stompClient.connect(headers, function(frame) {
                     console.log('Connected', frame);
                     stompclient.state='connected';
-                    if (stompclient.onConnect) {
-                        stompclient.onConnect(frame);
+                    for (var i = 0; i < stompclient.onConnect.length; i++) {
+                        try {
+                            stompclient.onConnect[i](frame, stompclient);
+                        } catch (e) {
+                            console.log("Could not execute an onConnect callback", e);
+                        }
                     }
                     stompclient.__doConnectionCallbacks(stompclient);
                 }, function(frame) {
                     console.log('Error', frame);
-                    if (stompclient.onError) {
-                        stompclient.onError(frame);
+                    for (var i = 0; i < stompclient.onError.length; i++) {
+                        try {
+                            stompclient.onError[i](frame, stompclient);
+                        } catch (e) {
+                            console.log("Could not execute an onError callback", e);
+                        }
                     }
                 }, function(frame) {
                     console.log('Disconnected', frame);
+                    stompclient.stompClient = null;
                     stompclient.state='dc';
-                    if (stompclient.onDisconnect) {
-                        stompclient.onDisconnect(frame);
+                    for (var i = 0; i < stompclient.onDisconnect.length; i++) {
+                        try {
+                            stompclient.onDisconnect[i](frame, stompclient);
+                        } catch (e) {
+                            console.log("Could not execute an onDisconnect callback", e);
+                        }
                     }
                 });
             }
@@ -103,7 +126,7 @@
                     try {
                         subCallbacks[owner](msg);
                     } catch(e) {
-                        console.log("Couldn't execute callback", owner, e);
+                        console.log("Could not execute an incoming message callback", topic, owner, e);
                     }
                 }
             });
@@ -118,13 +141,18 @@
             // can also delete the subscription to the topic itself (if that is the last owner), but not necessary
         },
         disconnect: function() {
-            if (this.stompClient != null) {
-                var stompclient = this;
-                this.stompClient.disconnect(function() {
+            var stompclient = this;
+            if (stompclient.stompClient != null) {
+                stompclient.stompClient.disconnect(function(frame) {
                     console.log('Disconnected from Airsonic websocket');
+                    stompclient.stompClient = null;
                     stompclient.state='dc';
-                    if (stompclient.onDisconnect) {
-                        stompclient.onDisconnect();
+                    for (var i = 0; i < stompclient.onDisconnect.length; i++) {
+                        try {
+                            stompclient.onDisconnect[i](frame, stompclient);
+                        } catch (e) {
+                            console.log("Could not execute an onDisconnect callback", e);
+                        }
                     }
                 });
             }

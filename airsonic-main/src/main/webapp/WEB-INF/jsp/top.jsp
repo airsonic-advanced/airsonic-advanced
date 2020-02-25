@@ -16,6 +16,21 @@
                     toggleLeftFrameCallback(JSON.parse(msg.body));
                 }
             });
+
+            top.StompClient.onConnect.push(function() {
+                $("#connectionStatus img").attr("src", "<spring:theme code='connectedImage'/>");
+                $("#connectionStatus div").text("<fmt:message key='top.connected' />");
+            });
+
+            top.StompClient.onDisconnect.push(function() {
+                $("#connectionStatus img").attr("src", "<spring:theme code='disconnectedImage'/>");
+                $("#connectionStatus div").text("<fmt:message key='top.disconnected' />");
+            });
+
+            top.StompClient.onConnecting.push(function() {
+                $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
+                $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
+            });
         }
 
         function toggleLeftFrameCallback(show) {
@@ -83,6 +98,16 @@
                 },
                 duration: duration
             });
+        }
+        
+        function toggleConnectionStatus() {
+            $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
+            $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
+            if (top.StompClient.state == 'connected') {
+                top.StompClient.disconnect();
+            } else if (top.StompClient.state == 'dc') {
+                top.StompClient.connect();
+            }
         }
     </script>
 </head>
@@ -178,11 +203,19 @@
         </td>
 
         <td style="padding-left:15pt;padding-right:5pt;vertical-align: right;width: 100%;text-align: center">
+            <a id="connectionStatus" href="javascript:void(0)" onclick="toggleConnectionStatus();">
+                <img src="<spring:theme code='disconnectedImage'/>" alt="connect" height="24">
+                <div class="detail">
+                    <fmt:message key="top.disconnected"></fmt:message>
+                </div>
+            </a>
+        </td>
+
+        <td style="padding-left:15pt;padding-right:5pt;vertical-align: right;width: 100%;text-align: center">
             <a href="<c:url value='/logout'/>" target="_top">
                 <img src="<spring:theme code='logoutImage'/>" alt="logout" height="24">
                 <div class="detail">
-                    <fmt:message key="top.logout" var="logout"></fmt:message>
-                    <c:out value="${logout}"/>
+                    <fmt:message key="top.logout"></fmt:message>
                 </div>
             </a>
         </td>

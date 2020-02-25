@@ -28,7 +28,7 @@
                 '/app/playlists/${model.playlist.id}': function(msg) {
                     updatedPlaylistCallback(JSON.parse(msg.body));
                 }
-            }, updatePlaylistEntries);
+            });
 
             <c:if test="${model.editAllowed}">
             $("#dialog-edit").dialog({resizable: true, width:400, autoOpen: false,
