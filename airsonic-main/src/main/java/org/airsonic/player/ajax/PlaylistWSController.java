@@ -211,7 +211,7 @@ public class PlaylistWSController {
 
     @SubscribeMapping("/{id}")
     public Playlist getPlaylist(Principal p, @DestinationVariable int id) {
-        return playlistService.getPlaylist(id);
+        return new PlaylistService.BroadcastedPlaylist(playlistService.getPlaylist(id), true);
     }
 
     @MessageMapping("/files/{id}")
