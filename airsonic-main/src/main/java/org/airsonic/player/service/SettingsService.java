@@ -110,6 +110,7 @@ public class SettingsService {
     private static final String KEY_DLNA_ENABLED = "DlnaEnabled";
     private static final String KEY_DLNA_SERVER_NAME = "DlnaServerName";
     private static final String KEY_DLNA_BASE_LAN_URL = "DlnaBaseLANURL";
+    private static final String KEY_UPNP_PORT = "UPnpPort";
     private static final String KEY_SONOS_ENABLED = "SonosEnabled";
     private static final String KEY_SONOS_SERVICE_NAME = "SonosServiceName";
     private static final String KEY_SONOS_SERVICE_ID = "SonosServiceId";
@@ -199,6 +200,7 @@ public class SettingsService {
     private static final boolean DEFAULT_DLNA_ENABLED = false;
     private static final String DEFAULT_DLNA_SERVER_NAME = "Airsonic";
     private static final String DEFAULT_DLNA_BASE_LAN_URL = null;
+    private static final int DEFAULT_UPNP_PORT = 4041;
     private static final boolean DEFAULT_SONOS_ENABLED = false;
     private static final String DEFAULT_SONOS_SERVICE_NAME = "Airsonic";
     private static final int DEFAULT_SONOS_SERVICE_ID = 242;
@@ -228,8 +230,6 @@ public class SettingsService {
     private static final String DEFAULT_DATABASE_CONFIG_JNDI_NAME = null;
     private static final Integer DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH = 512;
     private static final String DEFAULT_DATABASE_USERTABLE_QUOTE = null;
-    
-    private static final int DEFAULT_UPNP_PORT = 4041;
 
     private static final String LOCALES_FILE = "/org/airsonic/player/i18n/locales.txt";
     private static final String THEMES_FILE = "/org/airsonic/player/theme/themes.txt";
@@ -330,9 +330,9 @@ public class SettingsService {
     public static String getDefaultJDBCUrl() {
         return "jdbc:hsqldb:file:" + getAirsonicHome().toString() + "/db/" + getFileSystemAppName();
     }
-    
-    public static int getDefaultUPnpPort() {
-        return Optional.ofNullable(System.getProperty("UPNP_PORT")).map(x -> Integer.parseInt(x)).orElse(DEFAULT_UPNP_PORT);
+
+    public int getUPnpPort() {
+        return getInt(KEY_UPNP_PORT, DEFAULT_UPNP_PORT);
     }
 
     public static Path getLogFile() {

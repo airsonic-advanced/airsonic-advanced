@@ -20,7 +20,7 @@ if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
      -Dairsonic.defaultMusicFolder=$AIRSONIC_DIR/music \
      -Dairsonic.defaultPodcastFolder=$AIRSONIC_DIR/podcasts \
      -Dairsonic.defaultPlaylistFolder=$AIRSONIC_DIR/playlists \
-     -DUPNP_PORT=$UPNP_PORT \
+     -DUPnpPort=$UPNP_PORT \
      -Djava.awt.headless=true \
      "${java_opts_array[@]}" \
      -jar airsonic.war "$@"
