@@ -110,6 +110,7 @@ public class SettingsService {
     private static final String KEY_DLNA_ENABLED = "DlnaEnabled";
     private static final String KEY_DLNA_SERVER_NAME = "DlnaServerName";
     private static final String KEY_DLNA_BASE_LAN_URL = "DlnaBaseLANURL";
+    private static final String KEY_UPNP_PORT = "UPnpPort";
     private static final String KEY_SONOS_ENABLED = "SonosEnabled";
     private static final String KEY_SONOS_SERVICE_NAME = "SonosServiceName";
     private static final String KEY_SONOS_SERVICE_ID = "SonosServiceId";
@@ -199,6 +200,7 @@ public class SettingsService {
     private static final boolean DEFAULT_DLNA_ENABLED = false;
     private static final String DEFAULT_DLNA_SERVER_NAME = "Airsonic";
     private static final String DEFAULT_DLNA_BASE_LAN_URL = null;
+    private static final int DEFAULT_UPNP_PORT = 4041;
     private static final boolean DEFAULT_SONOS_ENABLED = false;
     private static final String DEFAULT_SONOS_SERVICE_NAME = "Airsonic";
     private static final int DEFAULT_SONOS_SERVICE_ID = 242;
@@ -327,6 +329,10 @@ public class SettingsService {
 
     public static String getDefaultJDBCUrl() {
         return "jdbc:hsqldb:file:" + getAirsonicHome().toString() + "/db/" + getFileSystemAppName();
+    }
+
+    public int getUPnpPort() {
+        return getInt(KEY_UPNP_PORT, DEFAULT_UPNP_PORT);
     }
 
     public static Path getLogFile() {
