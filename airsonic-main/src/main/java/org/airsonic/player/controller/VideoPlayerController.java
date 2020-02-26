@@ -25,7 +25,6 @@ import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.NetworkService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SecurityService;
-import org.airsonic.player.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.ServletRequestUtils;
@@ -37,7 +36,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -68,7 +66,7 @@ public class VideoPlayerController {
         MediaFile file = mediaFileService.getMediaFile(id);
         mediaFileService.populateStarredDate(file, user.getUsername());
 
-        Integer duration = file.getDurationSeconds();
+        Double duration = file.getDuration();
         Integer playerId = playerService.getPlayer(request, response).getId();
         String url = NetworkService.getBaseUrl(request);
         String streamUrl = url + "stream?id=" + file.getId() + "&player=" + playerId + "&format=mp4";
@@ -85,13 +83,4 @@ public class VideoPlayerController {
 
         return new ModelAndView("videoPlayer", "model", map);
     }
-
-    public static Map<String, Integer> createSkipOffsets(int durationSeconds) {
-        LinkedHashMap<String, Integer> result = new LinkedHashMap<String, Integer>();
-        for (int i = 0; i < durationSeconds; i += 60) {
-            result.put(StringUtil.formatDuration(i), i);
-        }
-        return result;
-    }
-
 }

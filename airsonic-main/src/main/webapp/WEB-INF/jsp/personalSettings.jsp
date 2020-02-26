@@ -4,18 +4,19 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value="/script/utils.js"/>"></script>
+    <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
     <script type="text/javascript" language="javascript">
-        function enableLastFmFields() {
+        function enableFields() {
             $("#lastFm").is(":checked") ? $("#lastFmTable").show() : $("#lastFmTable").hide();
+            $("#listenBrainz").is(":checked") ? $("#listenBrainzTable").show() : $("#listenBrainzTable").hide();
         }
     </script>
 </head>
 
-<body class="mainframe bgcolor1" onload="enableLastFmFields()">
-<script type="text/javascript" src="<c:url value="/script/wz_tooltip.js"/>"></script>
-<script type="text/javascript" src="<c:url value="/script/tip_balloon.js"/>"></script>
+<body class="mainframe bgcolor1" onload="enableFields()">
+<script type="text/javascript" src="<c:url value='/script/wz_tooltip.js'/>"></script>
+<script type="text/javascript" src="<c:url value='/script/tip_balloon.js'/>"></script>
 
 <c:import url="settingsHeader.jsp">
     <c:param name="cat" value="personal"/>
@@ -172,8 +173,12 @@
 
     <table class="indent">
         <tr>
-            <td><form:checkbox path="lastFmEnabled" id="lastFm" cssClass="checkbox" onclick="enableLastFmFields()"/></td>
+            <td><form:checkbox path="lastFmEnabled" id="lastFm" cssClass="checkbox" onclick="enableFields()"/></td>
             <td><label for="lastFm"><fmt:message key="personalsettings.lastfmenabled"/></label></td>
+        </tr>
+        <tr>
+            <td><form:checkbox path="listenBrainzEnabled" id="listenBrainz" cssClass="checkbox" onclick="enableFields()"/></td>
+            <td><label for="listenBrainz"><fmt:message key="personalsettings.listenbrainzenabled"/></label></td>
         </tr>
     </table>
 
@@ -186,29 +191,36 @@
 
     <table class="indent">
         <tr>
-            <td><fmt:message key="personalsettings.listreloaddelay"/></td>
-            <td><form:input path="listReloadDelay" size="24"/></td>
-        </tr>
-        <tr>
             <td><fmt:message key="personalsettings.paginationsize"/></td>
             <td><form:input path="paginationSize" size="24"/></td>
         </tr>
     </table>
 
     <table id="lastFmTable" style="padding-left:2em">
+        <c:if test="${lastfmCredsAbsent}" >
         <tr>
-            <td><fmt:message key="personalsettings.lastfmusername"/></td>
-            <td><form:input path="lastFmUsername" size="24"/></td>
+            <td>
+              <fmt:message key="personalsettings.lastfmcredentials" var="lastfmCreds"/>
+              <fmt:message key="personalsettings.credsnotpresent"><fmt:param>${lastfmCreds}</fmt:param></fmt:message>
+            </td>
         </tr>
+        </c:if>
+    </table>
+
+    <table id="listenBrainzTable" style="padding-left:2em">
+        <c:if test="${listenBrainzCredsAbsent}" >
         <tr>
-            <td><fmt:message key="personalsettings.lastfmpassword"/></td>
-            <td><form:password path="lastFmPassword" size="24"/></td>
+            <td>
+              <fmt:message key="personalsettings.listenbrainztoken" var="listenbrainzToken"/>
+              <fmt:message key="personalsettings.credsnotpresent"><fmt:param>${listenbrainzToken}</fmt:param></fmt:message>
+            </td>
         </tr>
+        </c:if>
     </table>
 
     <p style="padding-top:1em;padding-bottom:1em">
-        <input type="submit" value="<fmt:message key="common.save"/>" style="margin-right:0.3em"/>
-        <a href='nowPlaying.view'><input type="button" value="<fmt:message key="common.cancel"/>"></a>
+        <input type="submit" value="<fmt:message key='common.save'/>" style="margin-right:0.3em"/>
+        <a href='nowPlaying.view'><input type="button" value="<fmt:message key='common.cancel'/>"></a>
     </p>
 
     <h2><fmt:message key="personalsettings.avatar.title"/></h2>
@@ -247,7 +259,7 @@
         <tr>
             <td style="padding-right:1em"><fmt:message key="personalsettings.avatar.changecustom"/></td>
             <td style="padding-right:1em"><input type="file" id="file" name="file" size="40"/></td>
-            <td style="padding-right:1em"><input type="submit" value="<fmt:message key="personalsettings.avatar.upload"/>"/></td>
+            <td style="padding-right:1em"><input type="submit" value="<fmt:message key='personalsettings.avatar.upload'/>"/></td>
         </tr>
     </table>
 </form>

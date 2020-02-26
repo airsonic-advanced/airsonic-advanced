@@ -26,8 +26,9 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -56,7 +57,7 @@ public class BootstrapVerificationFilter implements Filter {
             return;
         }
 
-        File home = SettingsService.getAirsonicHome();
+        Path home = SettingsService.getAirsonicHome();
         if (!directoryExists(home)) {
             error(res, "<p>The directory <b>" + home + "</b> does not exist. Please create it and make it writable, " +
                        "then restart the servlet container.</p>" +
@@ -83,15 +84,15 @@ public class BootstrapVerificationFilter implements Filter {
         }
     }
 
-    private boolean directoryExists(File dir) {
-        return dir.exists() && dir.isDirectory();
+    private boolean directoryExists(Path dir) {
+        return Files.exists(dir) && Files.isDirectory(dir);
     }
 
-    private boolean directoryWritable(File dir) {
+    private boolean directoryWritable(Path dir) {
         try {
-            File tempFile = File.createTempFile("test", null, dir);
-            return tempFile.delete();
-        } catch (IOException x) {
+            Path tempFile = Files.createTempFile(dir, "test", null);
+            return Files.exists(tempFile) && Files.deleteIfExists(tempFile);
+        } catch (Exception x) {
             return false;
         }
     }

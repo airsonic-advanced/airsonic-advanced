@@ -72,7 +72,7 @@ public class QueryFactory {
 
     private final Function<MusicFolder, Query> toFolderPathQuery = (folder) -> {
         // Unanalyzed field
-        return new TermQuery(new Term(FieldNames.FOLDER, folder.getPath().getPath()));
+        return new TermQuery(new Term(FieldNames.FOLDER, folder.getPath().toString()));
     };
 
     /*
@@ -94,7 +94,7 @@ public class QueryFactory {
      *  XXX 3.x -> 8.x :
      * In order to support wildcards,
      * MultiFieldQueryParser has been replaced by the following process.
-     * 
+     *
      *  - There is also an override of MultiFieldQueryParser, but it is known to be high cost.
      *  - MultiFieldQueryParser was created before Java API was modernized.
      *  - The spec of Parser has changed from time to time. Using parser does not reduce library update risk.
@@ -141,8 +141,7 @@ public class QueryFactory {
         }
 
         return mainQuery.build();
-
-    };
+    }
 
     /*
      * XXX 3.x -> 8.x :
@@ -158,7 +157,7 @@ public class QueryFactory {
     /**
      * Query generation expression extracted from
      * {@link org.airsonic.player.service.SearchService#search(SearchCriteria, List, IndexType)}.
-     * 
+     *
      * @param criteria criteria
      * @param musicFolders musicFolders
      * @param indexType {@link IndexType}
@@ -178,7 +177,6 @@ public class QueryFactory {
         mainQuery.add(folderQuery, Occur.MUST);
 
         return mainQuery.build();
-
     }
 
     /**
@@ -188,9 +186,9 @@ public class QueryFactory {
     public Query getRandomSongs(RandomSearchCriteria criteria) throws IOException {
 
         BooleanQuery.Builder query = new BooleanQuery.Builder();
-        
+
         Analyzer analyzer = analyzerFactory.getQueryAnalyzer();
-        
+
         // Unanalyzed field
         query.add(new TermQuery(new Term(FieldNames.MEDIA_TYPE, MediaType.MUSIC.name())), Occur.MUST);
 
@@ -213,13 +211,12 @@ public class QueryFactory {
         query.add(toFolderQuery.apply(false, criteria.getMusicFolders()), Occur.MUST);
 
         return query.build();
-
     }
 
     /**
      * Query generation expression extracted from
      * {@link org.airsonic.player.service.SearchService#searchByName( String, String, int, int, List, Class)}.
-     * 
+     *
      * @param fieldName {@link FieldNames}
      * @return Query
      * @throws IOException When parsing of QueryParser fails
@@ -255,13 +252,12 @@ public class QueryFactory {
         }
 
         return mainQuery.build();
-
     }
 
     /**
      * Query generation expression extracted from
      * {@link org.airsonic.player.service.SearchService#getRandomAlbums(int, List)}.
-     * 
+     *
      * @param musicFolders musicFolders
      * @return Query
      */
@@ -274,7 +270,7 @@ public class QueryFactory {
     /**
      * Query generation expression extracted from
      * {@link org.airsonic.player.service.SearchService#getRandomAlbumsId3(int, List)}.
-     * 
+     *
      * @param musicFolders musicFolders
      * @return Query
      */
@@ -283,5 +279,4 @@ public class QueryFactory {
                 .add(toFolderQuery.apply(true, musicFolders), Occur.SHOULD)
                 .build();
     }
-
 }

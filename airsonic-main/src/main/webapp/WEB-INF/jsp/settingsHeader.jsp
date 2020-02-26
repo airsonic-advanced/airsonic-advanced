@@ -9,9 +9,9 @@
     </script>
 </c:if>
 
-<c:set var="categories" value="${param.restricted ? 'personal password player share' : 'musicFolder general advanced personal user player share dlna sonos transcoding internetRadio podcast database'}"/>
+<c:set var="categories" value="${param.restricted ? 'personal credentials player share' : 'musicFolder general advanced personal credentials user player share dlna sonos transcoding internetRadio podcast database'}"/>
 <h1>
-    <img src="<spring:theme code="settingsImage"/>" alt=""/>
+    <img src="<spring:theme code='settingsImage'/>" alt=""/>
     <span style="vertical-align: middle"><fmt:message key="settingsheader.title"/></span>
 </h1>
 

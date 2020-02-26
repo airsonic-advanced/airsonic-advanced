@@ -1,10 +1,7 @@
 package org.airsonic.player.domain;
 
-import com.google.common.base.Function;
-
-import java.io.File;
-import java.util.Date;
-import java.util.List;
+import java.nio.file.Path;
+import java.time.Instant;
 
 public class MediaFileWithUrlInfo {
 
@@ -50,7 +47,7 @@ public class MediaFileWithUrlInfo {
         file.setFolder(folder);
     }
 
-    public File getFile() {
+    public Path getFile() {
         return file.getFile();
     }
 
@@ -178,12 +175,12 @@ public class MediaFileWithUrlInfo {
         file.setVariableBitRate(variableBitRate);
     }
 
-    public Integer getDurationSeconds() {
-        return file.getDurationSeconds();
+    public Double getDuration() {
+        return file.getDuration();
     }
 
-    public void setDurationSeconds(Integer durationSeconds) {
-        file.setDurationSeconds(durationSeconds);
+    public void setDuration(Double duration) {
+        file.setDuration(duration);
     }
 
     public String getDurationString() {
@@ -230,7 +227,7 @@ public class MediaFileWithUrlInfo {
         file.setParentPath(parentPath);
     }
 
-    public File getParentFile() {
+    public Path getParentFile() {
         return file.getParentFile();
     }
 
@@ -242,11 +239,11 @@ public class MediaFileWithUrlInfo {
         file.setPlayCount(playCount);
     }
 
-    public Date getLastPlayed() {
+    public Instant getLastPlayed() {
         return file.getLastPlayed();
     }
 
-    public void setLastPlayed(Date lastPlayed) {
+    public void setLastPlayed(Instant lastPlayed) {
         file.setLastPlayed(lastPlayed);
     }
 
@@ -258,43 +255,43 @@ public class MediaFileWithUrlInfo {
         file.setComment(comment);
     }
 
-    public Date getCreated() {
+    public Instant getCreated() {
         return file.getCreated();
     }
 
-    public void setCreated(Date created) {
+    public void setCreated(Instant created) {
         file.setCreated(created);
     }
 
-    public Date getChanged() {
+    public Instant getChanged() {
         return file.getChanged();
     }
 
-    public void setChanged(Date changed) {
+    public void setChanged(Instant changed) {
         file.setChanged(changed);
     }
 
-    public Date getLastScanned() {
+    public Instant getLastScanned() {
         return file.getLastScanned();
     }
 
-    public void setLastScanned(Date lastScanned) {
+    public void setLastScanned(Instant lastScanned) {
         file.setLastScanned(lastScanned);
     }
 
-    public Date getStarredDate() {
+    public Instant getStarredDate() {
         return file.getStarredDate();
     }
 
-    public void setStarredDate(Date starredDate) {
+    public void setStarredDate(Instant starredDate) {
         file.setStarredDate(starredDate);
     }
 
-    public Date getChildrenLastUpdated() {
+    public Instant getChildrenLastUpdated() {
         return file.getChildrenLastUpdated();
     }
 
-    public void setChildrenLastUpdated(Date childrenLastUpdated) {
+    public void setChildrenLastUpdated(Instant childrenLastUpdated) {
         file.setChildrenLastUpdated(childrenLastUpdated);
     }
 
@@ -310,15 +307,7 @@ public class MediaFileWithUrlInfo {
         return file.getVersion();
     }
 
-    public File getCoverArtFile() {
+    public Path getCoverArtFile() {
         return file.getCoverArtFile();
-    }
-
-    public static List<Integer> toIdList(List<MediaFile> from) {
-        return MediaFile.toIdList(from);
-    }
-
-    public static Function<MediaFile, Integer> toId() {
-        return MediaFile.toId();
     }
 }

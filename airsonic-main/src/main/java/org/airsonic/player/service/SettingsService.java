@@ -19,30 +19,39 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.util.concurrent.RateLimiter;
+
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.spring.DataSourceConfigType;
-import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
@@ -54,8 +63,8 @@ import java.util.regex.Pattern;
 public class SettingsService {
 
     // Airsonic home directory.
-    private static final File AIRSONIC_HOME_WINDOWS = new File("c:/airsonic");
-    private static final File AIRSONIC_HOME_OTHER = new File("/var/airsonic");
+    private static final Path AIRSONIC_HOME_WINDOWS = Paths.get("c:/airsonic");
+    private static final Path AIRSONIC_HOME_OTHER = Paths.get("/var/airsonic");
 
     // Global settings.
     private static final String KEY_INDEX_STRING = "IndexString";
@@ -96,10 +105,8 @@ public class SettingsService {
     private static final String KEY_LDAP_AUTO_SHADOWING = "LdapAutoShadowing";
     private static final String KEY_GETTING_STARTED_ENABLED = "GettingStartedEnabled";
     private static final String KEY_SETTINGS_CHANGED = "SettingsChanged";
-    private static final String KEY_LAST_SCANNED = "LastScanned";
     private static final String KEY_ORGANIZE_BY_FOLDER_STRUCTURE = "OrganizeByFolderStructure";
     private static final String KEY_SORT_ALBUMS_BY_YEAR = "SortAlbumsByYear";
-    private static final String KEY_MEDIA_LIBRARY_STATISTICS = "MediaLibraryStatistics";
     private static final String KEY_DLNA_ENABLED = "DlnaEnabled";
     private static final String KEY_DLNA_SERVER_NAME = "DlnaServerName";
     private static final String KEY_DLNA_BASE_LAN_URL = "DlnaBaseLANURL";
@@ -108,6 +115,11 @@ public class SettingsService {
     private static final String KEY_SONOS_SERVICE_ID = "SonosServiceId";
     private static final String KEY_JWT_KEY = "JWTKey";
     private static final String KEY_REMEMBER_ME_KEY = "RememberMeKey";
+    private static final String KEY_ENCRYPTION_PASSWORD = "EncryptionKeyPassword";
+    private static final String KEY_ENCRYPTION_SALT = "EncryptionKeySalt";
+    private static final String KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER = "DecodablePasswordEncoder";
+    private static final String KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER = "NonDecodablePasswordEncoder";
+    private static final String KEY_PREFER_NONDECODABLE_PASSWORDS = "PreferNonDecodablePasswords";
 
     private static final String KEY_SMTP_SERVER = "SmtpServer";
     private static final String KEY_SMTP_ENCRYPTION = "SmtpEncryption";
@@ -133,6 +145,8 @@ public class SettingsService {
     private static final String KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH = "DatabaseMysqlMaxlength";
     private static final String KEY_DATABASE_USERTABLE_QUOTE = "DatabaseUsertableQuote";
 
+    public static final String KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY = "PropertiesFileUpgradeRetainCompatibility";
+
     // Default values.
     private static final String DEFAULT_JWT_KEY = null;
     private static final String DEFAULT_INDEX_STRING = "A B C D E F G H I J K L M N O P Q R S T U V W X-Z(XYZ)";
@@ -152,7 +166,7 @@ public class SettingsService {
             "Use it to share your music with friends, or to listen to your own music while at work. You can stream to multiple " +
             "players simultaneously, for instance to one player in your kitchen and another in your living room.\n" +
             "\\\\ \\\\\n" +
-            "To change or remove this message, log in with administrator rights and go to {link:Settings > General|generalSettings.view}.";
+            "To change or remove this message, log in with administrator rights and go to <a href='settings.view'>Settings</a> > <a href='generalSettings.view'>General</a>.";
     private static final String DEFAULT_LOGIN_MESSAGE = null;
     private static final String DEFAULT_LOCALE_LANGUAGE = "en";
     private static final String DEFAULT_LOCALE_COUNTRY = "";
@@ -168,7 +182,6 @@ public class SettingsService {
     private static final int DEFAULT_PODCAST_EPISODE_DOWNLOAD_COUNT = 1;
     private static final long DEFAULT_DOWNLOAD_BITRATE_LIMIT = 0;
     private static final long DEFAULT_UPLOAD_BITRATE_LIMIT = 0;
-    private static final boolean DEFAULT_ENABLE_SEEK = true;
     private static final String DEFAULT_DOWNSAMPLING_COMMAND = "ffmpeg -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -";
     private static final String DEFAULT_HLS_COMMAND = "ffmpeg -ss %o -t %d -i %s -async 1 -b:v %bk -s %wx%h -ar 44100 -ac 2 -v 0 -f mpegts -c:v libx264 -preset superfast -c:a libmp3lame -threads 0 -";
     private static final String DEFAULT_JUKEBOX_COMMAND = "ffmpeg -ss %o -i %s -map 0:0 -v 0 -ar 44100 -ac 2 -f s16be -";
@@ -183,7 +196,6 @@ public class SettingsService {
     private static final long DEFAULT_SETTINGS_CHANGED = 0L;
     private static final boolean DEFAULT_ORGANIZE_BY_FOLDER_STRUCTURE = true;
     private static final boolean DEFAULT_SORT_ALBUMS_BY_YEAR = true;
-    private static final String DEFAULT_MEDIA_LIBRARY_STATISTICS = "0 0 0 0 0";
     private static final boolean DEFAULT_DLNA_ENABLED = false;
     private static final String DEFAULT_DLNA_SERVER_NAME = "Airsonic";
     private static final String DEFAULT_DLNA_BASE_LAN_URL = null;
@@ -193,6 +205,9 @@ public class SettingsService {
     private static final String DEFAULT_EXPORT_PLAYLIST_FORMAT = "m3u";
     private static final boolean DEFAULT_IGNORE_SYMLINKS = false;
     private static final String DEFAULT_EXCLUDE_PATTERN_STRING = null;
+    private static final String DEFAULT_PREFERRED_NONDECODABLE_PASSWORD_ENCODER = "bcrypt";
+    private static final String DEFAULT_PREFERRED_DECODABLE_PASSWORD_ENCODER = "encrypted-AES-GCM";
+    private static final boolean DEFAULT_PREFER_NONDECODABLE_PASSWORDS = true;
 
     private static final String DEFAULT_SMTP_SERVER = null;
     private static final String DEFAULT_SMTP_ENCRYPTION = "None";
@@ -216,18 +231,6 @@ public class SettingsService {
     
     private static final int DEFAULT_UPNP_PORT = 4041;
 
-    // Array of obsolete keys.  Used to clean property file.
-    private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
-            "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "AutoCoverBatch", "MusicMask",
-            "VideoMask", "CoverArtMask, HlsCommand", "HlsCommand2", "JukeboxCommand",
-            "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
-            "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",
-            "UrlRedirectFrom", "UrlRedirectionEnabled", "UrlRedirectType", "Port", "HttpsPort",
-            // Database settings renamed
-            "database.varchar.maxlength", "database.config.type", "database.config.embed.driver",
-            "database.config.embed.url", "database.config.embed.username", "database.config.embed.password",
-            "database.config.jndi.name", "database.usertable.quote");
-
     private static final String LOCALES_FILE = "/org/airsonic/player/i18n/locales.txt";
     private static final String THEMES_FILE = "/org/airsonic/player/theme/themes.txt";
 
@@ -244,40 +247,75 @@ public class SettingsService {
     @Autowired
     private AvatarDao avatarDao;
     @Autowired
-    private ApacheCommonsConfigurationService configurationService;
+    private Environment env;
 
-    private String[] cachedCoverArtFileTypesArray;
-    private String[] cachedMusicFileTypesArray;
-    private String[] cachedVideoFileTypesArray;
+    private Set<String> cachedCoverArtFileTypes;
+    private Set<String> cachedMusicFileTypes;
+    private Set<String> cachedVideoFileTypes;
     private List<MusicFolder> cachedMusicFolders;
     private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
-
+    private RateLimiter downloadRateLimiter;
+    private RateLimiter uploadRateLimiter;
     private Pattern excludePattern;
 
-    private void removeObsoleteProperties() {
+    // Array of obsolete keys.  Used to clean property file.
+    private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
+            "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "AutoCoverBatch", "MusicMask",
+            "VideoMask", "CoverArtMask", "HlsCommand", "HlsCommand2", "JukeboxCommand",
+            "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
+            "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",
+            "UrlRedirectFrom", "UrlRedirectionEnabled", "UrlRedirectType", "Port", "HttpsPort",
+            "MediaLibraryStatistics", "LastScanned"
+            );
 
-        OBSOLETE_KEYS.forEach(oKey -> {
-            if (configurationService.containsKey(oKey)) {
-                LOG.info("Removing obsolete property [" + oKey + ']');
-                configurationService.clearProperty(oKey);
+    public static void migrateKeys() {
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        OBSOLETE_KEYS.forEach(x -> keyMaps.put(x, null));
+        keyMaps.put("database.varchar.maxlength", KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH);
+        keyMaps.put("database.config.type", KEY_DATABASE_CONFIG_TYPE);
+        keyMaps.put("database.config.embed.driver", KEY_DATABASE_CONFIG_EMBED_DRIVER);
+        keyMaps.put("database.config.embed.url", KEY_DATABASE_CONFIG_EMBED_URL);
+        keyMaps.put("database.config.embed.username", KEY_DATABASE_CONFIG_EMBED_USERNAME);
+        keyMaps.put("database.config.embed.password", KEY_DATABASE_CONFIG_EMBED_PASSWORD);
+        keyMaps.put("database.config.jndi.name", KEY_DATABASE_CONFIG_JNDI_NAME);
+        keyMaps.put("database.usertable.quote", KEY_DATABASE_USERTABLE_QUOTE);
+        migrateKeys(keyMaps);
+    }
+
+    public static void migrateKeys(Map<String, String> keyMaps) {
+        ConfigurationPropertiesService cps = ConfigurationPropertiesService.getInstance();
+        Boolean backwardsCompatible = Optional.ofNullable(cps.getProperty(KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY)).map(x -> Boolean.valueOf((String) x)).orElse(true);
+
+        keyMaps.entrySet().forEach(e -> {
+            if (e.getValue() == null) {
+                // this is non backwards-compatible
+                LOG.info("Removing obsolete property [{}]", e.getKey());
+                cps.clearProperty(e.getKey());
+            } else if (cps.containsKey(e.getKey()) && !cps.containsKey(e.getValue())) {
+                LOG.info("Migrating obsolete property [{}] to [{}]", e.getKey(), e.getValue());
+                cps.setProperty(e.getValue(), cps.getProperty(e.getKey()));
+            }
+
+            //clean house if not backwards-compatible, otherwise don't delete old proprety
+            if (!backwardsCompatible) {
+                cps.clearProperty(e.getKey());
             }
         });
 
+        cps.save();
     }
 
-    public static synchronized File getAirsonicHome() {
-
-        File home;
+    public static Path getAirsonicHome() {
+        Path home;
 
         String overrideHome = System.getProperty("airsonic.home");
         String oldHome = System.getProperty("libresonic.home");
         if (overrideHome != null) {
-            home = new File(overrideHome);
+            home = Paths.get(overrideHome);
         } else if (oldHome != null) {
-            home = new File(oldHome);
+            home = Paths.get(oldHome);
         } else {
-            boolean isWindows = System.getProperty("os.name", "Windows").toLowerCase().startsWith("windows");
-            home = isWindows ? AIRSONIC_HOME_WINDOWS : AIRSONIC_HOME_OTHER;
+            home = Util.isWindows() ? AIRSONIC_HOME_WINDOWS : AIRSONIC_HOME_OTHER;
         }
         ensureDirectoryPresent(home);
 
@@ -285,23 +323,21 @@ public class SettingsService {
     }
 
     private static String getFileSystemAppName() {
-        String home = getAirsonicHome().getPath();
+        String home = getAirsonicHome().toString();
         return home.contains("libresonic") ? "libresonic" : "airsonic";
     }
 
     public static String getDefaultJDBCUrl() {
-        return "jdbc:hsqldb:file:" + getAirsonicHome().getPath() + "/db/" + getFileSystemAppName();
+        return "jdbc:hsqldb:file:" + getAirsonicHome().toString() + "/db/" + getFileSystemAppName();
     }
     
     public static int getDefaultUPnpPort() {
         return Optional.ofNullable(System.getProperty("UPNP_PORT")).map(x -> Integer.parseInt(x)).orElse(DEFAULT_UPNP_PORT);
     }
 
-    public static File getLogFile() {
-        File airsonicHome = SettingsService.getAirsonicHome();
-        return new File(airsonicHome, getFileSystemAppName() + ".log");
+    public static Path getLogFile() {
+        return SettingsService.getAirsonicHome().resolve(getFileSystemAppName() + ".log");
     }
-
 
     /**
      * Register in service locator so that non-Spring objects can access me.
@@ -312,28 +348,23 @@ public class SettingsService {
         logServerInfo();
     }
 
-    private void logServerInfo() {
+    private static void logServerInfo() {
         LOG.info("Java: " + System.getProperty("java.version") +
-                 ", OS: " + System.getProperty("os.name"));
+                ", OS: " + System.getProperty("os.name"));
     }
 
     public void save() {
-        save(true);
+        this.setLong(KEY_SETTINGS_CHANGED, System.currentTimeMillis());
+        ConfigurationPropertiesService.getInstance().save();
     }
 
-    public void save(boolean updateSettingsChanged) {
-        if (updateSettingsChanged) {
-            removeObsoleteProperties();
-            this.setLong(KEY_SETTINGS_CHANGED, System.currentTimeMillis());
-        }
-        configurationService.save();
-    }
-
-    private static void ensureDirectoryPresent(File home) {
+    private static void ensureDirectoryPresent(Path home) {
         // Attempt to create home directory if it doesn't exist.
-        if (!home.exists() || !home.isDirectory()) {
-            boolean success = home.mkdirs();
-            if (!success) {
+        if (!Files.exists(home) || !Files.isDirectory(home)) {
+            try {
+                Files.createDirectories(home);
+            } catch (Exception e) {
+                LOG.error("Could not create or see home directory {}", home, e);
                 String message = "The directory " + home + " does not exist. Please create it and make it writable. " +
                         "(You can override the directory location by specifying -Dairsonic.home=... when " +
                         "starting the servlet container.)";
@@ -342,13 +373,12 @@ public class SettingsService {
         }
     }
 
-    static File getPropertyFile() {
-        File propertyFile = getAirsonicHome();
-        return new File(propertyFile, getFileSystemAppName() + ".properties");
+    static Path getPropertyFile() {
+        return getAirsonicHome().resolve(getFileSystemAppName() + ".properties");
     }
 
     private int getInt(String key, int defaultValue) {
-        return configurationService.getInteger(key, defaultValue);
+        return env.getProperty(key, int.class, defaultValue);
     }
 
     private void setInt(String key, Integer value) {
@@ -356,7 +386,7 @@ public class SettingsService {
     }
 
     private long getLong(String key, long defaultValue) {
-        return configurationService.getLong(key, defaultValue);
+        return env.getProperty(key, long.class, defaultValue);
     }
 
     private void setLong(String key, Long value) {
@@ -364,7 +394,7 @@ public class SettingsService {
     }
 
     private boolean getBoolean(String key, boolean defaultValue) {
-        return configurationService.getBoolean(key, defaultValue);
+        return env.getProperty(key, boolean.class, defaultValue);
     }
 
     private void setBoolean(String key, Boolean value) {
@@ -384,7 +414,7 @@ public class SettingsService {
     }
 
     private String getProperty(String key, String defaultValue) {
-        return configurationService.getString(key, defaultValue);
+        return env.getProperty(key, defaultValue);
     }
 
     public void setIndexString(String indexString) {
@@ -423,52 +453,49 @@ public class SettingsService {
         setProperty(KEY_PLAYLIST_FOLDER, playlistFolder);
     }
 
-    public synchronized String getMusicFileTypes() {
+    public String getMusicFileTypes() {
         return getProperty(KEY_MUSIC_FILE_TYPES, DEFAULT_MUSIC_FILE_TYPES);
     }
 
-    public synchronized void setMusicFileTypes(String fileTypes) {
+    public void setMusicFileTypes(String fileTypes) {
         setProperty(KEY_MUSIC_FILE_TYPES, fileTypes);
-        cachedMusicFileTypesArray = null;
     }
 
-    synchronized String[] getMusicFileTypesAsArray() {
-        if (cachedMusicFileTypesArray == null) {
-            cachedMusicFileTypesArray = toStringArray(getMusicFileTypes());
+    public Set<String> getMusicFileTypesSet() {
+        if (cachedMusicFileTypes == null) {
+            cachedMusicFileTypes = splitLowerString(getMusicFileTypes(), " ");
         }
-        return cachedMusicFileTypesArray;
+        return cachedMusicFileTypes;
     }
 
-    public synchronized String getVideoFileTypes() {
+    public String getVideoFileTypes() {
         return getProperty(KEY_VIDEO_FILE_TYPES, DEFAULT_VIDEO_FILE_TYPES);
     }
 
-    public synchronized void setVideoFileTypes(String fileTypes) {
+    public void setVideoFileTypes(String fileTypes) {
         setProperty(KEY_VIDEO_FILE_TYPES, fileTypes);
-        cachedVideoFileTypesArray = null;
     }
 
-    public synchronized String[] getVideoFileTypesAsArray() {
-        if (cachedVideoFileTypesArray == null) {
-            cachedVideoFileTypesArray = toStringArray(getVideoFileTypes());
+    public Set<String> getVideoFileTypesSet() {
+        if (cachedVideoFileTypes == null) {
+            cachedVideoFileTypes = splitLowerString(getVideoFileTypes(), " ");
         }
-        return cachedVideoFileTypesArray;
+        return cachedVideoFileTypes;
     }
 
-    public synchronized String getCoverArtFileTypes() {
+    public String getCoverArtFileTypes() {
         return getProperty(KEY_COVER_ART_FILE_TYPES, DEFAULT_COVER_ART_FILE_TYPES);
     }
 
-    public synchronized void setCoverArtFileTypes(String fileTypes) {
+    public void setCoverArtFileTypes(String fileTypes) {
         setProperty(KEY_COVER_ART_FILE_TYPES, fileTypes);
-        cachedCoverArtFileTypesArray = null;
     }
 
-    synchronized String[] getCoverArtFileTypesAsArray() {
-        if (cachedCoverArtFileTypesArray == null) {
-            cachedCoverArtFileTypesArray = toStringArray(getCoverArtFileTypes());
+    Set<String> getCoverArtFileTypesSet() {
+        if (cachedCoverArtFileTypes == null) {
+            cachedCoverArtFileTypes = splitLowerString(getCoverArtFileTypes(), " ");
         }
-        return cachedCoverArtFileTypesArray;
+        return cachedCoverArtFileTypes;
     }
 
     public int getCoverArtConcurrency() {
@@ -615,14 +642,34 @@ public class SettingsService {
      * @return The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public long getDownloadBitrateLimit() {
-        return Long.parseLong(getProperty(KEY_DOWNLOAD_BITRATE_LIMIT, "" + DEFAULT_DOWNLOAD_BITRATE_LIMIT));
+        return getLong(KEY_DOWNLOAD_BITRATE_LIMIT, DEFAULT_DOWNLOAD_BITRATE_LIMIT);
+    }
+
+    public RateLimiter getDownloadBitrateLimiter() {
+        if (downloadRateLimiter == null) {
+            downloadRateLimiter = RateLimiter.create(adjustBitrateLimit(getDownloadBitrateLimit()));
+        }
+        return downloadRateLimiter;
+    }
+
+    /**
+     * Convert rate given in KB to bytes and accounts for 0 (meaning no bitrate)
+     */
+    private static Double adjustBitrateLimit(double rate) {
+        double rateLimitInBytes = rate * 1024.0;
+        if (rate == 0) {
+            rateLimitInBytes = Double.POSITIVE_INFINITY;
+        }
+
+        return rateLimitInBytes;
     }
 
     /**
      * @param limit The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setDownloadBitrateLimit(long limit) {
-        setProperty(KEY_DOWNLOAD_BITRATE_LIMIT, String.valueOf(limit));
+        setLong(KEY_DOWNLOAD_BITRATE_LIMIT, limit);
+        getDownloadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
     /**
@@ -632,11 +679,19 @@ public class SettingsService {
         return getLong(KEY_UPLOAD_BITRATE_LIMIT, DEFAULT_UPLOAD_BITRATE_LIMIT);
     }
 
+    public RateLimiter getUploadBitrateLimiter() {
+        if (uploadRateLimiter == null) {
+            uploadRateLimiter = RateLimiter.create(adjustBitrateLimit(getUploadBitrateLimit()));
+        }
+        return uploadRateLimiter;
+    }
+
     /**
      * @param limit The upload bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setUploadBitrateLimit(long limit) {
         setLong(KEY_UPLOAD_BITRATE_LIMIT, limit);
+        getUploadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
     public String getDownsamplingCommand() {
@@ -733,19 +788,6 @@ public class SettingsService {
         return getLong(KEY_SETTINGS_CHANGED, DEFAULT_SETTINGS_CHANGED);
     }
 
-    public Date getLastScanned() {
-        String lastScanned = getProperty(KEY_LAST_SCANNED, null);
-        return lastScanned == null ? null : new Date(Long.parseLong(lastScanned));
-    }
-
-    void setLastScanned(Date date) {
-        if (date == null) {
-            setProperty(KEY_LAST_SCANNED, null);
-        } else {
-            setLong(KEY_LAST_SCANNED, date.getTime());
-        }
-    }
-
     public boolean isOrganizeByFolderStructure() {
         return getBoolean(KEY_ORGANIZE_BY_FOLDER_STRUCTURE, DEFAULT_ORGANIZE_BY_FOLDER_STRUCTURE);
     }
@@ -792,14 +834,6 @@ public class SettingsService {
             compileExcludePattern();
         }
         return excludePattern;
-    }
-
-    public MediaLibraryStatistics getMediaLibraryStatistics() {
-        return MediaLibraryStatistics.parse(getString(KEY_MEDIA_LIBRARY_STATISTICS, DEFAULT_MEDIA_LIBRARY_STATISTICS));
-    }
-
-    void setMediaLibraryStatistics(MediaLibraryStatistics statistics) {
-        setString(KEY_MEDIA_LIBRARY_STATISTICS, statistics.format());
     }
 
     /**
@@ -907,7 +941,7 @@ public class SettingsService {
                 String[] lines = StringUtil.readLines(in);
 
                 for (String line : lines) {
-                    locales.add(parseLocale(line));
+                    locales.add(StringUtil.parseLocale(line));
                 }
 
             } catch (IOException x) {
@@ -916,21 +950,6 @@ public class SettingsService {
             }
         }
         return locales.toArray(new Locale[locales.size()]);
-    }
-
-    private Locale parseLocale(String line) {
-        String[] s = line.split("_");
-        String language = s[0];
-        String country = "";
-        String variant = "";
-
-        if (s.length > 1) {
-            country = s[1];
-        }
-        if (s.length > 2) {
-            variant = s[2];
-        }
-        return new Locale(language, country, variant);
     }
 
     /**
@@ -963,13 +982,9 @@ public class SettingsService {
             cachedMusicFolders = musicFolderDao.getAllMusicFolders();
         }
 
-        List<MusicFolder> result = new ArrayList<>(cachedMusicFolders.size());
-        for (MusicFolder folder : cachedMusicFolders) {
-            if ((includeDisabled || folder.isEnabled()) && (includeNonExisting || FileUtil.exists(folder.getPath()))) {
-                result.add(folder);
-            }
-        }
-        return result;
+        return cachedMusicFolders.parallelStream()
+                .filter(folder -> (includeDisabled || folder.isEnabled()) && (includeNonExisting || Files.exists(folder.getPath())))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -1130,6 +1145,7 @@ public class SettingsService {
      * @param username The username.
      * @return User-specific settings. Never <code>null</code>.
      */
+    @Cacheable(cacheNames = "userSettingsCache")
     public UserSettings getUserSettings(String username) {
         UserSettings settings = userDao.getUserSettings(username);
         return settings == null ? createDefaultUserSettings(username) : settings;
@@ -1151,10 +1167,8 @@ public class SettingsService {
         settings.setQueueFollowingSongs(true);
         settings.setDefaultAlbumList(AlbumListType.RANDOM);
         settings.setLastFmEnabled(false);
-        settings.setListReloadDelay(60);
-        settings.setLastFmUsername(null);
-        settings.setLastFmPassword(null);
-        settings.setChanged(new Date());
+        settings.setListenBrainzEnabled(false);
+        settings.setChanged(Instant.now());
         settings.setPaginationSize(40);
 
         UserSettings.Visibility playlist = settings.getPlaylistVisibility();
@@ -1179,6 +1193,7 @@ public class SettingsService {
      *
      * @param settings The user-specific settings.
      */
+    @CacheEvict(cacheNames = "userSettingsCache", key = "#settings.username")
     public void updateUserSettings(UserSettings settings) {
         userDao.updateUserSettings(settings);
     }
@@ -1268,20 +1283,15 @@ public class SettingsService {
 
     private void setProperty(String key, Object value) {
         if (value == null) {
-            configurationService.clearProperty(key);
+            ConfigurationPropertiesService.getInstance().clearProperty(key);
         } else {
-            configurationService.setProperty(key, value);
+            ConfigurationPropertiesService.getInstance().setProperty(key, value);
         }
     }
 
-    private String[] toStringArray(String s) {
-        List<String> result = new ArrayList<>();
-        StringTokenizer tokenizer = new StringTokenizer(s, " ");
-        while (tokenizer.hasMoreTokens()) {
-            result.add(tokenizer.nextToken());
-        }
-
-        return result.toArray(new String[result.size()]);
+    private static Set<String> splitLowerString(String s, String splitter) {
+        //serial stream and linkedhashset because order matters
+        return Stream.of(s.split(splitter)).filter(x -> StringUtils.isNotBlank(x)).map(x -> x.toLowerCase()).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     public void setInternetRadioDao(InternetRadioDao internetRadioDao) {
@@ -1455,8 +1465,48 @@ public class SettingsService {
         setString(KEY_JWT_KEY, jwtKey);
     }
 
-    public void setConfigurationService(ApacheCommonsConfigurationService configurationService) {
-        this.configurationService = configurationService;
+    public String getEncryptionPassword() {
+        return getString(KEY_ENCRYPTION_PASSWORD, null);
+    }
+
+    public void setEncryptionPassword(String key) {
+        setString(KEY_ENCRYPTION_PASSWORD, key);
+    }
+
+    public String getEncryptionSalt() {
+        return getString(KEY_ENCRYPTION_SALT, null);
+    }
+
+    public void setEncryptionSalt(String salt) {
+        setString(KEY_ENCRYPTION_SALT, salt);
+    }
+
+    public String getDecodablePasswordEncoder() {
+        return getString(KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER, DEFAULT_PREFERRED_DECODABLE_PASSWORD_ENCODER);
+    }
+
+    public void setDecodablePasswordEncoder(String encoder) {
+        setString(KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER, encoder);
+    }
+
+    public String getNonDecodablePasswordEncoder() {
+        return getString(KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER, DEFAULT_PREFERRED_NONDECODABLE_PASSWORD_ENCODER);
+    }
+
+    public void setNonDecodablePasswordEncoder(String encoder) {
+        setString(KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER, encoder);
+    }
+
+    public boolean getPreferNonDecodablePasswords() {
+        return getBoolean(KEY_PREFER_NONDECODABLE_PASSWORDS, DEFAULT_PREFER_NONDECODABLE_PASSWORDS);
+    }
+
+    public void setPreferNonDecodablePasswords(boolean preference) {
+        setBoolean(KEY_PREFER_NONDECODABLE_PASSWORDS, preference);
+    }
+
+    public void setEnvironment(Environment env) {
+        this.env = env;
     }
 
     public void resetDatabaseToDefault() {

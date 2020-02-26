@@ -19,18 +19,28 @@
  */
 package org.airsonic.player.dao;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Provides user-related database services.
@@ -42,16 +52,18 @@ import java.util.List;
 public class UserDao extends AbstractDao {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserDao.class);
-    private static final String USER_COLUMNS = "username, password, email, ldap_authenticated, bytes_streamed, bytes_downloaded, bytes_uploaded";
+    private static final String USER_COLUMNS = "username, email, ldap_authenticated, bytes_streamed, bytes_downloaded, bytes_uploaded";
     private static final String USER_SETTINGS_COLUMNS = "username, locale, theme_id, final_version_notification, beta_version_notification, " +
             "song_notification, main_track_number, main_artist, main_album, main_genre, " +
             "main_year, main_bit_rate, main_duration, main_format, main_file_size, " +
             "playlist_track_number, playlist_artist, playlist_album, playlist_genre, " +
             "playlist_year, playlist_bit_rate, playlist_duration, playlist_format, playlist_file_size, " +
-            "last_fm_enabled, last_fm_username, last_fm_password, transcode_scheme, show_now_playing, selected_music_folder_id, " +
+            "last_fm_enabled, listenbrainz_enabled, " +
+            "transcode_scheme, show_now_playing, selected_music_folder_id, " +
             "party_mode_enabled, now_playing_allowed, avatar_scheme, system_avatar_id, changed, show_artist_info, auto_hide_play_queue, " +
             "view_as_list, default_album_list, queue_following_songs, show_side_bar, list_reload_delay, " +
             "keyboard_shortcuts_enabled, pagination_size";
+    private static final String USER_CREDENTIALS_COLUMNS = "username, app_username, credential, encoder, app, created, updated, expiration, comment";
 
     private static final Integer ROLE_ID_ADMIN = 1;
     private static final Integer ROLE_ID_DOWNLOAD = 2;
@@ -67,12 +79,13 @@ public class UserDao extends AbstractDao {
 
     private UserRowMapper userRowMapper = new UserRowMapper();
     private UserSettingsRowMapper userSettingsRowMapper = new UserSettingsRowMapper();
+    private UserCredentialRowMapper userCredentialRowMapper = new UserCredentialRowMapper();
 
-    private final String userTableQuote;
+    private final String userTable;
 
     @Autowired
-    public UserDao(String userTableQuote) {
-        this.userTableQuote = userTableQuote;
+    public UserDao(@Value("${DatabaseUsertableQuote:}") String userTableQuote) {
+        this.userTable = userTableQuote + "user" + userTableQuote;
     }
 
     /**
@@ -100,6 +113,94 @@ public class UserDao extends AbstractDao {
             readRoles(user);
         }
         return user;
+    }
+
+    public List<UserCredential> getCredentials(String username, App... apps) {
+        if (apps.length == 0) {
+            return Collections.emptyList();
+        }
+        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=:user and app in (:apps)";
+        return namedQuery(sql, userCredentialRowMapper, ImmutableMap.of("user", username, "apps", Arrays.asList(apps)));
+    }
+
+    public List<UserCredential> getCredentialsByEncoder(String encoderPatternMatcher) {
+        String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where encoder like ?";
+        return query(sql, userCredentialRowMapper, encoderPatternMatcher);
+    }
+
+    public Integer getCredentialCountByEncoder(String encoderPatternMatcher) {
+        String sql = "select count(*) from user_credentials where encoder like ?";
+        return queryForInt(sql, 0, encoderPatternMatcher);
+    }
+
+    public boolean updateCredential(UserCredential oldCreds, UserCredential newCreds) {
+        String sql = "update user_credentials set app_username=?, credential=?, encoder=?, app=?, updated=?, expiration=? where username=? and app_username=? and credential=? and encoder=? and app=? and created=? and updated=?";
+        return update(sql, newCreds.getAppUsername(), newCreds.getCredential(), newCreds.getEncoder(),
+                newCreds.getApp(), newCreds.getUpdated(), newCreds.getExpiration(), oldCreds.getUsername(),
+                oldCreds.getAppUsername(), oldCreds.getCredential(), oldCreds.getEncoder(), oldCreds.getApp(),
+                oldCreds.getCreated(), oldCreds.getUpdated()) == 1;
+    }
+
+    public boolean createCredential(UserCredential credential) {
+        String sql = "insert into user_credentials (" + USER_CREDENTIALS_COLUMNS + ") values (" + questionMarks(USER_CREDENTIALS_COLUMNS) + ')';
+        return update(sql,
+                credential.getUsername(),
+                credential.getAppUsername(),
+                credential.getCredential(),
+                credential.getEncoder(),
+                credential.getApp(),
+                credential.getCreated(),
+                credential.getUpdated(),
+                credential.getExpiration(),
+                credential.getComment()) == 1;
+    }
+
+    public boolean deleteCredential(UserCredential credential, Predicate<UserCredential> postDeletionCheck) {
+        String sql = "delete from user_credentials where username=:username and app_username=:app_username and credential=:credential and encoder=:encoder and app=:app and created=:created and updated=:updated";
+        Map<String, Object> args = new HashMap<>();
+        args.put("username", credential.getUsername());
+        args.put("app_username", credential.getAppUsername());
+        args.put("credential", credential.getCredential());
+        args.put("encoder", credential.getEncoder());
+        args.put("app", credential.getApp());
+        args.put("created", credential.getCreated());
+        args.put("updated", credential.getUpdated());
+        if (credential.getExpiration() != null) {
+            sql = sql + " and expiration=:expiration";
+            args.put("expiration", credential.getExpiration());
+        }
+
+        boolean deleteSuccess = namedUpdate(sql, args) == 1;
+
+        if (!postDeletionCheck.test(credential)) {
+            throw new RuntimeException("Cannot delete a credential due to failed post deletion check");
+        }
+
+        return deleteSuccess;
+    }
+
+    public boolean checkCredentialsStoredInLegacyTables() {
+        String sql = "select count(*) from " + getUserTable() + " where password!=?";
+        if (queryForInt(sql, 0, "") > 0) {
+            return true;
+        }
+
+        sql = "select count(*) from user_settings where last_fm_password is not null or listenbrainz_token is not null";
+        if (queryForInt(sql, 0) > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean purgeCredentialsStoredInLegacyTables() {
+        String sql = "update " + getUserTable() + " set password=''";
+        int updated = update(sql);
+
+        sql = "update user_settings set last_fm_username=NULL, last_fm_password=NULL, listenbrainz_token=NULL";
+        updated += update(sql);
+
+        return updated != 0;
     }
 
     /**
@@ -134,10 +235,11 @@ public class UserDao extends AbstractDao {
      *
      * @param user The user to create.
      */
-    public void createUser(User user) {
-        String sql = "insert into " + getUserTable() + " (" + USER_COLUMNS + ") values (" + questionMarks(USER_COLUMNS) + ')';
-        update(sql, user.getUsername(), encrypt(user.getPassword()), user.getEmail(), user.isLdapAuthenticated(),
-                user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded());
+    public void createUser(User user, UserCredential credential) {
+        String sql = "insert into " + getUserTable() + " (" + USER_COLUMNS + ", password) values (" + questionMarks(USER_COLUMNS) + ", ?)";
+        update(sql, user.getUsername(), user.getEmail(), user.isLdapAuthenticated(),
+                user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded(), "");
+        createCredential(credential);
         writeRoles(user);
     }
 
@@ -153,6 +255,7 @@ public class UserDao extends AbstractDao {
 
         update("delete from user_role where username=?", username);
         update("delete from player where username=?", username);
+        update("delete from user_credentials where username=?", username);
         update("delete from " + getUserTable() + " where username=?", username);
     }
 
@@ -162,12 +265,16 @@ public class UserDao extends AbstractDao {
      * @param user The user to update.
      */
     public void updateUser(User user) {
-        String sql = "update " + getUserTable() + " set password=?, email=?, ldap_authenticated=?, bytes_streamed=?, bytes_downloaded=?, bytes_uploaded=? " +
-                "where username=?";
-        getJdbcTemplate().update(sql, encrypt(user.getPassword()), user.getEmail(), user.isLdapAuthenticated(),
+        String sql = "update " + getUserTable() + " set email=?, ldap_authenticated=?, bytes_streamed=?, bytes_downloaded=?, bytes_uploaded=? " + "where username=?";
+        update(sql, user.getEmail(), user.isLdapAuthenticated(),
                 user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded(),
                 user.getUsername());
         writeRoles(user);
+    }
+
+    public void updateUserByteCounts(String user, long bytesStreamedDelta, long bytesDownloadedDelta, long bytesUploadedDelta) {
+        String sql = "update " + getUserTable() + " set bytes_streamed=bytes_streamed+?, bytes_downloaded=bytes_downloaded+?, bytes_uploaded=bytes_uploaded+? where username=?";
+        update(sql, bytesStreamedDelta, bytesDownloadedDelta, bytesUploadedDelta, user);
     }
 
     /**
@@ -176,15 +283,10 @@ public class UserDao extends AbstractDao {
      * @param username The user name.
      * @return Roles the user is granted.
      */
-    public String[] getRolesForUser(String username) {
+    public List<String> getRolesForUser(String username) {
         String sql = "select r.name from role r, user_role ur " +
                 "where ur.username=? and ur.role_id=r.id";
-        List<?> roles = getJdbcTemplate().queryForList(sql, new Object[]{username}, String.class);
-        String[] result = new String[roles.size()];
-        for (int i = 0; i < result.length; i++) {
-            result[i] = (String) roles.get(i);
-        }
-        return result;
+        return queryForStrings(sql, username);
     }
 
     /**
@@ -203,14 +305,14 @@ public class UserDao extends AbstractDao {
      *
      * @param settings The user-specific settings.
      */
-    public void updateUserSettings(UserSettings settings) {
-        getJdbcTemplate().update("delete from user_settings where username=?", settings.getUsername());
+    public boolean updateUserSettings(UserSettings settings) {
+        update("delete from user_settings where username=?", settings.getUsername());
 
         String sql = "insert into user_settings (" + USER_SETTINGS_COLUMNS + ") values (" + questionMarks(USER_SETTINGS_COLUMNS) + ')';
         String locale = settings.getLocale() == null ? null : settings.getLocale().toString();
         UserSettings.Visibility main = settings.getMainVisibility();
         UserSettings.Visibility playlist = settings.getPlaylistVisibility();
-        getJdbcTemplate().update(sql, settings.getUsername(), locale, settings.getThemeId(),
+        return update(sql, settings.getUsername(), locale, settings.getThemeId(),
                 settings.isFinalVersionNotificationEnabled(), settings.isBetaVersionNotificationEnabled(),
                 settings.isSongNotificationEnabled(), main.isTrackNumberVisible(),
                 main.isArtistVisible(), main.isAlbumVisible(), main.isGenreVisible(), main.isYearVisible(),
@@ -218,44 +320,19 @@ public class UserDao extends AbstractDao {
                 playlist.isTrackNumberVisible(), playlist.isArtistVisible(), playlist.isAlbumVisible(),
                 playlist.isGenreVisible(), playlist.isYearVisible(), playlist.isBitRateVisible(), playlist.isDurationVisible(),
                 playlist.isFormatVisible(), playlist.isFileSizeVisible(),
-                settings.isLastFmEnabled(), settings.getLastFmUsername(), encrypt(settings.getLastFmPassword()),
+                settings.isLastFmEnabled(), settings.isListenBrainzEnabled(),
                 settings.getTranscodeScheme().name(), settings.isShowNowPlayingEnabled(),
                 settings.getSelectedMusicFolderId(), settings.isPartyModeEnabled(), settings.isNowPlayingAllowed(),
                 settings.getAvatarScheme().name(), settings.getSystemAvatarId(), settings.getChanged(),
                 settings.isShowArtistInfoEnabled(), settings.isAutoHidePlayQueue(),
                 settings.isViewAsList(), settings.getDefaultAlbumList().getId(), settings.isQueueFollowingSongs(),
-                settings.isShowSideBar(), settings.getListReloadDelay(), settings.isKeyboardShortcutsEnabled(),
-                settings.getPaginationSize());
-    }
-
-    private static String encrypt(String s) {
-        if (s == null) {
-            return null;
-        }
-        try {
-            return "enc:" + StringUtil.utf8HexEncode(s);
-        } catch (Exception e) {
-            return s;
-        }
-    }
-
-    private static String decrypt(String s) {
-        if (s == null) {
-            return null;
-        }
-        if (!s.startsWith("enc:")) {
-            return s;
-        }
-        try {
-            return StringUtil.utf8HexDecode(s.substring(4));
-        } catch (Exception e) {
-            return s;
-        }
+                settings.isShowSideBar(), 60 /* Unused listReloadDelay */, settings.isKeyboardShortcutsEnabled(),
+                settings.getPaginationSize()) == 1;
     }
 
     private void readRoles(User user) {
         String sql = "select role_id from user_role where username=?";
-        List<?> roles = getJdbcTemplate().queryForList(sql, new Object[]{user.getUsername()}, Integer.class);
+        List<Integer> roles = queryForInts(sql, user.getUsername());
         for (Object role : roles) {
             if (ROLE_ID_ADMIN.equals(role)) {
                 user.setAdminRole(true);
@@ -287,56 +364,73 @@ public class UserDao extends AbstractDao {
 
     private void writeRoles(User user) {
         String sql = "delete from user_role where username=?";
-        getJdbcTemplate().update(sql, user.getUsername());
+        update(sql, user.getUsername());
         sql = "insert into user_role (username, role_id) values(?, ?)";
         if (user.isAdminRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_ADMIN);
+            update(sql, user.getUsername(), ROLE_ID_ADMIN);
         }
         if (user.isDownloadRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_DOWNLOAD);
+            update(sql, user.getUsername(), ROLE_ID_DOWNLOAD);
         }
         if (user.isUploadRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_UPLOAD);
+            update(sql, user.getUsername(), ROLE_ID_UPLOAD);
         }
         if (user.isPlaylistRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_PLAYLIST);
+            update(sql, user.getUsername(), ROLE_ID_PLAYLIST);
         }
         if (user.isCoverArtRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_COVER_ART);
+            update(sql, user.getUsername(), ROLE_ID_COVER_ART);
         }
         if (user.isCommentRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_COMMENT);
+            update(sql, user.getUsername(), ROLE_ID_COMMENT);
         }
         if (user.isPodcastRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_PODCAST);
+            update(sql, user.getUsername(), ROLE_ID_PODCAST);
         }
         if (user.isStreamRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_STREAM);
+            update(sql, user.getUsername(), ROLE_ID_STREAM);
         }
         if (user.isJukeboxRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_JUKEBOX);
+            update(sql, user.getUsername(), ROLE_ID_JUKEBOX);
         }
         if (user.isSettingsRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_SETTINGS);
+            update(sql, user.getUsername(), ROLE_ID_SETTINGS);
         }
         if (user.isShareRole()) {
-            getJdbcTemplate().update(sql, user.getUsername(), ROLE_ID_SHARE);
+            update(sql, user.getUsername(), ROLE_ID_SHARE);
+        }
+    }
+
+    private class UserCredentialRowMapper implements RowMapper<UserCredential> {
+        @Override
+        public UserCredential mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new UserCredential(
+                    rs.getString("username"),
+                    rs.getString("app_username"),
+                    rs.getString("credential"),
+                    rs.getString("encoder"),
+                    App.valueOf(rs.getString("app")),
+                    rs.getString("comment"),
+                    Optional.ofNullable(rs.getTimestamp("expiration")).map(x -> x.toInstant()).orElse(null),
+                    rs.getTimestamp("created").toInstant(),
+                    rs.getTimestamp("updated").toInstant());
         }
     }
 
     private class UserRowMapper implements RowMapper<User> {
+        @Override
         public User mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new User(rs.getString(1),
-                    decrypt(rs.getString(2)),
-                    rs.getString(3),
-                    rs.getBoolean(4),
+                    rs.getString(2),
+                    rs.getBoolean(3),
+                    rs.getLong(4),
                     rs.getLong(5),
-                    rs.getLong(6),
-                    rs.getLong(7));
+                    rs.getLong(6));
         }
     }
 
     private static class UserSettingsRowMapper implements RowMapper<UserSettings> {
+        @Override
         public UserSettings mapRow(ResultSet rs, int rowNum) throws SQLException {
             int col = 1;
             UserSettings settings = new UserSettings(rs.getString(col++));
@@ -367,8 +461,7 @@ public class UserDao extends AbstractDao {
             settings.getPlaylistVisibility().setFileSizeVisible(rs.getBoolean(col++));
 
             settings.setLastFmEnabled(rs.getBoolean(col++));
-            settings.setLastFmUsername(rs.getString(col++));
-            settings.setLastFmPassword(decrypt(rs.getString(col++)));
+            settings.setListenBrainzEnabled(rs.getBoolean(col++));
 
             settings.setTranscodeScheme(TranscodeScheme.valueOf(rs.getString(col++)));
             settings.setShowNowPlayingEnabled(rs.getBoolean(col++));
@@ -377,14 +470,14 @@ public class UserDao extends AbstractDao {
             settings.setNowPlayingAllowed(rs.getBoolean(col++));
             settings.setAvatarScheme(AvatarScheme.valueOf(rs.getString(col++)));
             settings.setSystemAvatarId((Integer) rs.getObject(col++));
-            settings.setChanged(rs.getTimestamp(col++));
+            settings.setChanged(Optional.ofNullable(rs.getTimestamp(col++)).map(x -> x.toInstant()).orElse(null));
             settings.setShowArtistInfoEnabled(rs.getBoolean(col++));
             settings.setAutoHidePlayQueue(rs.getBoolean(col++));
             settings.setViewAsList(rs.getBoolean(col++));
             settings.setDefaultAlbumList(AlbumListType.fromId(rs.getString(col++)));
             settings.setQueueFollowingSongs(rs.getBoolean(col++));
             settings.setShowSideBar(rs.getBoolean(col++));
-            settings.setListReloadDelay((Integer) rs.getObject(col++));
+            col++;  // Skip the now unused listReloadDelay
             settings.setKeyboardShortcutsEnabled(rs.getBoolean(col++));
             settings.setPaginationSize(rs.getInt(col++));
 
@@ -393,6 +486,6 @@ public class UserDao extends AbstractDao {
     }
 
     String getUserTable() {
-        return userTableQuote + "user" + userTableQuote;
+        return userTable;
     }
 }

@@ -19,6 +19,9 @@
  */
 package org.airsonic.player.controller;
 
+import com.google.common.util.concurrent.RateLimiter;
+
+import org.airsonic.player.ajax.UploadInfo;
 import org.airsonic.player.domain.TransferStatus;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.service.PlayerService;
@@ -27,13 +30,16 @@ import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.StatusService;
 import org.airsonic.player.upload.MonitoredDiskFileItemFactory;
 import org.airsonic.player.upload.UploadListener;
-import org.airsonic.player.util.StringUtil;
+import org.airsonic.player.util.FileUtil;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
@@ -41,20 +47,21 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 /**
  * Controller which receives uploaded files.
  *
  * @author Sindre Mehus
  */
-@org.springframework.stereotype.Controller
+@Controller
 @RequestMapping("/upload")
 public class UploadController {
 
@@ -68,32 +75,33 @@ public class UploadController {
     private StatusService statusService;
     @Autowired
     private SettingsService settingsService;
-    public static final String UPLOAD_STATUS = "uploadStatus";
+    @Autowired
+    private SimpMessagingTemplate brokerTemplate;
 
     @PostMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) {
 
         Map<String, Object> map = new HashMap<>();
-        List<File> uploadedFiles = new ArrayList<>();
-        List<File> unzippedFiles = new ArrayList<>();
+        List<Path> uploadedFiles = new ArrayList<>();
+        List<Path> unzippedFiles = new ArrayList<>();
         TransferStatus status = null;
 
         try {
 
             status = statusService.createUploadStatus(playerService.getPlayer(request, response, false, false));
             status.setBytesTotal(request.getContentLength());
-
-            request.getSession().setAttribute(UPLOAD_STATUS, status);
+            brokerTemplate.convertAndSendToUser(status.getPlayer().getUsername(), "/queue/uploads/status",
+                    new UploadInfo(status.getId(), 0L, status.getBytesTotal()));
 
             // Check that we have a file upload request
             if (!ServletFileUpload.isMultipartContent(request)) {
                 throw new Exception("Illegal request.");
             }
 
-            File dir = null;
+            Path dir = null;
             boolean unzip = false;
 
-            UploadListener listener = new UploadListenerImpl(status);
+            UploadListener listener = new UploadListenerImpl(status, settingsService.getUploadBitrateLimiter(), brokerTemplate);
 
             FileItemFactory factory = new MonitoredDiskFileItemFactory(listener);
             ServletFileUpload upload = new ServletFileUpload(factory);
@@ -105,7 +113,7 @@ public class UploadController {
                 FileItem item = (FileItem) o;
 
                 if (item.isFormField() && "dir".equals(item.getFieldName())) {
-                    dir = new File(item.getString());
+                    dir = Paths.get(item.getString());
                 } else if (item.isFormField() && "unzip".equals(item.getFieldName())) {
                     unzip = true;
                 }
@@ -123,21 +131,21 @@ public class UploadController {
                     String fileName = item.getName();
                     if (!fileName.trim().isEmpty()) {
 
-                        File targetFile = new File(dir, new File(fileName).getName());
+                        Path targetFile = dir.resolve(Paths.get(fileName).getFileName());
 
                         if (!securityService.isUploadAllowed(targetFile)) {
-                            throw new Exception("Permission denied: " + StringUtil.toHtml(targetFile.getPath()));
+                            throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(targetFile.toString()));
                         }
 
-                        if (!dir.exists()) {
-                            dir.mkdirs();
+                        if (!Files.exists(dir)) {
+                            Files.createDirectories(dir);
                         }
 
-                        item.write(targetFile);
+                        item.write(targetFile.toFile());
                         uploadedFiles.add(targetFile);
                         LOG.info("Uploaded " + targetFile);
 
-                        if (unzip && targetFile.getName().toLowerCase().endsWith(".zip")) {
+                        if (unzip && targetFile.getFileName().toString().toLowerCase().endsWith(".zip")) {
                             unzip(targetFile, unzippedFiles);
                         }
                     }
@@ -150,111 +158,87 @@ public class UploadController {
         } finally {
             if (status != null) {
                 statusService.removeUploadStatus(status);
-                request.getSession().removeAttribute(UPLOAD_STATUS);
+                brokerTemplate.convertAndSendToUser(status.getPlayer().getUsername(), "/queue/uploads/status",
+                        new UploadInfo(status.getId(), status.getBytesTotal() + 1, status.getBytesTotal()));
                 User user = securityService.getCurrentUser(request);
-                securityService.updateUserByteCounts(user, 0L, 0L, status.getBytesTransfered());
+                securityService.updateUserByteCounts(user, 0L, 0L, status.getBytesTransferred());
             }
         }
 
         map.put("uploadedFiles", uploadedFiles);
         map.put("unzippedFiles", unzippedFiles);
 
-        return new ModelAndView("upload","model",map);
+        return new ModelAndView("upload", "model", map);
     }
 
-    private void unzip(File file, List<File> unzippedFiles) throws Exception {
+    private void unzip(Path file, List<Path> unzippedFiles) throws Exception {
         LOG.info("Unzipping " + file);
 
-        try (ZipFile zipFile = new ZipFile(file)) {
-
-            Enumeration<?> entries = zipFile.entries();
-
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = (ZipEntry) entries.nextElement();
-                File entryFile = new File(file.getParentFile(), entry.getName());
-                if (!entryFile.toPath().normalize().startsWith(file.getParentFile().toPath())) {
-                    throw new Exception("Bad zip filename: " + StringUtil.toHtml(entryFile.getPath()));
+        try (ZipInputStream zipInputStream = new ZipInputStream(Files.newInputStream(file))) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                final Path toPath = file.resolveSibling(entry.getName());
+                if (!toPath.normalize().startsWith(file.getParent())) {
+                    throw new Exception("Bad zip filename: " + StringEscapeUtils.escapeHtml(toPath.toString()));
                 }
 
-                if (!entry.isDirectory()) {
-
-                    if (!securityService.isUploadAllowed(entryFile)) {
-                        throw new Exception("Permission denied: " + StringUtil.toHtml(entryFile.getPath()));
+                if (entry.isDirectory()) {
+                    Files.createDirectory(toPath);
+                } else {
+                    if (!securityService.isUploadAllowed(toPath)) {
+                        throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(toPath.toString()));
                     }
-
-                    entryFile.getParentFile().mkdirs();
-                    try (
-                            OutputStream outputStream = new FileOutputStream(entryFile);
-                            InputStream inputStream = zipFile.getInputStream(entry)
-                    ) {
-                        byte[] buf = new byte[8192];
-                        while (true) {
-                            int n = inputStream.read(buf);
-                            if (n == -1) {
-                                break;
-                            }
-                            outputStream.write(buf, 0, n);
-                        }
-                        LOG.info("Unzipped " + entryFile);
-                        unzippedFiles.add(entryFile);
-                    }
+                    Files.copy(zipInputStream, toPath);
+                    LOG.info("Unzipped " + toPath);
+                    unzippedFiles.add(toPath);
                 }
             }
-
-            zipFile.close();
-            file.delete();
+        } catch (IOException e) {
+            LOG.warn("Something went wrong unzipping {}", file, e);
+        } finally {
+            FileUtil.delete(file);
         }
     }
-
-
-
-
 
     /**
      * Receives callbacks as the file upload progresses.
      */
-    private class UploadListenerImpl implements UploadListener {
+    private static class UploadListenerImpl implements UploadListener {
         private TransferStatus status;
-        private long start;
+        private SimpMessagingTemplate brokerTemplate;
+        private RateLimiter rateLimiter;
+        private volatile int lastBroadcastPercentage = 0;
 
-        private UploadListenerImpl(TransferStatus status) {
+        private UploadListenerImpl(TransferStatus status, RateLimiter rateLimiter,
+                SimpMessagingTemplate brokerTemplate) {
             this.status = status;
-            start = System.currentTimeMillis();
+            this.brokerTemplate = brokerTemplate;
+            this.rateLimiter = rateLimiter;
         }
 
         @Override
         public void start(String fileName) {
-            status.setFile(new File(fileName));
+            status.setFile(Paths.get(fileName));
         }
 
         @Override
         public void bytesRead(long bytesRead) {
-
+            status.addBytesTransferred(bytesRead);
+            broadcast();
             // Throttle bitrate.
-
-            long byteCount = status.getBytesTransfered() + bytesRead;
-            long bitCount = byteCount * 8L;
-
-            float elapsedMillis = Math.max(1, System.currentTimeMillis() - start);
-            float elapsedSeconds = elapsedMillis / 1000.0F;
-            long maxBitsPerSecond = getBitrateLimit();
-
-            status.setBytesTransfered(byteCount);
-
-            if (maxBitsPerSecond > 0) {
-                float sleepMillis = 1000.0F * (bitCount / maxBitsPerSecond - elapsedSeconds);
-                if (sleepMillis > 0) {
-                    try {
-                        Thread.sleep((long) sleepMillis);
-                    } catch (InterruptedException x) {
-                        LOG.warn("Failed to sleep.", x);
-                    }
-                }
-            }
+            rateLimiter.acquire((int) bytesRead);
         }
 
-        private long getBitrateLimit() {
-            return 1024L * settingsService.getUploadBitrateLimit() / Math.max(1, statusService.getAllUploadStatuses().size());
+        private void broadcast() {
+            long percentDone = 100 * status.getBytesTransferred() / Math.max(1, status.getBytesTotal());
+            // broadcast every 2% (no need to broadcast at every byte read)
+            if (percentDone - lastBroadcastPercentage > 2) {
+                lastBroadcastPercentage = (int) percentDone;
+                CompletableFuture.runAsync(() -> brokerTemplate.convertAndSendToUser(
+                        status.getPlayer().getUsername(),
+                        "/queue/uploads/status",
+                        new UploadInfo(status.getId(), status.getBytesTransferred(), status.getBytesTotal())));
+            }
         }
     }
 

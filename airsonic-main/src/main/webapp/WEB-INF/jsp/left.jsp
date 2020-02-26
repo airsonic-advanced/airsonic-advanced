@@ -1,18 +1,29 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
 <!DOCTYPE html>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value="/script/utils.js"/>"></script>
-    <script type="text/javascript" src="<c:url value="/dwr/engine.js"/>"></script>
-    <script type="text/javascript" src="<c:url value="/dwr/interface/playlistService.js"/>"></script>
+    <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" language="javascript">
-
-        var playlists;
-
         function init() {
-            dwr.engine.setErrorHandler(null);
-            updatePlaylists();
+            top.StompClient.subscribe("left.jsp", {
+                '/user/queue/playlists/deleted': function(msg) {
+                    deletedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/topic/playlists/deleted': function(msg) {
+                    deletedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/user/queue/playlists/updated': function(msg) {
+                    updatedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/topic/playlists/updated': function(msg) {
+                    updatedPlaylistCallback(JSON.parse(msg.body));
+                },
+                // Add existing (initial population, one time)
+                '/app/playlists/readable': function(msg) {
+                    populatePlaylistCallback(JSON.parse(msg.body));
+                }
+            });
 
             var mainLocation = top.main.location.href;
             if (${model.musicFolderChanged}) {
@@ -27,13 +38,9 @@
             });
         }
 
-        function updatePlaylists() {
-            playlistService.getReadablePlaylists(playlistCallback);
-        }
-
         function createEmptyPlaylist() {
             showAllPlaylists();
-            playlistService.createEmptyPlaylist(playlistCallback);
+            top.StompClient.send("/app/playlists/create/empty", "");
         }
 
         function showAllPlaylists() {
@@ -41,21 +48,54 @@
             $('#showAllPlaylists').hide('blind');
         }
 
-        function playlistCallback(playlists) {
-            this.playlists = playlists;
-
+        function populatePlaylistCallback(playlists) {
             $("#playlists").empty();
             $("#playlistOverflow").empty();
             for (var i = 0; i < playlists.length; i++) {
                 var playlist = playlists[i];
+                var node = $("<p class='dense playlist' id='playlistid-" + playlist.id + "'><a target='main' href='playlist.view?id=" +
+                        playlist.id + "'>" + escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")</a></p>");
                 var overflow = i > 9;
-                $("<p class='dense'><a target='main' href='playlist.view?id=" +
-                        playlist.id + "'>" + escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")</a></p>").appendTo(overflow ? "#playlistOverflow" : "#playlists");
+                if (!overflow) {
+                    node.addClass("nonoverflown");
+                }
+
+                //append only if not already there
+                if ($("#playlistid-" + playlist.id).length == 0) {
+                    node.appendTo(overflow ? "#playlistOverflow" : "#playlists");
+                }
             }
 
             if (playlists.length > 10 && !$('#playlistOverflow').is(":visible")) {
                 $('#showAllPlaylists').show();
             }
+        }
+
+        function updatedPlaylistCallback(playlist) {
+            var oldNode = $("#playlistid-" + playlist.id);
+            var node = $("<p class='dense playlist' id='playlistid-" + playlist.id + "'><a target='main' href='playlist.view?id=" +
+                        playlist.id + "'>" + escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")</a></p>");
+            if (oldNode.length == 0) {
+                var overflow = $(".playlist").length > 10;
+                if (!overflow) {
+                    node.toggleClass("nonoverflown");
+                }
+                node.appendTo(overflow ? "#playlistOverflow" : "#playlists");
+            } else {
+                if (oldNode.hasClass("nonoverflown")) {
+                    node.addClass("nonoverflown");
+                }
+                oldNode.replaceWith(node);
+            }
+        }
+
+        function deletedPlaylistCallback(id) {
+            var node = $("#playlistid-" + id);
+            if (node.hasClass("nonoverflown")) {
+                // move one element over to take the place
+                $("#playlistOverflow").children().first().addClass("nonoverflown").appendTo("#playlists");
+            }
+            node.remove();
         }
     </script>
 </head>
@@ -65,7 +105,7 @@
 
 <div style="padding-bottom:1.5em">
     <a href="home.view" target="main">
-      <img src="<spring:theme code="logoImage"/>" style="width:196px" title="<fmt:message key="top.help"/>" alt="">
+      <img src="<spring:theme code='logoImage'/>" style="width:196px" title="<fmt:message key='top.help'/>" alt="">
     </a>
 </div>
 
@@ -127,7 +167,7 @@
     <c:forEach items="${model.radios}" var="radio">
         <p class="dense" style="padding-left: 2px">
         <a target="hidden" href="${radio.streamUrl}" class="radio-play" data-id="${radio.id}">
-            <img src="<spring:theme code="playImage"/>" alt="<fmt:message key="common.play"/>" title="<fmt:message key="common.play"/>"></a>
+            <img src="<spring:theme code='playImage'/>" alt="<fmt:message key='common.play'/>" title="<fmt:message key='common.play'/>"></a>
             <span style="vertical-align: middle">
                 <c:choose>
                     <c:when test="${empty radio.homepageUrl}">
@@ -149,7 +189,7 @@
                 <h2 style="padding:0;margin:0;border:0">${fn:escapeXml(entry.key.index)}</h2>
             </th>
             <th style="text-align:right;">
-                <a href="#top"><img src="<spring:theme code="upImage"/>" alt="" style="height:18px;"></a>
+                <a href="#top"><img src="<spring:theme code='upImage'/>" alt="" style="height:18px;"></a>
             </th>
         </tr>
     </table>

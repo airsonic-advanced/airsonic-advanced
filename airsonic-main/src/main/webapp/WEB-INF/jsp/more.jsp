@@ -4,40 +4,12 @@
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
     <style type="text/css">
-        #progressBar {width: 350px; height: 10px; border: 1px solid black; display:none;}
-        #progressBarContent {width: 0; height: 10px; background: url("<c:url value="/icons/default_light/progress.png"/>") repeat;}
+        .progress-bar {width: 350px; height: 10px; border: 1px solid black; display:block;}
+        .progress-bar-content {width: 0; height: 10px; background: url("<c:url value="/icons/default_light/progress.png"/>") repeat;}
+        .progress-text {display:block;}
         #randomPlayQueue td { padding: 0 5px; }
     </style>
-    <script type="text/javascript" src="<c:url value="/dwr/interface/transferService.js"/>"></script>
-    <script type="text/javascript" src="<c:url value="/dwr/engine.js"/>"></script>
-    <script type="text/javascript" src="<c:url value="/dwr/util.js"/>"></script>
-
     <script type="text/javascript">
-        function refreshProgress() {
-            transferService.getUploadInfo(updateProgress);
-        }
-
-        function updateProgress(uploadInfo) {
-
-            var progressBar = document.getElementById("progressBar");
-            var progressBarContent = document.getElementById("progressBarContent");
-            var progressText = document.getElementById("progressText");
-
-
-            if (uploadInfo.bytesTotal > 0) {
-                var percent = Math.ceil((uploadInfo.bytesUploaded / uploadInfo.bytesTotal) * 100);
-                progressBarContent.style.width = parseInt(percent * 3.5) + 'px';
-                progressText.innerHTML = percent + "<fmt:message key="more.upload.progress"/>";
-                progressBar.style.display = "block";
-                progressText.style.display = "block";
-                window.setTimeout("refreshProgress()", 1000);
-            } else {
-                progressBar.style.display = "none";
-                progressText.style.display = "none";
-                window.setTimeout("refreshProgress()", 5000);
-            }
-        }
-
         // From Modernizr
         // See: https://modernizr.com/
         function isLocalStorageEnabled() {
@@ -50,7 +22,6 @@
                 return false;
             }
         }
-
 
         // Load previously used shuffle parameters
         function loadShuffleForm() {
@@ -102,8 +73,40 @@
             localStorage.setItem("randomPlayQueue", JSON.stringify(data));
         }
 
+        <c:if test="${model.user.uploadRole}">
+        function uploadStatus(msg) {
+            var uploadInfo = JSON.parse(msg.body);
+
+            var progressBarHolder = $("#progressBarHolder" + uploadInfo.transferId);
+
+            if (uploadInfo.bytesTotal <= 0 || uploadInfo.bytesUploaded > uploadInfo.bytesTotal) {
+                if (progressBarHolder.length != 0) {
+                    // remove it
+                    progressBarHolder.remove();
+                }
+            } else {
+                if (progressBarHolder.length == 0) {
+                    // create it
+                    progressBarHolder = $("<div id='progressBarHolder" + uploadInfo.transferId + "'><p class='detail progress-text'/><div class='progress-bar'><div class='progress-bar-content'></div></div></div>");
+                    $("#progressBars").append(progressBarHolder);
+                }
+
+                var progressBarContent = progressBarHolder.find(".progress-bar-content");
+                var progressText = progressBarHolder.find(".progress-text");
+
+                var percent = Math.ceil((uploadInfo.bytesUploaded / uploadInfo.bytesTotal) * 100);
+                progressBarContent.width(parseInt(percent * 3.5));
+                progressText.text(percent + "<fmt:message key='more.upload.progress'/>");
+            }
+        }
+        </c:if>
+
         $(function() {
-            ${model.user.uploadRole ? "refreshProgress();" : ""}
+            <c:if test="${model.user.uploadRole}">
+            top.StompClient.subscribe("more.jsp", {
+                '/user/queue/uploads/status': uploadStatus
+            });
+            </c:if>
             $("#randomPlayQueue").on("submit", saveShuffleForm);
             loadShuffleForm();
         });
@@ -120,13 +123,13 @@
 <body class="mainframe bgcolor1">
 
 <h1>
-    <img src="<spring:theme code="moreImage"/>" alt=""/>
+    <img src="<spring:theme code='moreImage'/>" alt=""/>
     <span style="vertical-align: middle"><fmt:message key="more.title"/></span>
 </h1>
 
 <c:if test="${model.user.streamRole}">
     <h2>
-        <img src="<spring:theme code="shuffleImage"/>" alt=""/>
+        <img src="<spring:theme code='shuffleImage'/>" alt=""/>
         <span style="vertical-align: middle"><fmt:message key="more.random.title"/></span>
     </h2>
 
@@ -254,31 +257,31 @@
             </tr>
             <tr>
                 <td colspan="2">
-                  <input type="submit" name="addToPlaylist" value="<fmt:message key="more.random.add"/>">
-                  <input type="submit" name="autoRandom" value="<fmt:message key="more.random.radio"/>">
+                  <input type="submit" name="addToPlaylist" value="<fmt:message key='more.random.add'/>">
+                  <input type="submit" name="autoRandom" value="<fmt:message key='more.random.radio'/>">
                 </td>
             </tr>
         </table>
     </form>
 </c:if>
 
-<a href="https://airsonic.github.io/docs/apps/" target="_blank" rel="noopener noreferrer"><img alt="Apps" src="<c:url value="/icons/default_light/apps.png"/>" style="float: right;margin-left: 3em; margin-right: 3em"/></a>
+<a href="https://airsonic.github.io/docs/apps/" target="_blank" rel="noopener noreferrer"><img alt="Apps" src="<c:url value='/icons/default_light/apps.png'/>" style="float: right;margin-left: 3em; margin-right: 3em"/></a>
 
 <h2>
-    <img src="<spring:theme code="androidImage"/>" alt=""/>
+    <img src="<spring:theme code='androidImage'/>" alt=""/>
     <span style="vertical-align: middle"><fmt:message key="more.apps.title"/></span>
 </h2>
 <fmt:message key="more.apps.text"/>
 
 
 <h2>
-    <img src="<spring:theme code="statusSmallImage"/>" alt=""/>
+    <img src="<spring:theme code='statusSmallImage'/>" alt=""/>
     <span style="vertical-align: middle"><fmt:message key="more.status.title"/></span>
 </h2>
 <fmt:message key="more.status.text"/>
 
 <h2>
-    <img src="<spring:theme code="podcastImage"/>" alt=""/>
+    <img src="<spring:theme code='podcastImage'/>" alt=""/>
     <span style="vertical-align: middle"><fmt:message key="more.podcast.title"/></span>
 </h2>
 <fmt:message key="more.podcast.text"/>
@@ -286,7 +289,7 @@
 <c:if test="${model.user.uploadRole}">
 
     <h2>
-        <img src="<spring:theme code="uploadImage"/>" alt=""/>
+        <img src="<spring:theme code='uploadImage'/>" alt=""/>
         <span style="vertical-align: middle"><fmt:message key="more.upload.title"/></span>
     </h2>
 
@@ -299,7 +302,7 @@
             <tr>
                 <td><fmt:message key="more.upload.target"/></td>
                 <td><input type="text" id="dir" name="dir" size="37" value="${model.uploadDirectory}"/></td>
-                <td><input type="submit" value="<fmt:message key="more.upload.ok"/>"/></td>
+                <td><input type="submit" value="<fmt:message key='more.upload.ok'/>"/></td>
             </tr>
             <tr>
                 <td colspan="2">
@@ -310,18 +313,13 @@
         </table>
     </form>
 
-
-    <p class="detail" id="progressText"/>
-
-    <div id="progressBar">
-        <div id="progressBarContent"></div>
-    </div>
+    <div id="progressBars"></div>
 
 </c:if>
 
 <a name="shortcuts"></a>
 <h2>
-    <img src="<spring:theme code="keyboardImage"/>" alt=""/>
+    <img src="<spring:theme code='keyboardImage'/>" alt=""/>
     <span style="vertical-align: middle"><fmt:message key="more.keyboard.title"/></span>
 </h2>
 <fmt:message key="more.keyboard.text"/>

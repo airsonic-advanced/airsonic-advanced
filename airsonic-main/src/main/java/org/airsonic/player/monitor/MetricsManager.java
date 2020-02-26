@@ -1,9 +1,9 @@
 package org.airsonic.player.monitor;
 
-import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
-import org.airsonic.player.service.ApacheCommonsConfigurationService;
+import com.codahale.metrics.jmx.JmxReporter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 public class MetricsManager {
 
     @Autowired
-    private ApacheCommonsConfigurationService configurationService;
+    private Environment env;
 
     // Main metrics registry
     private static final MetricRegistry metrics = new MetricRegistry();
@@ -27,7 +27,7 @@ public class MetricsManager {
     private static JmxReporter reporter;
 
     private void configureMetricsActivation() {
-        if (configurationService.containsKey("Metrics")) {
+        if (env.containsProperty("Metrics")) {
             metricsActivatedByConfiguration = Boolean.TRUE;
 
             // Start a Metrics JMX reporter
@@ -88,10 +88,6 @@ public class MetricsManager {
         }
     }
 
-    public void setConfigurationService(ApacheCommonsConfigurationService configurationService) {
-        this.configurationService = configurationService;
-    }
-
     /**
      * A class that builds a {@link Timer}
      */
@@ -99,7 +95,7 @@ public class MetricsManager {
 
         public Timer timer(Class clazz, String name) {
             com.codahale.metrics.Timer t = metrics.timer(MetricRegistry.name(clazz,name));
-            com.codahale.metrics.Timer.Context tContext =  t.time();
+            com.codahale.metrics.Timer.Context tContext = t.time();
             return new Timer(tContext);
         }
 
@@ -143,7 +139,7 @@ public class MetricsManager {
         }
 
         @Override
-        public void close()  {
+        public void close() {
             // Does nothing
         }
     }

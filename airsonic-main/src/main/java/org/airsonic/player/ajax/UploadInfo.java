@@ -19,19 +19,26 @@
  */
 package org.airsonic.player.ajax;
 
+import java.util.UUID;
+
 /**
  * Contains status for a file upload.
  *
  * @author Sindre Mehus
  */
 public class UploadInfo {
+    private final UUID transferId;
+    private final long bytesUploaded;
+    private final long bytesTotal;
 
-    private long bytesUploaded;
-    private long bytesTotal;
-
-    public UploadInfo(long bytesUploaded, long bytesTotal) {
+    public UploadInfo(UUID transferId, long bytesUploaded, long bytesTotal) {
+        this.transferId = transferId;
         this.bytesUploaded = bytesUploaded;
         this.bytesTotal = bytesTotal;
+    }
+
+    public UUID getTransferId() {
+        return transferId;
     }
 
     /**

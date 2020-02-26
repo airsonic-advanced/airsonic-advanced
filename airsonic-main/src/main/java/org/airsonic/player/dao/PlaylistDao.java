@@ -21,13 +21,17 @@ package org.airsonic.player.dao;
 
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Playlist;
+import org.airsonic.player.util.LambdaUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Provides database services for playlists.
@@ -36,10 +40,11 @@ import java.util.*;
  */
 @Repository
 public class PlaylistDao extends AbstractDao {
-    private static final String INSERT_COLUMNS = "username, is_public, name, comment, file_count, duration_seconds, " +
+    private static final String INSERT_COLUMNS = "username, is_public, name, comment, file_count, duration, " +
                                                 "created, changed, imported_from";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
-    private final RowMapper rowMapper = new PlaylistMapper();
+    private final PlaylistMapper rowMapper = new PlaylistMapper();
+    private final static Comparator<Playlist> sorter = Comparator.comparing(p -> p.getName());
 
     public List<Playlist> getReadablePlaylistsForUser(String username) {
 
@@ -50,22 +55,19 @@ public class PlaylistDao extends AbstractDao {
                                        "playlist.username != ? and " +
                                        "playlist_user.username = ?", rowMapper, username, username);
 
-        // Put in sorted map to avoid duplicates.
-        SortedMap<Integer, Playlist> map = new TreeMap<Integer, Playlist>();
-        for (Playlist playlist : result1) {
-            map.put(playlist.getId(), playlist);
-        }
-        for (Playlist playlist : result2) {
-            map.put(playlist.getId(), playlist);
-        }
-        for (Playlist playlist : result3) {
-            map.put(playlist.getId(), playlist);
-        }
-        return new ArrayList<Playlist>(map.values());
+        // Remove duplicates.
+        return Stream.of(result1, result2, result3)
+                .flatMap(r -> r.parallelStream())
+                .filter(LambdaUtils.distinctByKey(p -> p.getId()))
+                .sorted(sorter)
+                .collect(Collectors.toList());
     }
 
     public List<Playlist> getWritablePlaylistsForUser(String username) {
-        return query("select " + QUERY_COLUMNS + " from playlist where username=?", rowMapper, username);
+        return query("select " + QUERY_COLUMNS + " from playlist where username=?", rowMapper, username)
+                .stream()
+                .sorted(sorter)
+                .collect(Collectors.toList());
     }
 
     public Playlist getPlaylist(int id) {
@@ -73,29 +75,28 @@ public class PlaylistDao extends AbstractDao {
     }
 
     public List<Playlist> getAllPlaylists() {
-        return query("select " + QUERY_COLUMNS + " from playlist", rowMapper);
+        return query("select " + QUERY_COLUMNS + " from playlist", rowMapper)
+                .stream()
+                .sorted(sorter)
+                .collect(Collectors.toList());
     }
 
     @Transactional
     public void createPlaylist(Playlist playlist) {
         update("insert into playlist(" + INSERT_COLUMNS + ") values(" + questionMarks(INSERT_COLUMNS) + ")",
                 playlist.getUsername(), playlist.isShared(), playlist.getName(), playlist.getComment(),
-                0, 0, playlist.getCreated(), playlist.getChanged(), playlist.getImportedFrom());
+                0, 0.0, playlist.getCreated(), playlist.getChanged(), playlist.getImportedFrom());
 
         int id = queryForInt("select max(id) from playlist", 0);
         playlist.setId(id);
     }
 
+    @Transactional
     public void setFilesInPlaylist(int id, List<MediaFile> files) {
         update("delete from playlist_file where playlist_id=?", id);
-        int duration = 0;
         for (MediaFile file : files) {
             update("insert into playlist_file (playlist_id, media_file_id) values (?, ?)", id, file.getId());
-            if (file.getDurationSeconds() != null) {
-                duration += file.getDurationSeconds();
-            }
         }
-        update("update playlist set file_count=?, duration_seconds=?, changed=? where id=?", files.size(), duration, new Date(), id);
     }
 
     public List<String> getPlaylistUsers(int playlistId) {
@@ -118,12 +119,14 @@ public class PlaylistDao extends AbstractDao {
     }
 
     public void updatePlaylist(Playlist playlist) {
-        update("update playlist set username=?, is_public=?, name=?, comment=?, changed=?, imported_from=? where id=?",
+        update("update playlist set username=?, is_public=?, name=?, comment=?, changed=?, imported_from=?, file_count=?, duration=? where id=?",
                 playlist.getUsername(), playlist.isShared(), playlist.getName(), playlist.getComment(),
-                new Date(), playlist.getImportedFrom(), playlist.getId());
+                Instant.now(), playlist.getImportedFrom(), playlist.getFileCount(), playlist.getDuration(),
+                playlist.getId());
     }
 
     private static class PlaylistMapper implements RowMapper<Playlist> {
+        @Override
         public Playlist mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Playlist(
                     rs.getInt(1),
@@ -132,9 +135,9 @@ public class PlaylistDao extends AbstractDao {
                     rs.getString(4),
                     rs.getString(5),
                     rs.getInt(6),
-                    rs.getInt(7),
-                    rs.getTimestamp(8),
-                    rs.getTimestamp(9),
+                    rs.getDouble(7),
+                    Optional.ofNullable(rs.getTimestamp(8)).map(x -> x.toInstant()).orElse(null),
+                    Optional.ofNullable(rs.getTimestamp(9)).map(x -> x.toInstant()).orElse(null),
                     rs.getString(10));
         }
     }

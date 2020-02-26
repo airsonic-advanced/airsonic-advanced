@@ -1,71 +1,27 @@
-/*
- This file is part of Airsonic.
-
- Airsonic is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- Airsonic is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with Airsonic.  If not, see <http://www.gnu.org/licenses/>.
-
- Copyright 2016 (C) Airsonic Authors
- Based upon Subsonic, Copyright 2009 (C) Sindre Mehus
- */
 package org.airsonic.player.io;
 
-import org.airsonic.player.domain.*;
-import org.airsonic.player.service.AudioScrobblerService;
-import org.airsonic.player.service.MediaFileService;
-import org.airsonic.player.service.SearchService;
-import org.airsonic.player.service.TranscodingService;
-import org.airsonic.player.service.sonos.SonosHelper;
-import org.airsonic.player.util.FileUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.PlayQueue;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
-/**
- * Implementation of {@link InputStream} which reads from a {@link PlayQueue}.
- *
- * @author Sindre Mehus
- */
 public class PlayQueueInputStream extends InputStream {
-
-    private static final Logger LOG = LoggerFactory.getLogger(PlayQueueInputStream.class);
-
-    private final Player player;
-    private final TransferStatus status;
-    private final Integer maxBitRate;
-    private final String preferredTargetFormat;
-    private final VideoTranscodingSettings videoTranscodingSettings;
-    private final TranscodingService transcodingService;
-    private final AudioScrobblerService audioScrobblerService;
-    private final MediaFileService mediaFileService;
+    private final PlayQueue queue;
+    private final Consumer<MediaFile> fileStartListener;
+    private final Consumer<MediaFile> fileEndListener;
+    private final Function<MediaFile, InputStream> streamGenerator;
+    private InputStream currentStream;
     private MediaFile currentFile;
-    private InputStream currentInputStream;
-    private SearchService searchService;
 
-    public PlayQueueInputStream(Player player, TransferStatus status, Integer maxBitRate, String preferredTargetFormat,
-                                VideoTranscodingSettings videoTranscodingSettings, TranscodingService transcodingService,
-                                AudioScrobblerService audioScrobblerService, MediaFileService mediaFileService, SearchService searchService) {
-        this.player = player;
-        this.status = status;
-        this.maxBitRate = maxBitRate;
-        this.preferredTargetFormat = preferredTargetFormat;
-        this.videoTranscodingSettings = videoTranscodingSettings;
-        this.transcodingService = transcodingService;
-        this.audioScrobblerService = audioScrobblerService;
-        this.mediaFileService = mediaFileService;
-        this.searchService = searchService;
+    public PlayQueueInputStream(PlayQueue queue, Consumer<MediaFile> fileStartListener,
+            Consumer<MediaFile> fileEndListener, Function<MediaFile, InputStream> streamGenerator) {
+        this.queue = queue;
+        this.fileStartListener = fileStartListener;
+        this.fileEndListener = fileEndListener;
+        this.streamGenerator = streamGenerator;
     }
 
     @Override
@@ -83,74 +39,55 @@ public class PlayQueueInputStream extends InputStream {
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         prepare();
-        if (currentInputStream == null || player.getPlayQueue().getStatus() == PlayQueue.Status.STOPPED) {
+        if (currentStream == null || queue.getStatus() == PlayQueue.Status.STOPPED) {
             return -1;
         }
 
-        int n = currentInputStream.read(b, off, len);
+        int n = currentStream.read(b, off, len);
 
         // If end of song reached, skip to next song and call read() again.
         if (n == -1) {
-            player.getPlayQueue().next();
-            close();
+            queue.next();
+            closeStream();
             return read(b, off, len);
-        } else {
-            status.addBytesTransfered(n);
         }
+
         return n;
     }
 
     private void prepare() throws IOException {
-        PlayQueue playQueue = player.getPlayQueue();
+//        PlayQueue playQueue = player.getPlayQueue();
+//
+//        // If playlist is in auto-random mode, populate it with new random songs.
+//        if (playQueue.getIndex() == -1 && playQueue.getRandomSearchCriteria() != null) {
+//            populateRandomPlaylist(playQueue);
+//        }
 
-        // If playlist is in auto-random mode, populate it with new random songs.
-        if (playQueue.getIndex() == -1 && playQueue.getRandomSearchCriteria() != null) {
-            populateRandomPlaylist(playQueue);
-        }
-
-        MediaFile result;
-        synchronized (playQueue) {
-            result = playQueue.getCurrentFile();
-        }
-        MediaFile file = result;
+        MediaFile file = queue.getCurrentFile();
         if (file == null) {
-            close();
+            closeStream();
         } else if (!file.equals(currentFile)) {
-            close();
-            LOG.info("{}: {} listening to {}", player.getIpAddress(), player.getUsername(), FileUtil.getShortPath(file.getFile()));
-            mediaFileService.incrementPlayCount(file);
-
-            // Don't scrobble REST players (except Sonos)
-            if (player.getClientId() == null || player.getClientId().equals(SonosHelper.AIRSONIC_CLIENT_ID)) {
-                audioScrobblerService.register(file, player.getUsername(), false, null);
-            }
-
-            TranscodingService.Parameters parameters = transcodingService.getParameters(file, player, maxBitRate, preferredTargetFormat, videoTranscodingSettings);
-            currentInputStream = transcodingService.getTranscodedInputStream(parameters);
+            closeStream();
             currentFile = file;
-            status.setFile(currentFile.getFile());
+            fileStartListener.accept(currentFile);
+            currentStream = streamGenerator.apply(currentFile);
         }
     }
 
-    private void populateRandomPlaylist(PlayQueue playQueue) {
-        List<MediaFile> files = searchService.getRandomSongs(playQueue.getRandomSearchCriteria());
-        playQueue.addFiles(false, files);
-        LOG.info("Recreated random playlist with " + playQueue.size() + " songs.");
+    public void closeStream() throws IOException {
+        if (currentStream != null) {
+            currentStream.close();
+            currentStream = null;
+        }
+        if (currentFile != null) {
+            fileEndListener.accept(currentFile);
+            currentFile = null;
+        }
     }
 
     @Override
     public void close() throws IOException {
-        try {
-            if (currentInputStream != null) {
-                currentInputStream.close();
-            }
-        } finally {
-            // Don't scrobble REST players (except Sonos)
-            if (player.getClientId() == null || player.getClientId().equals(SonosHelper.AIRSONIC_CLIENT_ID)) {
-                audioScrobblerService.register(currentFile, player.getUsername(), true, null);
-            }
-            currentInputStream = null;
-            currentFile = null;
-        }
+        closeStream();
+        super.close();
     }
 }

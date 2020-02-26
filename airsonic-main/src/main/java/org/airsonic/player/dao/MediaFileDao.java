@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.dao;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.airsonic.player.domain.Genre;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
@@ -33,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -44,18 +47,18 @@ import java.util.*;
 public class MediaFileDao extends AbstractDao {
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileDao.class);
     private static final String INSERT_COLUMNS = "path, folder, type, format, title, album, artist, album_artist, disc_number, " +
-                                                "track_number, year, genre, bit_rate, variable_bit_rate, duration_seconds, file_size, width, height, cover_art_path, " +
+                                                "track_number, year, genre, bit_rate, variable_bit_rate, duration, file_size, width, height, cover_art_path, " +
                                                 "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, " +
-                                                "version, mb_release_id";
+                                                "version, mb_release_id, mb_recording_id";
 
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private static final String GENRE_COLUMNS = "name, song_count, album_count";
 
     public static final int VERSION = 4;
 
-    private final RowMapper<MediaFile> rowMapper = new MediaFileMapper();
-    private final RowMapper musicFileInfoRowMapper = new MusicFileInfoMapper();
-    private final RowMapper genreRowMapper = new GenreMapper();
+    private final MediaFileMapper rowMapper = new MediaFileMapper();
+    private final MusicFileInfoMapper musicFileInfoRowMapper = new MusicFileInfoMapper();
+    private final GenreMapper genreRowMapper = new GenreMapper();
 
     /**
      * Returns the media file for the given path.
@@ -148,7 +151,7 @@ public class MediaFileDao extends AbstractDao {
                      "genre=?," +
                      "bit_rate=?," +
                      "variable_bit_rate=?," +
-                     "duration_seconds=?," +
+                     "duration=?," +
                      "file_size=?," +
                      "width=?," +
                      "height=?," +
@@ -162,7 +165,8 @@ public class MediaFileDao extends AbstractDao {
                      "children_last_updated=?," +
                      "present=?, " +
                      "version=?, " +
-                     "mb_release_id=? " +
+                     "mb_release_id=?, " +
+                     "mb_recording_id=? " +
                      "where path=?";
 
         LOG.trace("Updating media file {}", Util.debugObject(file));
@@ -170,10 +174,10 @@ public class MediaFileDao extends AbstractDao {
         int n = update(sql,
                        file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
                        file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
-                       file.isVariableBitRate(), file.getDurationSeconds(), file.getFileSize(), file.getWidth(), file.getHeight(),
+                file.isVariableBitRate(), file.getDuration(), file.getFileSize(), file.getWidth(), file.getHeight(),
                        file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
                        file.getChanged(), file.getLastScanned(), file.getChildrenLastUpdated(), file.isPresent(), VERSION,
-                       file.getMusicBrainzReleaseId(), file.getPath());
+                       file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId(), file.getPath());
 
         if (n == 0) {
 
@@ -188,10 +192,10 @@ public class MediaFileDao extends AbstractDao {
             update("insert into media_file (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")",
                    file.getPath(), file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
                    file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
-                   file.isVariableBitRate(), file.getDurationSeconds(), file.getFileSize(), file.getWidth(), file.getHeight(),
+                   file.isVariableBitRate(), file.getDuration(), file.getFileSize(), file.getWidth(), file.getHeight(),
                    file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
                    file.getCreated(), file.getChanged(), file.getLastScanned(),
-                   file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getMusicBrainzReleaseId());
+                   file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId());
         }
 
         int id = queryForInt("select id from media_file where path=?", null, file.getPath());
@@ -203,7 +207,13 @@ public class MediaFileDao extends AbstractDao {
     }
 
     public void deleteMediaFile(String path) {
-        update("update media_file set present=false, children_last_updated=? where path=?", new Date(0L), path);
+        update("update media_file set present=false, children_last_updated=? where path=?", Instant.ofEpochMilli(1), path);
+    }
+
+    public void deleteMediaFiles(Collection<String> paths) {
+        if (!paths.isEmpty()) {
+            namedUpdate("update media_file set present=false, children_last_updated=:updatedate where path in (:paths)", ImmutableMap.of("updatedate", Instant.ofEpochMilli(1), "paths", paths));
+        }
     }
 
     public List<Genre> getGenres(boolean sortByAlbum) {
@@ -591,7 +601,9 @@ public class MediaFileDao extends AbstractDao {
 
         query += " order by rand()";
 
-        return namedQueryWithLimit(query, rowMapper, args, criteria.getCount());
+        query += " limit " + criteria.getCount();
+
+        return namedQuery(query, rowMapper, args);
     }
 
     public int getAlbumCount(final List<MusicFolder> musicFolders) {
@@ -634,32 +646,32 @@ public class MediaFileDao extends AbstractDao {
 
     public void starMediaFile(int id, String username) {
         unstarMediaFile(id, username);
-        update("insert into starred_media_file(media_file_id, username, created) values (?,?,?)", id, username, new Date());
+        update("insert into starred_media_file(media_file_id, username, created) values (?,?,?)", id, username, Instant.now());
     }
 
     public void unstarMediaFile(int id, String username) {
         update("delete from starred_media_file where media_file_id=? and username=?", id, username);
     }
 
-    public Date getMediaFileStarredDate(int id, String username) {
-        return queryForDate("select created from starred_media_file where media_file_id=? and username=?", null, id, username);
+    public Instant getMediaFileStarredDate(int id, String username) {
+        return queryForInstant("select created from starred_media_file where media_file_id=? and username=?", null, id, username);
     }
 
-    public void markPresent(String path, Date lastScanned) {
+    public void markPresent(String path, Instant lastScanned) {
         update("update media_file set present=?, last_scanned = ? where path=?", true, lastScanned, path);
     }
 
-    public void markNonPresent(Date lastScanned) {
-        int minId = queryForInt("select min(id) from media_file where last_scanned < ? and present", 0, lastScanned);
-        int maxId = queryForInt("select max(id) from media_file where last_scanned < ? and present", 0, lastScanned);
-
-        final int batchSize = 1000;
-        Date childrenLastUpdated = new Date(0L);  // Used to force a children rescan if file is later resurrected.
-        for (int id = minId; id <= maxId; id += batchSize) {
-            update("update media_file set present=false, children_last_updated=? where id between ? and ? and " +
-                            "last_scanned < ? and present",
-                   childrenLastUpdated, id, id + batchSize, lastScanned);
+    public void markPresent(Collection<String> paths, Instant lastScanned) {
+        if (!paths.isEmpty()) {
+            namedUpdate("update media_file set present=true, last_scanned = :lastScanned where path in (:paths)", ImmutableMap.of("lastScanned", lastScanned, "paths", paths));
         }
+    }
+
+    public void markNonPresent(Instant lastScanned) {
+        Instant childrenLastUpdated = Instant.ofEpochMilli(1);  // Used to force a children rescan if file is later resurrected.
+
+        update("update media_file set present=false, children_last_updated=? where last_scanned < ? and present",
+                childrenLastUpdated, lastScanned);
     }
 
     public List<Integer> getArtistExpungeCandidates() {
@@ -679,16 +691,11 @@ public class MediaFileDao extends AbstractDao {
     }
 
     public void expunge() {
-        int minId = queryForInt("select min(id) from media_file where not present", 0);
-        int maxId = queryForInt("select max(id) from media_file where not present", 0);
-
-        final int batchSize = 1000;
-        for (int id = minId; id <= maxId; id += batchSize) {
-            update("delete from media_file where id between ? and ? and not present", id, id + batchSize);
-        }
+        update("delete from media_file where not present");
     }
 
     private static class MediaFileMapper implements RowMapper<MediaFile> {
+        @Override
         public MediaFile mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new MediaFile(
                     rs.getInt(1),
@@ -706,36 +713,39 @@ public class MediaFileDao extends AbstractDao {
                     rs.getString(13),
                     rs.getInt(14) == 0 ? null : rs.getInt(14),
                     rs.getBoolean(15),
-                    rs.getInt(16) == 0 ? null : rs.getInt(16),
+                    rs.getDouble(16),
                     rs.getLong(17) == 0 ? null : rs.getLong(17),
                     rs.getInt(18) == 0 ? null : rs.getInt(18),
                     rs.getInt(19) == 0 ? null : rs.getInt(19),
                     rs.getString(20),
                     rs.getString(21),
                     rs.getInt(22),
-                    rs.getTimestamp(23),
+                    Optional.ofNullable(rs.getTimestamp(23)).map(x -> x.toInstant()).orElse(null),
                     rs.getString(24),
-                    rs.getTimestamp(25),
-                    rs.getTimestamp(26),
-                    rs.getTimestamp(27),
-                    rs.getTimestamp(28),
+                    Optional.ofNullable(rs.getTimestamp(25)).map(x -> x.toInstant()).orElse(null),
+                    Optional.ofNullable(rs.getTimestamp(26)).map(x -> x.toInstant()).orElse(null),
+                    Optional.ofNullable(rs.getTimestamp(27)).map(x -> x.toInstant()).orElse(null),
+                    Optional.ofNullable(rs.getTimestamp(28)).map(x -> x.toInstant()).orElse(null),
                     rs.getBoolean(29),
                     rs.getInt(30),
-                    rs.getString(31));
+                    rs.getString(31),
+                    rs.getString(32));
         }
     }
 
     private static class MusicFileInfoMapper implements RowMapper<MediaFile> {
+        @Override
         public MediaFile mapRow(ResultSet rs, int rowNum) throws SQLException {
             MediaFile file = new MediaFile();
             file.setPlayCount(rs.getInt(1));
-            file.setLastPlayed(rs.getTimestamp(2));
+            file.setLastPlayed(Optional.ofNullable(rs.getTimestamp(2)).map(x -> x.toInstant()).orElse(null));
             file.setComment(rs.getString(3));
             return file;
         }
     }
 
     private static class GenreMapper implements RowMapper<Genre> {
+        @Override
         public Genre mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Genre(rs.getString(1), rs.getInt(2), rs.getInt(3));
         }

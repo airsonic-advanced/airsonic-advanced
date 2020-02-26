@@ -3,30 +3,31 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value="/script/utils.js"/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
-    <script type="text/javascript" src="<c:url value="/dwr/engine.js"/>"></script>
-    <script type="text/javascript" src="<c:url value="/dwr/interface/starService.js"/>"></script>
-    <script type="text/javascript" src="<c:url value="/dwr/interface/playlistService.js"/>"></script>
+    <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" language="javascript">
 
         function toggleStar(mediaFileId, imageId) {
             if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
                 $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-                starService.unstar(mediaFileId);
+                top.StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
             }
             else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
                 $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-                starService.star(mediaFileId);
+                top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
             }
         }
 
         function onSavePlaylist() {
-            playlistService.createPlaylistForStarredSongs(function (playlistId) {
-                top.left.updatePlaylists();
-                top.left.showAllPlaylists();
-                top.main.location.href = "playlist.view?id=" + playlistId;
-                $().toastmessage("showSuccessToast", "<fmt:message key="playlist.toast.saveasplaylist"/>");
+            top.StompClient.send("/app/playlists/create/starred", "");
+        }
+
+        function init() {
+            top.StompClient.subscribe("starred.jsp", {
+                '/user/queue/playlists/create/starred': function(msg) {
+                    var playlistId = JSON.parse(msg.body);
+                    top.main.location.href = "playlist.view?id=" + playlistId;
+                    $().toastmessage("showSuccessToast", "<fmt:message key="playlist.toast.saveasplaylist"/>");
+                }
             });
         }
 
@@ -36,10 +37,10 @@
 
     </script>
 </head>
-<body class="mainframe bgcolor1">
+<body class="mainframe bgcolor1" onload="init()">
 
 <h1>
-    <img src="<spring:theme code="starredImage"/>" alt="">
+    <img src="<spring:theme code='starredImage'/>" alt="">
     <span style="vertical-align: middle"><fmt:message key="starred.title"/></span>
 </h1>
 

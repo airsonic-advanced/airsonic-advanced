@@ -23,6 +23,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Represents the version number of Airsonic.
  *
@@ -31,6 +35,12 @@ import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
  */
 public class Version implements Comparable<Version> {
     private final DefaultArtifactVersion internalVersion;
+    private String commit;
+    private Boolean preview;
+    private String url;
+    private Instant publishDate;
+    private Instant releaseCreateDate;
+    private List<Map<String,Object>> artifacts;
 
     /**
      * Creates a new version instance by parsing the given string.
@@ -38,6 +48,17 @@ public class Version implements Comparable<Version> {
      */
     public Version(String version) {
         this.internalVersion = new DefaultArtifactVersion(version);
+    }
+
+    public Version(String version, String commit, Boolean preview, String url,
+            Instant publishDate, Instant releaseCreateDate, List<Map<String, Object>> artifacts) {
+        this(version);
+        this.commit = commit;
+        this.preview = preview;
+        this.url = url;
+        this.publishDate = publishDate;
+        this.releaseCreateDate = releaseCreateDate;
+        this.artifacts = artifacts;
     }
 
     public int getMajor() {
@@ -75,6 +96,30 @@ public class Version implements Comparable<Version> {
      */
     public String toString() {
         return internalVersion.toString();
+    }
+
+    public String getCommit() {
+        return commit;
+    }
+
+    public Boolean getPreview() {
+        return preview;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public Instant getPublishDate() {
+        return publishDate;
+    }
+
+    public Instant getReleaseCreateDate() {
+        return releaseCreateDate;
+    }
+
+    public List<Map<String, Object>> getArtifacts() {
+        return artifacts;
     }
 
     /**

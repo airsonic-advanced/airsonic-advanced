@@ -26,6 +26,7 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.SearchCriteria;
 import org.airsonic.player.domain.SearchResult;
 import org.airsonic.player.service.SearchService;
+import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,9 +34,9 @@ import org.junit.rules.TemporaryFolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -55,8 +56,8 @@ public class IndexManagerTestCase extends AbstractAirsonicHomeTest {
     public List<MusicFolder> getMusicFolders() {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
-            File musicDir = new File(resolveBaseMediaPath.apply("Music"));
-            musicFolders.add(new MusicFolder(1, musicDir, "Music", true, new Date()));
+            Path musicDir = MusicFolderTestData.resolveMusicFolderPath();
+            musicFolders.add(new MusicFolder(1, musicDir, "Music", true, Instant.now()));
         }
         return musicFolders;
     }
@@ -151,7 +152,7 @@ public class IndexManagerTestCase extends AbstractAirsonicHomeTest {
         candidates = artistDao.getExpungeCandidates();
         assertEquals(0, candidates.size());
 
-        artistDao.markNonPresent(new Date());
+        artistDao.markNonPresent(Instant.now());
 
         candidates = artistDao.getExpungeCandidates();
         assertEquals(4, candidates.size());
@@ -164,7 +165,7 @@ public class IndexManagerTestCase extends AbstractAirsonicHomeTest {
         candidates = albumDao.getExpungeCandidates();
         assertEquals(0, candidates.size());
 
-        albumDao.markNonPresent(new Date());
+        albumDao.markNonPresent(Instant.now());
 
         candidates = albumDao.getExpungeCandidates();
         assertEquals(4, candidates.size());
@@ -172,9 +173,9 @@ public class IndexManagerTestCase extends AbstractAirsonicHomeTest {
         /* Does not scan, only expunges the index. */
         indexManager.startIndexing();
         indexManager.expunge();
-        indexManager.stopIndexing();
+        indexManager.stopIndexing(indexManager.getStatistics());
 
-        /* 
+        /*
          * Subsequent search results.
          * Results can also be confirmed with Luke.
          */

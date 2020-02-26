@@ -2,8 +2,8 @@ package org.airsonic.player.spring;
 
 import org.airsonic.player.service.SettingsService;
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
+import org.springframework.boot.context.logging.LoggingApplicationListener;
 import org.springframework.boot.logging.LogFile;
-import org.springframework.boot.logging.LoggingApplicationListener;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.MapPropertySource;
@@ -17,7 +17,7 @@ public class LoggingFileOverrideListener implements ApplicationListener<Applicat
     @Override
     public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
         PropertySource ps = new MapPropertySource("LogFileLocationPS",
-                Collections.singletonMap(LogFile.FILE_PROPERTY, SettingsService.getLogFile().getAbsolutePath()));
+                Collections.singletonMap(LogFile.FILE_PROPERTY, SettingsService.getLogFile().toAbsolutePath().toString()));
         event.getEnvironment().getPropertySources().addLast(ps);
     }
 

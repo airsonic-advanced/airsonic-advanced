@@ -4,20 +4,18 @@
 <head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <link rel="stylesheet" type="text/css" href="<c:url value="/style/videoPlayer.css"/>">
-    <script type="text/javascript" src="<c:url value="/dwr/engine.js"/>"></script>
-    <script type="text/javascript" src="<c:url value="/dwr/interface/starService.js"/>"></script>
-    <script type="text/javascript" src="<c:url value="/script/cast_sender-v1.js"/>"></script>
+    <link rel="stylesheet" type="text/css" href="<c:url value='/style/videoPlayer.css'/>">
+    <script type="text/javascript" src="<c:url value='/script/cast_sender-v1.js'/>"></script>
 
     <script type="text/javascript" language="javascript">
         function toggleStar(mediaFileId, imageId) {
-            if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
+            if ($(imageId).attr("src").indexOf("<spring:theme code='ratingOnImage'/>") != -1) {
                 $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-                starService.unstar(mediaFileId);
+                top.StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
             }
-            else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
-                $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-                starService.star(mediaFileId);
+            else if ($(imageId).attr("src").indexOf("<spring:theme code='ratingOffImage'/>") != -1) {
+                $(imageId).attr("src", "<spring:theme code='ratingOnImage'/>");
+                top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
             }
         }
         var model = {
@@ -31,7 +29,7 @@
           hide_download: ${model.user.downloadRole ? 1: 0}
         }
     </script>
-    <script type="text/javascript" src="<c:url value="/script/videoPlayerCast.js"/>"></script>
+    <script type="text/javascript" src="<c:url value='/script/videoPlayerCast.js'/>"></script>
 </head>
 
 <body class="mainframe bgcolor1" style="padding-bottom:0.5em">
@@ -76,7 +74,7 @@
 
 
 <h1 style="padding-top:1em;padding-bottom:0.5em;">
-    <img id="starImage" src="<spring:theme code="${not empty model.video.starredDate ? 'ratingOnImage' : 'ratingOffImage'}"/>"
+    <img id="starImage" src="<spring:theme code='${not empty model.video.starredDate ? \'ratingOnImage\' : \'ratingOffImage\'}'/>"
          onclick="toggleStar(${model.video.id}, '#starImage'); return false;" style="cursor:pointer" alt="">
     <span style="vertical-align:middle">${fn:escapeXml(model.video.title)}</span>
 </h1>

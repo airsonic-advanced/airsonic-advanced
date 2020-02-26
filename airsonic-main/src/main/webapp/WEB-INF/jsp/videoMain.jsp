@@ -23,7 +23,7 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value="/script/utils.js"/>"></script>
+    <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
     <script type="text/javascript">
         var image;
@@ -126,7 +126,7 @@
     </c:if>
 </table>
 <c:if test="${model.thereIsMore && fn:length(model.subDirs) gt 0}">
-    <input id="showAllButton" class="albumOverflowButton" type="button" value="<fmt:message key="main.showall"/>" onclick="showAllAlbums()">
+    <input id="showAllButton" class="albumOverflowButton" type="button" value="<fmt:message key='main.showall'/>" onclick="showAllAlbums()">
 </c:if>
 
 <div style="clear:both;height:1.5em"></div>
@@ -146,7 +146,7 @@
                 <div style="position:relative">
                     <div>
                         <a href="${videoUrl}"><img src="${coverArtUrl}" height="120" width="213" alt=""
-                                                   onmouseover="startPreview(this, ${child.id}, ${child.durationSeconds})"
+                                                   onmouseover="startPreview(this, ${child.id}, ${child.duration})"
                                                    onmouseout="stopPreview()"></a>
                     </div>
                     <div class="detail duration">${child.durationString}</div>

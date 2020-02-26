@@ -22,13 +22,13 @@ package org.airsonic.player.service;
 import org.airsonic.player.dao.RatingDao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
-import org.airsonic.player.util.FileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.util.ArrayList;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Provides services for user ratings.
@@ -54,15 +54,12 @@ public class RatingService {
      * @return The highest rated albums.
      */
     public List<MediaFile> getHighestRatedAlbums(int offset, int count, List<MusicFolder> musicFolders) {
-        List<String> highestRated = ratingDao.getHighestRatedAlbums(offset, count, musicFolders);
-        List<MediaFile> result = new ArrayList<MediaFile>();
-        for (String path : highestRated) {
-            File file = new File(path);
-            if (FileUtil.exists(file) && securityService.isReadAllowed(file)) {
-                result.add(mediaFileService.getMediaFile(path));
-            }
-        }
-        return result;
+        return ratingDao.getHighestRatedAlbums(offset, count, musicFolders)
+                .parallelStream()
+                .map(Paths::get)
+                .filter(file -> Files.exists(file) && securityService.isReadAllowed(file))
+                .map(mediaFileService::getMediaFile)
+                .collect(Collectors.toList());
     }
 
     /**

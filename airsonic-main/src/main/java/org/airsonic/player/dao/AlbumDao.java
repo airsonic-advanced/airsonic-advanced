@@ -22,14 +22,16 @@ package org.airsonic.player.dao;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
-import org.airsonic.player.util.FileUtil;
 import org.apache.commons.lang.ObjectUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -39,13 +41,13 @@ import java.util.*;
  */
 @Repository
 public class AlbumDao extends AbstractDao {
-    private static final String INSERT_COLUMNS = "path, name, artist, song_count, duration_seconds, cover_art_path, " +
+    private static final String INSERT_COLUMNS = "path, name, artist, song_count, duration, cover_art_path, " +
                                           "year, genre, play_count, last_played, comment, created, last_scanned, present, " +
                                           "folder_id, mb_release_id";
 
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
 
-    private final RowMapper rowMapper = new AlbumMapper();
+    private final AlbumMapper rowMapper = new AlbumMapper();
 
     public Album getAlbum(int id) {
         return queryOne("select " + QUERY_COLUMNS + " from album where id=?", rowMapper, id);
@@ -78,7 +80,7 @@ public class AlbumDao extends AbstractDao {
 
         // Look for album with the correct artist.
         for (Album candidate : candidates) {
-            if (ObjectUtils.equals(candidate.getArtist(), file.getArtist()) && FileUtil.exists(candidate.getPath())) {
+            if (ObjectUtils.equals(candidate.getArtist(), file.getArtist()) && Files.exists(Paths.get(candidate.getPath()))) {
                 return candidate;
             }
         }
@@ -117,7 +119,7 @@ public class AlbumDao extends AbstractDao {
         String sql = "update album set " +
                      "path=?," +
                      "song_count=?," +
-                     "duration_seconds=?," +
+                     "duration=?," +
                      "cover_art_path=?," +
                      "year=?," +
                      "genre=?," +
@@ -131,14 +133,14 @@ public class AlbumDao extends AbstractDao {
                      "mb_release_id=? " +
                      "where artist=? and name=?";
 
-        int n = update(sql, album.getPath(), album.getSongCount(), album.getDurationSeconds(), album.getCoverArtPath(), album.getYear(),
+        int n = update(sql, album.getPath(), album.getSongCount(), album.getDuration(), album.getCoverArtPath(), album.getYear(),
                        album.getGenre(), album.getPlayCount(), album.getLastPlayed(), album.getComment(), album.getCreated(),
                        album.getLastScanned(), album.isPresent(), album.getFolderId(), album.getMusicBrainzReleaseId(), album.getArtist(), album.getName());
 
         if (n == 0) {
 
             update("insert into album (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")", album.getPath(),
-                   album.getName(), album.getArtist(), album.getSongCount(), album.getDurationSeconds(),
+                   album.getName(), album.getArtist(), album.getSongCount(), album.getDuration(),
                    album.getCoverArtPath(), album.getYear(), album.getGenre(), album.getPlayCount(), album.getLastPlayed(),
                    album.getComment(), album.getCreated(), album.getLastScanned(), album.isPresent(), album.getFolderId(), album.getMusicBrainzReleaseId());
         }
@@ -189,8 +191,7 @@ public class AlbumDao extends AbstractDao {
         Map<String, Object> args = new HashMap<String, Object>();
         args.put("folders", MusicFolder.toIdList(musicFolders));
 
-        return getNamedParameterJdbcTemplate().queryForObject("select count(*) from album where present and folder_id in (:folders)", args, Integer.class);
-
+        return namedQueryForInt("select count(*) from album where present and folder_id in (:folders)", 0, args);
     }
 
     /**
@@ -333,14 +334,8 @@ public class AlbumDao extends AbstractDao {
         }
     }
 
-    public void markNonPresent(Date lastScanned) {
-        int minId = queryForInt("select min(id) from album where last_scanned < ? and present", 0, lastScanned);
-        int maxId = queryForInt("select max(id) from album where last_scanned < ? and present", 0, lastScanned);
-
-        final int batchSize = 1000;
-        for (int id = minId; id <= maxId; id += batchSize) {
-            update("update album set present=false where id between ? and ? and last_scanned < ? and present", id, id + batchSize, lastScanned);
-        }
+    public void markNonPresent(Instant lastScanned) {
+        update("update album set present=false where last_scanned < ? and present", lastScanned);
     }
 
     public List<Integer> getExpungeCandidates() {
@@ -348,29 +343,24 @@ public class AlbumDao extends AbstractDao {
     }
 
     public void expunge() {
-        int minId = queryForInt("select min(id) from album where not present", 0);
-        int maxId = queryForInt("select max(id) from album where not present", 0);
-
-        final int batchSize = 1000;
-        for (int id = minId; id <= maxId; id += batchSize) {
-            update("delete from album where id between ? and ? and not present", id, id + batchSize);
-        }
+        update("delete from album where not present");
     }
 
     public void starAlbum(int albumId, String username) {
         unstarAlbum(albumId, username);
-        update("insert into starred_album(album_id, username, created) values (?,?,?)", albumId, username, new Date());
+        update("insert into starred_album(album_id, username, created) values (?,?,?)", albumId, username, Instant.now());
     }
 
     public void unstarAlbum(int albumId, String username) {
         update("delete from starred_album where album_id=? and username=?", albumId, username);
     }
 
-    public Date getAlbumStarredDate(int albumId, String username) {
-        return queryForDate("select created from starred_album where album_id=? and username=?", null, albumId, username);
+    public Instant getAlbumStarredDate(int albumId, String username) {
+        return queryForInstant("select created from starred_album where album_id=? and username=?", null, albumId, username);
     }
 
     private static class AlbumMapper implements RowMapper<Album> {
+        @Override
         public Album mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Album(
                     rs.getInt(1),
@@ -378,15 +368,15 @@ public class AlbumDao extends AbstractDao {
                     rs.getString(3),
                     rs.getString(4),
                     rs.getInt(5),
-                    rs.getInt(6),
+                    rs.getDouble(6),
                     rs.getString(7),
                     rs.getInt(8) == 0 ? null : rs.getInt(8),
                     rs.getString(9),
                     rs.getInt(10),
-                    rs.getTimestamp(11),
+                    Optional.ofNullable(rs.getTimestamp(11)).map(x -> x.toInstant()).orElse(null),
                     rs.getString(12),
-                    rs.getTimestamp(13),
-                    rs.getTimestamp(14),
+                    Optional.ofNullable(rs.getTimestamp(13)).map(x -> x.toInstant()).orElse(null),
+                    Optional.ofNullable(rs.getTimestamp(14)).map(x -> x.toInstant()).orElse(null),
                     rs.getBoolean(15),
                     rs.getInt(16),
                     rs.getString(17));

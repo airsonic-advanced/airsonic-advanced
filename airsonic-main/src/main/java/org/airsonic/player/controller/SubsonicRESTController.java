@@ -19,9 +19,10 @@
  */
 package org.airsonic.player.controller;
 
+import com.google.common.primitives.Ints;
+
 import org.airsonic.player.ajax.LyricsInfo;
-import org.airsonic.player.ajax.LyricsService;
-import org.airsonic.player.ajax.PlayQueueService;
+import org.airsonic.player.ajax.LyricsWSController;
 import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.ArtistDao;
@@ -30,6 +31,8 @@ import org.airsonic.player.dao.PlayQueueDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.Bookmark;
 import org.airsonic.player.domain.PlayQueue;
+import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.search.IndexType;
@@ -40,13 +43,17 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.ServletRequestUtils;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.subsonic.restapi.*;
 import org.subsonic.restapi.PodcastStatus;
 
@@ -55,7 +62,12 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.datatype.XMLGregorianCalendar;
 
+import java.security.Principal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Stream;
 
 import static org.airsonic.player.security.RESTRequestParameterProcessingFilter.decrypt;
 import static org.springframework.web.bind.ServletRequestUtils.*;
@@ -110,7 +122,7 @@ public class SubsonicRESTController {
     @Autowired
     private PlaylistService playlistService;
     @Autowired
-    private LyricsService lyricsService;
+    private LyricsWSController lyricsWSController;
     @Autowired
     private PlayQueueService playQueueService;
     @Autowired
@@ -167,9 +179,7 @@ public class SubsonicRESTController {
 
         license.setEmail("airsonic@github.com");
         license.setValid(true);
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.YEAR, 100);
-        XMLGregorianCalendar farFuture = jaxbWriter.convertCalendar(calendar);
+        XMLGregorianCalendar farFuture = jaxbWriter.convertDate(Instant.now().plus(ChronoUnit.YEARS.getDuration().multipliedBy(100)));
         license.setLicenseExpires(farFuture);
         license.setTrialExpires(farFuture);
 
@@ -239,7 +249,7 @@ public class SubsonicRESTController {
             for (MusicIndex.SortableArtistWithMediaFiles artist : entry.getValue()) {
                 for (MediaFile mediaFile : artist.getMediaFiles()) {
                     if (mediaFile.isDirectory()) {
-                        Date starredDate = mediaFileDao.getMediaFileStarredDate(mediaFile.getId(), username);
+                        Instant starredDate = mediaFileDao.getMediaFileStarredDate(mediaFile.getId(), username);
                         org.subsonic.restapi.Artist a = new org.subsonic.restapi.Artist();
                         index.getArtist().add(a);
                         a.setId(String.valueOf(mediaFile.getId()));
@@ -496,7 +506,7 @@ public class SubsonicRESTController {
         org.subsonic.restapi.Artist result = new org.subsonic.restapi.Artist();
         result.setId(String.valueOf(artist.getId()));
         result.setName(artist.getArtist());
-        Date starred = mediaFileDao.getMediaFileStarredDate(artist.getId(), username);
+        Instant starred = mediaFileDao.getMediaFileStarredDate(artist.getId(), username);
         result.setStarred(jaxbWriter.convertDate(starred));
         return result;
     }
@@ -538,7 +548,7 @@ public class SubsonicRESTController {
             jaxbAlbum.setCoverArt(CoverArtController.ALBUM_COVERART_PREFIX + album.getId());
         }
         jaxbAlbum.setSongCount(album.getSongCount());
-        jaxbAlbum.setDuration(album.getDurationSeconds());
+        jaxbAlbum.setDuration((int) Math.round(album.getDuration()));
         jaxbAlbum.setCreated(jaxbWriter.convertDate(album.getCreated()));
         jaxbAlbum.setStarred(jaxbWriter.convertDate(albumDao.getAlbumStarredDate(album.getId(), username)));
         jaxbAlbum.setYear(album.getYear());
@@ -553,7 +563,7 @@ public class SubsonicRESTController {
         jaxbPlaylist.setOwner(playlist.getUsername());
         jaxbPlaylist.setPublic(playlist.isShared());
         jaxbPlaylist.setSongCount(playlist.getFileCount());
-        jaxbPlaylist.setDuration(playlist.getDurationSeconds());
+        jaxbPlaylist.setDuration((int) Math.round(playlist.getDuration()));
         jaxbPlaylist.setCreated(jaxbWriter.convertDate(playlist.getCreated()));
         jaxbPlaylist.setChanged(jaxbWriter.convertDate(playlist.getChanged()));
         jaxbPlaylist.setCoverArt(CoverArtController.PLAYLIST_COVERART_PREFIX + playlist.getId());
@@ -848,40 +858,37 @@ public class SubsonicRESTController {
 
         switch (action) {
             case "start":
-                player.getPlayQueue().setStatus(PlayQueue.Status.PLAYING);
-                jukeboxService.start(player);
+                playQueueService.start(player);
                 break;
             case "stop":
-                player.getPlayQueue().setStatus(PlayQueue.Status.STOPPED);
-                jukeboxService.stop(player);
+                playQueueService.stop(player);
                 break;
             case "skip":
                 int index = getRequiredIntParameter(request, "index");
-                int offset = getIntParameter(request, "offset", 0);
-                player.getPlayQueue().setIndex(index);
-                jukeboxService.skip(player,index,offset);
+                long offset = getLongParameter(request, "offset", 0) * 1000;
+                playQueueService.skip(player, index, offset);
                 break;
             case "add":
                 int[] ids = getIntParameters(request, "id");
-                playQueueService.addMediaFilesToPlayQueue(player.getPlayQueue(),ids,null,true);
+                playQueueService.add(player, Ints.asList(ids), null, true, true);
                 break;
             case "set":
                 ids = getIntParameters(request, "id");
-                playQueueService.resetPlayQueue(player.getPlayQueue(),ids,true);
+                playQueueService.reset(player, Ints.asList(ids), true);
                 break;
             case "clear":
-                player.getPlayQueue().clear();
+                playQueueService.clear(player);
                 break;
             case "remove":
                 index = getRequiredIntParameter(request, "index");
-                player.getPlayQueue().removeFileAt(index);
+                playQueueService.remove(player, Arrays.asList(index));
                 break;
             case "shuffle":
-                player.getPlayQueue().shuffle();
+                playQueueService.shuffle(player);
                 break;
             case "setGain":
                 float gain = getRequiredFloatParameter(request, "gain");
-                jukeboxService.setGain(player,gain);
+                playQueueService.setJukeboxGain(player, gain);
                 break;
             case "get":
                 returnPlaylist = true;
@@ -954,9 +961,10 @@ public class SubsonicRESTController {
             }
         } else {
             playlist = new org.airsonic.player.domain.Playlist();
+            Instant now = Instant.now();
             playlist.setName(name);
-            playlist.setCreated(new Date());
-            playlist.setChanged(new Date());
+            playlist.setCreated(now);
+            playlist.setChanged(now);
             playlist.setShared(false);
             playlist.setUsername(username);
             playlistService.createPlaylist(playlist);
@@ -989,6 +997,9 @@ public class SubsonicRESTController {
             error(request, response, ErrorCode.NOT_AUTHORIZED, "Permission denied for playlist " + id);
             return;
         }
+
+        // create new object to not mutate the cache
+        playlist = new org.airsonic.player.domain.Playlist(playlist);
 
         String name = request.getParameter("name");
         if (name != null) {
@@ -1205,30 +1216,17 @@ public class SubsonicRESTController {
         request = wrapRequest(request);
         NowPlaying result = new NowPlaying();
 
-        for (PlayStatus status : statusService.getPlayStatuses()) {
-
-            Player player = status.getPlayer();
-            MediaFile mediaFile = status.getMediaFile();
-            String username = player.getUsername();
-            if (username == null) {
-                continue;
-            }
-
-            UserSettings userSettings = settingsService.getUserSettings(username);
-            if (!userSettings.isNowPlayingAllowed()) {
-                continue;
-            }
-
-            long minutesAgo = status.getMinutesAgo();
-            if (minutesAgo < 60) {
+        Stream.concat(statusService.getActivePlays().parallelStream(),
+                statusService.getInactivePlays().parallelStream())
+            .map(info -> info.fromPlayStatus())
+            .forEach(s -> {
                 NowPlayingEntry entry = new NowPlayingEntry();
-                entry.setUsername(username);
-                entry.setPlayerId(player.getId());
-                entry.setPlayerName(player.getName());
-                entry.setMinutesAgo((int) minutesAgo);
-                result.getEntry().add(createJaxbChild(entry, player, mediaFile, username));
-            }
-        }
+                entry.setUsername(s.getPlayer().getUsername());
+                entry.setPlayerId(s.getPlayer().getId());
+                entry.setPlayerName(s.getPlayer().getName());
+                entry.setMinutesAgo((int) s.getMinutesAgo());
+                result.getEntry().add(createJaxbChild(entry, s.getPlayer(), s.getMediaFile(), entry.getUsername()));
+            });
 
         Response res = createResponse();
         res.setNowPlaying(result);
@@ -1263,7 +1261,7 @@ public class SubsonicRESTController {
         child.setPlayCount((long) mediaFile.getPlayCount());
 
         if (mediaFile.isFile()) {
-            child.setDuration(mediaFile.getDurationSeconds());
+            child.setDuration((int) Math.round(mediaFile.getDuration()));
             child.setBitRate(mediaFile.getBitRate());
             child.setTrack(mediaFile.getTrackNumber());
             child.setDiscNumber(mediaFile.getDiscNumber());
@@ -1333,7 +1331,7 @@ public class SubsonicRESTController {
 
         List<org.airsonic.player.domain.MusicFolder> musicFolders = settingsService.getAllMusicFolders(false, true);
         for (org.airsonic.player.domain.MusicFolder musicFolder : musicFolders) {
-            String folderPath = musicFolder.getPath().getPath();
+            String folderPath = musicFolder.getPath().toString();
             folderPath = folderPath.replace('\\', '/');
             String folderPathLower = folderPath.toLowerCase();
             if (!folderPathLower.endsWith("/")) {
@@ -1350,39 +1348,75 @@ public class SubsonicRESTController {
     }
 
     @RequestMapping("/download")
-    public void download(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
+    public ResponseEntity<Resource> download(Principal p,
+            @RequestParam(required = false) String id,
+            @RequestParam(required = false) Integer playlist,
+            @RequestParam(required = false) Integer player,
+            @RequestParam(required = false, name = "i") List<Integer> indices,
+            ServletWebRequest swr) throws Exception {
+        HttpServletRequest request = wrapRequest(swr.getRequest());
+        final Integer playerId = Optional.ofNullable(request.getParameter("player")).map(Integer::valueOf).orElse(null);
+        Optional<Integer> idInt = Optional.ofNullable(id).map(this::mapId).filter(StringUtils::isNumeric).map(Integer::valueOf);
+
+        User user = securityService.getUserByName(p.getName());
         if (!user.isDownloadRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to download files.");
-            return;
+            throw new APIException(ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to download files.");
+        }
+        return downloadController.handleRequest(p, idInt, playlist, playerId, indices,
+                new ServletWebRequest(request, swr.getResponse()));
+    }
+
+    public static class APIException extends Exception {
+        private String message;
+        private ErrorCode error;
+
+        public APIException(ErrorCode error, String message) {
+            this.message = message;
+            this.error = error;
         }
 
-        long ifModifiedSince = request.getDateHeader("If-Modified-Since");
-        long lastModified = downloadController.getLastModified(request);
-
-        if (ifModifiedSince != -1 && lastModified != -1 && lastModified <= ifModifiedSince) {
-            response.sendError(HttpServletResponse.SC_NOT_MODIFIED);
-            return;
+        public APIException(ErrorCode error) {
+            this(error, error.getMessage());
         }
 
-        if (lastModified != -1) {
-            response.setDateHeader("Last-Modified", lastModified);
+        @Override
+        public String getMessage() {
+            return message;
         }
 
-        downloadController.handleRequest(request, response);
+        public ErrorCode getError() {
+            return error;
+        }
+    }
+
+    @ExceptionHandler(APIException.class)
+    public ResponseEntity<String> apiException(ServletWebRequest swr, APIException exception) {
+        Entry<String, String> exceptionResponse = jaxbWriter.serializeForType(swr.getRequest(),
+                jaxbWriter.createErrorResponse(exception));
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.parseMediaType(exceptionResponse.getKey()))
+                .body(exceptionResponse.getValue());
     }
 
     @RequestMapping("/stream")
-    public void stream(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
+    public ResponseEntity<Resource> stream(Authentication authentication,
+            @RequestParam(required = false) Integer playlist,
+            @RequestParam(required = false) String format,
+            @RequestParam(required = false) String suffix,
+            @RequestParam Optional<Integer> maxBitRate,
+            @RequestParam Optional<Integer> id,
+            @RequestParam Optional<String> path,
+            @RequestParam(defaultValue = "false") boolean hls,
+            @RequestParam(required = false) Double offsetSeconds,
+            ServletWebRequest swr) throws Exception {
+        HttpServletRequest request = wrapRequest(swr.getRequest());
+        User user = securityService.getUserByName(authentication.getName());
         if (!user.isStreamRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to play files.");
-            return;
+            throw new APIException(ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to play files.");
         }
 
-        streamController.handleRequest(request, response);
+        return streamController.handleRequest(authentication, playlist, format, suffix, maxBitRate, id, path, hls,
+                offsetSeconds, new ServletWebRequest(request, swr.getResponse()));
     }
 
     @RequestMapping("/hls")
@@ -1427,13 +1461,11 @@ public class SubsonicRESTController {
                 LOG.warn("File to scrobble not found: " + id);
                 continue;
             }
-            Date time = times.length == 0 ? null : new Date(times[i]);
+            Instant time = times.length == 0 ? null : Instant.ofEpochMilli(times[i]);
 
-            statusService.addRemotePlay(new PlayStatus(file, player, time == null ? new Date() : time));
+            statusService.addRemotePlay(new PlayStatus(UUID.randomUUID(), file, player, time == null ? Instant.now() : time));
             mediaFileService.incrementPlayCount(file);
-            if (settingsService.getUserSettings(player.getUsername()).isLastFmEnabled()) {
-                audioScrobblerService.register(file, player.getUsername(), submission, time);
-            }
+            audioScrobblerService.register(file, player.getUsername(), submission, time);
         }
 
         writeEmptyResponse(request, response);
@@ -1738,7 +1770,7 @@ public class SubsonicRESTController {
         int mediaFileId = getRequiredIntParameter(request, "id");
         long position = getRequiredLongParameter(request, "position");
         String comment = request.getParameter("comment");
-        Date now = new Date();
+        Instant now = Instant.now();
 
         Bookmark bookmark = new Bookmark(0, mediaFileId, position, username, comment, now, now);
         bookmarkService.createOrUpdateBookmark(bookmark);
@@ -1794,7 +1826,6 @@ public class SubsonicRESTController {
         List<Integer> mediaFileIds = Util.toIntegerList(getIntParameters(request, "id"));
         Integer current = getIntParameter(request, "current");
         Long position = getLongParameter(request, "position");
-        Date changed = new Date();
         String changedBy = getRequiredStringParameter(request, "c");
 
         if (!mediaFileIds.contains(current)) {
@@ -1802,7 +1833,7 @@ public class SubsonicRESTController {
             return;
         }
 
-        SavedPlayQueue playQueue = new SavedPlayQueue(null, username, mediaFileIds, current, position, changed, changedBy);
+        SavedPlayQueue playQueue = new SavedPlayQueue(null, username, mediaFileIds, current, position, Instant.now(), changedBy);
         playQueueDao.savePlayQueue(playQueue);
         writeEmptyResponse(request, response);
     }
@@ -1850,7 +1881,7 @@ public class SubsonicRESTController {
         share.setDescription(request.getParameter("description"));
         long expires = getLongParameter(request, "expires", 0L);
         if (expires != 0) {
-            share.setExpires(new Date(expires));
+            share.setExpires(Instant.ofEpochMilli(expires));
         }
         shareService.updateShare(share);
 
@@ -1909,7 +1940,7 @@ public class SubsonicRESTController {
         String expiresString = request.getParameter("expires");
         if (expiresString != null) {
             long expires = Long.parseLong(expiresString);
-            share.setExpires(expires == 0L ? null : new Date(expires));
+            share.setExpires(expires == 0L ? null : Instant.ofEpochMilli(expires));
         }
         shareService.updateShare(share);
         writeEmptyResponse(request, response);
@@ -1958,8 +1989,8 @@ public class SubsonicRESTController {
         }
 
         org.airsonic.player.domain.User user = securityService.getUserByName(username);
-        user.setPassword(password);
-        securityService.updateUser(user);
+        UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), password, securityService.getPreferredPasswordEncoder(true), App.AIRSONIC, "Created via Subsonic REST API");
+        securityService.createCredential(uc);
 
         writeEmptyResponse(request, response);
     }
@@ -2115,7 +2146,7 @@ public class SubsonicRESTController {
         command.setShareRole(getBooleanParameter(request, "shareRole", u.isShareRole()));
 
         int maxBitRate = getIntParameter(request, "maxBitRate", s.getTranscodeScheme().getMaxBitRate());
-        command.setTranscodeSchemeName(TranscodeScheme.fromMaxBitRate(maxBitRate).name());
+        command.setTranscodeSchemeName(Optional.ofNullable(TranscodeScheme.fromMaxBitRate(maxBitRate)).map(TranscodeScheme::name).orElse(null));
 
         if (hasParameter(request, "password")) {
             command.setPassword(decrypt(getRequiredStringParameter(request, "password")));
@@ -2171,7 +2202,7 @@ public class SubsonicRESTController {
         request = wrapRequest(request);
         String artist = request.getParameter("artist");
         String title = request.getParameter("title");
-        LyricsInfo lyrics = lyricsService.getLyrics(artist, title);
+        LyricsInfo lyrics = lyricsWSController.getLyrics(artist, title);
 
         Lyrics result = new Lyrics();
         result.setArtist(lyrics.getArtist());
@@ -2244,8 +2275,7 @@ public class SubsonicRESTController {
 
     private AlbumInfo getAlbumInfoInternal(AlbumNotes albumNotes) {
         AlbumInfo result = new AlbumInfo();
-        if (albumNotes != null)
-        {
+        if (albumNotes != null) {
             result.setNotes(albumNotes.getNotes());
             result.setMusicBrainzId(albumNotes.getMusicBrainzId());
             result.setLastFmUrl(albumNotes.getLastFmUrl());
@@ -2290,13 +2320,13 @@ public class SubsonicRESTController {
     }
 
     private HttpServletRequest wrapRequest(final HttpServletRequest request, boolean jukebox) {
-        final String playerId = createPlayerIfNecessary(request, jukebox);
+        final Integer playerId = createPlayerIfNecessary(request, jukebox);
         return new HttpServletRequestWrapper(request) {
             @Override
             public String getParameter(String name) {
                 // Returns the correct player to be used in PlayerService.getPlayer()
                 if ("player".equals(name)) {
-                    return playerId;
+                    return playerId == null ? null : String.valueOf(playerId);
                 }
 
                 // Support old style ID parameters.
@@ -2336,7 +2366,7 @@ public class SubsonicRESTController {
         jaxbWriter.writeErrorResponse(request, response, code, message);
     }
 
-    private String createPlayerIfNecessary(HttpServletRequest request, boolean jukebox) {
+    private Integer createPlayerIfNecessary(HttpServletRequest request, boolean jukebox) {
         String username = request.getRemoteUser();
         String clientId = request.getParameter("c");
         if (jukebox) {
@@ -2358,7 +2388,7 @@ public class SubsonicRESTController {
         }
 
         // Return the player ID.
-        return !players.isEmpty() ? String.valueOf(players.get(0).getId()) : null;
+        return !players.isEmpty() ? players.get(0).getId() : null;
     }
 
     public enum ErrorCode {

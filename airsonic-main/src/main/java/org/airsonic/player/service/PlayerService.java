@@ -22,11 +22,10 @@ package org.airsonic.player.service;
 import org.airsonic.player.dao.PlayerDao;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.Transcoding;
-import org.airsonic.player.domain.TransferStatus;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
@@ -37,8 +36,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -68,13 +67,14 @@ public class PlayerService {
         playerDao.deleteOldPlayers(60);
     }
 
-    /**
-     * Equivalent to <code>getPlayer(request, response, true)</code> .
-     */
     public Player getPlayer(HttpServletRequest request, HttpServletResponse response) throws Exception {
         return getPlayer(request, response, true, false);
     }
 
+    public Player getPlayer(HttpServletRequest request, HttpServletResponse response, boolean remoteControlEnabled,
+            boolean isStreamRequest) throws Exception {
+        return getPlayer(request, response, null, remoteControlEnabled, isStreamRequest);
+    }
     /**
      * Returns the player associated with the given HTTP request.  If no such player exists, a new
      * one is created.
@@ -86,14 +86,18 @@ public class PlayerService {
      * @return The player associated with the given HTTP request.
      */
     public synchronized Player getPlayer(HttpServletRequest request, HttpServletResponse response,
-                                         boolean remoteControlEnabled, boolean isStreamRequest) throws Exception {
+            Integer playerId, boolean remoteControlEnabled, boolean isStreamRequest) throws Exception {
+
+        Player player = getPlayerById(playerId);
 
         // Find by 'player' request parameter.
-        Player player = getPlayerById(ServletRequestUtils.getIntParameter(request, "player"));
+        if (player == null) {
+            player = getPlayerById(ServletRequestUtils.getIntParameter(request, "player"));
+        }
 
         // Find in session context.
         if (player == null && remoteControlEnabled) {
-            Integer playerId = (Integer) request.getSession().getAttribute("player");
+            playerId = (Integer) request.getSession().getAttribute("player");
             if (playerId != null) {
                 player = getPlayerById(playerId);
             }
@@ -130,15 +134,15 @@ public class PlayerService {
             player.setUsername(username);
             isUpdate = true;
         }
-        if (player.getIpAddress() == null || isStreamRequest ||
-            (!isPlayerConnected(player) && player.isDynamicIp() && !request.getRemoteAddr().equals(player.getIpAddress()))) {
+        if (!StringUtils.equals(request.getRemoteAddr(), player.getIpAddress()) &&
+                (player.getIpAddress() == null || isStreamRequest || (!isPlayerConnected(player) && player.isDynamicIp()))) {
             player.setIpAddress(request.getRemoteAddr());
             isUpdate = true;
         }
         String userAgent = request.getHeader("user-agent");
         if (isStreamRequest) {
             player.setType(userAgent);
-            player.setLastSeen(new Date());
+            player.setLastSeen(Instant.now());
             isUpdate = true;
         }
 
@@ -161,7 +165,7 @@ public class PlayerService {
         }
 
         // Save player in session context.
-        if (remoteControlEnabled) {
+        if (remoteControlEnabled && request.getSession() != null) {
             request.getSession().setAttribute("player", player.getId());
         }
 
@@ -198,12 +202,7 @@ public class PlayerService {
      * @return Whether the player is connected.
      */
     private boolean isPlayerConnected(Player player) {
-        for (TransferStatus status : statusService.getStreamStatusesForPlayer(player)) {
-            if (status.isActive()) {
-                return true;
-            }
-        }
-        return false;
+        return !statusService.getStreamStatusesForPlayer(player).isEmpty();
     }
 
     /**
@@ -309,7 +308,7 @@ public class PlayerService {
         playerDao.createPlayer(player);
 
         List<Transcoding> transcodings = transcodingService.getAllTranscodings();
-        List<Transcoding> defaultActiveTranscodings = new ArrayList<Transcoding>();
+        List<Transcoding> defaultActiveTranscodings = new ArrayList<>(transcodings.size());
         for (Transcoding transcoding : transcodings) {
             if (transcoding.isDefaultActive()) {
                 defaultActiveTranscodings.add(transcoding);
@@ -328,9 +327,10 @@ public class PlayerService {
         // Create guest user if necessary.
         User user = securityService.getUserByName(User.USERNAME_GUEST);
         if (user == null) {
-            user = new User(User.USERNAME_GUEST, RandomStringUtils.randomAlphanumeric(30), null);
+            user = new User(User.USERNAME_GUEST, null);
             user.setStreamRole(true);
-            securityService.createUser(user);
+            securityService.createUser(user, RandomStringUtils.randomAlphanumeric(30),
+                    "Autogenerated for " + User.USERNAME_GUEST + " user");
         }
 
         // Look for existing player.

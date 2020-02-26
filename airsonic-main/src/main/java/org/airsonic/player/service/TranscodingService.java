@@ -19,15 +19,14 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.io.MoreFiles;
+
 import org.airsonic.player.controller.VideoPlayerController;
 import org.airsonic.player.dao.TranscodingDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.io.TranscodeInputStream;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,13 +34,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Provides services for transcoding media. Transcoding is the process of
@@ -119,13 +122,11 @@ public class TranscodingService {
 
         // Activate this transcoding for all players?
         if (transcoding.isDefaultActive()) {
-            for (Player player : playerService.getAllPlayers()) {
-                if (player != null) {
-                    List<Transcoding> transcodings = getTranscodingsForPlayer(player);
-                    transcodings.add(transcoding);
-                    setTranscodingsForPlayer(player, transcodings);
-                }
-            }
+            playerService.getAllPlayers().parallelStream().filter(Objects::nonNull).forEach(player -> {
+                List<Transcoding> transcodings = getTranscodingsForPlayer(player);
+                transcodings.add(transcoding);
+                setTranscodingsForPlayer(player, transcodings);
+            });
         }
     }
 
@@ -216,6 +217,8 @@ public class TranscodingService {
         }
 
         parameters.setMaxBitRate(maxBitRate);
+        parameters.setExpectedLength(getExpectedLength(parameters));
+        parameters.setRangeAllowed(isRangeAllowed(parameters));
         return parameters;
     }
 
@@ -246,12 +249,12 @@ public class TranscodingService {
             }
 
         } catch (IOException x) {
-            LOG.warn("Transcoder failed: {}. Using original: " + parameters.getMediaFile().getFile().getAbsolutePath(), x.toString());
+            LOG.warn("Transcoder failed: {}. Using original: " + parameters.getMediaFile().getFile().toAbsolutePath(), x.toString());
         } catch (Exception x) {
-            LOG.warn("Transcoder failed. Using original: " + parameters.getMediaFile().getFile().getAbsolutePath(), x);
+            LOG.warn("Transcoder failed. Using original: " + parameters.getMediaFile().getFile().toAbsolutePath(), x);
         }
 
-        return new FileInputStream(parameters.getMediaFile().getFile());
+        return new BufferedInputStream(Files.newInputStream(parameters.getMediaFile().getFile()));
     }
 
 
@@ -337,9 +340,9 @@ public class TranscodingService {
         }
 
         List<String> result = new LinkedList<String>(Arrays.asList(StringUtil.split(command)));
-        result.set(0, getTranscodeDirectory().getPath() + File.separatorChar + result.get(0));
+        result.set(0, getTranscodeDirectory().resolve(result.get(0)).toString());
 
-        File tmpFile = null;
+        Path tmpFile = null;
 
         for (int i = 1; i < result.size(); i++) {
             String cmd = result.get(i);
@@ -371,15 +374,15 @@ public class TranscodingService {
 
                 // Work-around for filename character encoding problem on Windows.
                 // Create temporary file, and feed this to the transcoder.
-                String path = mediaFile.getFile().getAbsolutePath();
-                if (Util.isWindows() && !mediaFile.isVideo() && !StringUtils.isAsciiPrintable(path)) {
-                    tmpFile = File.createTempFile("airsonic", "." + FilenameUtils.getExtension(path));
-                    tmpFile.deleteOnExit();
-                    FileUtils.copyFile(new File(path), tmpFile);
+                Path path = mediaFile.getFile().toAbsolutePath();
+                if (Util.isWindows() && !mediaFile.isVideo() && !StringUtils.isAsciiPrintable(path.toString())) {
+                    tmpFile = Files.createTempFile("airsonic", "." + MoreFiles.getFileExtension(path));
+                    tmpFile.toFile().deleteOnExit();
+                    Files.copy(path, tmpFile, StandardCopyOption.REPLACE_EXISTING);
                     LOG.debug("Created tmp file: " + tmpFile);
-                    cmd = cmd.replace("%s", tmpFile.getPath());
+                    cmd = cmd.replace("%s", tmpFile.toString());
                 } else {
-                    cmd = cmd.replace("%s", path);
+                    cmd = cmd.replace("%s", path.toString());
                 }
             }
 
@@ -482,22 +485,75 @@ public class TranscodingService {
             return true;
         }
         String executable = StringUtil.split(step)[0];
-        PrefixFileFilter filter = new PrefixFileFilter(executable);
-        String[] matches = getTranscodeDirectory().list(filter);
-        return matches != null && matches.length > 0;
+        try (Stream<Path> files = Files.list(getTranscodeDirectory())) {
+            return files.anyMatch(p -> p.getFileName().toString().startsWith(executable));
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Returns the length (or predicted/expected length) of a (possibly padded) media stream
+     */
+    private Long getExpectedLength(Parameters parameters) {
+        MediaFile file = parameters.getMediaFile();
+
+        if (!parameters.isDownsample() && !parameters.isTranscode()) {
+            return file.getFileSize();
+        }
+        Double duration = file.getDuration();
+        Integer maxBitRate = parameters.getMaxBitRate();
+
+        if (duration == null) {
+            LOG.warn("Unknown duration for {}. Unable to estimate transcoded size.", file);
+            return null;
+        }
+
+        if (maxBitRate == null) {
+            LOG.error("Unknown bit rate for {}. Unable to estimate transcoded size.", file);
+            return null;
+        }
+
+        // Over-estimate size a bit (2 seconds) so don't cut off early in case of small calculation differences
+        return Math.round((duration + 2) * maxBitRate * 1000L / 8L);
+    }
+
+    private boolean isRangeAllowed(Parameters parameters) {
+        Transcoding transcoding = parameters.getTranscoding();
+        List<String> steps = Arrays.asList();
+        if (transcoding != null) {
+            steps = Arrays.asList(transcoding.getStep3(), transcoding.getStep2(), transcoding.getStep1());
+        } else if (parameters.isDownsample()) {
+            steps = Arrays.asList(settingsService.getDownsamplingCommand());
+        } else {
+            return true;  // neither transcoding nor downsampling
+        }
+
+        // Verify that were able to predict the length
+        if (parameters.getExpectedLength() == null) {
+            return false;
+        }
+
+        // Check if last configured step uses the bitrate, if so, range should be pretty safe
+        for (String step : steps) {
+            if (step != null) {
+                return step.contains("%b");
+            }
+        }
+        return false;
     }
 
     /**
      * Returns the directory in which all transcoders are installed.
      */
-    public File getTranscodeDirectory() {
-        File dir = new File(SettingsService.getAirsonicHome(), "transcode");
-        if (!dir.exists()) {
-            boolean ok = dir.mkdir();
-            if (ok) {
-                LOG.info("Created directory " + dir);
-            } else {
-                LOG.warn("Failed to create directory " + dir);
+    public Path getTranscodeDirectory() {
+        Path dir = SettingsService.getAirsonicHome().resolve("transcode");
+        if (!Files.exists(dir)) {
+            try {
+                dir = Files.createDirectory(dir);
+                LOG.info("Created directory {}", dir);
+            } catch (Exception e) {
+                LOG.warn("Failed to create directory {}", dir);
             }
         }
         return dir;
@@ -517,6 +573,8 @@ public class TranscodingService {
 
     public static class Parameters {
         private boolean downsample;
+        private Long expectedLength;
+        private boolean rangeAllowed;
         private final MediaFile mediaFile;
         private final VideoTranscodingSettings videoTranscodingSettings;
         private Integer maxBitRate;
@@ -541,6 +599,22 @@ public class TranscodingService {
 
         public boolean isTranscode() {
             return transcoding != null;
+        }
+
+        public boolean isRangeAllowed() {
+            return this.rangeAllowed;
+        }
+
+        public void setRangeAllowed(boolean rangeAllowed) {
+            this.rangeAllowed = rangeAllowed;
+        }
+
+        public Long getExpectedLength() {
+            return this.expectedLength;
+        }
+
+        public void setExpectedLength(Long expectedLength) {
+            this.expectedLength = expectedLength;
         }
 
         public void setTranscoding(Transcoding transcoding) {

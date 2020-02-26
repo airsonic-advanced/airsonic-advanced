@@ -21,7 +21,7 @@ package org.airsonic.player.domain;
 
 import org.airsonic.player.util.StringUtil;
 
-import java.util.Date;
+import java.time.Instant;
 
 /**
  * @author Sindre Mehus
@@ -34,26 +34,31 @@ public class Playlist {
     private String name;
     private String comment;
     private int fileCount;
-    private int durationSeconds;
-    private Date created;
-    private Date changed;
+    private double duration;
+    private Instant created;
+    private Instant changed;
     private String importedFrom;
 
     public Playlist() {
     }
 
     public Playlist(int id, String username, boolean shared, String name, String comment, int fileCount,
-                    int durationSeconds, Date created, Date changed, String importedFrom) {
+                    double duration, Instant created, Instant changed, String importedFrom) {
         this.id = id;
         this.username = username;
         this.shared = shared;
         this.name = name;
         this.comment = comment;
         this.fileCount = fileCount;
-        this.durationSeconds = durationSeconds;
+        this.duration = duration;
         this.created = created;
         this.changed = changed;
         this.importedFrom = importedFrom;
+    }
+
+    public Playlist(Playlist p) {
+        this(p.getId(), p.getUsername(), p.isShared(), p.getName(), p.getComment(), p.getFileCount(), p.getDuration(),
+                p.getCreated(), p.getChanged(), p.getImportedFrom());
     }
 
     public int getId() {
@@ -104,31 +109,31 @@ public class Playlist {
         this.fileCount = fileCount;
     }
 
-    public int getDurationSeconds() {
-        return durationSeconds;
+    public double getDuration() {
+        return duration;
     }
 
-    public void setDurationSeconds(int durationSeconds) {
-        this.durationSeconds = durationSeconds;
+    public void setDuration(double duration) {
+        this.duration = duration;
     }
 
     public String getDurationAsString() {
-        return StringUtil.formatDuration(durationSeconds);
+        return StringUtil.formatDuration((long) (duration * 1000), false);
     }
 
-    public Date getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public void setCreated(Date created) {
+    public void setCreated(Instant created) {
         this.created = created;
     }
 
-    public Date getChanged() {
+    public Instant getChanged() {
         return changed;
     }
 
-    public void setChanged(Date changed) {
+    public void setChanged(Instant changed) {
         this.changed = changed;
     }
 

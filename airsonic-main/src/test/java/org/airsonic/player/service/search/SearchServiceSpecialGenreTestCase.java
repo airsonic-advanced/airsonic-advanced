@@ -1,20 +1,21 @@
 
 package org.airsonic.player.service.search;
 
-import com.google.common.base.Function;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.RandomSearchCriteria;
 import org.airsonic.player.service.SearchService;
+import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.function.Function;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
 
@@ -32,8 +33,8 @@ public class SearchServiceSpecialGenreTestCase extends AbstractAirsonicHomeTest 
     public List<MusicFolder> getMusicFolders() {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
-            File musicDir = new File(resolveBaseMediaPath.apply("Search/SpecialGenre"));
-            musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, new Date()));
+            Path musicDir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialGenre");
+            musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, Instant.now()));
         }
         return musicFolders;
     }
@@ -48,12 +49,12 @@ public class SearchServiceSpecialGenreTestCase extends AbstractAirsonicHomeTest 
      * in src/test/resources/MEDIAS/Search/SpecialGenre/ARTIST1/ALBUM_A.
      * In FILE01 to FILE16, Special strings for Lucene syntax are stored
      * as tag values ​​of Genre.
-     * 
+     *
      * Legacy can not search all these genres.
      * (Strictly speaking, the genre field is not created at index creation.)
      *
      * // XXX 3.x -> 8.x : Do the process more strictly.
-     * 
+     *
      *  - Values ​​that can be cross-referenced with DB are stored in the index.
      *  - Search is also possible with user's readable value (file tag value).
      *  - However, there is an exception in parentheses.
@@ -91,10 +92,10 @@ public class SearchServiceSpecialGenreTestCase extends AbstractAirsonicHomeTest 
 
         /*
          * // XXX 3.x -> 8.x : Brackets ()
-         * 
+         *
          * Lucene can handle these.
          * However, brackets are specially parsed before the index creation process.
-         * 
+         *
          * This string is never stored in the index.
          * This is the only exception.
          */
@@ -106,16 +107,16 @@ public class SearchServiceSpecialGenreTestCase extends AbstractAirsonicHomeTest 
 
         /*
          * // XXX 3.x -> 8.x : Brackets {}[]
-         * 
+         *
          * Lucene can handle these.
          * However, brackets are specially parsed before the index creation process.
-         * 
+         *
          * This can be done with a filter that performs the reverse process
          * on the input values ​​when searching.
          * As a result, the values ​​stored in the file can be retrieved by search.
-         * 
+         *
          * @see AnalyzerFactory
-         * 
+         *
          * >>>>>
          */
         songs = searchService.getRandomSongs(simpleStringCriteria.apply("{}"));
@@ -204,7 +205,7 @@ public class SearchServiceSpecialGenreTestCase extends AbstractAirsonicHomeTest 
 
         /*
          * Search by genre string registered in file.
-         * 
+         *
          * The value stored in the index is different from legacy.
          * Domain value is kept as it is.
          */
@@ -256,12 +257,12 @@ public class SearchServiceSpecialGenreTestCase extends AbstractAirsonicHomeTest 
 
     /*
      * Other special strings. (FILE19)
-     * 
+     *
      * {'“『【【】】[︴○◎@ $〒→+]ＦＵＬＬ－ＷＩＤＴＨCæsar's
-     * 
+     *
      * Legacy stores with Analyze,
      * so searchable characters are different.
-     * 
+     *
      */
     @Test
     public void testOthers() {

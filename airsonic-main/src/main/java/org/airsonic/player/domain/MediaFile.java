@@ -19,14 +19,16 @@
  */
 package org.airsonic.player.domain;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
-import org.airsonic.player.util.FileUtil;
+import org.airsonic.player.util.StringUtil;
 import org.apache.commons.io.FilenameUtils;
 
-import java.io.File;
-import java.util.Date;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * A media file (audio, video or directory) with an assortment of its meta data.
@@ -51,29 +53,30 @@ public class MediaFile {
     private String genre;
     private Integer bitRate;
     private boolean variableBitRate;
-    private Integer durationSeconds;
+    private Double duration;
     private Long fileSize;
     private Integer width;
     private Integer height;
     private String coverArtPath;
     private String parentPath;
     private int playCount;
-    private Date lastPlayed;
+    private Instant lastPlayed;
     private String comment;
-    private Date created;
-    private Date changed;
-    private Date lastScanned;
-    private Date starredDate;
-    private Date childrenLastUpdated;
+    private Instant created;
+    private Instant changed;
+    private Instant lastScanned;
+    private Instant starredDate;
+    private Instant childrenLastUpdated;
     private boolean present;
     private int version;
     private String musicBrainzReleaseId;
+    private String musicBrainzRecordingId;
 
     public MediaFile(int id, String path, String folder, MediaType mediaType, String format, String title,
                      String albumName, String artist, String albumArtist, Integer discNumber, Integer trackNumber, Integer year, String genre, Integer bitRate,
-                     boolean variableBitRate, Integer durationSeconds, Long fileSize, Integer width, Integer height, String coverArtPath,
-                     String parentPath, int playCount, Date lastPlayed, String comment, Date created, Date changed, Date lastScanned,
-                     Date childrenLastUpdated, boolean present, int version, String musicBrainzReleaseId) {
+                     boolean variableBitRate, Double duration, Long fileSize, Integer width, Integer height, String coverArtPath,
+                     String parentPath, int playCount, Instant lastPlayed, String comment, Instant created, Instant changed, Instant lastScanned,
+                     Instant childrenLastUpdated, boolean present, int version, String musicBrainzReleaseId, String musicBrainzRecordingId) {
         this.id = id;
         this.path = path;
         this.folder = folder;
@@ -89,7 +92,7 @@ public class MediaFile {
         this.genre = genre;
         this.bitRate = bitRate;
         this.variableBitRate = variableBitRate;
-        this.durationSeconds = durationSeconds;
+        this.duration = duration;
         this.fileSize = fileSize;
         this.width = width;
         this.height = height;
@@ -105,6 +108,7 @@ public class MediaFile {
         this.present = present;
         this.version = version;
         this.musicBrainzReleaseId = musicBrainzReleaseId;
+        this.musicBrainzRecordingId = musicBrainzRecordingId;
     }
 
     public MediaFile() {
@@ -134,13 +138,12 @@ public class MediaFile {
         this.folder = folder;
     }
 
-    public File getFile() {
-        // TODO: Optimize
-        return new File(path);
+    public Path getFile() {
+        return Paths.get(path);
     }
 
     public boolean exists() {
-        return FileUtil.exists(getFile());
+        return Files.exists(getFile());
     }
 
     public MediaType getMediaType() {
@@ -267,43 +270,20 @@ public class MediaFile {
         this.variableBitRate = variableBitRate;
     }
 
-    public Integer getDurationSeconds() {
-        return durationSeconds;
+    public Double getDuration() {
+        return duration;
     }
 
-    public void setDurationSeconds(Integer durationSeconds) {
-        this.durationSeconds = durationSeconds;
+    public void setDuration(Double duration) {
+        this.duration = duration;
     }
 
     public String getDurationString() {
-        if (durationSeconds == null) {
+        if (duration == null) {
             return null;
         }
-
-        StringBuilder result = new StringBuilder(8);
-
-        int seconds = durationSeconds;
-
-        int hours = seconds / 3600;
-        seconds -= hours * 3600;
-
-        int minutes = seconds / 60;
-        seconds -= minutes * 60;
-
-        if (hours > 0) {
-            result.append(hours).append(':');
-            if (minutes < 10) {
-                result.append('0');
-            }
-        }
-
-        result.append(minutes).append(':');
-        if (seconds < 10) {
-            result.append('0');
-        }
-        result.append(seconds);
-
-        return result.toString();
+        // Return in M:SS or H:MM:SS
+        return StringUtil.formatDuration((long) (duration * 1000));
     }
 
     public Long getFileSize() {
@@ -347,8 +327,8 @@ public class MediaFile {
         this.parentPath = parentPath;
     }
 
-    public File getParentFile() {
-        return getFile().getParentFile();
+    public Path getParentFile() {
+        return getFile().getParent();
     }
 
     public int getPlayCount() {
@@ -359,11 +339,11 @@ public class MediaFile {
         this.playCount = playCount;
     }
 
-    public Date getLastPlayed() {
+    public Instant getLastPlayed() {
         return lastPlayed;
     }
 
-    public void setLastPlayed(Date lastPlayed) {
+    public void setLastPlayed(Instant lastPlayed) {
         this.lastPlayed = lastPlayed;
     }
 
@@ -375,35 +355,35 @@ public class MediaFile {
         this.comment = comment;
     }
 
-    public Date getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public void setCreated(Date created) {
+    public void setCreated(Instant created) {
         this.created = created;
     }
 
-    public Date getChanged() {
+    public Instant getChanged() {
         return changed;
     }
 
-    public void setChanged(Date changed) {
+    public void setChanged(Instant changed) {
         this.changed = changed;
     }
 
-    public Date getLastScanned() {
+    public Instant getLastScanned() {
         return lastScanned;
     }
 
-    public void setLastScanned(Date lastScanned) {
+    public void setLastScanned(Instant lastScanned) {
         this.lastScanned = lastScanned;
     }
 
-    public Date getStarredDate() {
+    public Instant getStarredDate() {
         return starredDate;
     }
 
-    public void setStarredDate(Date starredDate) {
+    public void setStarredDate(Instant starredDate) {
         this.starredDate = starredDate;
     }
 
@@ -415,14 +395,22 @@ public class MediaFile {
         this.musicBrainzReleaseId = musicBrainzReleaseId;
     }
 
+    public String getMusicBrainzRecordingId() {
+        return musicBrainzRecordingId;
+    }
+
+    public void setMusicBrainzRecordingId(String musicBrainzRecordingId) {
+        this.musicBrainzRecordingId = musicBrainzRecordingId;
+    }
+
     /**
      * Returns when the children was last updated in the database.
      */
-    public Date getChildrenLastUpdated() {
+    public Instant getChildrenLastUpdated() {
         return childrenLastUpdated;
     }
 
-    public void setChildrenLastUpdated(Date childrenLastUpdated) {
+    public void setChildrenLastUpdated(Instant childrenLastUpdated) {
         this.childrenLastUpdated = childrenLastUpdated;
     }
 
@@ -439,18 +427,33 @@ public class MediaFile {
     }
 
     @Override
-    public boolean equals(Object o) {
-        return o instanceof MediaFile && ((MediaFile) o).path.equals(path);
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        MediaFile other = (MediaFile) obj;
+        if (path == null) {
+            if (other.path != null)
+                return false;
+        } else if (!path.equals(other.path))
+            return false;
+        return true;
     }
 
     @Override
     public int hashCode() {
-        return path.hashCode();
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((path == null) ? 0 : path.hashCode());
+        return result;
     }
 
-    public File getCoverArtFile() {
+    public Path getCoverArtFile() {
         // TODO: Optimize
-        return coverArtPath == null ? null : new File(coverArtPath);
+        return coverArtPath == null ? null : Paths.get(coverArtPath);
     }
 
     @Override
@@ -459,7 +462,7 @@ public class MediaFile {
     }
 
     public static List<Integer> toIdList(List<MediaFile> from) {
-        return Lists.transform(from, toId());
+        return from.stream().map(toId()).collect(Collectors.toList());
     }
 
     public static Function<MediaFile, Integer> toId() {

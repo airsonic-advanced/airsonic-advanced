@@ -19,7 +19,7 @@
  */
 package org.airsonic.player.domain;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Locale;
 
 /**
@@ -46,16 +46,14 @@ public class UserSettings {
     private Visibility mainVisibility = new Visibility();
     private Visibility playlistVisibility = new Visibility();
     private boolean lastFmEnabled;
-    private int listReloadDelay;
-    private String lastFmUsername;
-    private String lastFmPassword;
+    private boolean listenBrainzEnabled;
     private TranscodeScheme transcodeScheme = TranscodeScheme.OFF;
     private int selectedMusicFolderId = -1;
     private boolean partyModeEnabled;
     private boolean nowPlayingAllowed;
     private AvatarScheme avatarScheme = AvatarScheme.NONE;
     private Integer systemAvatarId;
-    private Date changed = new Date();
+    private Instant changed = Instant.now();
     private int paginationSize;
 
     public UserSettings(String username) {
@@ -150,28 +148,12 @@ public class UserSettings {
         this.lastFmEnabled = lastFmEnabled;
     }
 
-    public int getListReloadDelay() {
-        return listReloadDelay;
+    public boolean isListenBrainzEnabled() {
+        return listenBrainzEnabled;
     }
 
-    public void setListReloadDelay(int listReloadDelay) {
-        this.listReloadDelay = listReloadDelay;
-    }
-
-    public String getLastFmUsername() {
-        return lastFmUsername;
-    }
-
-    public void setLastFmUsername(String lastFmUsername) {
-        this.lastFmUsername = lastFmUsername;
-    }
-
-    public String getLastFmPassword() {
-        return lastFmPassword;
-    }
-
-    public void setLastFmPassword(String lastFmPassword) {
-        this.lastFmPassword = lastFmPassword;
+    public void setListenBrainzEnabled(boolean listenBrainzEnabled) {
+        this.listenBrainzEnabled = listenBrainzEnabled;
     }
 
     public TranscodeScheme getTranscodeScheme() {
@@ -267,7 +249,7 @@ public class UserSettings {
      *
      * @return When the corresponding database entry was last changed.
      */
-    public Date getChanged() {
+    public Instant getChanged() {
         return changed;
     }
 
@@ -276,7 +258,7 @@ public class UserSettings {
      *
      * @param changed When the corresponding database entry was last changed.
      */
-    public void setChanged(Date changed) {
+    public void setChanged(Instant changed) {
         this.changed = changed;
     }
 

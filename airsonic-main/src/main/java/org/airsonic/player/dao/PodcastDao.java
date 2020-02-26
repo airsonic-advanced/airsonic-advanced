@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Provides database services for Podcast channels and episodes.
@@ -60,7 +61,7 @@ public class PodcastDao extends AbstractDao {
         update(sql, channel.getUrl(), channel.getTitle(), channel.getDescription(), channel.getImageUrl(),
                 channel.getStatus().name(), channel.getErrorMessage());
 
-        return getJdbcTemplate().queryForObject("select max(id) from podcast_channel", Integer.class);
+        return queryForInt("select max(id) from podcast_channel", 0);
     }
 
     /**
@@ -182,8 +183,8 @@ public class PodcastDao extends AbstractDao {
         update(sql, id);
     }
 
-    private static class PodcastChannelRowMapper implements RowMapper {
-        public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
+    private static class PodcastChannelRowMapper implements RowMapper<PodcastChannel> {
+        public PodcastChannel mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new PodcastChannel(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5),
                                       PodcastStatus.valueOf(rs.getString(6)), rs.getString(7));
         }
@@ -192,7 +193,7 @@ public class PodcastDao extends AbstractDao {
     private static class PodcastEpisodeRowMapper implements RowMapper<PodcastEpisode> {
         public PodcastEpisode mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new PodcastEpisode(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), rs.getString(5),
-                    rs.getString(6), rs.getTimestamp(7), rs.getString(8), (Long) rs.getObject(9),
+                    rs.getString(6), Optional.ofNullable(rs.getTimestamp(7)).map(x -> x.toInstant()).orElse(null), rs.getString(8), (Long) rs.getObject(9),
                     (Long) rs.getObject(10), PodcastStatus.valueOf(rs.getString(11)), rs.getString(12));
         }
     }

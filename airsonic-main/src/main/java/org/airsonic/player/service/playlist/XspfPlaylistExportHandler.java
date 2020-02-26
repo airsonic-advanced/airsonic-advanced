@@ -12,6 +12,7 @@ import org.airsonic.player.domain.Playlist;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 
@@ -39,7 +40,7 @@ public class XspfPlaylistExportHandler implements PlaylistExportHandler {
         Playlist playlist = playlistDao.getPlaylist(id);
         newPlaylist.setTitle(playlist.getName());
         newPlaylist.setCreator("Airsonic user " + playlist.getUsername());
-        newPlaylist.setDate(new Date());
+        newPlaylist.setDate(Date.from(Instant.now())); //TODO switch to Instant upstream
         List<MediaFile> files = mediaFileDao.getFilesInPlaylist(id);
 
         files.stream().map(mediaFile -> {
@@ -48,7 +49,7 @@ public class XspfPlaylistExportHandler implements PlaylistExportHandler {
             track.setCreator(mediaFile.getArtist());
             track.setTitle(mediaFile.getTitle());
             track.setAlbum(mediaFile.getAlbumName());
-            track.setDuration(mediaFile.getDurationSeconds());
+            track.setDuration((int) Math.round(mediaFile.getDuration())); // TODO switch to Double upstream
             track.setImage(mediaFile.getCoverArtPath());
             Location location = new Location();
             location.setText(mediaFile.getPath());

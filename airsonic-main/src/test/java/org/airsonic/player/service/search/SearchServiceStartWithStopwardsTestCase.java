@@ -5,14 +5,15 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.SearchCriteria;
 import org.airsonic.player.domain.SearchResult;
 import org.airsonic.player.service.SearchService;
+import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
@@ -20,7 +21,7 @@ import static org.springframework.util.ObjectUtils.isEmpty;
 /*
  * Test cases related to #1142.
  * The filter is not properly applied when analyzing the query,
- * 
+ *
  * In the process of hardening the Analyzer implementation,
  * this problem is solved side by side.
  */
@@ -35,8 +36,8 @@ public class SearchServiceStartWithStopwardsTestCase extends AbstractAirsonicHom
     public List<MusicFolder> getMusicFolders() {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
-            File musicDir = new File(resolveBaseMediaPath.apply("Search/StartWithStopwards"));
-            musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, new Date()));
+            Path musicDir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("StartWithStopwards");
+            musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, Instant.now()));
         }
         return musicFolders;
     }

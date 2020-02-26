@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Provides database services for play queues
@@ -37,7 +38,7 @@ public class PlayQueueDao extends AbstractDao {
 
     private static final String INSERT_COLUMNS = "username, current, position_millis, changed, changed_by";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
-    private final RowMapper rowMapper = new PlayQueueMapper();
+    private final PlayQueueMapper rowMapper = new PlayQueueMapper();
 
     @Transactional
     public SavedPlayQueue getPlayQueue(String username) {
@@ -71,7 +72,7 @@ public class PlayQueueDao extends AbstractDao {
                                       null,
                                       rs.getInt(3),
                                       rs.getLong(4),
-                                      rs.getTimestamp(5),
+                                      Optional.ofNullable(rs.getTimestamp(5)).map(x -> x.toInstant()).orElse(null),
                                       rs.getString(6));
         }
     }

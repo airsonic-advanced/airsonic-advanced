@@ -26,10 +26,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
-import java.io.File;
+import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Provides database services for music folders.
@@ -43,7 +44,7 @@ public class MusicFolderDao extends AbstractDao {
     private static final String INSERT_COLUMNS = "path, name, enabled, changed";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private final MusicFolderRowMapper rowMapper = new MusicFolderRowMapper();
-    
+
     @Autowired
     private UserDao userDao;
 
@@ -74,7 +75,7 @@ public class MusicFolderDao extends AbstractDao {
      */
     public void createMusicFolder(MusicFolder musicFolder) {
         String sql = "insert into music_folder (" + INSERT_COLUMNS + ") values (?, ?, ?, ?)";
-        update(sql, musicFolder.getPath().getPath(), musicFolder.getName(), musicFolder.isEnabled(), musicFolder.getChanged());
+        update(sql, musicFolder.getPath().toString(), musicFolder.getName(), musicFolder.isEnabled(), musicFolder.getChanged());
 
         Integer id = queryForInt("select max(id) from music_folder", 0);
         update("insert into music_folder_user (music_folder_id, username) select ?, username from " + userDao.getUserTable(), id);
@@ -99,7 +100,7 @@ public class MusicFolderDao extends AbstractDao {
      */
     public void updateMusicFolder(MusicFolder musicFolder) {
         String sql = "update music_folder set path=?, name=?, enabled=?, changed=? where id=?";
-        update(sql, musicFolder.getPath().getPath(), musicFolder.getName(),
+        update(sql, musicFolder.getPath().toString(), musicFolder.getName(),
                musicFolder.isEnabled(), musicFolder.getChanged(), musicFolder.getId());
     }
 
@@ -118,7 +119,7 @@ public class MusicFolderDao extends AbstractDao {
 
     private static class MusicFolderRowMapper implements RowMapper<MusicFolder> {
         public MusicFolder mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new MusicFolder(rs.getInt(1), new File(rs.getString(2)), rs.getString(3), rs.getBoolean(4), rs.getTimestamp(5));
+            return new MusicFolder(rs.getInt(1), Paths.get(rs.getString(2)), rs.getString(3), rs.getBoolean(4), Optional.ofNullable(rs.getTimestamp(5)).map(x -> x.toInstant()).orElse(null));
         }
     }
 

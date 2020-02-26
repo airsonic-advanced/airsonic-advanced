@@ -20,14 +20,11 @@
 package org.airsonic.player.service.metadata;
 
 import org.airsonic.player.domain.MediaFile;
-import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.SettingsService;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 
-import java.io.File;
-import java.util.List;
-
+import java.nio.file.Path;
 
 /**
  * Parses meta data from media files.
@@ -42,7 +39,7 @@ public abstract class MetaDataParser {
      * @param file The file to parse.
      * @return Meta data for the file, never null.
      */
-    public MetaData getMetaData(File file) {
+    public MetaData getMetaData(Path file) {
 
         MetaData metaData = getRawMetaData(file);
         String artist = metaData.getArtist();
@@ -79,7 +76,7 @@ public abstract class MetaDataParser {
      * @param file The file to parse.
      * @return Meta data for the file.
      */
-    public abstract MetaData getRawMetaData(File file);
+    public abstract MetaData getRawMetaData(Path file);
 
     /**
      * Updates the given file with the given meta data.
@@ -92,10 +89,10 @@ public abstract class MetaDataParser {
     /**
      * Returns whether this parser is applicable to the given file.
      *
-     * @param file The file in question.
+     * @param path The path to file in question.
      * @return Whether this parser is applicable to the given file.
      */
-    public abstract boolean isApplicable(File file);
+    public abstract boolean isApplicable(Path path);
 
     /**
      * Returns whether this parser supports tag editing (using the {@link #setMetaData} method).
@@ -107,21 +104,21 @@ public abstract class MetaDataParser {
     /**
      * Guesses the artist for the given file.
      */
-    String guessArtist(File file) {
-        File parent = file.getParentFile();
+    String guessArtist(Path file) {
+        Path parent = file.getParent();
         if (isRoot(parent)) {
             return null;
         }
-        File grandParent = parent.getParentFile();
-        return isRoot(grandParent) ? null : grandParent.getName();
+        Path grandParent = parent.getParent();
+        return isRoot(grandParent) ? null : grandParent.getFileName().toString();
     }
 
     /**
      * Guesses the album for the given file.
      */
-    String guessAlbum(File file, String artist) {
-        File parent = file.getParentFile();
-        String album = isRoot(parent) ? null : parent.getName();
+    String guessAlbum(Path file, String artist) {
+        Path parent = file.getParent();
+        String album = isRoot(parent) ? null : parent.getFileName().toString();
         if (artist != null && album != null) {
             album = album.replace(artist + " - ", "");
         }
@@ -131,19 +128,12 @@ public abstract class MetaDataParser {
     /**
      * Guesses the title for the given file.
      */
-    public String guessTitle(File file) {
-        return StringUtils.trim(FilenameUtils.getBaseName(file.getPath()));
+    public String guessTitle(Path file) {
+        return StringUtils.trim(FilenameUtils.getBaseName(file.toString()));
     }
 
-    private boolean isRoot(File file) {
-        SettingsService settings = getSettingsService();
-        List<MusicFolder> folders = settings.getAllMusicFolders(false, true);
-        for (MusicFolder folder : folders) {
-            if (file.equals(folder.getPath())) {
-                return true;
-            }
-        }
-        return false;
+    private boolean isRoot(Path file) {
+        return getSettingsService().getAllMusicFolders(false, true).parallelStream().anyMatch(folder -> file.equals(folder.getPath()));
     }
 
     abstract SettingsService getSettingsService();

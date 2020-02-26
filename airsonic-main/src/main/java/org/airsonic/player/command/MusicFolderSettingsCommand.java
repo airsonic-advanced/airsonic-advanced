@@ -23,8 +23,10 @@ import org.airsonic.player.controller.MusicFolderSettingsController;
 import org.airsonic.player.domain.MusicFolder;
 import org.apache.commons.lang.StringUtils;
 
-import java.io.File;
-import java.util.Date;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -127,10 +129,10 @@ public class MusicFolderSettingsCommand {
 
         public MusicFolderInfo(MusicFolder musicFolder) {
             id = musicFolder.getId();
-            path = musicFolder.getPath().getPath();
+            path = musicFolder.getPath().toString();
             name = musicFolder.getName();
             enabled = musicFolder.isEnabled();
-            existing = musicFolder.getPath().exists() && musicFolder.getPath().isDirectory();
+            existing = Files.exists(musicFolder.getPath()) && Files.isDirectory(musicFolder.getPath());
         }
 
         public MusicFolderInfo() {
@@ -182,12 +184,12 @@ public class MusicFolderSettingsCommand {
             if (path == null) {
                 return null;
             }
-            File file = new File(path);
+            Path file = Paths.get(path);
             String name = StringUtils.trimToNull(this.name);
             if (name == null) {
-                name = file.getName();
+                name = file.getFileName().toString();
             }
-            return new MusicFolder(id, new File(path), name, enabled, new Date());
+            return new MusicFolder(id, file, name, enabled, Instant.now());
         }
 
         public boolean isExisting() {

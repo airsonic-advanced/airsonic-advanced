@@ -22,9 +22,11 @@ package org.airsonic.player.service.metadata;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Parses meta data by guessing artist, album and song title based on the path of the file.
@@ -32,6 +34,7 @@ import java.io.File;
  * @author Sindre Mehus
  */
 @Service
+@Order(200)
 public class DefaultMetaDataParser extends MetaDataParser {
 
     @Autowired
@@ -47,7 +50,7 @@ public class DefaultMetaDataParser extends MetaDataParser {
      * @param file The file to parse.
      * @return Meta data for the file.
      */
-    public MetaData getRawMetaData(File file) {
+    public MetaData getRawMetaData(Path file) {
         MetaData metaData = new MetaData();
         String artist = guessArtist(file);
         metaData.setArtist(artist);
@@ -84,10 +87,10 @@ public class DefaultMetaDataParser extends MetaDataParser {
     /**
      * Returns whether this parser is applicable to the given file.
      *
-     * @param file The file in question.
+     * @param path The path to file in question.
      * @return Whether this parser is applicable to the given file.
      */
-    public boolean isApplicable(File file) {
-        return file.isFile();
+    public boolean isApplicable(Path path) {
+        return Files.isRegularFile(path);
     }
 }

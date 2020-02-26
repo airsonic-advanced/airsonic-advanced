@@ -19,7 +19,10 @@
  */
 package org.airsonic.player.domain;
 
-import java.util.Date;
+import com.google.common.util.concurrent.AtomicDouble;
+
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Sindre Mehus
@@ -31,16 +34,16 @@ public class Album {
     private String path;
     private String name;
     private String artist;
-    private int songCount;
-    private int durationSeconds;
+    private final AtomicInteger songCount = new AtomicInteger(0);
+    private final AtomicDouble duration = new AtomicDouble(0);
     private String coverArtPath;
     private Integer year;
     private String genre;
-    private int playCount;
-    private Date lastPlayed;
+    private final AtomicInteger playCount = new AtomicInteger(0);
+    private Instant lastPlayed;
     private String comment;
-    private Date created;
-    private Date lastScanned;
+    private Instant created;
+    private Instant lastScanned;
     private boolean present;
     private Integer folderId;
     private String musicBrainzReleaseId;
@@ -48,19 +51,19 @@ public class Album {
     public Album() {
     }
 
-    public Album(int id, String path, String name, String artist, int songCount, int durationSeconds, String coverArtPath,
-            Integer year, String genre, int playCount, Date lastPlayed, String comment, Date created, Date lastScanned,
+    public Album(int id, String path, String name, String artist, int songCount, double duration, String coverArtPath,
+            Integer year, String genre, int playCount, Instant lastPlayed, String comment, Instant created, Instant lastScanned,
             boolean present, Integer folderId, String musicBrainzReleaseId) {
         this.id = id;
         this.path = path;
         this.name = name;
         this.artist = artist;
-        this.songCount = songCount;
-        this.durationSeconds = durationSeconds;
+        this.songCount.set(songCount);
+        this.duration.set(duration);
         this.coverArtPath = coverArtPath;
         this.year = year;
         this.genre = genre;
-        this.playCount = playCount;
+        this.playCount.set(playCount);
         this.lastPlayed = lastPlayed;
         this.comment = comment;
         this.created = created;
@@ -103,19 +106,27 @@ public class Album {
     }
 
     public int getSongCount() {
-        return songCount;
+        return songCount.get();
     }
 
     public void setSongCount(int songCount) {
-        this.songCount = songCount;
+        this.songCount.set(songCount);
     }
 
-    public int getDurationSeconds() {
-        return durationSeconds;
+    public void incrementSongCount() {
+        this.songCount.incrementAndGet();
     }
 
-    public void setDurationSeconds(int durationSeconds) {
-        this.durationSeconds = durationSeconds;
+    public double getDuration() {
+        return duration.get();
+    }
+
+    public void setDuration(double duration) {
+        this.duration.set(duration);
+    }
+
+    public void incrementDuration(double duration) {
+        this.duration.addAndGet(duration);
     }
 
     public String getCoverArtPath() {
@@ -143,18 +154,22 @@ public class Album {
     }
 
     public int getPlayCount() {
-        return playCount;
+        return playCount.get();
     }
 
     public void setPlayCount(int playCount) {
-        this.playCount = playCount;
+        this.playCount.set(playCount);
     }
 
-    public Date getLastPlayed() {
+    public void incrementPlayCount() {
+        this.playCount.incrementAndGet();
+    }
+
+    public Instant getLastPlayed() {
         return lastPlayed;
     }
 
-    public void setLastPlayed(Date lastPlayed) {
+    public void setLastPlayed(Instant lastPlayed) {
         this.lastPlayed = lastPlayed;
     }
 
@@ -166,19 +181,19 @@ public class Album {
         this.comment = comment;
     }
 
-    public Date getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public void setCreated(Date created) {
+    public void setCreated(Instant created) {
         this.created = created;
     }
 
-    public Date getLastScanned() {
+    public Instant getLastScanned() {
         return lastScanned;
     }
 
-    public void setLastScanned(Date lastScanned) {
+    public void setLastScanned(Instant lastScanned) {
         this.lastScanned = lastScanned;
     }
 

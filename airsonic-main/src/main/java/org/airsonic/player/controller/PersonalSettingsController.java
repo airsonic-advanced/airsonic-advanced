@@ -21,9 +21,9 @@ package org.airsonic.player.controller;
 
 import org.airsonic.player.command.PersonalSettingsCommand;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -35,8 +35,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Controller for the page used to administrate per-user settings.
@@ -45,7 +46,7 @@ import java.util.Locale;
  */
 @Controller
 @RequestMapping("/personalSettings")
-public class PersonalSettingsController  {
+public class PersonalSettingsController {
 
     @Autowired
     private SettingsService settingsService;
@@ -78,11 +79,9 @@ public class PersonalSettingsController  {
         command.setBetaVersionNotificationEnabled(userSettings.isBetaVersionNotificationEnabled());
         command.setSongNotificationEnabled(userSettings.isSongNotificationEnabled());
         command.setAutoHidePlayQueue(userSettings.isAutoHidePlayQueue());
-        command.setListReloadDelay(userSettings.getListReloadDelay());
         command.setKeyboardShortcutsEnabled(userSettings.isKeyboardShortcutsEnabled());
         command.setLastFmEnabled(userSettings.isLastFmEnabled());
-        command.setLastFmUsername(userSettings.getLastFmUsername());
-        command.setLastFmPassword(userSettings.getLastFmPassword());
+        command.setListenBrainzEnabled(userSettings.isListenBrainzEnabled());
         command.setPaginationSize(userSettings.getPaginationSize());
 
         Locale currentLocale = userSettings.getLocale();
@@ -106,7 +105,12 @@ public class PersonalSettingsController  {
             }
         }
 
-        model.addAttribute("command",command);
+        model.addAttribute("command", command);
+
+        Map<App, UserCredential> thirdPartyCreds = securityService.getDecodableCredsForApps(user.getUsername(), App.LASTFM, App.LISTENBRAINZ);
+
+        model.addAttribute("lastfmCredsAbsent", thirdPartyCreds.get(App.LASTFM) == null);
+        model.addAttribute("listenBrainzCredsAbsent", thirdPartyCreds.get(App.LISTENBRAINZ) == null);
     }
 
     @GetMapping
@@ -146,19 +150,14 @@ public class PersonalSettingsController  {
         settings.setBetaVersionNotificationEnabled(command.isBetaVersionNotificationEnabled());
         settings.setSongNotificationEnabled(command.isSongNotificationEnabled());
         settings.setAutoHidePlayQueue(command.isAutoHidePlayQueue());
-        settings.setListReloadDelay(command.getListReloadDelay());
         settings.setKeyboardShortcutsEnabled(command.isKeyboardShortcutsEnabled());
         settings.setLastFmEnabled(command.isLastFmEnabled());
-        settings.setLastFmUsername(command.getLastFmUsername());
+        settings.setListenBrainzEnabled(command.isListenBrainzEnabled());
         settings.setSystemAvatarId(getSystemAvatarId(command));
         settings.setAvatarScheme(getAvatarScheme(command));
         settings.setPaginationSize(command.getPaginationSize());
 
-        if (StringUtils.isNotBlank(command.getLastFmPassword())) {
-            settings.setLastFmPassword(command.getLastFmPassword());
-        }
-
-        settings.setChanged(new Date());
+        settings.setChanged(Instant.now());
         settingsService.updateUserSettings(settings);
 
         redirectAttributes.addFlashAttribute("settings_reload", true);

@@ -53,10 +53,8 @@ public class PersonalSettingsCommand {
     private boolean songNotificationEnabled;
     private boolean queueFollowingSongs;
     private boolean lastFmEnabled;
-    private int listReloadDelay;
+    private boolean listenBrainzEnabled;
     private int paginationSize;
-    private String lastFmUsername;
-    private String lastFmPassword;
 
     public User getUser() {
         return user;
@@ -234,28 +232,12 @@ public class PersonalSettingsCommand {
         this.lastFmEnabled = lastFmEnabled;
     }
 
-    public int getListReloadDelay() {
-        return listReloadDelay;
+    public boolean isListenBrainzEnabled() {
+        return listenBrainzEnabled;
     }
 
-    public void setListReloadDelay(int listReloadDelay) {
-        this.listReloadDelay = listReloadDelay;
-    }
-
-    public String getLastFmUsername() {
-        return lastFmUsername;
-    }
-
-    public void setLastFmUsername(String lastFmUsername) {
-        this.lastFmUsername = lastFmUsername;
-    }
-
-    public String getLastFmPassword() {
-        return lastFmPassword;
-    }
-
-    public void setLastFmPassword(String lastFmPassword) {
-        this.lastFmPassword = lastFmPassword;
+    public void setListenBrainzEnabled(boolean listenBrainzEnabled) {
+        this.listenBrainzEnabled = listenBrainzEnabled;
     }
 
     public boolean isQueueFollowingSongs() {

@@ -1,16 +1,47 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
 <!DOCTYPE html>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
 
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value="/dwr/engine.js"/>"></script>
-    <script type="text/javascript" src="<c:url value="/dwr/interface/multiService.js"/>"></script>
 
     <script type="text/javascript">
         var previousQuery = "";
         var instantSearchTimeout;
         var showSideBar = ${model.showSideBar ? 'true' : 'false'};
+
+        function init() {
+            top.StompClient.subscribe("top.jsp", {
+                "/user/queue/settings/sidebar": function(msg) {
+                    toggleLeftFrameCallback(JSON.parse(msg.body));
+                }
+            });
+
+            top.StompClient.onConnect.push(function() {
+                $("#connectionStatus img").attr("src", "<spring:theme code='connectedImage'/>");
+                $("#connectionStatus div").text("<fmt:message key='top.connected' />");
+            });
+
+            top.StompClient.onDisconnect.push(function() {
+                $("#connectionStatus img").attr("src", "<spring:theme code='disconnectedImage'/>");
+                $("#connectionStatus div").text("<fmt:message key='top.disconnected' />");
+            });
+
+            top.StompClient.onConnecting.push(function() {
+                $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
+                $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
+            });
+        }
+
+        function toggleLeftFrameCallback(show) {
+            if (showSideBar != show) {
+                if (show) {
+                    doShowLeftFrame();
+                } else {
+                    doHideLeftFrame();
+                }
+            }
+        }
 
         function triggerInstantSearch() {
             if (instantSearchTimeout) {
@@ -28,18 +59,26 @@
         }
 
         function showLeftFrame() {
+            doShowLeftFrame();
+            top.StompClient.send("/app/settings/sidebar", true);
+        }
+
+        function doShowLeftFrame() {
             $("#show-left-frame").hide();
             $("#hide-left-frame").show();
             toggleLeftFrame(230);
-            multiService.setShowSideBar(true);
             showSideBar = true;
         }
 
         function hideLeftFrame() {
+            doHideLeftFrame();
+            top.StompClient.send("/app/settings/sidebar", false);
+        }
+
+        function doHideLeftFrame() {
             $("#hide-left-frame").hide();
             $("#show-left-frame").show();
             toggleLeftFrame(0);
-            multiService.setShowSideBar(false);
             showSideBar = false;
         }
 
@@ -60,10 +99,20 @@
                 duration: duration
             });
         }
+        
+        function toggleConnectionStatus() {
+            $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
+            $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
+            if (top.StompClient.state == 'connected') {
+                top.StompClient.disconnect();
+            } else if (top.StompClient.state == 'dc') {
+                top.StompClient.connect();
+            }
+        }
     </script>
 </head>
 
-<body class="bgcolor2 topframe" style="margin:0.4em 1em 0 1em;">
+<body class="bgcolor2 topframe" style="margin:0.4em 1em 0 1em;" onload="init()">
 
 <span id="dummy-animation-target" style="max-width:0;display: none"></span>
 
@@ -81,45 +130,45 @@
 <table style="margin:0;padding-top:5px">
     <tr>
         <td style="padding-right:4.5em;">
-            <img id="show-left-frame" src="<spring:theme code="sidebarImage"/>" onclick="showLeftFrame()" alt="" style="display:${model.showSideBar ? 'none' : 'inline'};cursor:pointer">
-            <img id="hide-left-frame" src="<spring:theme code="sidebarImage"/>" onclick="hideLeftFrame()" alt="" style="display:${model.showSideBar ? 'inline' : 'none'};cursor:pointer">
+            <img id="show-left-frame" src="<spring:theme code='sidebarImage'/>" onclick="showLeftFrame()" alt="" style="display:${model.showSideBar ? 'none' : 'inline'};cursor:pointer">
+            <img id="hide-left-frame" src="<spring:theme code='sidebarImage'/>" onclick="hideLeftFrame()" alt="" style="display:${model.showSideBar ? 'inline' : 'none'};cursor:pointer">
         </td>
         <td style="min-width:3em;padding-right:1em;text-align: center">
-            <a href="home.view?" target="main"><img src="<spring:theme code="homeImage"/>" title="${home}" alt="${home}"></a>
+            <a href="home.view?" target="main"><img src="<spring:theme code='homeImage'/>" title="${home}" alt="${home}"></a>
             <div class="topHeader"><a href="home.view?" target="main">${home}</a></div>
         </td>
         <td style="min-width:3em;padding-right:1em;text-align: center">
-            <a href="nowPlaying.view?" target="main"><img src="<spring:theme code="nowPlayingImage"/>" title="${nowPlaying}" alt="${nowPlaying}"></a>
+            <a href="nowPlaying.view?" target="main"><img src="<spring:theme code='nowPlayingImage'/>" title="${nowPlaying}" alt="${nowPlaying}"></a>
             <div class="topHeader"><a href="nowPlaying.view?" target="main">${nowPlaying}</a></div>
         </td>
         <td style="min-width:3em;padding-right:1em;text-align: center">
-            <a href="starred.view?" target="main"><img src="<spring:theme code="starredImage"/>" title="${starred}" alt="${starred}"></a>
+            <a href="starred.view?" target="main"><img src="<spring:theme code='starredImage'/>" title="${starred}" alt="${starred}"></a>
             <div class="topHeader"><a href="starred.view?" target="main">${starred}</a></div>
         </td>
         <td style="min-width:3em;padding-right:1em;text-align: center">
-            <a href="playlists.view?" target="main"><img src="<spring:theme code="playlistImage"/>" title="${playlists}" alt="${playlists}"></a>
+            <a href="playlists.view?" target="main"><img src="<spring:theme code='playlistImage'/>" title="${playlists}" alt="${playlists}"></a>
             <div class="topHeader"><a href="playlists.view?" target="main">${playlists}</a></div>
         </td>
         <td style="min-width:4em;padding-right:1em;text-align: center">
-            <a href="podcastChannels.view?" target="main"><img src="<spring:theme code="podcastLargeImage"/>" title="${podcast}" alt="${podcast}"></a>
+            <a href="podcastChannels.view?" target="main"><img src="<spring:theme code='podcastLargeImage'/>" title="${podcast}" alt="${podcast}"></a>
             <div class="topHeader"><a href="podcastChannels.view?" target="main">${podcast}</a></div>
         </td>
         <c:if test="${model.user.settingsRole}">
             <td style="min-width:3em;padding-right:1em;text-align: center">
-                <a href="settings.view?" target="main"><img src="<spring:theme code="settingsImage"/>" title="${settings}" alt="${settings}"></a>
+                <a href="settings.view?" target="main"><img src="<spring:theme code='settingsImage'/>" title="${settings}" alt="${settings}"></a>
                 <div class="topHeader"><a href="settings.view?" target="main">${settings}</a></div>
             </td>
         </c:if>
         <td style="min-width:3em;padding-right:1em;text-align: center">
-            <a href="status.view?" target="main"><img src="<spring:theme code="statusImage"/>" title="${status}" alt="${status}"></a>
+            <a href="status.view?" target="main"><img src="<spring:theme code='statusImage'/>" title="${status}" alt="${status}"></a>
             <div class="topHeader"><a href="status.view?" target="main">${status}</a></div>
         </td>
         <td style="min-width:3em;padding-right:1em;text-align: center">
-            <a href="more.view?" target="main"><img src="<spring:theme code="moreImage"/>" title="${more}" alt="${more}"></a>
+            <a href="more.view?" target="main"><img src="<spring:theme code='moreImage'/>" title="${more}" alt="${more}"></a>
             <div class="topHeader"><a href="more.view?" target="main">${more}</a></div>
         </td>
         <td style="min-width:3em;padding-right:1em;text-align: center">
-            <a href="help.view?" target="main"><img src="<spring:theme code="helpImage"/>" title="${help}" alt="${help}"></a>
+            <a href="help.view?" target="main"><img src="<spring:theme code='helpImage'/>" title="${help}" alt="${help}"></a>
             <div class="topHeader"><a href="help.view?" target="main">${help}</a></div>
         </td>
 
@@ -127,7 +176,7 @@
             <form method="post" action="search.view" target="main" name="searchForm">
                 <td><input required type="text" name="query" id="query" size="28" placeholder="${search}" onclick="select();"
                            onkeyup="triggerInstantSearch();"></td>
-                <td><a href="javascript:document.searchForm.submit()"><img src="<spring:theme code="searchImage"/>" alt="${search}" title="${search}"></a></td>
+                <td><a href="javascript:document.searchForm.submit()"><img src="<spring:theme code='searchImage'/>" alt="${search}" title="${search}"></a></td>
             </form>
         </td>
 
@@ -143,7 +192,7 @@
                     </div>
                 </c:when>
                 <c:otherwise>
-                    <img src="<spring:theme code="userImage"/>" alt="User" height="24">
+                    <img src="<spring:theme code='userImage'/>" alt="User" height="24">
                 </c:otherwise>
             </c:choose>
 
@@ -154,11 +203,19 @@
         </td>
 
         <td style="padding-left:15pt;padding-right:5pt;vertical-align: right;width: 100%;text-align: center">
-            <a href="<c:url value="/logout"/>" target="_top">
-                <img src="<spring:theme code="logoutImage"/>" alt="logout" height="24">
+            <a id="connectionStatus" href="javascript:void(0)" onclick="toggleConnectionStatus();">
+                <img src="<spring:theme code='disconnectedImage'/>" alt="connect" height="24">
                 <div class="detail">
-                    <fmt:message key="top.logout" var="logout"></fmt:message>
-                    <c:out value="${logout}"/>
+                    <fmt:message key="top.disconnected"></fmt:message>
+                </div>
+            </a>
+        </td>
+
+        <td style="padding-left:15pt;padding-right:5pt;vertical-align: right;width: 100%;text-align: center">
+            <a href="<c:url value='/logout'/>" target="_top">
+                <img src="<spring:theme code='logoutImage'/>" alt="logout" height="24">
+                <div class="detail">
+                    <fmt:message key="top.logout"></fmt:message>
                 </div>
             </a>
         </td>

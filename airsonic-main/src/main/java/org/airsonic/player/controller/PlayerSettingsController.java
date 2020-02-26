@@ -49,7 +49,7 @@ import java.util.List;
  */
 @Controller
 @RequestMapping("/playerSettings")
-public class PlayerSettingsController  {
+public class PlayerSettingsController {
 
     @Autowired
     private PlayerService playerService;
@@ -100,7 +100,7 @@ public class PlayerSettingsController  {
         }
 
         command.setTranscodingSupported(transcodingService.isDownsamplingSupported(null));
-        command.setTranscodeDirectory(transcodingService.getTranscodeDirectory().getPath());
+        command.setTranscodeDirectory(transcodingService.getTranscodeDirectory().toString());
         command.setTranscodeSchemes(TranscodeScheme.values());
         command.setTechnologies(PlayerTechnology.values());
         command.setPlayers(players.toArray(new Player[players.size()]));

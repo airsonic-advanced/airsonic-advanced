@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.ajax;
 
+import org.airsonic.player.domain.PlayQueue.RepeatStatus;
 import org.airsonic.player.util.StringUtil;
 
 import java.util.List;
@@ -32,7 +33,7 @@ public class PlayQueueInfo {
 
     private final List<Entry> entries;
     private final boolean stopEnabled;
-    private final boolean repeatEnabled;
+    private final RepeatStatus repeatStatus;
     private final boolean shuffleRadioEnabled;
     private final boolean internetRadioEnabled;
     private final boolean sendM3U;
@@ -40,10 +41,11 @@ public class PlayQueueInfo {
     private int startPlayerAt = -1;
     private long startPlayerAtPosition; // millis
 
-    public PlayQueueInfo(List<Entry> entries, boolean stopEnabled, boolean repeatEnabled, boolean shuffleRadioEnabled, boolean internetRadioEnabled, boolean sendM3U, float gain) {
+    public PlayQueueInfo(List<Entry> entries, boolean stopEnabled, RepeatStatus repeatStatus,
+            boolean shuffleRadioEnabled, boolean internetRadioEnabled, boolean sendM3U, float gain) {
         this.entries = entries;
         this.stopEnabled = stopEnabled;
-        this.repeatEnabled = repeatEnabled;
+        this.repeatStatus = repeatStatus;
         this.shuffleRadioEnabled = shuffleRadioEnabled;
         this.internetRadioEnabled = internetRadioEnabled;
         this.sendM3U = sendM3U;
@@ -55,13 +57,7 @@ public class PlayQueueInfo {
     }
 
     public String getDurationAsString() {
-        int durationSeconds = 0;
-        for (Entry entry : entries) {
-            if (entry.getDuration() != null) {
-                durationSeconds += entry.getDuration();
-            }
-        }
-        return StringUtil.formatDuration(durationSeconds);
+        return StringUtil.formatDuration(Math.round(1000 * entries.parallelStream().filter(e -> e.getDuration() != null).mapToDouble(Entry::getDuration).sum()), false);
     }
 
     public boolean isStopEnabled() {
@@ -72,8 +68,8 @@ public class PlayQueueInfo {
         return sendM3U;
     }
 
-    public boolean isRepeatEnabled() {
-        return repeatEnabled;
+    public RepeatStatus getRepeatStatus() {
+        return repeatStatus;
     }
 
     public boolean isShuffleRadioEnabled() {
@@ -115,7 +111,7 @@ public class PlayQueueInfo {
         private final String genre;
         private final Integer year;
         private final String bitRate;
-        private final Integer duration;
+        private final Double duration;
         private final String durationAsString;
         private final String format;
         private final String contentType;
@@ -136,7 +132,7 @@ public class PlayQueueInfo {
                 String genre,
                 Integer year,
                 String bitRate,
-                Integer duration,
+                Double duration,
                 String durationAsString,
                 String format,
                 String contentType,
@@ -205,7 +201,7 @@ public class PlayQueueInfo {
             return durationAsString;
         }
 
-        public Integer getDuration() {
+        public Double getDuration() {
             return duration;
         }
 

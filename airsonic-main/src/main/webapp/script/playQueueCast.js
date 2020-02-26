@@ -159,7 +159,7 @@
 
         var request = new chrome.cast.media.LoadRequest(mediaInfo);
         request.autoplay = true;
-        request.currentTime = position;
+        request.currentTime = position || 0;
 
         this.castSession.loadMedia(request,
                 this.onMediaDiscovered.bind(this, 'loadMedia'),
@@ -190,7 +190,7 @@
     CastPlayer.prototype.onMediaStatusUpdate = function () {
         this.log(this.mediaSession.playerState);
         if (this.mediaSession.playerState === chrome.cast.media.PlayerState.IDLE && this.mediaSession.idleReason === "FINISHED") {
-            onNext(repeatEnabled);
+            onNext(repeatStatus);
         }
         this.syncControls();
     };

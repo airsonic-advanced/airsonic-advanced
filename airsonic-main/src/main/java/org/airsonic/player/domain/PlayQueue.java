@@ -22,6 +22,7 @@ package org.airsonic.player.domain;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * A play queue is a list of music files that are associated to a remote player.
@@ -30,8 +31,8 @@ import java.util.*;
  */
 public class PlayQueue {
 
-    private List<MediaFile> files = new ArrayList<MediaFile>();
-    private boolean repeatEnabled;
+    private List<MediaFile> files = new ArrayList<>();
+    private RepeatStatus repeatStatus = RepeatStatus.OFF;
     private String name = "(unnamed)";
     private Status status = Status.PLAYING;
 
@@ -39,15 +40,15 @@ public class PlayQueue {
     private InternetRadio internetRadio;
 
     /**
-     * The index of the current song, or -1 is the end of the playlist is reached.
+     * The index of the current song, or -1 if the end of the playlist is reached.
      * Note that both the index and the playlist size can be zero.
      */
-    private int index = 0;
+    private volatile int index = 0;
 
     /**
      * Used for undo functionality.
      */
-    private List<MediaFile> filesBackup = new ArrayList<MediaFile>();
+    private List<MediaFile> filesBackup = new ArrayList<>();
     private int indexBackup = 0;
 
     /**
@@ -55,7 +56,7 @@ public class PlayQueue {
      *
      * @return The name of the playlist, or <code>null</code> if no name has been assigned.
      */
-    public synchronized String getName() {
+    public String getName() {
         return name;
     }
 
@@ -64,7 +65,7 @@ public class PlayQueue {
      *
      * @param name The name of the playlist.
      */
-    public synchronized void setName(String name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -96,7 +97,7 @@ public class PlayQueue {
      *
      * @return All music files in the playlist.
      */
-    public synchronized List<MediaFile> getFiles() {
+    public List<MediaFile> getFiles() {
         return files;
     }
 
@@ -115,11 +116,15 @@ public class PlayQueue {
      * Skip to the next song in the playlist.
      */
     public synchronized void next() {
+        if (getRepeatStatus() == RepeatStatus.TRACK) {
+            return;
+        }
+
         index++;
 
         // Reached the end?
         if (index >= size()) {
-            index = isRepeatEnabled() ? 0 : -1;
+            index = (getRepeatStatus() == RepeatStatus.QUEUE) ? 0 : -1;
         }
     }
 
@@ -128,7 +133,7 @@ public class PlayQueue {
      *
      * @return The number of songs in the playlists.
      */
-    public synchronized int size() {
+    public int size() {
         return files.size();
     }
 
@@ -137,7 +142,7 @@ public class PlayQueue {
      *
      * @return Whether the playlist is empty.
      */
-    public synchronized boolean isEmpty() {
+    public boolean isEmpty() {
         return files.isEmpty();
     }
 
@@ -146,7 +151,7 @@ public class PlayQueue {
      *
      * @return The index of the current song, or -1 if the end of the playlist is reached.
      */
-    public synchronized int getIndex() {
+    public int getIndex() {
         return index;
     }
 
@@ -167,12 +172,9 @@ public class PlayQueue {
      * @param mediaFiles The music files to add.
      * @param index Where to add them.
      */
-    public synchronized void addFilesAt(Iterable<MediaFile> mediaFiles, int index) {
+    public synchronized void addFilesAt(Collection<MediaFile> mediaFiles, int index) {
         makeBackup();
-        for (MediaFile mediaFile : mediaFiles) {
-            files.add(index, mediaFile);
-            index++;
-        }
+        files.addAll(index, mediaFiles);
         setStatus(Status.PLAYING);
     }
 
@@ -182,15 +184,13 @@ public class PlayQueue {
      * @param append     Whether existing songs in the playlist should be kept.
      * @param mediaFiles The music files to add.
      */
-    public synchronized void addFiles(boolean append, Iterable<MediaFile> mediaFiles) {
+    public synchronized void addFiles(boolean append, Collection<MediaFile> mediaFiles) {
         makeBackup();
         if (!append) {
             index = 0;
             files.clear();
         }
-        for (MediaFile mediaFile : mediaFiles) {
-            files.add(mediaFile);
-        }
+        files.addAll(mediaFiles);
         setStatus(Status.PLAYING);
     }
 
@@ -284,22 +284,18 @@ public class PlayQueue {
     /**
      * Rearranges the playlist using the provided indexes.
      */
-    public synchronized void rearrange(int[] indexes) {
-        makeBackup();
-        if (indexes == null || indexes.length != size()) {
+    public synchronized void rearrange(List<Integer> indexes) {
+        if (indexes == null || indexes.size() != size()) {
             return;
         }
-
+        makeBackup();
         MediaFile[] newFiles = new MediaFile[files.size()];
-        for (int i = 0; i < indexes.length; i++) {
-            newFiles[i] = files.get(indexes[i]);
-        }
-        for (int i = 0; i < indexes.length; i++) {
-            if (index == indexes[i]) {
+        IntStream.range(0, size()).parallel().forEach(i -> {
+            newFiles[i] = files.get(indexes.get(i));
+            if (index == indexes.get(i)) {
                 index = i;
-                break;
             }
-        }
+        });
 
         files.clear();
         files.addAll(Arrays.asList(newFiles));
@@ -311,17 +307,7 @@ public class PlayQueue {
      * @param index The playlist index.
      */
     public synchronized void moveUp(int index) {
-        makeBackup();
-        if (index <= 0 || index >= size()) {
-            return;
-        }
-        Collections.swap(files, index, index - 1);
-
-        if (this.index == index) {
-            this.index--;
-        } else if (this.index == index - 1) {
-            this.index++;
-        }
+        moveDown(index - 1);
     }
 
     /**
@@ -330,10 +316,10 @@ public class PlayQueue {
      * @param index The playlist index.
      */
     public synchronized void moveDown(int index) {
-        makeBackup();
         if (index < 0 || index >= size() - 1) {
             return;
         }
+        makeBackup();
         Collections.swap(files, index, index + 1);
 
         if (this.index == index) {
@@ -343,22 +329,17 @@ public class PlayQueue {
         }
     }
 
-    /**
-     * Returns whether the playlist is repeating.
-     *
-     * @return Whether the playlist is repeating.
-     */
-    public synchronized boolean isRepeatEnabled() {
-        return repeatEnabled;
+    public RepeatStatus getRepeatStatus() {
+        return repeatStatus;
     }
 
     /**
      * Sets whether the playlist is repeating.
      *
-     * @param repeatEnabled Whether the playlist is repeating.
+     * @param repeatStatus Whether the playlist is repeating (and how)
      */
-    public synchronized void setRepeatEnabled(boolean repeatEnabled) {
-        this.repeatEnabled = repeatEnabled;
+    public void setRepeatStatus(RepeatStatus repeatStatus) {
+        this.repeatStatus = repeatStatus;
     }
 
     /**
@@ -366,20 +347,24 @@ public class PlayQueue {
      *
      * @return Whether the play queue is a shuffle radio mode.
      */
-    public synchronized boolean isShuffleRadioEnabled() { return this.randomSearchCriteria != null; }
+    public boolean isShuffleRadioEnabled() {
+        return this.randomSearchCriteria != null;
+    }
 
     /**
      * Returns whether the play queue is a internet radio mode.
      *
      * @return Whether the play queue is a internet radio mode.
      */
-    public synchronized boolean isInternetRadioEnabled() { return this.internetRadio != null; }
+    public boolean isInternetRadioEnabled() {
+        return this.internetRadio != null;
+    }
 
     /**
      * Revert the last operation.
      */
     public synchronized void undo() {
-        List<MediaFile> filesTmp = new ArrayList<MediaFile>(files);
+        List<MediaFile> filesTmp = new ArrayList<>(files);
         int indexTmp = index;
 
         index = indexBackup;
@@ -394,7 +379,7 @@ public class PlayQueue {
      *
      * @return The playlist status.
      */
-    public synchronized Status getStatus() {
+    public Status getStatus() {
         return status;
     }
 
@@ -415,28 +400,36 @@ public class PlayQueue {
      *
      * @param internetRadio An internet radio, or <code>null</code> if this is not an internet radio playlist
      */
-    public void setInternetRadio(InternetRadio internetRadio) { this.internetRadio = internetRadio; }
+    public void setInternetRadio(InternetRadio internetRadio) {
+        this.internetRadio = internetRadio;
+    }
 
     /**
      * Gets the current internet radio
      *
      * @return The current internet radio, or <code>null</code> if this is not an internet radio playlist
      */
-    public InternetRadio getInternetRadio() { return internetRadio; }
+    public InternetRadio getInternetRadio() {
+        return internetRadio;
+    }
 
     /**
      * Returns the criteria used to generate this random playlist
      *
      * @return The search criteria, or <code>null</code> if this is not a random playlist.
      */
-    public synchronized RandomSearchCriteria getRandomSearchCriteria() { return randomSearchCriteria; }
+    public RandomSearchCriteria getRandomSearchCriteria() {
+        return randomSearchCriteria;
+    }
 
     /**
      * Sets the criteria used to generate this random playlist
      *
      * @param randomSearchCriteria The search criteria, or <code>null</code> if this is not a random playlist.
      */
-    public synchronized void setRandomSearchCriteria(RandomSearchCriteria randomSearchCriteria) { this.randomSearchCriteria = randomSearchCriteria; }
+    public void setRandomSearchCriteria(RandomSearchCriteria randomSearchCriteria) {
+        this.randomSearchCriteria = randomSearchCriteria;
+    }
 
     /**
      * Returns the total length in bytes.
@@ -444,15 +437,15 @@ public class PlayQueue {
      * @return The total length in bytes.
      */
     public synchronized long length() {
-        long length = 0;
-        for (MediaFile mediaFile : files) {
-            length += mediaFile.getFileSize();
-        }
-        return length;
+        return files.parallelStream().mapToLong(MediaFile::getFileSize).sum();
+    }
+
+    public synchronized double duration() {
+        return files.parallelStream().filter(m -> m.getDuration() != null).mapToDouble(MediaFile::getDuration).sum();
     }
 
     private void makeBackup() {
-        filesBackup = new ArrayList<MediaFile>(files);
+        filesBackup = new ArrayList<>(files);
         indexBackup = index;
     }
 
@@ -471,5 +464,18 @@ public class PlayQueue {
         TRACK,
         ARTIST,
         ALBUM
+    }
+
+    public enum RepeatStatus {
+        OFF, TRACK, QUEUE;
+
+        public static RepeatStatus getNext(RepeatStatus status) {
+            switch (status) {
+                case OFF: return TRACK;
+                case TRACK: return QUEUE;
+                case QUEUE: return OFF;
+                default: return OFF;
+            }
+        }
     }
 }

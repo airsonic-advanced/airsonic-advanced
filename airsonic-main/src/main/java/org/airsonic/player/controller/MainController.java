@@ -34,6 +34,7 @@ import org.springframework.web.servlet.view.RedirectView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,7 +45,7 @@ import java.util.stream.Collectors;
  */
 @Controller
 @RequestMapping("/main")
-public class MainController  {
+public class MainController {
 
     @Autowired
     private SecurityService securityService;
@@ -187,7 +188,7 @@ public class MainController  {
         boolean viewAsList = ServletRequestUtils.getBooleanParameter(request, "viewAsList", userSettings.isViewAsList());
         if (viewAsList != userSettings.isViewAsList()) {
             userSettings.setViewAsList(viewAsList);
-            userSettings.setChanged(new Date());
+            userSettings.setChanged(Instant.now());
             settingsService.updateUserSettings(userSettings);
         }
         return viewAsList;

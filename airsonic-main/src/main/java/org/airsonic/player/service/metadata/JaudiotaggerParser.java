@@ -19,27 +19,28 @@
  */
 package org.airsonic.player.service.metadata;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.io.MoreFiles;
+
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
-import org.jaudiotagger.tag.id3.AbstractID3Tag;
-import org.jaudiotagger.tag.id3.ID3v24Frames;
-import org.jaudiotagger.tag.id3.ID3v24Tag;
 import org.jaudiotagger.tag.images.Artwork;
 import org.jaudiotagger.tag.reference.GenreTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.logging.LogManager;
@@ -53,6 +54,7 @@ import java.util.regex.Pattern;
  * @author Sindre Mehus
  */
 @Service
+@Order(0)
 public class JaudiotaggerParser extends MetaDataParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(JaudiotaggerParser.class);
@@ -82,80 +84,26 @@ public class JaudiotaggerParser extends MetaDataParser {
      * @return Meta data for the file.
      */
     @Override
-    public MetaData getRawMetaData(File file) {
+    public MetaData getRawMetaData(Path file) {
 
         MetaData metaData = new MetaData();
 
         try {
-            AudioFile audioFile = AudioFileIO.read(file);
+            AudioFile audioFile = AudioFileIO.read(file.toFile());
             Tag tag = audioFile.getTag();
             if (tag != null) {
                 metaData.setAlbumName(getTagField(tag, FieldKey.ALBUM));
                 metaData.setTitle(getTagField(tag, FieldKey.TITLE));
-                metaData.setYear(parseYear(getTagField(tag, FieldKey.YEAR)));
+                metaData.setYear(parseIntegerPattern(getTagField(tag, FieldKey.YEAR), YEAR_NUMBER_PATTERN));
                 metaData.setGenre(mapGenre(getTagField(tag, FieldKey.GENRE)));
-                metaData.setDiscNumber(parseInteger(getTagField(tag, FieldKey.DISC_NO)));
-                metaData.setTrackNumber(parseTrackNumber(getTagField(tag, FieldKey.TRACK)));
+                metaData.setDiscNumber(parseIntegerPattern(getTagField(tag, FieldKey.DISC_NO), null));
+                metaData.setTrackNumber(parseIntegerPattern(getTagField(tag, FieldKey.TRACK), TRACK_NUMBER_PATTERN));
                 metaData.setMusicBrainzReleaseId(getTagField(tag, FieldKey.MUSICBRAINZ_RELEASEID));
+                metaData.setMusicBrainzRecordingId(getTagField(tag, FieldKey.MUSICBRAINZ_TRACK_ID));
 
                 metaData.setArtist(getTagField(tag, FieldKey.ARTIST));
                 metaData.setAlbumArtist(getTagField(tag, FieldKey.ALBUM_ARTIST));
 
-                if (tag instanceof AbstractID3Tag && 0 < audioFile.getTag().getFieldCount()) {
-
-                    AbstractID3Tag id3Tag = (AbstractID3Tag)tag;
-                    if (ID3v24Tag.RELEASE == id3Tag.getRelease()
-                            && ID3v24Tag.MAJOR_VERSION == id3Tag.getMajorVersion()
-                            && ID3v24Tag.REVISION == id3Tag.getRevision()) {
-
-                        audioFile.getTag().getFields().forEachRemaining(f -> {
-                            switch (f.getId()) {
-                                case ID3v24Frames.FRAME_ID_ALBUM:
-                                    if (StringUtils.isBlank(metaData.getAlbumName())) {
-                                        metaData.setAlbumName(f.toString());
-                                    }
-                                    break;
-                                case ID3v24Frames.FRAME_ID_TITLE:
-                                    if (StringUtils.isBlank(metaData.getTitle())) {
-                                        metaData.setTitle(f.toString());
-                                    }
-                                    break;
-                                case ID3v24Frames.FRAME_ID_YEAR:
-                                    if (ObjectUtils.isEmpty(metaData.getYear())) {
-                                        metaData.setYear(parseYear(f.toString()));
-                                    }
-                                    break;
-                                case ID3v24Frames.FRAME_ID_GENRE:
-                                    if (StringUtils.isBlank(metaData.getGenre())) {
-                                        metaData.setGenre(mapGenre(f.toString()));
-                                    }
-                                    break;
-                                case ID3v24Frames.FRAME_ID_SET:
-                                    if (ObjectUtils.isEmpty(metaData.getDiscNumber())) {
-                                        metaData.setDiscNumber(parseInteger(f.toString()));
-                                    }
-                                    break;
-                                case ID3v24Frames.FRAME_ID_TRACK:
-                                    if (ObjectUtils.isEmpty(metaData.getTrackNumber())) {
-                                        metaData.setTrackNumber(parseTrackNumber(f.toString()));
-                                    }
-                                    break;
-                                case ID3v24Frames.FRAME_ID_ARTIST:
-                                    if (StringUtils.isBlank(metaData.getArtist())) {
-                                        metaData.setArtist(f.toString());
-                                    }
-                                    break;
-                                case ID3v24Frames.FRAME_ID_ACCOMPANIMENT:
-                                    if (StringUtils.isBlank(metaData.getAlbumArtist())) {
-                                        metaData.setAlbumArtist(f.toString());
-                                    }
-                                    break;
-                                default:
-                                    break;
-                            }
-                        });
-                    }
-                }
                 if (StringUtils.isBlank(metaData.getArtist())) {
                     metaData.setArtist(metaData.getAlbumArtist());
                 }
@@ -169,7 +117,7 @@ public class JaudiotaggerParser extends MetaDataParser {
             if (audioHeader != null) {
                 metaData.setVariableBitRate(audioHeader.isVariableBitRate());
                 metaData.setBitRate((int) audioHeader.getBitRateAsNumber());
-                metaData.setDurationSeconds(audioHeader.getTrackLength());
+                metaData.setDuration(audioHeader.getPreciseTrackLength());
             }
 
 
@@ -180,7 +128,7 @@ public class JaudiotaggerParser extends MetaDataParser {
         return metaData;
     }
 
-    private String getTagField(Tag tag, FieldKey fieldKey) {
+    private static String getTagField(Tag tag, FieldKey fieldKey) {
         try {
             return StringUtils.trimToNull(tag.getFirst(fieldKey));
         } catch (Exception x) {
@@ -193,14 +141,14 @@ public class JaudiotaggerParser extends MetaDataParser {
      * Returns all tags supported by id3v1.
      */
     public static SortedSet<String> getID3V1Genres() {
-        return new TreeSet<String>(GenreTypes.getInstanceOf().getAlphabeticalValueList());
+        return new TreeSet<>(GenreTypes.getInstanceOf().getAlphabeticalValueList());
     }
 
     /**
      * Sometimes the genre is returned as "(17)" or "(17)Rock", instead of "Rock".  This method
      * maps the genre ID to the corresponding text.
      */
-    private String mapGenre(String genre) {
+    private static String mapGenre(String genre) {
         if (genre == null) {
             return null;
         }
@@ -214,76 +162,35 @@ public class JaudiotaggerParser extends MetaDataParser {
         return genre;
     }
 
-    /**
-     * Parses the track number from the given string.  Also supports
-     * track numbers on the form "4/12".
-     */
-    private Integer parseTrackNumber(String trackNumber) {
-        if (trackNumber == null) {
+    private static Integer parseIntegerPattern(String str, Pattern pattern) {
+        str = StringUtils.trimToNull(str);
+
+        if (str == null) {
             return null;
         }
 
         Integer result = null;
 
         try {
-            result = Integer.valueOf(trackNumber);
+            result = Integer.valueOf(str);
         } catch (NumberFormatException x) {
-            Matcher matcher = TRACK_NUMBER_PATTERN.matcher(trackNumber);
-            if (matcher.matches()) {
-                try {
-                    result = Integer.valueOf(matcher.group(1));
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            }
-        }
-
-        if (Integer.valueOf(0).equals(result)) {
-            return null;
-        }
-        return result;
-    }
-
-    private Integer parseYear(String year) {
-        if (year == null) {
-            return null;
-        }
-
-        Integer result = null;
-
-        try {
-            result = Integer.valueOf(year);
-        } catch (NumberFormatException x) {
-            Matcher matcher = YEAR_NUMBER_PATTERN.matcher(year);
-            if (matcher.matches()) {
-                try {
-                    result = Integer.valueOf(matcher.group(1));
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            }
-        }
-
-        if (Integer.valueOf(0).equals(result)) {
-            return null;
-        }
-        return result;
-    }
-
-    private Integer parseInteger(String s) {
-        s = StringUtils.trimToNull(s);
-        if (s == null) {
-            return null;
-        }
-        try {
-            Integer result = Integer.valueOf(s);
-            if (Integer.valueOf(0).equals(result)) {
+            if (pattern == null) {
                 return null;
             }
-            return result;
-        } catch (NumberFormatException x) {
+            Matcher matcher = pattern.matcher(str);
+            if (matcher.matches()) {
+                try {
+                    result = Integer.valueOf(matcher.group(1));
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+        }
+
+        if (Integer.valueOf(0).equals(result)) {
             return null;
         }
+        return result;
     }
 
     /**
@@ -296,7 +203,7 @@ public class JaudiotaggerParser extends MetaDataParser {
     public void setMetaData(MediaFile file, MetaData metaData) {
 
         try {
-            AudioFile audioFile = AudioFileIO.read(file.getFile());
+            AudioFile audioFile = AudioFileIO.read(file.getFile().toFile());
             Tag tag = audioFile.getTagOrCreateAndSetDefault();
 
             tag.setField(FieldKey.ARTIST, StringUtils.trimToEmpty(metaData.getArtist()));
@@ -346,31 +253,17 @@ public class JaudiotaggerParser extends MetaDataParser {
         return settingsService;
     }
 
+    private static Set<String> applicableFormats = ImmutableSet.of("mp3", "m4a", "m4b", "aac", "ogg", "flac", "wav", "mpc", "mp+", "ape", "wma");
+
     /**
      * Returns whether this parser is applicable to the given file.
      *
-     * @param file The music file in question.
+     * @param path The path to music file in question.
      * @return Whether this parser is applicable to the given file.
      */
     @Override
-    public boolean isApplicable(File file) {
-        if (!file.isFile()) {
-            return false;
-        }
-
-        String format = FilenameUtils.getExtension(file.getName()).toLowerCase();
-
-        return "mp3".equals(format) ||
-               "m4a".equals(format) ||
-               "m4b".equals(format) ||
-               "aac".equals(format) ||
-               "ogg".equals(format) ||
-               "flac".equals(format) ||
-               "wav".equals(format) ||
-               "mpc".equals(format) ||
-               "mp+".equals(format) ||
-               "ape".equals(format) ||
-               "wma".equals(format);
+    public boolean isApplicable(Path path) {
+        return Files.isRegularFile(path) && applicableFormats.contains(MoreFiles.getFileExtension(path).toLowerCase());
     }
 
     /**
@@ -383,13 +276,13 @@ public class JaudiotaggerParser extends MetaDataParser {
         try {
             return getArtwork(file) != null;
         } catch (Throwable x) {
-            LOG.warn("Failed to find cover art tag in " + file, x);
+            LOG.info("Failed to find cover art tag in " + file, x);
             return false;
         }
     }
 
     public Artwork getArtwork(MediaFile file) throws Exception {
-        AudioFile audioFile = AudioFileIO.read(file.getFile());
+        AudioFile audioFile = AudioFileIO.read(file.getFile().toFile());
         Tag tag = audioFile.getTag();
         return tag == null ? null : tag.getFirstArtwork();
     }

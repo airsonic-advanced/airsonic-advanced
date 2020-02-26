@@ -4,14 +4,15 @@ package org.airsonic.player.service.search;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.SearchService;
+import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,10 +21,10 @@ import static org.springframework.util.ObjectUtils.isEmpty;
 /*
  * Test cases related to #1139.
  * Confirming whether shuffle search can be performed correctly in MusicFolder containing special strings.
- * 
+ *
  * (Since the query of getRandomAlbums consists of folder paths only,
  * this verification is easy to perform.)
- * 
+ *
  * This test case is a FalsePattern for search,
  * but there may be problems with the data flow prior to creating the search index.
  */
@@ -39,14 +40,14 @@ public class SearchServiceSpecialPathTestCase extends AbstractAirsonicHomeTest {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
 
-            File musicDir = new File(resolveBaseMediaPath.apply("Search/SpecialPath/accessible"));
-            musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, new Date()));
+            Path musicDir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible");
+            musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, Instant.now()));
 
-            File music2Dir = new File(resolveBaseMediaPath.apply("Search/SpecialPath/accessible's"));
-            musicFolders.add(new MusicFolder(2, music2Dir, "accessible's", true, new Date()));
+            Path music2Dir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible's");
+            musicFolders.add(new MusicFolder(2, music2Dir, "accessible's", true, Instant.now()));
 
-            File music3Dir = new File(resolveBaseMediaPath.apply("Search/SpecialPath/accessible+s"));
-            musicFolders.add(new MusicFolder(3, music3Dir, "accessible+s", true, new Date()));
+            Path music3Dir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible+s");
+            musicFolders.add(new MusicFolder(3, music3Dir, "accessible+s", true, Instant.now()));
         }
         return musicFolders;
     }

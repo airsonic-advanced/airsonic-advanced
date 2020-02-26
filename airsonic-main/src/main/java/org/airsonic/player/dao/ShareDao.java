@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Provides database services for shared media.
@@ -57,7 +58,7 @@ public class ShareDao extends AbstractDao {
         update(sql, share.getName(), share.getDescription(), share.getUsername(), share.getCreated(),
                 share.getExpires(), share.getLastVisited(), share.getVisitCount());
 
-        int id = getJdbcTemplate().queryForObject("select max(id) from share", Integer.class);
+        int id = queryForInt("select max(id) from share", 0);
         share.setId(id);
     }
 
@@ -134,8 +135,8 @@ public class ShareDao extends AbstractDao {
 
     private static class ShareRowMapper implements RowMapper<Share> {
         public Share mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new Share(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getTimestamp(5),
-                    rs.getTimestamp(6), rs.getTimestamp(7), rs.getInt(8));
+            return new Share(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), Optional.ofNullable(rs.getTimestamp(5)).map(x -> x.toInstant()).orElse(null),
+                    Optional.ofNullable(rs.getTimestamp(6)).map(x -> x.toInstant()).orElse(null), Optional.ofNullable(rs.getTimestamp(7)).map(x -> x.toInstant()).orElse(null), rs.getInt(8));
         }
     }
 

@@ -1,17 +1,18 @@
 package org.airsonic.player;
 
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
+
 import org.airsonic.player.controller.JAXBWriter;
 import org.airsonic.player.dao.DaoHelper;
 import org.airsonic.player.service.MediaScannerService;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -20,7 +21,7 @@ public class TestCaseUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(TestCaseUtils.class);
 
-    private static File airsonicHomeDirForTest = null;
+    private static Path airsonicHomeDirForTest = null;
 
     /**
      * Returns the path of the AIRSONIC_HOME directory to use for tests.
@@ -33,13 +34,13 @@ public class TestCaseUtils {
 
         if (airsonicHomeDirForTest == null) {
             try {
-                airsonicHomeDirForTest = Files.createTempDirectory("airsonic_test_").toFile();
+                airsonicHomeDirForTest = Files.createTempDirectory("airsonic_test_");
             } catch (IOException e) {
                 throw new RuntimeException("Error while creating temporary AIRSONIC_HOME directory for tests");
             }
-            LOG.info("AIRSONIC_HOME directory will be {}", airsonicHomeDirForTest.getAbsolutePath());
+            LOG.info("AIRSONIC_HOME directory will be {}", airsonicHomeDirForTest.toAbsolutePath().toString());
         }
-        return airsonicHomeDirForTest.getAbsolutePath();
+        return airsonicHomeDirForTest.toAbsolutePath().toString();
     }
 
     /**
@@ -50,21 +51,11 @@ public class TestCaseUtils {
     }
 
     /**
-     * Cleans the AIRSONIC_HOME directory used for tests.
+     * Cleans the AIRSONIC_HOME directory used for tests. (Does not delete the folder itself)
      */
     public static void cleanAirsonicHomeForTest() throws IOException {
-
-        File airsonicHomeDir = new File(airsonicHomePathForTest());
-        if (airsonicHomeDir.exists() && airsonicHomeDir.isDirectory()) {
-            LOG.debug("Delete airsonic home (ie. {}).", airsonicHomeDir.getAbsolutePath());
-            try {
-                FileUtils.deleteDirectory(airsonicHomeDir);
-            } catch (IOException e) {
-                LOG.warn("Error while deleting airsonic home.");
-                e.printStackTrace();
-                throw e;
-            }
-        }
+        Path airsonicHomeDir = Paths.get(airsonicHomePathForTest());
+        MoreFiles.deleteDirectoryContents(airsonicHomeDir, RecursiveDeleteOption.ALLOW_INSECURE);
     }
 
     /**
@@ -89,17 +80,6 @@ public class TestCaseUtils {
      */
     public static Integer recordsInTable(String tableName, DaoHelper daoHelper) {
         return daoHelper.getJdbcTemplate().queryForObject("select count(1) from " + tableName,Integer.class);
-    }
-
-    public static ApplicationContext loadSpringApplicationContext(String baseResources) {
-        String applicationContextService = baseResources + "applicationContext-service.xml";
-        String applicationContextCache = baseResources + "applicationContext-cache.xml";
-
-        String[] configLocations = new String[]{
-                TestCaseUtils.class.getClass().getResource(applicationContextCache).toString(),
-                TestCaseUtils.class.getClass().getResource(applicationContextService).toString()
-        };
-        return new ClassPathXmlApplicationContext(configLocations);
     }
 
     /**

@@ -134,7 +134,7 @@
             </td>
 
             <td class="fit">
-                <span class="detail"><fmt:formatDate value="${episode.publishDate}" dateStyle="medium"/></span>
+                <span class="detail"><javatime:format value="${episode.publishDate}" style="M-"/></span>
             </td>
 
             <td class="fit" style="text-align:center">
@@ -178,7 +178,7 @@
 </tr></table>
 
 
-<div id="dialog-delete" title="<fmt:message key="common.confirm"/>" style="display: none;">
+<div id="dialog-delete" title="<fmt:message key='common.confirm'/>" style="display: none;">
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>
         <fmt:message key="podcastreceiver.confirmdelete"/></p>
 </div>

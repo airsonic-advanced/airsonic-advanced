@@ -38,7 +38,7 @@ public class RegisterPrecompiledJSPInitializer implements ServletContextInitiali
 
     private static void registerPrecompiledJSPs(ServletContext servletContext) {
         WebApp webApp = parseXmlFragment();
-        for (ServletDef def :  webApp.getServletDefs()) {
+        for (ServletDef def : webApp.getServletDefs()) {
             LOG.trace("Registering precompiled JSP: {} -> {}", def.getName(), def.getSclass());
             ServletRegistration.Dynamic reg = servletContext.addServlet(def.getName(), def.getSclass());
             // Need to set loadOnStartup somewhere between 0 and 128. 0 is highest priority. 99 should be fine
@@ -59,14 +59,13 @@ public class RegisterPrecompiledJSPInitializer implements ServletContextInitiali
                         precompiledJspWebXml),
                 IOUtils.toInputStream("</web-app>", Charset.defaultCharset()));
 
-        JAXBContext jaxbContext;
         try {
-            jaxbContext = new JAXBDataBinding(WebApp.class).getContext();
+            JAXBContext jaxbContext = new JAXBDataBinding(WebApp.class).getContext();
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             WebApp webapp = (WebApp) unmarshaller.unmarshal(webXmlIS);
             try {
                 webXmlIS.close();
-            } catch (java.io.IOException e) {}
+            } catch (java.io.IOException ignored) {}
             return webapp;
         } catch (JAXBException e) {
             throw new RuntimeException("Could not parse precompiled-jsp-web.xml", e);
