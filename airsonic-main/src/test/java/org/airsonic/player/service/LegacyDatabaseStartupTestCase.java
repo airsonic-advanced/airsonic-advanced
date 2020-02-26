@@ -1,11 +1,13 @@
 package org.airsonic.player.service;
 
 import org.airsonic.player.TestCaseUtils;
+import org.airsonic.player.util.EmbeddedTestCategory;
 import org.airsonic.player.util.FileUtils;
 import org.airsonic.player.util.HomeRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,6 +22,7 @@ import java.nio.file.Paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Category(EmbeddedTestCategory.class)
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class LegacyDatabaseStartupTestCase {
@@ -35,6 +38,9 @@ public class LegacyDatabaseStartupTestCase {
         // have to change the url here because old db files are libresonic
         System.setProperty("DatabaseConfigEmbedUrl",
                 SettingsService.getDefaultJDBCUrl().replaceAll("airsonic$", "libresonic"));
+        System.setProperty("DatabaseConfigEmbedUsername", "sa");
+        System.setProperty("DatabaseConfigEmbedPassword", "");
+        System.setProperty("DatabaseConfigEmbedDriver", "org.hsqldb.jdbcDriver");
     }
 
     @Autowired
@@ -44,5 +50,4 @@ public class LegacyDatabaseStartupTestCase {
     public void testStartup() {
         assertThat(dataSource).isNotNull();
     }
-
 }
