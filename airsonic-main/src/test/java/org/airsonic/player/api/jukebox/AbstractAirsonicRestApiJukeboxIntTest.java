@@ -74,9 +74,9 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     private static DaoHelper staticDaoHelper;
 
     @Autowired
-    protected PlayerService playerService;
-    @Autowired
     private MockMvc mvc;
+    @Autowired
+    protected PlayerService playerService;
     @Autowired
     private MusicFolderDao musicFolderDao;
     @Autowired

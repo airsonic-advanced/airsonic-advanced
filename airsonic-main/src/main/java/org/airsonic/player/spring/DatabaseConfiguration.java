@@ -33,7 +33,6 @@ public class DatabaseConfiguration {
     @Bean
     @Profile("legacy")
     public DataSource legacyDataSource() {
-        System.out.println("Using legacy profile. Connecting to " + url + ", driver " + driver + ", user " + user);
         return DataSourceBuilder.create()
                 //hsqldb driver (1.8) doesn't support Connection.isValid for pools
                 .type(DriverManagerDataSource.class)
@@ -47,7 +46,6 @@ public class DatabaseConfiguration {
     @Bean
     @Profile("embed")
     public DataSource embedDataSource() {
-        System.out.println("Using embed profile. Connecting to " + url + ", driver " + driver + ", user " + user);
         return DataSourceBuilder.create()
                 //find connection pool automatically
                 .username(user)

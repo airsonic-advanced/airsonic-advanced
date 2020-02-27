@@ -17,9 +17,9 @@ public class DaoTestCaseBean2 {
     public static final HomeRule airsonicRule = new HomeRule();
 
     @Autowired
-    GenericDaoHelper genericDaoHelper;
+    JdbcTemplate jdbcTemplate;
 
     JdbcTemplate getJdbcTemplate() {
-        return genericDaoHelper.getJdbcTemplate();
+        return jdbcTemplate;
     }
 }

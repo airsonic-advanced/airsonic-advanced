@@ -110,8 +110,7 @@ public class PodcastDao extends AbstractDao {
      * @param episode The Podcast episode to create.
      */
     public void createEpisode(PodcastEpisode episode) {
-        String sql = "insert into podcast_episode (" + EPISODE_INSERT_COLUMNS + ") values (" + questionMarks(
-                EPISODE_INSERT_COLUMNS) + ")";
+        String sql = "insert into podcast_episode (" + EPISODE_INSERT_COLUMNS + ") values (" + questionMarks(EPISODE_INSERT_COLUMNS) + ")";
         update(sql, episode.getChannelId(), episode.getUrl(), episode.getPath(),
                 episode.getTitle(), episode.getDescription(), episode.getPublishDate(),
                 episode.getDuration(), episode.getBytesTotal(), episode.getBytesDownloaded(),
@@ -125,8 +124,7 @@ public class PodcastDao extends AbstractDao {
      *         reverse chronological order (newest episode first).
      */
     public List<PodcastEpisode> getEpisodes(int channelId) {
-        String sql = "select " + EPISODE_QUERY_COLUMNS + " from podcast_episode where channel_id = ? " +
-                     "and status != ?";
+        String sql = "select " + EPISODE_QUERY_COLUMNS + " from podcast_episode where channel_id = ? and status != ?";
         List<PodcastEpisode> result = query(sql, episodeRowMapper, channelId, PodcastStatus.DELETED.name());
         result.sort(Comparator.comparing(PodcastEpisode::getPublishDate, Comparator.nullsLast(Comparator.reverseOrder())));
         return result;
@@ -139,9 +137,9 @@ public class PodcastDao extends AbstractDao {
      *         reverse chronological order (newest episode first).
      */
     public List<PodcastEpisode> getNewestEpisodes(int count) {
-        String sql = "select " + EPISODE_QUERY_COLUMNS
-                     + " from podcast_episode where status = ? and publish_date is not null " +
-                     "order by publish_date desc limit ?";
+        String sql = "select " + EPISODE_QUERY_COLUMNS +
+                     " from podcast_episode where status = ? and publish_date is not null" +
+                     " order by publish_date desc limit ?";
         return query(sql, episodeRowMapper, PodcastStatus.COMPLETED.name(), count);
     }
 
@@ -187,6 +185,7 @@ public class PodcastDao extends AbstractDao {
     }
 
     private static class PodcastChannelRowMapper implements RowMapper<PodcastChannel> {
+        @Override
         public PodcastChannel mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new PodcastChannel(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5),
                                       PodcastStatus.valueOf(rs.getString(6)), rs.getString(7));
@@ -194,6 +193,7 @@ public class PodcastDao extends AbstractDao {
     }
 
     private static class PodcastEpisodeRowMapper implements RowMapper<PodcastEpisode> {
+        @Override
         public PodcastEpisode mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new PodcastEpisode(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), rs.getString(5),
                     rs.getString(6), Optional.ofNullable(rs.getTimestamp(7)).map(x -> x.toInstant()).orElse(null), rs.getString(8), (Long) rs.getObject(9),

@@ -10,6 +10,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -69,12 +71,10 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         };
 
         user.setAdminRole(true);
-
         UserCredential uc = new UserCredential("muff1nman", "muff1nman", "secret", "noop", App.AIRSONIC);
-        int beforeSize = userDao.getAllUsers().size();
 
-        assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> userDao.createUser(user, uc));
-        assertEquals(beforeSize, userDao.getAllUsers().size());
+        assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> createTestUser(user, uc));
+        assertThat(userDao.getUserByName("muff1nman", true)).isNull();
 
         User user2 = new User("muff1nman", "noemail");
         UserCredential uc2 = new UserCredential("muff1nman", "muff1nman", "secret", "noop", App.AIRSONIC) {
@@ -84,8 +84,13 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
             }
         };
 
-        assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> userDao.createUser(user2, uc2));
-        assertEquals(beforeSize, userDao.getAllUsers().size());
+        assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> createTestUser(user2, uc2));
+        assertThat(userDao.getUserByName("muff1nman", true)).isNull();
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private void createTestUser(User user, UserCredential uc) {
+        userDao.createUser(user, uc);
     }
 
     @Test
@@ -162,8 +167,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
     public void testDeleteUser() {
         assertEquals("Wrong number of users.", 0, userDao.getAllUsers().size());
 
-        userDao.createUser(new User("sindre", null),
-                new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC));
+        userDao.createUser(new User("sindre", null), new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC));
         assertEquals("Wrong number of users.", 1, userDao.getAllUsers().size());
 
         userDao.createUser(new User("bente", null), new UserCredential("bente", "bente", "secret", "noop", App.AIRSONIC));
@@ -195,10 +199,9 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         assertNull("Error in getUserSettings.", userDao.getUserSettings("sindre"));
 
         assertThatExceptionOfType(DataIntegrityViolationException.class)
-                .isThrownBy(() -> userDao.updateUserSettings(new UserSettings("sindre")));
+                .isThrownBy(() -> updateUserSettings(new UserSettings("sindre")));
 
-        userDao.createUser(new User("sindre", null),
-                new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC));
+        userDao.createUser(new User("sindre", null), new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC));
         assertNull("Error in getUserSettings.", userDao.getUserSettings("sindre"));
 
         UserSettings settings = new UserSettings("sindre");
@@ -233,5 +236,10 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
 
         userDao.deleteUser("sindre");
         assertNull("Error in cascading delete.", userDao.getUserSettings("sindre"));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private void updateUserSettings(UserSettings settings) {
+        userDao.updateUserSettings(settings);
     }
 }

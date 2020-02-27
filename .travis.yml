@@ -43,18 +43,20 @@ matrix:
     before_install:
       - >
         docker pull ${DB};
-        docker run --name postgres -e POSTGRES_PASSWORD=pass -p 5432:5432 -d ${DB};
-        until docker run --rm --link postgres:pg postgres:9.6-alpine pg_isready -U postgres -h pg; do sleep 1; done;
+        docker run -d --name postgres -e POSTGRES_PASSWORD=pass -p 5432:5432 ${DB} -c 'log_statement=all';
+        until docker run --rm --link postgres:pg ${DB} pg_isready -U postgres -h pg; do sleep 1; done;
     script:
+      - docker ps
       - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=org.postgresql.Driver -DDatabaseConfigEmbedUrl=jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified -DDatabaseConfigEmbedUsername=postgres -DDatabaseConfigEmbedPassword=pass -DDatabaseUsertableQuote=\" verify -B -P integration-test;
   - jdk: openjdk11
     env: DB=postgres:12.2-alpine
     before_install:
       - >
         docker pull ${DB};
-        docker run --name postgres -e POSTGRES_PASSWORD=pass -p 5432:5432 -d ${DB};
-        until docker run --rm --link postgres:pg postgres:12.2-alpine pg_isready -U postgres -h pg; do sleep 1; done;
+        docker run -d --name postgres -e POSTGRES_PASSWORD=pass -p 5432:5432 ${DB} -c 'log_statement=all';
+        until docker run --rm --link postgres:pg ${DB} pg_isready -U postgres -h pg; do sleep 1; done;
     script:
+      - docker ps
       - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=org.postgresql.Driver -DDatabaseConfigEmbedUrl=jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified -DDatabaseConfigEmbedUsername=postgres -DDatabaseConfigEmbedPassword=pass -DDatabaseUsertableQuote=\" verify -B -P integration-test;
 
   # deploy jobs
