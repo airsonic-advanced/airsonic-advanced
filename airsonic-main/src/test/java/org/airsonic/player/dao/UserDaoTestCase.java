@@ -35,7 +35,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
     public void setUp() {
         getJdbcTemplate().execute("delete from user_role");
         getJdbcTemplate().execute("delete from user_credentials");
-        getJdbcTemplate().execute("delete from user");
+        getJdbcTemplate().execute("delete from " + userDao.getUserTable());
     }
 
     @Test
