@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Provides user-related database services.
@@ -120,7 +121,7 @@ public class UserDao extends AbstractDao {
             return Collections.emptyList();
         }
         String sql = "select " + USER_CREDENTIALS_COLUMNS + " from user_credentials where username=:user and app in (:apps)";
-        return namedQuery(sql, userCredentialRowMapper, ImmutableMap.of("user", username, "apps", Arrays.asList(apps)));
+        return namedQuery(sql, userCredentialRowMapper, ImmutableMap.of("user", username, "apps", Arrays.asList(apps).stream().map(App::name).collect(Collectors.toList())));
     }
 
     public List<UserCredential> getCredentialsByEncoder(String encoderPatternMatcher) {
@@ -136,8 +137,8 @@ public class UserDao extends AbstractDao {
     public boolean updateCredential(UserCredential oldCreds, UserCredential newCreds) {
         String sql = "update user_credentials set app_username=?, credential=?, encoder=?, app=?, updated=?, expiration=? where username=? and app_username=? and credential=? and encoder=? and app=? and created=? and updated=?";
         return update(sql, newCreds.getAppUsername(), newCreds.getCredential(), newCreds.getEncoder(),
-                newCreds.getApp(), newCreds.getUpdated(), newCreds.getExpiration(), oldCreds.getUsername(),
-                oldCreds.getAppUsername(), oldCreds.getCredential(), oldCreds.getEncoder(), oldCreds.getApp(),
+                newCreds.getApp().name(), newCreds.getUpdated(), newCreds.getExpiration(), oldCreds.getUsername(),
+                oldCreds.getAppUsername(), oldCreds.getCredential(), oldCreds.getEncoder(), oldCreds.getApp().name(),
                 oldCreds.getCreated(), oldCreds.getUpdated()) == 1;
     }
 
@@ -148,7 +149,7 @@ public class UserDao extends AbstractDao {
                 credential.getAppUsername(),
                 credential.getCredential(),
                 credential.getEncoder(),
-                credential.getApp(),
+                credential.getApp().name(),
                 credential.getCreated(),
                 credential.getUpdated(),
                 credential.getExpiration(),
@@ -162,7 +163,7 @@ public class UserDao extends AbstractDao {
         args.put("app_username", credential.getAppUsername());
         args.put("credential", credential.getCredential());
         args.put("encoder", credential.getEncoder());
-        args.put("app", credential.getApp());
+        args.put("app", credential.getApp().name());
         args.put("created", credential.getCreated());
         args.put("updated", credential.getUpdated());
         if (credential.getExpiration() != null) {
