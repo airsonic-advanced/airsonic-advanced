@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -125,8 +126,10 @@ public class PodcastDao extends AbstractDao {
      */
     public List<PodcastEpisode> getEpisodes(int channelId) {
         String sql = "select " + EPISODE_QUERY_COLUMNS + " from podcast_episode where channel_id = ? " +
-                     "and status != ? order by publish_date desc";
-        return query(sql, episodeRowMapper, channelId, PodcastStatus.DELETED.name());
+                     "and status != ?";
+        List<PodcastEpisode> result = query(sql, episodeRowMapper, channelId, PodcastStatus.DELETED.name());
+        result.sort(Comparator.comparing(PodcastEpisode::getPublishDate, Comparator.nullsLast(Comparator.reverseOrder())));
+        return result;
     }
 
     /**
