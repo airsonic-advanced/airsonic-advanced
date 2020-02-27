@@ -122,7 +122,6 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
         if (!dataBasePopulated) {
             staticDaoHelper = daoHelper;
 
-            assertThat(musicFolderDao.getAllMusicFolders().size()).isEqualTo(1);
             MusicFolderTestData.getTestMusicFolders().forEach(musicFolderDao::createMusicFolder);
             settingsService.clearMusicFolderCache();
 
