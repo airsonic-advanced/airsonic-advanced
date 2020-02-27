@@ -15,7 +15,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @RunWith(SpringRunner.class)
@@ -70,33 +69,16 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
             dataBasePopulated().set(true);
             getMusicFolders().forEach(musicFolderDao::createMusicFolder);
             settingsService.clearMusicFolderCache();
-            try {
-                // Await time to avoid scan failure.
-                for (int i = 0; i < 10; i++) {
-                    Thread.sleep(100);
+            // wait for previous startuo scan to finish
+            while (mediaScannerService.isScanning()) {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
+            // scan again
             TestCaseUtils.execScan(mediaScannerService);
-            System.out.println("--- Report of records count per table ---");
-            Map<String, Integer> records = TestCaseUtils.recordsInAllTables(daoHelper);
-            records.keySet().stream().filter(s ->
-                    s.equals("MEDIA_FILE")
-                    | s.equals("ARTIST")
-                    | s.equals("MUSIC_FOLDER")
-                    | s.equals("ALBUM"))
-                    .forEach(tableName ->
-                        System.out.println("\t" + tableName + " : " + records.get(tableName).toString()));
-            System.out.println("--- *********************** ---");
-            try {
-                // Await for Lucene to finish writing(asynchronous).
-                for (int i = 0; i < 5; i++) {
-                    Thread.sleep(100);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             dataBaseReady().set(true);
         } else {
             while (!dataBaseReady().get()) {

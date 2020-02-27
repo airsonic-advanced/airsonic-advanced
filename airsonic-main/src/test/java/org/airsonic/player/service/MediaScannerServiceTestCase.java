@@ -32,7 +32,6 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -67,9 +66,6 @@ public class MediaScannerServiceTestCase {
 
     @Autowired
     private MusicFolderDao musicFolderDao;
-
-    @Autowired
-    private DaoHelper daoHelper;
 
     @Autowired
     private MediaFileService mediaFileService;
@@ -110,12 +106,6 @@ public class MediaScannerServiceTestCase {
         Timer.Context globalTimerContext = globalTimer.time();
         TestCaseUtils.execScan(mediaScannerService);
         globalTimerContext.stop();
-
-        System.out.println("--- Report of records count per table ---");
-        Map<String, Integer> records = TestCaseUtils.recordsInAllTables(daoHelper);
-        records.keySet().forEach(tableName -> System.out.println(tableName + " : " + records.get(tableName).toString()));
-        System.out.println("--- *********************** ---");
-
 
         // Music Folder Music must have 3 children
         List<MediaFile> listeMusicChildren = mediaFileDao.getChildrenOf(MusicFolderTestData.resolveMusicFolderPath().toString());
