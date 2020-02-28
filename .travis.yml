@@ -58,6 +58,26 @@ matrix:
     script:
       - docker ps
       - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=org.postgresql.Driver -DDatabaseConfigEmbedUrl=jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified -DDatabaseConfigEmbedUsername=postgres -DDatabaseConfigEmbedPassword=pass -DDatabaseUsertableQuote=\" verify -B -P integration-test;
+  - jdk: openjdk11
+    env: DB=mysql:5.7
+    before_install:
+      - >
+        docker pull ${DB};
+        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB};
+        until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=root --password=pass -e 'SELECT 1' &> /dev/null; do sleep 1; done;
+    script:
+      - docker ps
+      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=com.mysql.jdbc.Driver -DDatabaseConfigEmbedUrl=jdbc:mysql://localhost:3306/airsonic -DDatabaseConfigEmbedUsername=root -DDatabaseConfigEmbedPassword=pass verify -B -P integration-test;
+  - jdk: openjdk11
+    env: DB=mysql:8.0
+    before_install:
+      - >
+        docker pull ${DB};
+        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB};
+        until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=root --password=pass -e 'SELECT 1' &> /dev/null; do sleep 1; done;
+    script:
+      - docker ps
+      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=com.mysql.jdbc.Driver -DDatabaseConfigEmbedUrl=jdbc:mysql://localhost:3306/airsonic -DDatabaseConfigEmbedUsername=root -DDatabaseConfigEmbedPassword=pass verify -B -P integration-test;
 
   # deploy jobs
   - name: "Deploy Edge Release"
