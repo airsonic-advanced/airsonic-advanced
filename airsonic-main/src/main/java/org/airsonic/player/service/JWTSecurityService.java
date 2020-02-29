@@ -55,7 +55,6 @@ public class JWTSecurityService {
         UriComponents components = UriComponentsBuilder.fromUriString(path).build();
         String query = components.getQuery();
         String claim = components.getPath() + (!StringUtils.isBlank(query) ? "?" + components.getQuery() : "");
-        LOG.debug("Creating token with claim " + claim);
         return JWT.create()
                 .withIssuer("airsonic")
                 .withSubject(user)
@@ -107,10 +106,7 @@ public class JWTSecurityService {
 
     public SonosLink verifySonosLink(String sonosLinkToken) {
         DecodedJWT jwt = verify(sonosLinkToken);
-
-        SonosLink sonosLink = new SonosLink(jwt.getClaim(CLAIM_USERNAME).asString(),
+        return new SonosLink(jwt.getClaim(CLAIM_USERNAME).asString(),
                 jwt.getClaim(CLAIM_HOUSEHOLDID).asString(), jwt.getClaim(CLAIM_LINKCODE).asString());
-
-        return sonosLink;
     }
 }

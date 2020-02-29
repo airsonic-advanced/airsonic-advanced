@@ -202,9 +202,12 @@ public class GlobalSecurityConfig {
             super(true);
         }
 
+        @Autowired
+        JWTSecurityService jwtSecurityService;
+
         @Bean(name = "jwtAuthenticationFilter")
         public JWTRequestParameterProcessingFilter jwtAuthFilter() throws Exception {
-            return new JWTRequestParameterProcessingFilter(authenticationManager(), FAILURE_URL);
+            return new JWTRequestParameterProcessingFilter(authenticationManager(), jwtSecurityService, FAILURE_URL);
         }
 
         @Override

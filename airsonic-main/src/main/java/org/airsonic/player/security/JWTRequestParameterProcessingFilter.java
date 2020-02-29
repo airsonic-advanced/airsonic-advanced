@@ -24,9 +24,11 @@ public class JWTRequestParameterProcessingFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(JWTRequestParameterProcessingFilter.class);
     private final AuthenticationManager authenticationManager;
     private final AuthenticationFailureHandler failureHandler;
+    private final JWTSecurityService jwtSecurityService;
 
-    protected JWTRequestParameterProcessingFilter(AuthenticationManager authenticationManager, String failureUrl) {
+    protected JWTRequestParameterProcessingFilter(AuthenticationManager authenticationManager, JWTSecurityService jwtSecurityService, String failureUrl) {
         this.authenticationManager = authenticationManager;
+        this.jwtSecurityService = jwtSecurityService;
         failureHandler = new SimpleUrlAuthenticationFailureHandler(failureUrl);
     }
 
