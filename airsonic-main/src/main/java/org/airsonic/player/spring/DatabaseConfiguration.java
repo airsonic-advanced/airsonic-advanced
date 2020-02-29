@@ -64,7 +64,7 @@ public class DatabaseConfiguration {
 
     @Bean
     public SpringLiquibase liquibase(DataSource dataSource,
-                                     @Value("${DatabaseMysqlMaxlength:512}")
+                                     @Value("${DatabaseMysqlMaxlength:384}")
                                      String mysqlVarcharLimit,
                                      @Value("${DatabaseUsertableQuote:}")
                                      String userTableQuote) {
