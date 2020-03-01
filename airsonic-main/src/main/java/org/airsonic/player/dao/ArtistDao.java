@@ -23,6 +23,7 @@ import org.airsonic.player.domain.Artist;
 import org.airsonic.player.domain.MusicFolder;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
@@ -86,7 +87,7 @@ public class ArtistDao extends AbstractDao {
      *
      * @param artist The artist to create/update.
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createOrUpdateArtist(Artist artist) {
         String sql = "update artist set " +
                      "cover_art_path=?," +
@@ -186,6 +187,7 @@ public class ArtistDao extends AbstractDao {
     }
 
     private static class ArtistMapper implements RowMapper<Artist> {
+        @Override
         public Artist mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Artist(
                     rs.getInt(1),
