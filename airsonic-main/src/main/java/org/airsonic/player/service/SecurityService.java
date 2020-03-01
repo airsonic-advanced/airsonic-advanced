@@ -460,7 +460,7 @@ public class SecurityService implements UserDetailsService {
      * @param folder The folder in question.
      * @return Whether the given file is located in the given folder.
      */
-    protected boolean isFileInFolder(String file, String folder) {
+    protected static boolean isFileInFolder(String file, String folder) {
         // Deny access if file contains ".." surrounded by slashes (or end of line).
         if (file.matches(".*(/|\\\\)\\.\\.(/|\\\\|$).*")) {
             return false;
@@ -470,7 +470,15 @@ public class SecurityService implements UserDetailsService {
         file = file.replace('\\', '/');
         folder = folder.replace('\\', '/');
 
-        return file.toUpperCase().startsWith(folder.toUpperCase());
+        return
+                // identity matches
+                // /a/ == /a, /a == /a/, /a == /a, /a/ == /a/
+                StringUtils.equalsIgnoreCase(file, folder)
+                || StringUtils.equalsIgnoreCase(file, StringUtils.appendIfMissing(folder, "/"))
+                || StringUtils.equalsIgnoreCase(StringUtils.appendIfMissing(file, "/"), folder)
+                || StringUtils.equalsIgnoreCase(StringUtils.appendIfMissing(file, "/"), StringUtils.appendIfMissing(folder, "/"))
+                // file prefix is folder (MUST append '/', otherwise /a/b2 startswith /a/b)
+                || StringUtils.startsWithIgnoreCase(file, StringUtils.appendIfMissing(folder, "/"));
     }
 
     public void setSettingsService(SettingsService settingsService) {
