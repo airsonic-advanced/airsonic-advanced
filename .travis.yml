@@ -63,7 +63,7 @@ matrix:
     before_install:
       - >
         docker pull ${DB};
-        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci;
+        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
         until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=root --password=pass -e 'SELECT 1' &> /dev/null; do sleep 1; done;
     script:
       - docker ps
@@ -73,7 +73,7 @@ matrix:
     before_install:
       - >
         docker pull ${DB};
-        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci;
+        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
         until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=root --password=pass -e 'SELECT 1' &> /dev/null; do sleep 1; done;
     script:
       - docker ps
@@ -83,7 +83,7 @@ matrix:
     before_install:
       - >
         docker pull ${DB};
-        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4;
+        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
         until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=root --password=pass -e 'SELECT 1' &> /dev/null; do sleep 1; done;
     script:
       - docker ps
@@ -93,7 +93,7 @@ matrix:
     before_install:
       - >
         docker pull ${DB};
-        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4;
+        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
         until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=root --password=pass -e 'SELECT 1' &> /dev/null; do sleep 1; done;
     script:
       - docker ps
