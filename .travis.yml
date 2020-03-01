@@ -79,7 +79,7 @@ matrix:
       - docker ps
       - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=com.mysql.jdbc.Driver -DDatabaseConfigEmbedUrl=jdbc:mysql://localhost:3306/airsonic -DDatabaseConfigEmbedUsername=root -DDatabaseConfigEmbedPassword=pass verify -B -P integration-test;
   - jdk: openjdk11
-    env: DB=mariadb:10.1
+    env: DB=mariadb:10.2
     before_install:
       - >
         docker pull ${DB};
