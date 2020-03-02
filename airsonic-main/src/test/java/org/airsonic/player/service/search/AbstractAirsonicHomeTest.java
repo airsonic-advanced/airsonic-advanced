@@ -69,7 +69,7 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
             dataBasePopulated().set(true);
             getMusicFolders().forEach(musicFolderDao::createMusicFolder);
             settingsService.clearMusicFolderCache();
-            // wait for previous startuo scan to finish
+            // wait for previous startup scan to finish
             while (mediaScannerService.isScanning()) {
                 try {
                     Thread.sleep(10);
