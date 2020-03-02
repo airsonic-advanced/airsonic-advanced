@@ -14,11 +14,9 @@ import static org.junit.Assert.assertThat;
 import static org.xmlunit.matchers.CompareMatcher.isIdenticalTo;
 
 public class PingIT {
-    String container = System.getProperty("dockerTestingContainer");
-
     @Test
     public void pingMissingAuthTest() throws Exception {
-        HttpGet httpGet = new HttpGet(container + ":4040/rest/ping");
+        HttpGet httpGet = new HttpGet("http://localhost:4040/rest/ping");
 
         try (CloseableHttpClient client = HttpClientBuilder.create().build();
                 CloseableHttpResponse response = client.execute(httpGet);) {

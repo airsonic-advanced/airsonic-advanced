@@ -12,41 +12,10 @@
     </parent>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cucumber.version>4.2.0</cucumber.version>
+        <docker.testing.container>it-container</docker.testing.container>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-core</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-junit</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-java</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-java8</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-spring</artifactId>
-            <version>${cucumber.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
@@ -151,39 +120,8 @@
         </testResources>
         <plugins>
             <plugin>
-                <groupId>com.github.temyers</groupId>
-                <artifactId>cucumber-jvm-parallel-plugin</artifactId>
-                <version>5.0.0</version>
-                <executions>
-                    <execution>
-                        <id>generateRunners</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>generateRunners</goal>
-                        </goals>
-                        <configuration>
-                            <featuresDirectory>src/test/resources/features</featuresDirectory>
-                            <format>pretty</format>
-                            <glue>org.airsonic.test.cucumber.steps</glue>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                    <compilerVersion>1.8</compilerVersion>
-                    <showWarnings>true</showWarnings>
-                    <encoding>UTF-8</encoding>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <id>default-jar</id>
@@ -196,15 +134,66 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>0.33.0</version>
+                <executions>
+                    <execution>
+                        <id>prepare-it-container</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                        <configuration>
+                            <showLogs>true</showLogs>
+                            <images>
+                                <image>
+                                    <name>${docker.container.repo}:latest</name>
+                                    <alias>${docker.testing.container}</alias>
+                                    <run>
+                                        <network>
+                                            <mode>host</mode>
+                                        </network>
+                                        <ports>
+                                            <port>4040:4040</port>
+                                        </ports>
+                                        <wait>
+                                            <time>100000</time>
+                                            <healthy>true</healthy>
+                                        </wait>
+                                        <env>
+                                            <JAVA_OPTS>-DDatabaseConfigType=${DatabaseConfigType} -DDatabaseConfigEmbedDriver=${DatabaseConfigEmbedDriver} -DDatabaseConfigEmbedUrl=${DatabaseConfigEmbedUrl} -DDatabaseConfigEmbedUsername=${DatabaseConfigEmbedUsername} -DDatabaseConfigEmbedPassword=${DatabaseConfigEmbedPassword} -DDatabaseUsertableQuote=${DatabaseUsertableQuote}</JAVA_OPTS>
+                                        </env>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>remove-it-container</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <forkCount>1</forkCount>
-                    <reuseForks>false</reuseForks>
-                    <includes>
-                        <include>**/Parallel*IT.class</include>
-                    </includes>
-                </configuration>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <dockerTestingContainer>${docker.testing.container}</dockerTestingContainer>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
