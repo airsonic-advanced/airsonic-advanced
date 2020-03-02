@@ -19,43 +19,53 @@
  */
 package org.airsonic.player.service;
 
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit test of {@link SecurityService}.
  *
  * @author Sindre Mehus
  */
-public class SecurityServiceTestCase extends TestCase {
+public class SecurityServiceTestCase {
 
+    @Test
     public void testIsFileInFolder() {
-        SecurityService service = new SecurityService();
+        assertTrue(SecurityService.isFileInFolder("/music/foo.mp3", "\\"));
+        assertTrue(SecurityService.isFileInFolder("/music/foo.mp3", "/"));
 
-        assertTrue(service.isFileInFolder("/music/foo.mp3", "\\"));
-        assertTrue(service.isFileInFolder("/music/foo.mp3", "/"));
+        assertTrue(SecurityService.isFileInFolder("/music/foo.mp3", "/music"));
+        assertTrue(SecurityService.isFileInFolder("\\music\\foo.mp3", "/music"));
+        assertTrue(SecurityService.isFileInFolder("/music/foo.mp3", "\\music"));
+        assertTrue(SecurityService.isFileInFolder("/music/foo.mp3", "\\music\\"));
 
-        assertTrue(service.isFileInFolder("/music/foo.mp3", "/music"));
-        assertTrue(service.isFileInFolder("\\music\\foo.mp3", "/music"));
-        assertTrue(service.isFileInFolder("/music/foo.mp3", "\\music"));
-        assertTrue(service.isFileInFolder("/music/foo.mp3", "\\music\\"));
+        assertFalse(SecurityService.isFileInFolder("", "/tmp"));
+        assertFalse(SecurityService.isFileInFolder("foo.mp3", "/tmp"));
+        assertFalse(SecurityService.isFileInFolder("/music/foo.mp3", "/tmp"));
+        assertFalse(SecurityService.isFileInFolder("/music/foo.mp3", "/tmp/music"));
 
-        assertFalse(service.isFileInFolder("", "/tmp"));
-        assertFalse(service.isFileInFolder("foo.mp3", "/tmp"));
-        assertFalse(service.isFileInFolder("/music/foo.mp3", "/tmp"));
-        assertFalse(service.isFileInFolder("/music/foo.mp3", "/tmp/music"));
+        // identity tests
+        assertTrue(SecurityService.isFileInFolder("/music/a", "/music/a"));
+        assertTrue(SecurityService.isFileInFolder("/music/a", "/music/a/"));
+        assertTrue(SecurityService.isFileInFolder("/music/a/", "/music/a/"));
+        assertTrue(SecurityService.isFileInFolder("/music/a/", "/music/a"));
+        assertFalse(SecurityService.isFileInFolder("/music/a2", "/music/a"));
+        assertFalse(SecurityService.isFileInFolder("/music/a", "/music/a2"));
 
         // Test that references to the parent directory (..) is not allowed.
-        assertTrue(service.isFileInFolder("/music/foo..mp3", "/music"));
-        assertTrue(service.isFileInFolder("/music/foo..", "/music"));
-        assertTrue(service.isFileInFolder("/music/foo.../", "/music"));
-        assertFalse(service.isFileInFolder("/music/foo/..", "/music"));
-        assertFalse(service.isFileInFolder("../music/foo", "/music"));
-        assertFalse(service.isFileInFolder("/music/../foo", "/music"));
-        assertFalse(service.isFileInFolder("/music/../bar/../foo", "/music"));
-        assertFalse(service.isFileInFolder("/music\\foo\\..", "/music"));
-        assertFalse(service.isFileInFolder("..\\music/foo", "/music"));
-        assertFalse(service.isFileInFolder("/music\\../foo", "/music"));
-        assertFalse(service.isFileInFolder("/music/..\\bar/../foo", "/music"));
+        assertTrue(SecurityService.isFileInFolder("/music/foo..mp3", "/music"));
+        assertTrue(SecurityService.isFileInFolder("/music/foo..", "/music"));
+        assertTrue(SecurityService.isFileInFolder("/music/foo.../", "/music"));
+        assertFalse(SecurityService.isFileInFolder("/music/foo/..", "/music"));
+        assertFalse(SecurityService.isFileInFolder("../music/foo", "/music"));
+        assertFalse(SecurityService.isFileInFolder("/music/../foo", "/music"));
+        assertFalse(SecurityService.isFileInFolder("/music/../bar/../foo", "/music"));
+        assertFalse(SecurityService.isFileInFolder("/music\\foo\\..", "/music"));
+        assertFalse(SecurityService.isFileInFolder("..\\music/foo", "/music"));
+        assertFalse(SecurityService.isFileInFolder("/music\\../foo", "/music"));
+        assertFalse(SecurityService.isFileInFolder("/music/..\\bar/../foo", "/music"));
     }
 }
 
