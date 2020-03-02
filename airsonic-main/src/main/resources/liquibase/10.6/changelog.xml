@@ -6,4 +6,5 @@
     <include file="support-listenbrainz.xml" relativeToChangelogFile="true"/>
     <include file="expand-durations.xml" relativeToChangelogFile="true"/>
     <include file="user-credentials.xml" relativeToChangelogFile="true"/>
+    <include file="timestamp-precision.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

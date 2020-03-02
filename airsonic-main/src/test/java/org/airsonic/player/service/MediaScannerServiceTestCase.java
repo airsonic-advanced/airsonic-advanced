@@ -32,7 +32,6 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -67,9 +66,6 @@ public class MediaScannerServiceTestCase {
 
     @Autowired
     private MusicFolderDao musicFolderDao;
-
-    @Autowired
-    private DaoHelper daoHelper;
 
     @Autowired
     private MediaFileService mediaFileService;
@@ -111,12 +107,6 @@ public class MediaScannerServiceTestCase {
         TestCaseUtils.execScan(mediaScannerService);
         globalTimerContext.stop();
 
-        System.out.println("--- Report of records count per table ---");
-        Map<String, Integer> records = TestCaseUtils.recordsInAllTables(daoHelper);
-        records.keySet().forEach(tableName -> System.out.println(tableName + " : " + records.get(tableName).toString()));
-        System.out.println("--- *********************** ---");
-
-
         // Music Folder Music must have 3 children
         List<MediaFile> listeMusicChildren = mediaFileDao.getChildrenOf(MusicFolderTestData.resolveMusicFolderPath().toString());
         Assert.assertEquals(3, listeMusicChildren.size());
@@ -137,7 +127,7 @@ public class MediaScannerServiceTestCase {
         Assert.assertEquals(5, allAlbums.size());
         System.out.println("--- *********************** ---");
 
-        List<MediaFile> listeSongs = mediaFileDao.getSongsByGenre("Baroque Instrumental", 0, 0, musicFolderDao.getAllMusicFolders());
+        List<MediaFile> listeSongs = mediaFileDao.getSongsByGenre("Baroque Instrumental", 0, Integer.MAX_VALUE, musicFolderDao.getAllMusicFolders());
         Assert.assertEquals(2, listeSongs.size());
 
         // display out metrics report

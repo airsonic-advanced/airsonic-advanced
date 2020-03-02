@@ -25,6 +25,7 @@ import org.airsonic.player.domain.MusicFolder;
 import org.apache.commons.lang.ObjectUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Files;
@@ -114,7 +115,7 @@ public class AlbumDao extends AbstractDao {
      *
      * @param album The album to create/update.
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createOrUpdateAlbum(Album album) {
         String sql = "update album set " +
                      "path=?," +

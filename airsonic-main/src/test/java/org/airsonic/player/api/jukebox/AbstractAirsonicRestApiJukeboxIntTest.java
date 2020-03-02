@@ -68,15 +68,15 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     static final String CLIENT_NAME = "airsonic";
     static final String JUKEBOX_PLAYER_NAME = CLIENT_NAME + "-jukebox";
     private static final String EXPECTED_FORMAT = "json";
-    private static String AIRSONIC_API_VERSION;
+    private static String AIRSONIC_API_VERSION = TestCaseUtils.restApiVersion();
 
     private static boolean dataBasePopulated;
     private static DaoHelper staticDaoHelper;
 
     @Autowired
-    protected PlayerService playerService;
-    @Autowired
     private MockMvc mvc;
+    @Autowired
+    protected PlayerService playerService;
     @Autowired
     private MusicFolderDao musicFolderDao;
     @Autowired
@@ -98,13 +98,12 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     @BeforeClass
     public static void setupClass() {
-        AIRSONIC_API_VERSION = TestCaseUtils.restApiVersion();
         dataBasePopulated = false;
     }
 
     @AfterClass
     public static void cleanDataBase() {
-        staticDaoHelper.getJdbcTemplate().execute("DROP SCHEMA PUBLIC CASCADE");
+        staticDaoHelper.getJdbcTemplate().execute("delete from player");
         staticDaoHelper = null;
         dataBasePopulated = false;
     }
@@ -122,7 +121,6 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
         if (!dataBasePopulated) {
             staticDaoHelper = daoHelper;
 
-            assertThat(musicFolderDao.getAllMusicFolders().size()).isEqualTo(1);
             MusicFolderTestData.getTestMusicFolders().forEach(musicFolderDao::createMusicFolder);
             settingsService.clearMusicFolderCache();
 
