@@ -96,7 +96,7 @@ public class AudioScrobblerService {
             }
             String decoded = decode(cred);
             if (decoded != null) {
-                lastFMScrobbler.register(mediaFile, cred.getAppUsername(), cred.getCredential(), submission, time);
+                lastFMScrobbler.register(mediaFile, cred.getAppUsername(), decoded, submission, time);
             }
         }
 
@@ -107,7 +107,7 @@ public class AudioScrobblerService {
             }
             String decoded = decode(cred);
             if (decoded != null) {
-                listenBrainzScrobbler.register(mediaFile, cred.getCredential(), submission, time);
+                listenBrainzScrobbler.register(mediaFile, decoded, submission, time);
             }
         }
     }
