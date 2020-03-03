@@ -21,13 +21,14 @@ import java.util.Map;
 @Configuration
 @EnableTransactionManagement
 public class DatabaseConfiguration {
-    @Value("${DatabaseConfigEmbedUrl:#{T(org.airsonic.player.service.SettingsService).getDefaultJDBCUrl()}}")
+    // must write in this way to catch empty env vars
+    @Value("#{'${DatabaseConfigEmbedUrl:}'?:T(org.airsonic.player.service.SettingsService).getDefaultJDBCUrl()}")
     private String url;
-    @Value("${DatabaseConfigEmbedUsername:sa}")
+    @Value("#{'${DatabaseConfigEmbedUsername:}'?:'sa'}")
     private String user;
-    @Value("${DatabaseConfigEmbedPassword:}")
+    @Value("#{'${DatabaseConfigEmbedPassword:}'?:''}")
     private String password;
-    @Value("${DatabaseConfigEmbedDriver:org.hsqldb.jdbcDriver}")
+    @Value("#{'${DatabaseConfigEmbedDriver:}'?:'org.hsqldb.jdbcDriver'}")
     private String driver;
 
     @Bean
@@ -66,9 +67,9 @@ public class DatabaseConfiguration {
 
     @Bean
     public SpringLiquibase liquibase(DataSource dataSource,
-                                     @Value("${DatabaseMysqlMaxlength:384}")
+                                     @Value("#{'${DatabaseMysqlMaxlength:}'?:'384'}")
                                      String mysqlVarcharLimit,
-                                     @Value("${DatabaseUsertableQuote:}")
+                                     @Value("#{'${DatabaseUsertableQuote:}'?:''}")
                                      String userTableQuote) {
         // add support for our hqldb that doesn't support schemas
         DatabaseFactory.getInstance().register(new HsqlDatabase());
