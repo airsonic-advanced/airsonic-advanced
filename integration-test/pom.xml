@@ -162,7 +162,12 @@
                                             <healthy>true</healthy>
                                         </wait>
                                         <env>
-                                            <JAVA_OPTS>-DDatabaseConfigType=${DatabaseConfigType} -DDatabaseConfigEmbedDriver=${DatabaseConfigEmbedDriver} -DDatabaseConfigEmbedUrl=${DatabaseConfigEmbedUrl} -DDatabaseConfigEmbedUsername=${DatabaseConfigEmbedUsername} -DDatabaseConfigEmbedPassword=${DatabaseConfigEmbedPassword} -DDatabaseUsertableQuote=${DatabaseUsertableQuote}</JAVA_OPTS>
+                                            <DatabaseConfigType>${env.DatabaseConfigType}</DatabaseConfigType>
+                                            <DatabaseConfigEmbedDriver>${env.DatabaseConfigEmbedDriver}</DatabaseConfigEmbedDriver>
+                                            <DatabaseConfigEmbedUrl>${env.DatabaseConfigEmbedUrl}</DatabaseConfigEmbedUrl>
+                                            <DatabaseConfigEmbedUsername>${env.DatabaseConfigEmbedUsername}</DatabaseConfigEmbedUsername>
+                                            <DatabaseConfigEmbedPassword>${env.DatabaseConfigEmbedPassword}</DatabaseConfigEmbedPassword>
+                                            <DatabaseUsertableQuote>${env.DatabaseUsertableQuote}</DatabaseUsertableQuote>
                                         </env>
                                     </run>
                                 </image>

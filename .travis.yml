@@ -39,65 +39,65 @@ matrix:
   - jdk: openjdk13
   # test against external dbs with java lts
   - jdk: openjdk11
-    env: DB=postgres:9.6-alpine
+    env: DB=postgres:9.6-alpine DatabaseConfigType=embed DatabaseConfigEmbedDriver=org.postgresql.Driver DatabaseConfigEmbedUrl=jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified DatabaseConfigEmbedUsername=postgres DatabaseConfigEmbedPassword=pass DatabaseUsertableQuote="
     before_install:
       - >
         docker pull ${DB};
-        docker run -d --name postgres -e POSTGRES_PASSWORD=pass -p 5432:5432 ${DB} -c 'log_statement=all';
-        until docker run --rm --link postgres:pg ${DB} pg_isready -U postgres -h pg; do sleep 1; done;
+        docker run -d --name postgres -e POSTGRES_PASSWORD=${DatabaseConfigEmbedPassword} -p 5432:5432 ${DB} -c 'log_statement=all';
+        until docker run --rm --link postgres:pg ${DB} pg_isready -U ${DatabaseConfigEmbedUsername} -h pg; do sleep 1; done;
     script:
       - docker ps
-      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=org.postgresql.Driver -DDatabaseConfigEmbedUrl=jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified -DDatabaseConfigEmbedUsername=postgres -DDatabaseConfigEmbedPassword=pass -DDatabaseUsertableQuote=\" verify -B -P integration-test;
+      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory verify -B -P integration-test;
   - jdk: openjdk11
-    env: DB=postgres:12.2-alpine
+    env: DB=postgres:12.2-alpine DatabaseConfigType=embed DatabaseConfigEmbedDriver=org.postgresql.Driver DatabaseConfigEmbedUrl=jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified DatabaseConfigEmbedUsername=postgres DatabaseConfigEmbedPassword=pass DatabaseUsertableQuote="
     before_install:
       - >
         docker pull ${DB};
-        docker run -d --name postgres -e POSTGRES_PASSWORD=pass -p 5432:5432 ${DB} -c 'log_statement=all';
-        until docker run --rm --link postgres:pg ${DB} pg_isready -U postgres -h pg; do sleep 1; done;
+        docker run -d --name postgres -e POSTGRES_PASSWORD=${DatabaseConfigEmbedPassword} -p 5432:5432 ${DB} -c 'log_statement=all';
+        until docker run --rm --link postgres:pg ${DB} pg_isready -U ${DatabaseConfigEmbedUsername} -h pg; do sleep 1; done;
     script:
       - docker ps
-      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=org.postgresql.Driver -DDatabaseConfigEmbedUrl=jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified -DDatabaseConfigEmbedUsername=postgres -DDatabaseConfigEmbedPassword=pass -DDatabaseUsertableQuote=\" verify -B -P integration-test;
+      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory verify -B -P integration-test;
   - jdk: openjdk11
-    env: DB=mysql:5.7
+    env: DB=mysql:5.7 DatabaseConfigType=embed DatabaseConfigEmbedDriver=com.mysql.jdbc.Driver DatabaseConfigEmbedUrl=jdbc:mysql://localhost:3306/airsonic DatabaseConfigEmbedUsername=root DatabaseConfigEmbedPassword=pass
     before_install:
       - >
         docker pull ${DB};
-        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
-        until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=root --password=pass -e 'SELECT 1' &> /dev/null; do sleep 1; done;
+        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=${DatabaseConfigEmbedPassword} -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
+        until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=${DatabaseConfigEmbedUsername} --password=${DatabaseConfigEmbedPassword} -e 'SELECT 1' &> /dev/null; do sleep 1; done;
     script:
       - docker ps
-      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=com.mysql.jdbc.Driver -DDatabaseConfigEmbedUrl=jdbc:mysql://localhost:3306/airsonic -DDatabaseConfigEmbedUsername=root -DDatabaseConfigEmbedPassword=pass verify -B -P integration-test;
+      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory verify -B -P integration-test;
   - jdk: openjdk11
-    env: DB=mysql:8.0
+    env: DB=mysql:8.0 DatabaseConfigType=embed DatabaseConfigEmbedDriver=com.mysql.jdbc.Driver DatabaseConfigEmbedUrl=jdbc:mysql://localhost:3306/airsonic DatabaseConfigEmbedUsername=root DatabaseConfigEmbedPassword=pass
     before_install:
       - >
         docker pull ${DB};
-        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
-        until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=root --password=pass -e 'SELECT 1' &> /dev/null; do sleep 1; done;
+        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=${DatabaseConfigEmbedPassword} -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
+        until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=${DatabaseConfigEmbedUsername} --password=${DatabaseConfigEmbedPassword} -e 'SELECT 1' &> /dev/null; do sleep 1; done;
     script:
       - docker ps
-      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=com.mysql.jdbc.Driver -DDatabaseConfigEmbedUrl=jdbc:mysql://localhost:3306/airsonic -DDatabaseConfigEmbedUsername=root -DDatabaseConfigEmbedPassword=pass verify -B -P integration-test;
+      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory verify -B -P integration-test;
   - jdk: openjdk11
-    env: DB=mariadb:10.2
+    env: DB=mariadb:10.2 DatabaseConfigType=embed DatabaseConfigEmbedDriver=org.mariadb.jdbc.Driver DatabaseConfigEmbedUrl=jdbc:mariadb://localhost:3306/airsonic DatabaseConfigEmbedUsername=root DatabaseConfigEmbedPassword=pass
     before_install:
       - >
         docker pull ${DB};
-        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
-        until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=root --password=pass -e 'SELECT 1' &> /dev/null; do sleep 1; done;
+        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=${DatabaseConfigEmbedPassword} -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
+        until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=${DatabaseConfigEmbedUsername} --password=${DatabaseConfigEmbedPassword} -e 'SELECT 1' &> /dev/null; do sleep 1; done;
     script:
       - docker ps
-      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=org.mariadb.jdbc.Driver -DDatabaseConfigEmbedUrl=jdbc:mariadb://localhost:3306/airsonic -DDatabaseConfigEmbedUsername=root -DDatabaseConfigEmbedPassword=pass verify -B -P integration-test;
+      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory verify -B -P integration-test;
   - jdk: openjdk11
-    env: DB=mariadb:10.5
+    env: DB=mariadb:10.5 DatabaseConfigType=embed DatabaseConfigEmbedDriver=org.mariadb.jdbc.Driver DatabaseConfigEmbedUrl=jdbc:mariadb://localhost:3306/airsonic DatabaseConfigEmbedUsername=root DatabaseConfigEmbedPassword=pass
     before_install:
       - >
         docker pull ${DB};
-        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
-        until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=root --password=pass -e 'SELECT 1' &> /dev/null; do sleep 1; done;
+        docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=${DatabaseConfigEmbedPassword} -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
+        until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=${DatabaseConfigEmbedUsername} --password=${DatabaseConfigEmbedPassword} -e 'SELECT 1' &> /dev/null; do sleep 1; done;
     script:
       - docker ps
-      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory -DDatabaseConfigType=embed -DDatabaseConfigEmbedDriver=org.mariadb.jdbc.Driver -DDatabaseConfigEmbedUrl=jdbc:mariadb://localhost:3306/airsonic -DDatabaseConfigEmbedUsername=root -DDatabaseConfigEmbedPassword=pass verify -B -P integration-test;
+      - mvn -DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory verify -B -P integration-test;
 
   # deploy jobs
   - name: "Deploy Edge Release"
