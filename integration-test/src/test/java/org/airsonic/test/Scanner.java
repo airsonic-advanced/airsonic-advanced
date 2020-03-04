@@ -26,8 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class Scanner {
     public static final RestTemplate rest = new RestTemplate();
-    public static final String SERVER = "http://localhost:4040";
-    public static final String DEFAULT_MUSIC = "";
+    public static final String SERVER = System.getProperty("DockerTestingHost", "http://localhost:4040");
+    public static final String DEFAULT_MUSIC = System.getProperty("DockerTestingDefaultMusicFolder", "/tmp/music");
     public static final ObjectMapper MAPPER = new ObjectMapper();
 
     public static UriComponentsBuilder addRestParameters(UriComponentsBuilder builder) {

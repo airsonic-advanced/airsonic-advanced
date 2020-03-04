@@ -13,6 +13,8 @@
 
     <properties>
         <docker.testing.container>it-container</docker.testing.container>
+        <docker.testing.host>http://localhost:4040</docker.testing.host>
+        <docker.testing.default-music-folder>/tmp/music</docker.testing.default-music-folder>
     </properties>
 
     <dependencies>
@@ -170,6 +172,11 @@
                                             <DatabaseConfigEmbedPassword>${env.DatabaseConfigEmbedPassword}</DatabaseConfigEmbedPassword>
                                             <DatabaseUsertableQuote>${env.DatabaseUsertableQuote}</DatabaseUsertableQuote>
                                         </env>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${docker.testing.default-music-folder}:/airsonic/music</volume>
+                                            </bind>
+                                        </volumes>
                                     </run>
                                 </image>
                             </images>
@@ -191,7 +198,9 @@
                     <execution>
                         <configuration>
                             <systemPropertyVariables>
-                                <dockerTestingContainer>${docker.testing.container}</dockerTestingContainer>
+                                <DockerTestingContainer>${docker.testing.container}</DockerTestingContainer>
+                                <DockerTestingHost>${docker.testing.host}</DockerTestingHost>
+                                <DockerTestingDefaultMusicFolder>${docker.testing.default-music-folder}</DockerTestingDefaultMusicFolder>
                             </systemPropertyVariables>
                         </configuration>
                         <goals>

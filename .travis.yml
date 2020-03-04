@@ -11,6 +11,7 @@ services:
 
 env:
   global:
+    - DEFAULT_MUSIC_FOLDER=/tmp/music
     - DOCKER_USERNAME=airsonicadvanced
     - secure: "hAHh/Qnx4wx5Ntw4xMpuDvMcLTbaonesMhytxOlVBVTqpSD8X++XuGdAOSbpaAWAkpOiTzkPU+38ili9vSHYEIzmA+s22/3BVxLETjacDweKswBxZP/Esgpy3lZGXJepK4wBtJ4Cosqy1rxv7wzvSFFMNeD8arZrrwdmvreQSBkitngdSXqA1DmBG83KemXxc4hHmQtfvYzt4gf7GZXQ5ysYYp8gup5xIYCEDoEuNgrHw+1IYYO/w20Xeft42IYB5vHURwsKHFShth9/Wye8u5xW7WmdtRXSsYOU7ksOLDr8tE8fQB+/0aSna+0AXJLkBocw4hnK7LFDicIgrWt6Off0iJ10uoI9x0HvS1mjWTdnsD7kO57xV/f2n1cjp/8WDM/ym4blLuwWB0zmrUVAXGAg94O6Oq8NJuTmhVPus372vc+O8crHPopy9wyv+L664CF0nzEeYVerCYkOXj4fcuelXOGN+StpM2jYR3RjCxikgPQyEe/J8WO/1r6Ge6k5y4Cm9/P7woW5VUTJahd5spzuEP8xFKzd7XBWs6cHASJIFLvasZiEdl0HIeJFGC/z//IDMReWFvWdTFe61tsQ6mfjyuRtDUqCX57JbSul9vhshGkNgb8xsqVOB4ZYUOcU0m9/AR7pf7QIjY/4JEwMjDKJQg+qElI8OKwsi7CB/JU="
 
@@ -22,7 +23,8 @@ stages:
 install: skip
 
 script:
-  - mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} verify -B -P integration-test
+  - mkdir -p ${DEFAULT_MUSIC_FOLDER}
+  - mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
 
 matrix:
   include:
