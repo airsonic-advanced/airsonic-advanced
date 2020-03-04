@@ -15,8 +15,9 @@ public class StreamIT {
         Scanner.uploadToDefaultMusicFolder(
                 Paths.get(this.getClass().getResource("/blobs/stream/dead/input").toURI()),
                 "");
+        System.out.println("Scan starting");
         Scanner.doScan();
-
+        System.out.println("Scan complete");
         String mediaFileId = Scanner.getMediaFilesInMusicFolder().get(0).getId();
         assertNotNull(mediaFileId);
 
