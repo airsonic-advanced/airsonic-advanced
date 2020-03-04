@@ -1,6 +1,12 @@
 package org.airsonic.test;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonRootName;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
@@ -10,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.subsonic.restapi.Child;
@@ -25,10 +32,20 @@ import java.util.Objects;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class Scanner {
-    public static final RestTemplate rest = new RestTemplate();
     public static final String SERVER = System.getProperty("DockerTestingHost", "http://localhost:4040");
     public static final String DEFAULT_MUSIC = System.getProperty("DockerTestingDefaultMusicFolder", "/tmp/music");
-    public static final ObjectMapper MAPPER = new ObjectMapper();
+    public static final ObjectMapper MAPPER = new ObjectMapper()
+            .enable(SerializationFeature.WRAP_ROOT_VALUE)
+            .enable(DeserializationFeature.UNWRAP_ROOT_VALUE)
+            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+    public static final RestTemplate rest = new RestTemplate();
+    static {
+        for (int i = 0; i < rest.getMessageConverters().size(); i++) {
+            if (rest.getMessageConverters().get(i).getClass() == MappingJackson2HttpMessageConverter.class) {
+                rest.getMessageConverters().set(i, new MappingJackson2HttpMessageConverter(MAPPER));
+            }
+        }
+    }
 
     public static UriComponentsBuilder addRestParameters(UriComponentsBuilder builder) {
         return builder.queryParam("c", "inttest")
@@ -63,9 +80,9 @@ public class Scanner {
                 .getForObject(addRestParameters(UriComponentsBuilder.fromHttpUrl(SERVER + "/rest/getScanStatus"))
                         .queryParam("f", "json").toUriString(), String.class);
         System.out.println(resp2);
-        Response resp = rest
+        SubsonicResponse resp = rest
                 .getForObject(addRestParameters(UriComponentsBuilder.fromHttpUrl(SERVER + "/rest/getScanStatus"))
-                        .queryParam("f", "json").toUriString(), Response.class);
+                        .queryParam("f", "json").toUriString(), SubsonicResponse.class);
         System.out.println(resp);
         System.out.println("scan status: " + resp.getScanStatus());
         System.out.println("scan count: " + resp.getScanStatus().getCount());
@@ -88,7 +105,7 @@ public class Scanner {
                 addRestParameters(UriComponentsBuilder.fromHttpUrl(SERVER + "/rest/getMusicFolders"))
                         .queryParam("f", "json")
                         .toUriString(),
-                Response.class)
+                SubsonicResponse.class)
             .getMusicFolders().getMusicFolder();
 
         MusicFolder music = musicFolder.stream().filter(folder -> Objects.equals(folder.getName(), "Music")).findFirst()
@@ -102,7 +119,7 @@ public class Scanner {
                         .queryParam("f", "json")
                         .queryParam("musicFolderId", folderId)
                         .toUriString(),
-                Response.class)
+                SubsonicResponse.class)
             .getIndexes().getChild();
     }
 
@@ -119,5 +136,11 @@ public class Scanner {
 
         assertThat(response.getBody()).hasSize((int) response.getHeaders().getContentLength());
         return response.getBody();
+    }
+
+    @JsonRootName(value = "subsonic-response")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SubsonicResponse extends Response {
     }
 }
