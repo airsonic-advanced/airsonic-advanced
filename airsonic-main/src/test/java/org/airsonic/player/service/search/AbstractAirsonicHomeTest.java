@@ -3,9 +3,11 @@ package org.airsonic.player.service.search;
 import org.airsonic.player.TestCaseUtils;
 import org.airsonic.player.dao.DaoHelper;
 import org.airsonic.player.dao.MusicFolderDao;
+import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.MediaScannerService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.HomeRule;
+import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -15,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @RunWith(SpringRunner.class)
@@ -23,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /*
  * Abstract class for scanning MusicFolder.
  */
-public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
+public abstract class AbstractAirsonicHomeTest {
 
     @ClassRule
     public static final HomeRule airsonicRule = new HomeRule();
@@ -53,17 +56,18 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-    @Override
     public AtomicBoolean dataBasePopulated() {
         return dataBasePopulated;
     }
 
-    @Override
     public AtomicBoolean dataBaseReady() {
         return dataBaseReady;
     }
 
-    @Override
+    public List<MusicFolder> getMusicFolders() {
+        return MusicFolderTestData.getTestMusicFolders();
+    }
+
     public final void populateDatabaseOnlyOnce() {
         if (!dataBasePopulated().get()) {
             dataBasePopulated().set(true);
