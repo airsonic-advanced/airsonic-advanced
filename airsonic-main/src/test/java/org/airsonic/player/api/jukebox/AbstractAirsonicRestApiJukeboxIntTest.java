@@ -98,8 +98,6 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     private Player testJukeboxPlayer;
 
-
-
     @BeforeClass
     public static void setupClass() {
         dataBasePopulated = false;
@@ -130,7 +128,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
             staticSettingsService = settingsService;
 
             cleanupId = ScanningTestUtils.before(MusicFolderTestData.getTestMusicFolders(), settingsService,mediaScannerService);
- 
+
             assertThat(playerDao.getAllPlayers().size()).isEqualTo(0);
             createTestPlayer();
             assertThat(playerDao.getAllPlayers().size()).isEqualTo(1);

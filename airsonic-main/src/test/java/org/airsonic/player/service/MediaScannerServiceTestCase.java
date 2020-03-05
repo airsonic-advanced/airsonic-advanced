@@ -87,7 +87,6 @@ public class MediaScannerServiceTestCase {
 
     private UUID cleanupId = null;
 
-
     @Before
     public void setup() {
         while (mediaScannerService.isScanning()) {
