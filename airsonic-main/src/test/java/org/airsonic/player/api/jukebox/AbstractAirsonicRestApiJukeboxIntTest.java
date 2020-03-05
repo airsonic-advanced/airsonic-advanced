@@ -1,6 +1,7 @@
 package org.airsonic.player.api.jukebox;
 
 import org.airsonic.player.TestCaseUtils;
+import org.airsonic.player.api.ScanningTestUtils;
 import org.airsonic.player.controller.SubsonicRESTController;
 import org.airsonic.player.dao.*;
 import org.airsonic.player.domain.*;
@@ -28,7 +29,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -73,6 +74,8 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     private static boolean dataBasePopulated;
     private static DaoHelper staticDaoHelper;
+    private static SettingsService staticSettingsService;
+    private static UUID cleanupId = null;
 
     @Autowired
     private MockMvc mvc;
@@ -95,7 +98,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     private Player testJukeboxPlayer;
 
-    private static List<MusicFolder> createdFolders;
+
 
     @BeforeClass
     public static void setupClass() {
@@ -105,11 +108,9 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     @AfterClass
     public static void cleanDataBase() {
         staticDaoHelper.getJdbcTemplate().execute("delete from player");
-        createdFolders.forEach(f -> {
-            staticDaoHelper.getJdbcTemplate().update("delete from media_file where folder=?", f.getPath().toString());
-            staticDaoHelper.getJdbcTemplate().update("delete from music_folder where id=?", f.getId());
-        });
-        createdFolders = null;
+        ScanningTestUtils.after(cleanupId, staticSettingsService);
+        cleanupId = null;
+        staticSettingsService = null;
         staticDaoHelper = null;
         dataBasePopulated = false;
     }
@@ -126,12 +127,10 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     private void populateDatabase() {
         if (!dataBasePopulated) {
             staticDaoHelper = daoHelper;
+            staticSettingsService = settingsService;
 
-            createdFolders = MusicFolderTestData.getTestMusicFolders();
-            createdFolders.forEach(settingsService::createMusicFolder);
-
-            TestCaseUtils.execScan(mediaScannerService);
-
+            cleanupId = ScanningTestUtils.before(MusicFolderTestData.getTestMusicFolders(), settingsService,mediaScannerService);
+ 
             assertThat(playerDao.getAllPlayers().size()).isEqualTo(0);
             createTestPlayer();
             assertThat(playerDao.getAllPlayers().size()).isEqualTo(1);
