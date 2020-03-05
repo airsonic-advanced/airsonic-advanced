@@ -81,7 +81,9 @@ public class MusicFolderDao extends AbstractDao {
             Integer id = queryForInt("select max(id) from music_folder", 0);
 
             update("insert into music_folder_user (music_folder_id, username) select ?, username from " + userDao.getUserTable(), id);
-            LOG.info("Created music folder " + musicFolder.getPath());
+            musicFolder.setId(id);
+
+            LOG.info("Created music folder {} with id {}", musicFolder.getPath(), musicFolder.getId());
         }
     }
 
