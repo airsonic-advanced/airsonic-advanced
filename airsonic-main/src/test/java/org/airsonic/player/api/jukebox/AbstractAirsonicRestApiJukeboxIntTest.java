@@ -28,6 +28,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -78,8 +79,6 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     @Autowired
     protected PlayerService playerService;
     @Autowired
-    private MusicFolderDao musicFolderDao;
-    @Autowired
     private SettingsService settingsService;
     @Autowired
     private MediaScannerService mediaScannerService;
@@ -96,6 +95,8 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     private Player testJukeboxPlayer;
 
+    private static List<MusicFolder> createdFolders;
+
     @BeforeClass
     public static void setupClass() {
         dataBasePopulated = false;
@@ -104,6 +105,11 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     @AfterClass
     public static void cleanDataBase() {
         staticDaoHelper.getJdbcTemplate().execute("delete from player");
+        createdFolders.forEach(f -> {
+            staticDaoHelper.getJdbcTemplate().update("delete from media_file where folder=?", f.getPath().toString());
+            staticDaoHelper.getJdbcTemplate().update("delete from music_folder where id=?", f.getId());
+        });
+        createdFolders = null;
         staticDaoHelper = null;
         dataBasePopulated = false;
     }
@@ -121,8 +127,8 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
         if (!dataBasePopulated) {
             staticDaoHelper = daoHelper;
 
-            MusicFolderTestData.getTestMusicFolders().forEach(musicFolderDao::createMusicFolder);
-            settingsService.clearMusicFolderCache();
+            createdFolders = MusicFolderTestData.getTestMusicFolders();
+            createdFolders.forEach(settingsService::createMusicFolder);
 
             TestCaseUtils.execScan(mediaScannerService);
 
