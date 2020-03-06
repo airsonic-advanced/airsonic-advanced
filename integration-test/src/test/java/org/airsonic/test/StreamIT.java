@@ -26,4 +26,19 @@ public class StreamIT {
         byte[] expected = IOUtils.toByteArray(StreamIT.class.getResourceAsStream(expectedBodyResource));
         assertThat(fromServer).containsExactly(expected);
     }
+
+    @Test
+    public void testStreamM4aAsMp3() throws Exception {
+        Scanner.uploadToDefaultMusicFolder(
+                Paths.get(this.getClass().getResource("/blobs/stream/dance/input").toURI()),
+                "");
+        Scanner.doScan();
+        String mediaFileId = Scanner.getMediaFilesInMusicFolder().get(0).getId();
+        assertNotNull(mediaFileId);
+
+        byte[] fromServer = Scanner.getMediaFileData(mediaFileId);
+        String expectedBodyResource = String.format("/blobs/stream/dance/responses/1.dat");
+        byte[] expected = IOUtils.toByteArray(StreamIT.class.getResourceAsStream(expectedBodyResource));
+        assertThat(fromServer).containsExactly(expected);
+    }
 }
