@@ -33,7 +33,6 @@ public class StreamIT {
                 "");
         Scanner.doScan();
         List<Child> files = Scanner.getMediaFilesInMusicFolder();
-        System.out.println("For file " + file + ": " + Scanner.MAPPER.writeValueAsString(files));
         String mediaFileId = files.get(0).getId();
         assertNotNull(mediaFileId);
 
