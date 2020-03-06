@@ -16,6 +16,7 @@ import org.airsonic.player.domain.RandomSearchCriteria;
 import org.airsonic.player.domain.SearchCriteria;
 import org.airsonic.player.domain.SearchResult;
 import org.airsonic.player.service.SearchService;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,6 +26,7 @@ import org.subsonic.restapi.ArtistID3;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class SearchServiceTestCase extends AbstractAirsonicHomeTest {
@@ -40,9 +42,20 @@ public class SearchServiceTestCase extends AbstractAirsonicHomeTest {
     @Autowired
     private SearchService searchService;
 
+    private static UUID cleanupId = null;
+
     @Before
     public void setup() {
-        populateDatabaseOnlyOnce();
+        UUID id = populateDatabaseOnlyOnce();
+        if (id != null) {
+            cleanupId = id;
+        }
+    }
+
+    @AfterClass
+    public static void cleanup() {
+        AbstractAirsonicHomeTest.cleanup(cleanupId);
+        cleanupId = null;
     }
 
     @Test

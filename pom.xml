@@ -19,6 +19,7 @@
         <java.compiler.version>1.8</java.compiler.version>
         <cxf.version>3.3.5</cxf.version>
         <spring.boot.version>2.2.5.RELEASE</spring.boot.version>
+        <docker.container.repo>airsonicadvanced/airsonic-advanced</docker.container.repo>
     </properties>
 
     <repositories>

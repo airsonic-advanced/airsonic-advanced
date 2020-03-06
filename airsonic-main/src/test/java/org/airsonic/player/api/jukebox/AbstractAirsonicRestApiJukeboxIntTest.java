@@ -1,6 +1,7 @@
 package org.airsonic.player.api.jukebox;
 
 import org.airsonic.player.TestCaseUtils;
+import org.airsonic.player.api.ScanningTestUtils;
 import org.airsonic.player.controller.SubsonicRESTController;
 import org.airsonic.player.dao.*;
 import org.airsonic.player.domain.*;
@@ -28,6 +29,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -72,13 +74,13 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     private static boolean dataBasePopulated;
     private static DaoHelper staticDaoHelper;
+    private static SettingsService staticSettingsService;
+    private static UUID cleanupId = null;
 
     @Autowired
     private MockMvc mvc;
     @Autowired
     protected PlayerService playerService;
-    @Autowired
-    private MusicFolderDao musicFolderDao;
     @Autowired
     private SettingsService settingsService;
     @Autowired
@@ -104,6 +106,9 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     @AfterClass
     public static void cleanDataBase() {
         staticDaoHelper.getJdbcTemplate().execute("delete from player");
+        ScanningTestUtils.after(cleanupId, staticSettingsService);
+        cleanupId = null;
+        staticSettingsService = null;
         staticDaoHelper = null;
         dataBasePopulated = false;
     }
@@ -120,11 +125,9 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     private void populateDatabase() {
         if (!dataBasePopulated) {
             staticDaoHelper = daoHelper;
+            staticSettingsService = settingsService;
 
-            MusicFolderTestData.getTestMusicFolders().forEach(musicFolderDao::createMusicFolder);
-            settingsService.clearMusicFolderCache();
-
-            TestCaseUtils.execScan(mediaScannerService);
+            cleanupId = ScanningTestUtils.before(MusicFolderTestData.getTestMusicFolders(), settingsService,mediaScannerService);
 
             assertThat(playerDao.getAllPlayers().size()).isEqualTo(0);
             createTestPlayer();

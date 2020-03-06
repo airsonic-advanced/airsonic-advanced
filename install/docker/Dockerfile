@@ -3,7 +3,7 @@ FROM alpine:3.9
 LABEL description="Airsonic is a free, web-based media streamer, providing ubiquitious access to your music." \
       url="https://github.com/airsonic/airsonic"
 
-ENV AIRSONIC_PORT=4040 AIRSONIC_DIR=/airsonic CONTEXT_PATH=/ UPNP_PORT=4041
+ENV AIRSONIC_PORT=4040 AIRSONIC_DIR=/var CONTEXT_PATH=/ UPNP_PORT=4041
 
 WORKDIR $AIRSONIC_DIR
 
@@ -31,7 +31,7 @@ EXPOSE $AIRSONIC_PORT
 EXPOSE $UPNP_PORT
 EXPOSE 1900/udp
 
-VOLUME $AIRSONIC_DIR/data $AIRSONIC_DIR/music $AIRSONIC_DIR/playlists $AIRSONIC_DIR/podcasts
+VOLUME $AIRSONIC_DIR/airsonic $AIRSONIC_DIR/music $AIRSONIC_DIR/playlists $AIRSONIC_DIR/podcasts
 
 HEALTHCHECK --interval=15s --timeout=3s CMD wget -q http://localhost:"$AIRSONIC_PORT""$CONTEXT_PATH"rest/ping -O /dev/null || exit 1
 

@@ -37,7 +37,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <repository>airsonicadvanced/airsonic-advanced</repository>
+                    <repository>${docker.container.repo}</repository>
                     <tag>latest</tag>
                     <retryCount>0</retryCount>
                 </configuration>

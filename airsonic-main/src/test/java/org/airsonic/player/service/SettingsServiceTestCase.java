@@ -86,7 +86,7 @@ public class SettingsServiceTestCase {
         assertEquals("Wrong default theme.", "default", settingsService.getThemeId());
         assertEquals("Wrong default Podcast episode retention count.", 10, settingsService.getPodcastEpisodeRetentionCount());
         assertEquals("Wrong default Podcast episode download count.", 1, settingsService.getPodcastEpisodeDownloadCount());
-        assertTrue("Wrong default Podcast folder.", settingsService.getPodcastFolder().endsWith("Podcast"));
+        assertTrue("Wrong default Podcast folder.", settingsService.getPodcastFolder().endsWith("podcast"));
         assertEquals("Wrong default Podcast update interval.", 24, settingsService.getPodcastUpdateInterval());
         assertEquals("Wrong default LDAP enabled.", false, settingsService.isLdapEnabled());
         assertEquals("Wrong default LDAP URL.", "ldap://host.domain.com:389/cn=Users,dc=domain,dc=com", settingsService.getLdapUrl());

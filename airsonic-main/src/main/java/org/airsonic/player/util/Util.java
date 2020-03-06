@@ -62,7 +62,7 @@ public final class Util {
     }
 
     public static String getDefaultPodcastFolder() {
-        String def = isWindows() ? "c:\\music\\Podcast" : "/var/music/Podcast";
+        String def = isWindows() ? "c:\\podcast" : "/var/podcast";
         return System.getProperty("airsonic.defaultPodcastFolder", def);
     }
 
