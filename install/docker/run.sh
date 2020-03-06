@@ -2,9 +2,9 @@
 
 set -e
 
-mkdir -p $AIRSONIC_DIR/data/transcode
-ln -fs /usr/bin/ffmpeg $AIRSONIC_DIR/data/transcode/ffmpeg
-ln -fs /usr/bin/lame $AIRSONIC_DIR/data/transcode/lame
+mkdir -p $AIRSONIC_DIR/airsonic/transcode
+ln -fs /usr/bin/ffmpeg $AIRSONIC_DIR/airsonic/transcode/ffmpeg
+ln -fs /usr/bin/lame $AIRSONIC_DIR/airsonic/transcode/lame
 
 if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
 
@@ -16,7 +16,7 @@ if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
      -Dserver.host=0.0.0.0 \
      -Dserver.port=$AIRSONIC_PORT \
      -Dserver.contextPath=$CONTEXT_PATH \
-     -Dairsonic.home=$AIRSONIC_DIR/data \
+     -Dairsonic.home=$AIRSONIC_DIR/airsonic \
      -Dairsonic.defaultMusicFolder=$AIRSONIC_DIR/music \
      -Dairsonic.defaultPodcastFolder=$AIRSONIC_DIR/podcasts \
      -Dairsonic.defaultPlaylistFolder=$AIRSONIC_DIR/playlists \
