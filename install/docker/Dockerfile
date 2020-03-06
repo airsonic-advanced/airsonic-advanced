@@ -1,7 +1,7 @@
 FROM alpine:3.9
 
-LABEL description="Airsonic is a free, web-based media streamer, providing ubiquitious access to your music." \
-      url="https://github.com/airsonic/airsonic"
+LABEL description="Airsonic-Advanced is a free, web-based media streamer, providing ubiquitous access to your music." \
+      url="https://github.com/airsonic-advanced/airsonic-advanced"
 
 ENV AIRSONIC_PORT=4040 AIRSONIC_DIR=/var CONTEXT_PATH=/ UPNP_PORT=4041
 
