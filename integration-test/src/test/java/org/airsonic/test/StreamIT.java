@@ -2,16 +2,13 @@ package org.airsonic.test;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
-import org.subsonic.restapi.Child;
 
 import java.nio.file.Paths;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
 
 public class StreamIT {
-
     @Test
     public void testStreamFlacAsMp3() throws Exception {
         testFileStreaming("dead");
@@ -32,8 +29,7 @@ public class StreamIT {
                 Paths.get(this.getClass().getResource("/blobs/stream/" + file + "/input").toURI()),
                 "");
         Scanner.doScan();
-        List<Child> files = Scanner.getMediaFilesInMusicFolder();
-        String mediaFileId = files.get(0).getId();
+        String mediaFileId = Scanner.getMediaFilesInMusicFolder().get(0).getId();
         assertNotNull(mediaFileId);
 
         byte[] fromServer = Scanner.getMediaFileData(mediaFileId);

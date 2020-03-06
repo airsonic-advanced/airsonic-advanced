@@ -34,7 +34,6 @@ public class DatabaseConfiguration {
     @Bean
     @Profile("legacy")
     public DataSource legacyDataSource() {
-        System.out.println("Using legacy config " + url + " " + user + " " + password + " " + driver);
         return DataSourceBuilder.create()
                 //hsqldb driver (1.8) doesn't support Connection.isValid for pools
                 .type(DriverManagerDataSource.class)
@@ -48,7 +47,6 @@ public class DatabaseConfiguration {
     @Bean
     @Profile("embed")
     public DataSource embedDataSource() {
-        System.out.println("Using embed config " + url + " " + user + " " + password + " " + driver);
         return DataSourceBuilder.create()
                 //find connection pool automatically
                 .username(user)
@@ -73,7 +71,6 @@ public class DatabaseConfiguration {
                                      String userTableQuote) {
         // add support for our hqldb that doesn't support schemas
         DatabaseFactory.getInstance().register(new HsqlDatabase());
-        System.out.println("mysqlVarcharLimit: " + mysqlVarcharLimit + ", usertablequote: " + userTableQuote);
 
         SpringLiquibase springLiquibase = new SpringLiquibase();
         springLiquibase.setDataSource(dataSource);
