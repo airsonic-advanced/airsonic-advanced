@@ -75,20 +75,11 @@ public class Scanner {
     }
 
     private static boolean isScanning() {
-        System.out.println("isScanning server is " + SERVER);
-        String resp2 = rest
-                .getForObject(addRestParameters(UriComponentsBuilder.fromHttpUrl(SERVER + "/rest/getScanStatus"))
-                        .queryParam("f", "json").toUriString(), String.class);
-        System.out.println(resp2);
-        SubsonicResponse resp = rest
-                .getForObject(addRestParameters(UriComponentsBuilder.fromHttpUrl(SERVER + "/rest/getScanStatus"))
-                        .queryParam("f", "json").toUriString(), SubsonicResponse.class);
-        System.out.println(resp);
-        System.out.println("scan status: " + resp.getScanStatus());
-        System.out.println("scan count: " + resp.getScanStatus().getCount());
-        System.out.println("scan currently: " + resp.getScanStatus().isScanning());
-
-        return resp.getScanStatus().isScanning();
+        return rest.getForObject(
+                addRestParameters(UriComponentsBuilder.fromHttpUrl(SERVER + "/rest/getScanStatus"))
+                        .queryParam("f", "json").toUriString(),
+                SubsonicResponse.class)
+            .getScanStatus().isScanning();
     }
 
     public static void uploadToDefaultMusicFolder(Path directoryPath, String relativePath) {
