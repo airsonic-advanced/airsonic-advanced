@@ -179,7 +179,7 @@
                                         </env>
                                         <volumes>
                                             <bind>
-                                                <volume>${docker.testing.default-music-folder}:/airsonic/music</volume>
+                                                <volume>${docker.testing.default-music-folder}:/var/music</volume>
                                             </bind>
                                         </volumes>
                                     </run>
