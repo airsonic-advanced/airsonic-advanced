@@ -15,8 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ScanningTestUtils {
     private static Map<UUID, List<MusicFolder>> map = new ConcurrentHashMap<>();
 
-    public static UUID before(List<MusicFolder> musicFolders, SettingsService settingsService,
-            MediaScannerService mediaScannerService) {
+    public static UUID before(List<MusicFolder> musicFolders, SettingsService settingsService, MediaScannerService mediaScannerService) {
         UUID id = UUID.randomUUID();
         map.put(id, musicFolders);
         musicFolders.forEach(settingsService::createMusicFolder);
