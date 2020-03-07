@@ -28,12 +28,13 @@
                 <artifactId>docker-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>build-container</id>
+                        <id>build-image</id>
                         <phase>package</phase>
                         <goals>
                             <goal>build</goal>
                         </goals>
                         <configuration>
+                            <showLogs>true</showLogs>
                             <images>
                                 <image>
                                     <name>${docker.container.repo}</name>
