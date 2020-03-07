@@ -38,7 +38,7 @@
                                 <image>
                                     <name>${docker.container.repo}</name>
                                     <build>
-                                        <dockerFile>Dockerfile</dockerFile>
+                                        <dockerFile>${project.basedir}/Dockerfile</dockerFile>
                                         <tags>latest</tags>
                                     </build>
                                 </image>
