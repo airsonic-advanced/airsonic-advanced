@@ -5,53 +5,12 @@
 Airsonic-Advanced
 =================
 [![Build Status](https://travis-ci.org/airsonic-advanced/airsonic-advanced.svg?branch=master)](https://travis-ci.org/airsonic-advanced/airsonic-advanced)
-[![Coverity scan](https://scan.coverity.com/projects/17971/badge.svg)](https://scan.coverity.com/projects/airsonic)
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/airsonic/airsonic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic/airsonic/context:javascript)
 [![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/airsonic/airsonic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic/airsonic/context:java)
 
 What is Airsonic-Advanced?
 --------------------------
 Airsonic-Advanced is a more modern implementation of the Airsonic fork with several key performance and feature enhancements. It adds and supersedes several features in Airsonic.
-
-The following is an incomplete list of features that are enhanced from Airsonic:
-- More modern base frameworks and libraries
-  - Spring Boot 2.x (instead of 1.x), Spring Framework 5.x (instead of 4.x). Plus all the additional dependency upgrades due to the base libaries being upgraded (including EhCache, upgraded SQL connectors etc)
-- More compliant with web specs and utilizes frameworks to apply them instead of a custom home-implemented solutions
-  - RFC 7233
-- Performance enhancements
-  - A more efficient and compliant streaming engine
-  - Removal of pessimistic locking throughout the software in favor of more modern concurrency techniques
-  - Aggressively uses multi-threading and parallelization for most operations, including but not limited to:
-    - Massively parallelized engine for media scanning (media scanning is done much much faster)
-    - Other various use cases utilizing async or parallel options via fork-join pools
-  - Uses websockets to communicate with web-clients instead of polling, making it much lighter on resource utilization as well as more dynamic
-    - Does not have to keep running the same command again every 10 seconds to check statuses
-    - Pushes status updates when they're needed when something has changed
-    - Web clients can update UIs immediately (live views)
-    - Removal of DWR (10 year old technology used as an interface between the web-client and the server)
-- Bugfixes:
-  - Several race condition fixes
-- Security
-  - A completely revamped credential system that actually stores credentials securely instead of openly. Includes encryption for credentials that need to be retrievable later (such as for third-party locations), and backwards compatibility
-- Miscellaneous
-  - Uses JSR 310 (Java time) instead of older packages for time tracking
-  - Uses Java's NIO for handling files instead of the older packages
-  - More precise song duration calculation
-  - Ability to use Repeat-One in play queues in web-clients
-- Testing
-  - Various fixes to make it compatible with multiple external DBs
-  - Automated tests are performed against external DBs
-    - Postgres
-    - MySQL
-    - MariaDB
-  - Uses failsafe for integration testing instead of cucumber
-- Build and deployment
-  - A more advanced build pipeline including automatic releases and deploys at merge
-    - Allows people to grab the newest build without compiling from source as soon as features/enhancements are merged, instead of waiting for the next stable build (which may be months away)
-
-The complete list of PRs that were used to enhance Airsonic can be seen on the PRs page. At some point an automatic changelog generator will be added to keep track.
-
-Airsonic-Advanced will occasionally backport features introduced in the base Airsonic fork, but is generally much more modern and bleeding edge than Airsonic.
 
 What is Airsonic?
 -----------------
@@ -67,6 +26,53 @@ In addition to being a streaming media server, Airsonic works very well as a loc
 Written in Java, Airsonic runs on most platforms, including Windows, Mac, Linux and Unix variants.
 
 ![Screenshot](contrib/assets/screenshot.png)
+
+Feature Enhancements:
+---------------------
+The following is an incomplete list of features that are enhanced from Airsonic:
+- More modern base frameworks and libraries
+  - Spring Boot 2.x (instead of 1.x), Spring Framework 5.x (instead of 4.x). Plus all the additional dependency upgrades due to the base libaries being upgraded (including EhCache, upgraded SQL connectors etc.)
+- Security
+  - A completely revamped credential system that actually stores credentials securely instead of openly. Includes encryption for credentials that need to be retrievable later (such as for third-party locations) and backwards compatibility. Also includes modern password hashing algorithms such as bcrypt, Argon for password storage.
+- More compliant with web specs and utilizes frameworks to apply them instead of custom home-implemented solutions
+  - RFC 7233 for Range headers
+  - Send correct ETags and Last-Modified headers to aid in client-side caching
+- Performance enhancements
+  - A more efficient and compliant streaming engine, utilizing piping and threading
+  - Removal of pessimistic locking throughout the software in favor of more modern concurrency techniques
+  - Aggressively uses multi-threading and parallelization for most operations, including but not limited to:
+    - Massively parallelized engine for media scanning (media scanning is done much much faster)
+    - Other various use cases utilizing async or parallel options via fork-join pools
+  - Use of websockets to communicate with web-clients instead of polling
+    - Much lighter on resource utilization as well as more dynamic
+    - Does not have to keep running the same command client side again every 10 seconds to check statuses
+    - Server pushes status updates when they're needed when something has changed
+    - Web clients can update UIs immediately (live views)
+    - Removal of DWR (10 year old technology used as an interface between the web-client and the server)
+    - Provides status indicator whether client is connected to server
+- Bugfixes:
+  - Several race condition fixes
+  - Consistency checks and refactors
+- Miscellaneous
+  - Uses JSR 310 (Java time) instead of older Java packages for time/duration tracking
+  - Uses Java's NIO for handling files instead of the older IO packages
+  - More precise song duration calculation
+  - Ability to use Repeat-One in play queues in web-clients
+- Testing
+  - Various fixes to make it compatible with multiple external DBs
+  - Automated tests are performed against external DBs
+    - Postgres
+    - MySQL
+    - MariaDB
+  - Uses failsafe for integration testing instead of cucumber
+- Build and deployment
+  - An updated Docker image with OpenJDK 11 base layer.
+  - A more advanced build pipeline including automatic releases and deploys at merge
+    - Allows people to grab the newest build without compiling from source as soon as features/enhancements are merged, instead of waiting for the next stable build (which may be months away)
+
+The complete list of PRs that were used to enhance Airsonic can be seen on the PRs page. At some point an automatic changelog generator will be added to keep track.
+
+Airsonic-Advanced will occasionally backport features introduced in the base Airsonic fork, but is generally much more modern and bleeding edge than Airsonic.
 
 History
 -----
