@@ -38,9 +38,8 @@ public class LegacyDatabaseStartupTestCase {
         // have to change the url here because old db files are libresonic
         System.setProperty(SettingsService.KEY_DATABASE_URL,
                 SettingsService.getDefaultJDBCUrl().replaceAll("airsonic;", "libresonic;"));
-        System.setProperty("DatabaseConfigEmbedUsername", "sa");
-        System.setProperty("DatabaseConfigEmbedPassword", "");
-        System.setProperty("DatabaseConfigEmbedDriver", "org.hsqldb.jdbcDriver");
+        System.setProperty(SettingsService.KEY_DATABASE_USERNAME, "sa");
+        System.setProperty(SettingsService.KEY_DATABASE_PASSWORD, "");
     }
 
     @Autowired

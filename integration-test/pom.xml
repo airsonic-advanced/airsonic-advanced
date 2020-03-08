@@ -141,12 +141,10 @@
                                             <healthy>true</healthy>
                                         </wait>
                                         <env>
-                                            <DatabaseConfigType>${env.DatabaseConfigType}</DatabaseConfigType>
-                                            <DatabaseConfigEmbedDriver>${env.DatabaseConfigEmbedDriver}</DatabaseConfigEmbedDriver>
-                                            <DatabaseConfigEmbedUrl>${env.DatabaseConfigEmbedUrl}</DatabaseConfigEmbedUrl>
-                                            <DatabaseConfigEmbedUsername>${env.DatabaseConfigEmbedUsername}</DatabaseConfigEmbedUsername>
-                                            <DatabaseConfigEmbedPassword>${env.DatabaseConfigEmbedPassword}</DatabaseConfigEmbedPassword>
-                                            <DatabaseUsertableQuote>${env.DatabaseUsertableQuote}</DatabaseUsertableQuote>
+                                            <spring.datasource.url>${env.spring.datasource.url}</spring.datasource.url>
+                                            <spring.datasource.username>${env.spring.datasource.username}</spring.datasource.username>
+                                            <spring.datasource.password>${env.spring.datasource.password}</spring.datasource.password>
+                                            <spring.liquibase.parameters.userTableQuote>${env.spring.liquibase.parameters.userTableQuote}</spring.liquibase.parameters.userTableQuote>
                                         </env>
                                         <volumes>
                                             <bind>
