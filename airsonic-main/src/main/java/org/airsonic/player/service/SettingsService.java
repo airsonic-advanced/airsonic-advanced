@@ -325,29 +325,29 @@ public class SettingsService {
 
     public static void setDefaultConstants(Environment env) {
         // if jndi is set, everything datasource-related is ignored
-        if (env.getProperty(KEY_DATABASE_URL) == null) {
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_URL))) {
             CustomPropertySourceConfigurer.getDefaultConstants().put(KEY_DATABASE_URL, getDefaultJDBCUrl());
         }
-        if (env.getProperty(KEY_DATABASE_USERNAME) == null) {
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_USERNAME))) {
             CustomPropertySourceConfigurer.getDefaultConstants().put(KEY_DATABASE_USERNAME, getDefaultJDBCUsername());
         }
-        if (env.getProperty(KEY_DATABASE_PASSWORD) == null) {
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_PASSWORD))) {
             CustomPropertySourceConfigurer.getDefaultConstants().put(KEY_DATABASE_PASSWORD, getDefaultJDBCPassword());
         }
-        if (env.getProperty(KEY_DATABASE_MIGRATION_ROLLBACK_FILE) == null) {
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_ROLLBACK_FILE))) {
             CustomPropertySourceConfigurer.getDefaultConstants().put(KEY_DATABASE_MIGRATION_ROLLBACK_FILE,
                     getAirsonicHome().toAbsolutePath().resolve("rollback.sql").toString());
         }
-        if (env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH) == null) {
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH))) {
             CustomPropertySourceConfigurer.getDefaultConstants().put(
                     KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH,
                     DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH.toString());
         }
-        if (env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE) == null) {
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE))) {
             CustomPropertySourceConfigurer.getDefaultConstants().put(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE,
                     DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
         }
-        if (env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER) == null) {
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER))) {
             CustomPropertySourceConfigurer.getDefaultConstants()
                     .put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER, Util.getDefaultMusicFolder());
         }
