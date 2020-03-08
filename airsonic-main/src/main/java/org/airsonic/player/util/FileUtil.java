@@ -29,8 +29,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
+
+import static org.airsonic.player.util.LambdaUtils.uncheckConsumer;
 
 /**
  * Miscellaneous file utility methods.
@@ -68,28 +69,13 @@ public final class FileUtil {
     public static boolean delete(Path fileOrFolder) {
         try (Stream<Path> walk = Files.walk(fileOrFolder)) {
             walk.sorted(Comparator.reverseOrder())
-                .forEach(uncheck(Files::deleteIfExists));
+                .forEach(uncheckConsumer(Files::deleteIfExists));
 
             return true;
         } catch (Exception e) {
             LOG.warn("Could not delete file/folder {}", fileOrFolder, e);
             return false;
         }
-    }
-
-    @FunctionalInterface
-    public interface ThrowingConsumer<T, E extends Exception> {
-        void accept(T t) throws E;
-    }
-
-    public static <T, E extends Exception> Consumer<T> uncheck(ThrowingConsumer<T, E> throwingConsumer) {
-        return i -> {
-            try {
-                throwingConsumer.accept(i);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        };
     }
 
     /**

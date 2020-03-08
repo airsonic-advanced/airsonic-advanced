@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -216,6 +217,8 @@ public class TranscodingService {
         }
 
         parameters.setMaxBitRate(maxBitRate);
+        parameters.setExpectedLength(getExpectedLength(parameters));
+        parameters.setRangeAllowed(isRangeAllowed(parameters));
         return parameters;
     }
 
@@ -375,7 +378,7 @@ public class TranscodingService {
                 if (Util.isWindows() && !mediaFile.isVideo() && !StringUtils.isAsciiPrintable(path.toString())) {
                     tmpFile = Files.createTempFile("airsonic", "." + MoreFiles.getFileExtension(path));
                     tmpFile.toFile().deleteOnExit();
-                    Files.copy(path, tmpFile);
+                    Files.copy(path, tmpFile, StandardCopyOption.REPLACE_EXISTING);
                     LOG.debug("Created tmp file: " + tmpFile);
                     cmd = cmd.replace("%s", tmpFile.toString());
                 } else {
@@ -483,10 +486,61 @@ public class TranscodingService {
         }
         String executable = StringUtil.split(step)[0];
         try (Stream<Path> files = Files.list(getTranscodeDirectory())) {
-            return files.anyMatch(p -> p.getFileName().startsWith(executable));
+            return files.anyMatch(p -> p.getFileName().toString().startsWith(executable));
         } catch (IOException e) {
             return false;
         }
+    }
+
+    /**
+     * Returns the length (or predicted/expected length) of a (possibly padded) media stream
+     */
+    private Long getExpectedLength(Parameters parameters) {
+        MediaFile file = parameters.getMediaFile();
+
+        if (!parameters.isDownsample() && !parameters.isTranscode()) {
+            return file.getFileSize();
+        }
+        Double duration = file.getDuration();
+        Integer maxBitRate = parameters.getMaxBitRate();
+
+        if (duration == null) {
+            LOG.warn("Unknown duration for {}. Unable to estimate transcoded size.", file);
+            return null;
+        }
+
+        if (maxBitRate == null) {
+            LOG.error("Unknown bit rate for {}. Unable to estimate transcoded size.", file);
+            return null;
+        }
+
+        // Over-estimate size a bit (2 seconds) so don't cut off early in case of small calculation differences
+        return Math.round((duration + 2) * maxBitRate * 1000L / 8L);
+    }
+
+    private boolean isRangeAllowed(Parameters parameters) {
+        Transcoding transcoding = parameters.getTranscoding();
+        List<String> steps = Arrays.asList();
+        if (transcoding != null) {
+            steps = Arrays.asList(transcoding.getStep3(), transcoding.getStep2(), transcoding.getStep1());
+        } else if (parameters.isDownsample()) {
+            steps = Arrays.asList(settingsService.getDownsamplingCommand());
+        } else {
+            return true;  // neither transcoding nor downsampling
+        }
+
+        // Verify that were able to predict the length
+        if (parameters.getExpectedLength() == null) {
+            return false;
+        }
+
+        // Check if last configured step uses the bitrate, if so, range should be pretty safe
+        for (String step : steps) {
+            if (step != null) {
+                return step.contains("%b");
+            }
+        }
+        return false;
     }
 
     /**
@@ -519,6 +573,8 @@ public class TranscodingService {
 
     public static class Parameters {
         private boolean downsample;
+        private Long expectedLength;
+        private boolean rangeAllowed;
         private final MediaFile mediaFile;
         private final VideoTranscodingSettings videoTranscodingSettings;
         private Integer maxBitRate;
@@ -543,6 +599,22 @@ public class TranscodingService {
 
         public boolean isTranscode() {
             return transcoding != null;
+        }
+
+        public boolean isRangeAllowed() {
+            return this.rangeAllowed;
+        }
+
+        public void setRangeAllowed(boolean rangeAllowed) {
+            this.rangeAllowed = rangeAllowed;
+        }
+
+        public Long getExpectedLength() {
+            return this.expectedLength;
+        }
+
+        public void setExpectedLength(Long expectedLength) {
+            this.expectedLength = expectedLength;
         }
 
         public void setTranscoding(Transcoding transcoding) {

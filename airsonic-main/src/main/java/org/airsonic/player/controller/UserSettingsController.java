@@ -23,6 +23,8 @@ import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.TranscodeScheme;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.UserCredential;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.domain.UserSettings;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
@@ -165,9 +167,9 @@ public class UserSettingsController {
     }
 
     public void createUser(UserSettingsCommand command) {
-        User user = new User(command.getUsername(), command.getPassword(), StringUtils.trimToNull(command.getEmail()));
+        User user = new User(command.getUsername(), StringUtils.trimToNull(command.getEmail()));
         user.setLdapAuthenticated(command.isLdapAuthenticated());
-        securityService.createUser(user);
+        securityService.createUser(user, command.getPassword(), "Created for new user");
         updateUser(command);
     }
 
@@ -186,11 +188,12 @@ public class UserSettingsController {
         user.setSettingsRole(command.isSettingsRole());
         user.setShareRole(command.isShareRole());
 
-        if (command.isPasswordChange()) {
-            user.setPassword(command.getPassword());
-        }
-
         securityService.updateUser(user);
+
+        if (command.isPasswordChange()) {
+            UserCredential uc = new UserCredential(user.getUsername(), user.getUsername(), command.getPassword(), securityService.getPreferredPasswordEncoder(true), App.AIRSONIC, "Created by admin");
+            securityService.createCredential(uc);
+        }
 
         UserSettings userSettings = settingsService.getUserSettings(command.getUsername());
         userSettings.setTranscodeScheme(TranscodeScheme.valueOf(command.getTranscodeSchemeName()));

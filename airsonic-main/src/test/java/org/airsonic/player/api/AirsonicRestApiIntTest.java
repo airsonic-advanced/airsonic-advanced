@@ -2,7 +2,6 @@ package org.airsonic.player.api;
 
 import org.airsonic.player.TestCaseUtils;
 import org.airsonic.player.util.HomeRule;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,7 +17,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -29,18 +27,13 @@ public class AirsonicRestApiIntTest {
     private static final String AIRSONIC_PASSWORD = "admin";
     private static final String EXPECTED_FORMAT = "json";
 
-    private static String AIRSONIC_API_VERSION;
+    private static String AIRSONIC_API_VERSION = TestCaseUtils.restApiVersion();
 
     @Autowired
     private MockMvc mvc;
 
     @ClassRule
     public static final HomeRule classRule = new HomeRule(); // sets airsonic.home to a temporary dir
-
-    @BeforeClass
-    public static void setupClass() {
-        AIRSONIC_API_VERSION = TestCaseUtils.restApiVersion();
-    }
 
     @Test
     public void pingTest() throws Exception {

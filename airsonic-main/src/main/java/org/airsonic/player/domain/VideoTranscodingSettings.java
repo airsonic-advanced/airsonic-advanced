@@ -30,10 +30,10 @@ public class VideoTranscodingSettings {
     private final int width;
     private final int height;
     private final int timeOffset;
-    private final int duration;
+    private final double duration;
     private final boolean hls;
 
-    public VideoTranscodingSettings(int width, int height, int timeOffset, int duration, boolean hls) {
+    public VideoTranscodingSettings(int width, int height, int timeOffset, double duration, boolean hls) {
         this.width = width;
         this.height = height;
         this.timeOffset = timeOffset;
@@ -53,7 +53,7 @@ public class VideoTranscodingSettings {
         return timeOffset;
     }
 
-    public int getDuration() {
+    public double getDuration() {
         return duration;
     }
 

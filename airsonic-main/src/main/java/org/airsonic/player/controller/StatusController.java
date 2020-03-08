@@ -133,7 +133,7 @@ public class StatusController {
         }
 
         public String getBytes() {
-            return StringUtil.formatBytes(transferStatus.getBytesTransfered(), locale);
+            return StringUtil.formatBytes(transferStatus.getBytesTransferred(), locale);
         }
     }
 

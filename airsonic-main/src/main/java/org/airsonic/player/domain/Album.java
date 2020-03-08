@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.domain;
 
+import com.google.common.util.concurrent.AtomicDouble;
+
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,7 +35,7 @@ public class Album {
     private String name;
     private String artist;
     private final AtomicInteger songCount = new AtomicInteger(0);
-    private final AtomicInteger durationSeconds = new AtomicInteger(0);
+    private final AtomicDouble duration = new AtomicDouble(0);
     private String coverArtPath;
     private Integer year;
     private String genre;
@@ -49,7 +51,7 @@ public class Album {
     public Album() {
     }
 
-    public Album(int id, String path, String name, String artist, int songCount, int durationSeconds, String coverArtPath,
+    public Album(int id, String path, String name, String artist, int songCount, double duration, String coverArtPath,
             Integer year, String genre, int playCount, Instant lastPlayed, String comment, Instant created, Instant lastScanned,
             boolean present, Integer folderId, String musicBrainzReleaseId) {
         this.id = id;
@@ -57,7 +59,7 @@ public class Album {
         this.name = name;
         this.artist = artist;
         this.songCount.set(songCount);
-        this.durationSeconds.set(durationSeconds);
+        this.duration.set(duration);
         this.coverArtPath = coverArtPath;
         this.year = year;
         this.genre = genre;
@@ -115,16 +117,16 @@ public class Album {
         this.songCount.incrementAndGet();
     }
 
-    public int getDurationSeconds() {
-        return durationSeconds.get();
+    public double getDuration() {
+        return duration.get();
     }
 
-    public void setDurationSeconds(int durationSeconds) {
-        this.durationSeconds.set(durationSeconds);
+    public void setDuration(double duration) {
+        this.duration.set(duration);
     }
 
-    public void incrementDurationSeconds(int durationSeconds) {
-        this.durationSeconds.addAndGet(durationSeconds);
+    public void incrementDuration(double duration) {
+        this.duration.addAndGet(duration);
     }
 
     public String getCoverArtPath() {

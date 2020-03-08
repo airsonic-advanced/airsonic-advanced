@@ -21,9 +21,6 @@ package org.airsonic.player.service;
 
 import com.google.common.io.MoreFiles;
 
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
-
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
@@ -37,6 +34,9 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -54,12 +54,11 @@ import java.util.stream.Stream;
  * @author Sindre Mehus
  */
 @Service
+@CacheConfig(cacheNames = "mediaFileMemoryCache")
 public class MediaFileService {
 
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileService.class);
 
-    @Autowired
-    private Ehcache mediaFileMemoryCache;
     @Autowired
     private SecurityService securityService;
     @Autowired
@@ -92,34 +91,27 @@ public class MediaFileService {
      * @return A media file instance, or null if not found.
      * @throws SecurityException If access is denied to the given file.
      */
+    @Cacheable(key = "#file", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
     public MediaFile getMediaFile(Path file, boolean useFastCache) {
-
-        // Look in fast memory cache first.
-        MediaFile result = getFromMemoryCache(file);
-        if (result != null) {
-            return result;
-        }
-
         if (!securityService.isReadAllowed(file)) {
             throw new SecurityException("Access denied to file " + file);
         }
 
-        // Secondly, look in database.
-        result = mediaFileDao.getMediaFile(file.toString());
+        // Look in database.
+        MediaFile result = mediaFileDao.getMediaFile(file.toString());
         if (result != null) {
             result = checkLastModified(result, useFastCache);
-            putInMemoryCache(file, result);
             return result;
         }
 
         if (!Files.exists(file)) {
             return null;
         }
+
         // Not found in database, must read from disk.
         result = createMediaFile(file);
 
-        // Put in cache and database.
-        putInMemoryCache(file, result);
+        // Put in database.
         mediaFileDao.createOrUpdateMediaFile(result);
 
         return result;
@@ -482,7 +474,7 @@ public class MediaFileService {
                 mediaFile.setTrackNumber(metaData.getTrackNumber());
                 mediaFile.setGenre(metaData.getGenre());
                 mediaFile.setYear(metaData.getYear());
-                mediaFile.setDurationSeconds(metaData.getDurationSeconds());
+                mediaFile.setDuration(metaData.getDuration());
                 mediaFile.setBitRate(metaData.getBitRate());
                 mediaFile.setVariableBitRate(metaData.getVariableBitRate());
                 mediaFile.setHeight(metaData.getHeight());
@@ -555,31 +547,19 @@ public class MediaFileService {
         return MediaFile.MediaType.MUSIC;
     }
 
+    @CacheEvict(key = "#mediaFile.file")
     public void refreshMediaFile(MediaFile mediaFile) {
         mediaFile = createMediaFile(mediaFile.getFile());
         mediaFileDao.createOrUpdateMediaFile(mediaFile);
-        mediaFileMemoryCache.remove(mediaFile.getFile());
     }
 
-    private void putInMemoryCache(Path file, MediaFile mediaFile) {
-        if (memoryCacheEnabled) {
-            mediaFileMemoryCache.put(new Element(file, mediaFile));
-        }
-    }
-
-    private MediaFile getFromMemoryCache(Path file) {
-        if (!memoryCacheEnabled) {
-            return null;
-        }
-        Element element = mediaFileMemoryCache.get(file);
-        return element == null ? null : (MediaFile) element.getObjectValue();
-    }
-
+    @CacheEvict(allEntries = true)
     public void setMemoryCacheEnabled(boolean memoryCacheEnabled) {
         this.memoryCacheEnabled = memoryCacheEnabled;
-        if (!memoryCacheEnabled) {
-            mediaFileMemoryCache.removeAll();
-        }
+    }
+
+    public boolean getMemoryCacheEnabled() {
+        return memoryCacheEnabled;
     }
 
     /**
@@ -618,10 +598,6 @@ public class MediaFileService {
 
     public void setSettingsService(SettingsService settingsService) {
         this.settingsService = settingsService;
-    }
-
-    public void setMediaFileMemoryCache(Ehcache mediaFileMemoryCache) {
-        this.mediaFileMemoryCache = mediaFileMemoryCache;
     }
 
     public void setMediaFileDao(MediaFileDao mediaFileDao) {
@@ -696,10 +672,6 @@ public class MediaFileService {
 
     public int getStarredAlbumCount(String username, List<MusicFolder> musicFolders) {
         return mediaFileDao.getStarredAlbumCount(username, musicFolders);
-    }
-
-    public void clearMemoryCache() {
-        mediaFileMemoryCache.removeAll();
     }
 
     public void setAlbumDao(AlbumDao albumDao) {

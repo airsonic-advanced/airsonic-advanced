@@ -1,11 +1,13 @@
 package org.airsonic.player.service;
 
 import org.airsonic.player.TestCaseUtils;
+import org.airsonic.player.util.EmbeddedTestCategory;
+import org.airsonic.player.util.FileUtils;
 import org.airsonic.player.util.HomeRule;
-import org.apache.commons.io.FileUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,11 +15,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.sql.DataSource;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Category(EmbeddedTestCategory.class)
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class LegacyDatabaseStartupTestCase {
@@ -26,14 +31,16 @@ public class LegacyDatabaseStartupTestCase {
     public static final HomeRule airsonicRule = new HomeRule();
 
     @BeforeClass
-    public static void setupOnce() throws IOException {
+    public static void setupOnce() throws IOException, URISyntaxException {
         String homeParent = TestCaseUtils.airsonicHomePathForTest();
-        File dbDirectory = new File(homeParent, "db");
-        FileUtils.forceMkdir(dbDirectory);
-        org.airsonic.player.util.FileUtils.copyResourcesRecursively(LegacyDatabaseStartupTestCase.class.getResource("/db/pre-liquibase/db"), new File(homeParent));
+        Path dbDirectory = Paths.get(homeParent, "db");
+        FileUtils.copyRecursively(LegacyDatabaseStartupTestCase.class.getResource("/db/pre-liquibase/db"), dbDirectory);
         // have to change the url here because old db files are libresonic
         System.setProperty(SettingsService.KEY_DATABASE_URL,
                 SettingsService.getDefaultJDBCUrl().replaceAll("airsonic;", "libresonic;"));
+        System.setProperty("DatabaseConfigEmbedUsername", "sa");
+        System.setProperty("DatabaseConfigEmbedPassword", "");
+        System.setProperty("DatabaseConfigEmbedDriver", "org.hsqldb.jdbcDriver");
     }
 
     @Autowired
@@ -43,5 +50,4 @@ public class LegacyDatabaseStartupTestCase {
     public void testStartup() {
         assertThat(dataSource).isNotNull();
     }
-
 }

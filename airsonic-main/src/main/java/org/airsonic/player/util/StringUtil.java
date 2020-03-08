@@ -22,6 +22,7 @@ package org.airsonic.player.util;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -33,7 +34,6 @@ import java.text.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * Miscellaneous string utility methods.
@@ -82,6 +82,8 @@ public final class StringUtil {
             {"jpeg", "image/jpeg"},
             {"png", "image/png"},
             {"bmp", "image/bmp"},
+
+            {"zip", "application/zip"},
     };
 
     private static final String[] FILE_SYSTEM_UNSAFE = {"/", "\\", "..", ":", "\"", "?", "*", "|"};
@@ -138,7 +140,11 @@ public final class StringUtil {
      * @param locale    The locale used for formatting.
      * @return The formatted string.
      */
-    public static synchronized String formatBytes(long byteCount, Locale locale) {
+    public static synchronized String formatBytes(Long byteCount, Locale locale) {
+
+        if (byteCount == null) {
+            return null;
+        }
 
         // More than 1 TB?
         if (byteCount >= 1024L * 1024 * 1024 * 1024) {
@@ -168,33 +174,23 @@ public final class StringUtil {
     }
 
     /**
-     * Formats a duration with minutes and seconds, e.g., "4:34" or "93:45"
+     * Formats a duration to M:SS or H:MM:SS or M:SS.mmm
      */
-    public static String formatDurationMSS(int seconds) {
-        if (seconds < 0) {
-            throw new IllegalArgumentException("seconds must be >= 0");
+    public static String formatDuration(long millis, boolean convertToHours) {
+        String format = "m:ss";
+        if (millis >= 3600000 && convertToHours) {
+            format = "H:m" + format;
         }
-        return String.format("%d:%02d", seconds / 60, seconds % 60);
+
+        if (millis % 1000 != 0) {
+            format = format + ".S";
+        }
+
+        return DurationFormatUtils.formatDuration(millis, format);
     }
 
-    /**
-     * Formats a duration with H:MM:SS, e.g., "1:33:45"
-     */
-    public static String formatDurationHMMSS(int seconds) {
-        int hours = seconds / 3600;
-        seconds -= hours * 3600;
-
-        return String.format("%d:%s%s", hours, seconds < 600 ? "0" : "", formatDurationMSS(seconds));
-    }
-
-    /**
-     * Formats a duration to M:SS or H:MM:SS
-     */
-    public static String formatDuration(int seconds) {
-        if (seconds >= 3600) {
-            return formatDurationHMMSS(seconds);
-        }
-        return formatDurationMSS(seconds);
+    public static String formatDuration(long millis) {
+        return formatDuration(millis, true);
     }
 
     /**
@@ -246,23 +242,6 @@ public final class StringUtil {
         } finally {
             FileUtil.closeQuietly(in);
         }
-    }
-
-    /**
-     * Converts the given string of whitespace-separated integers to an <code>int</code> array.
-     *
-     * @param s String consisting of integers separated by whitespace.
-     * @return The corresponding array of ints.
-     * @throws NumberFormatException If string contains non-parseable text.
-     */
-    public static int[] parseInts(String s) {
-        if (s == null) {
-            return new int[0];
-        }
-
-        return Stream.of(StringUtils.split(s))
-                .mapToInt(Integer::parseInt)
-                .toArray();
     }
 
     /**

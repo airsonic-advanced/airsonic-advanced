@@ -4,4 +4,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
     <include file="add-media-file-mb-recording-id.xml" relativeToChangelogFile="true"/>
     <include file="support-listenbrainz.xml" relativeToChangelogFile="true"/>
+    <include file="expand-durations.xml" relativeToChangelogFile="true"/>
+    <include file="user-credentials.xml" relativeToChangelogFile="true"/>
+    <include file="timestamp-precision.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

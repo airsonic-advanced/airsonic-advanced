@@ -83,9 +83,9 @@ public class M3UController {
             result = player.getPlayQueue().getFiles();
         }
         for (MediaFile mediaFile : result) {
-            Integer duration = mediaFile.getDurationSeconds();
+            Double duration = mediaFile.getDuration();
             if (duration == null) {
-                duration = -1;
+                duration = -1.0;
             }
             out.println("#EXTINF:" + duration + "," + mediaFile.getArtist() + " - " + mediaFile.getTitle());
 

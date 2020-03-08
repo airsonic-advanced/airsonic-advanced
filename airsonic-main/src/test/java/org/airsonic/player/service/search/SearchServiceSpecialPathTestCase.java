@@ -5,6 +5,7 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.SearchService;
 import org.airsonic.player.util.MusicFolderTestData;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,6 +15,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
@@ -52,9 +54,20 @@ public class SearchServiceSpecialPathTestCase extends AbstractAirsonicHomeTest {
         return musicFolders;
     }
 
+    private static UUID cleanupId = null;
+
     @Before
     public void setup() {
-        populateDatabaseOnlyOnce();
+        UUID id = populateDatabaseOnlyOnce();
+        if (id != null) {
+            cleanupId = id;
+        }
+    }
+
+    @AfterClass
+    public static void cleanup() {
+        AbstractAirsonicHomeTest.cleanup(cleanupId);
+        cleanupId = null;
     }
 
     @Test

@@ -24,10 +24,6 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/starService.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/multiService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
@@ -43,79 +39,87 @@
         });
 
         <c:if test="${model.showArtistInfo}">
-        loadArtistInfo();
+        top.StompClient.subscribe("artistMain.jsp", {
+            "/user/queue/artist/info": function(msg) {
+                loadArtistInfoCallback(JSON.parse(msg.body));
+            }
+        }, loadArtistInfo);
         </c:if>
     }
 
+    <c:if test="${model.showArtistInfo}">
     function loadArtistInfo() {
-        multiService.getArtistInfo(${model.dir.id}, 8, 50, function (artistInfo) {
-            if (artistInfo.similarArtists.length > 0) {
+        top.StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: ${model.dir.id}, maxSimilarArtists: 8, maxTopSongs: 50}));
+    }
 
-                var html = "";
-                for (var i = 0; i < artistInfo.similarArtists.length; i++) {
-                    html += "<a href='main.view?id=" + artistInfo.similarArtists[i].mediaFileId + "' target='main'>" +
-                            escapeHtml(artistInfo.similarArtists[i].artistName) + "</a>";
-                    if (i < artistInfo.similarArtists.length - 1) {
-                        html += " <span class='similar-artist-divider'>|</span> ";
-                    }
+    function loadArtistInfoCallback(artistInfo) {
+        if (artistInfo.similarArtists.length > 0) {
+
+            var html = "";
+            for (var i = 0; i < artistInfo.similarArtists.length; i++) {
+                html += "<a href='main.view?id=" + artistInfo.similarArtists[i].mediaFileId + "' target='main'>" +
+                        escapeHtml(artistInfo.similarArtists[i].artistName) + "</a>";
+                if (i < artistInfo.similarArtists.length - 1) {
+                    html += " <span class='similar-artist-divider'>|</span> ";
                 }
-                $("#similarArtists").append(html);
-                $("#similarArtists").show();
-                $("#similarArtistsTitle").show();
-                $("#similarArtistsRadio").show();
+            }
+            $("#similarArtists").append(html);
+            $("#similarArtists").show();
+            $("#similarArtistsTitle").show();
+            $("#similarArtistsRadio").show();
+            $("#artistInfoTable").show();
+        }
+
+        if (artistInfo.artistBio && artistInfo.artistBio.biography) {
+            $("#artistBio").append(artistInfo.artistBio.biography);
+            if (artistInfo.artistBio.largeImageUrl) {
+                $("#artistImage").attr({
+                      "src": artistInfo.artistBio.largeImageUrl,
+                      "class": "fancy"
+                });
+                $("#artistImageZoom").attr("href", artistInfo.artistBio.largeImageUrl);
+                $("#artistImage").show();
                 $("#artistInfoTable").show();
             }
+        }
 
-            if (artistInfo.artistBio && artistInfo.artistBio.biography) {
-                $("#artistBio").append(artistInfo.artistBio.biography);
-                if (artistInfo.artistBio.largeImageUrl) {
-                    $("#artistImage").attr({
-                          "src": artistInfo.artistBio.largeImageUrl,
-                          "class": "fancy"
-                    });
-                    $("#artistImageZoom").attr("href", artistInfo.artistBio.largeImageUrl);
-                    $("#artistImage").show();
-                    $("#artistInfoTable").show();
+        this.topSongs = artistInfo.topSongs;
+
+        if (topSongs.length > 0) {
+            $("#topSongsHeader").show();
+            $("#playTopSongs").show();
+
+            // Delete all the rows except for the "pattern" row
+            $("#topSongsBody").children().not("#pattern").remove();
+
+            // Create a new set cloned from the pattern row
+            var id = topSongs.length;
+            while (id--) {
+                var song  = topSongs[id];
+
+                var node = cloneNodeBySelector("#pattern", id);
+                node.insertAfter("#pattern");
+                if (song.starred) {
+                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
+                } else {
+                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
                 }
+                node.find("#rank" + id).text(i + 1);
+                node.find("#title" + id).text(song.title);
+                node.find("#title" + id).attr("title", song.title);
+                node.find("#album" + id).text(song.album);
+                node.find("#album" + id).attr("title", song.album);
+                node.find("#albumUrl" + id).attr("href", "main.view?id=" + song.id);
+                node.find("#artist" + id).text(song.artist);
+                node.find("#artist" + id).attr("title", song.artist);
+                node.find("#songDuration" + id).text(song.durationAsString);
+
+                // Note: show() method causes page to scroll to top.
+                node.css("display", "table-row");
             }
-
-            this.topSongs = artistInfo.topSongs;
-
-            if (topSongs.length > 0) {
-                $("#topSongsHeader").show();
-                $("#playTopSongs").show();
-
-                // Delete all the rows except for the "pattern" row
-                dwr.util.removeAllRows("topSongsBody", { filter:function(tr) {
-                    return (tr.id != "pattern");
-                }});
-
-                // Create a new set cloned from the pattern row
-                for (var i = 0; i < topSongs.length; i++) {
-                    var song  = topSongs[i];
-                    var id = i + 1;
-                    dwr.util.cloneNode("pattern", { idSuffix:id });
-                    if (song.starred) {
-                        $("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
-                    } else {
-                        $("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
-                    }
-                    $("#rank" + id).text(i + 1);
-                    $("#title" + id).text(song.title);
-                    $("#title" + id).attr("title", song.title);
-                    $("#album" + id).text(song.album);
-                    $("#album" + id).attr("title", song.album);
-                    $("#albumUrl" + id).attr("href", "main.view?id=" + song.id);
-                    $("#artist" + id).text(song.artist);
-                    $("#artist" + id).attr("title", song.artist);
-                    $("#songDuration" + id).text(song.durationAsString);
-
-                    // Note: show() method causes page to scroll to top.
-                    $("#pattern" + id).css("display", "table-row");
-                }
-            }
-        });
+        }
     }
+    </c:if>
 
     function toggleStarTopSong(index, imageId) {
         toggleStar(topSongs[index].id, imageId);
@@ -124,11 +128,11 @@
     function toggleStar(mediaFileId, imageId) {
         if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
             $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-            starService.unstar(mediaFileId);
+            top.StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
         }
         else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
             $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-            starService.star(mediaFileId);
+            top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
         }
     }
     function playAll() {
@@ -320,17 +324,17 @@
     <tbody id="topSongsBody">
     <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
         <td class="fit">
-            <img id="starSong" style="height:18px;" onclick="toggleStarTopSong(this.id.substring(8) - 1, '#starSong' + this.id.substring(8))" src="<spring:theme code='ratingOffImage'/>"
+            <img id="starSong" style="height:18px;" onclick="toggleStarTopSong(parseInt(this.id.substring(8)), '#starSong' + this.id.substring(8))" src="<spring:theme code='ratingOffImage'/>"
                  style="cursor:pointer" alt="" title=""></td>
         <td class="fit">
             <img id="play" src="<spring:theme code='playImage'/>" alt="<fmt:message key='common.play'/>" title="<fmt:message key='common.play'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="playTopSong(this.id.substring(4) - 1)"></td>
+                 style="padding-right:0.1em;cursor:pointer" onclick="playTopSong(parseInt(this.id.substring(4)))"></td>
         <td class="fit">
             <img id="add" src="<spring:theme code='addImage'/>" alt="<fmt:message key='common.add'/>" title="<fmt:message key='common.add'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="addTopSong(this.id.substring(3) - 1)"></td>
+                 style="padding-right:0.1em;cursor:pointer" onclick="addTopSong(parseInt(this.id.substring(3)))"></td>
         <td class="fit" style="padding-right:30px">
             <img id="addNext" src="<spring:theme code='addNextImage'/>" alt="<fmt:message key='main.addnext'/>" title="<fmt:message key='main.addnext'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="addNextTopSong(this.id.substring(7) - 1)"></td>
+                 style="padding-right:0.1em;cursor:pointer" onclick="addNextTopSong(parseInt(this.id.substring(7)))"></td>
         <td class="fit rightalign"><span id="rank" class="detail">Rank</span></td>
         <td class="truncate"><span id="title" class="songTitle">Title</span></td>
         <td class="truncate"><a id="albumUrl" target="main"><span id="album" class="detail">Album</span></a></td>

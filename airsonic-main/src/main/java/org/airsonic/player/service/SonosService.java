@@ -24,7 +24,7 @@ import com.sonos.services._1_1.SonosSoap;
 import org.airsonic.player.domain.AlbumListType;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Playlist;
-import org.airsonic.player.domain.User;
+import org.airsonic.player.security.MultipleCredsMatchingAuthenticationProvider;
 import org.airsonic.player.service.search.IndexType;
 import org.airsonic.player.service.sonos.SonosHelper;
 import org.airsonic.player.service.sonos.SonosServiceRegistration;
@@ -39,6 +39,8 @@ import org.apache.cxf.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Node;
 
@@ -102,13 +104,13 @@ public class SonosService implements SonosSoap {
     @Autowired
     private MediaFileService mediaFileService;
     @Autowired
-    private SecurityService securityService;
-    @Autowired
     private SettingsService settingsService;
     @Autowired
     private PlaylistService playlistService;
     @Autowired
     private UPnPService upnpService;
+    @Autowired
+    private MultipleCredsMatchingAuthenticationProvider authProvider;
 
     /**
      * The context for the request. This is used to get the Auth information
@@ -287,15 +289,18 @@ public class SonosService implements SonosSoap {
     @Override
     public GetSessionIdResponse getSessionId(GetSessionId parameters) {
         LOG.debug("getSessionId: " + parameters.getUsername());
-        User user = securityService.getUserByName(parameters.getUsername());
-        if (user == null || !StringUtils.equals(user.getPassword(), parameters.getPassword())) {
+
+        try {
+            Authentication auth = authProvider.authenticate(new UsernamePasswordAuthenticationToken(parameters.getUsername(), parameters.getPassword()));
+
+            // Use username as session ID for easy access to it later.
+            GetSessionIdResponse result = new GetSessionIdResponse();
+            result.setGetSessionIdResult(auth.getName());
+            return result;
+
+        } catch (Exception e) {
             throw new SonosSoapFault.LoginInvalid();
         }
-
-        // Use username as session ID for easy access to it later.
-        GetSessionIdResponse result = new GetSessionIdResponse();
-        result.setGetSessionIdResult(user.getUsername());
-        return result;
     }
 
     @Override
@@ -359,7 +364,7 @@ public class SonosService implements SonosSoap {
     public RenameContainerResult renameContainer(String id, String title) {
         if (id.startsWith(ID_PLAYLIST_PREFIX)) {
             int playlistId = Integer.parseInt(id.replace(ID_PLAYLIST_PREFIX, ""));
-            Playlist playlist = playlistService.getPlaylist(playlistId);
+            Playlist playlist = new Playlist(playlistService.getPlaylist(playlistId));
             if (playlist != null && playlist.getUsername().equals(getUsername())) {
                 playlist.setName(title);
                 playlistService.updatePlaylist(playlist);
@@ -607,10 +612,6 @@ public class SonosService implements SonosSoap {
 
     public void setMediaFileService(MediaFileService mediaFileService) {
         this.mediaFileService = mediaFileService;
-    }
-
-    public void setSecurityService(SecurityService securityService) {
-        this.securityService = securityService;
     }
 
     public void setSettingsService(SettingsService settingsService) {

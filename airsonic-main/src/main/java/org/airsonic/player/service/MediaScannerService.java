@@ -29,7 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.subsonic.restapi.ScanStatus;
 
 import javax.annotation.PostConstruct;
 
@@ -80,6 +82,8 @@ public class MediaScannerService {
     private ArtistDao artistDao;
     @Autowired
     private AlbumDao albumDao;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     @Value("${MediaScannerParallelism:#{T(java.lang.Runtime).getRuntime().availableProcessors() + 1}}")
@@ -144,6 +148,20 @@ public class MediaScannerService {
         return scanning;
     }
 
+    private void setScanning(boolean scanning) {
+        this.scanning = scanning;
+        broadcastScanStatus();
+    }
+
+    private void broadcastScanStatus() {
+        CompletableFuture.runAsync(() -> {
+            ScanStatus status = new ScanStatus();
+            status.setCount(scanCount.longValue());
+            status.setScanning(scanning);
+            messagingTemplate.convertAndSend("/topic/scanStatus", status);
+        });
+    }
+
     /**
      * Returns the number of files scanned so far.
      */
@@ -169,14 +187,14 @@ public class MediaScannerService {
         if (isScanning()) {
             return;
         }
-        scanning = true;
+        setScanning(true);
 
         ForkJoinPool pool = new ForkJoinPool(scannerParallelism, mediaScannerThreadFactory, null, true);
 
         CompletableFuture.runAsync(() -> doScanLibrary(pool), pool)
                 .thenRunAsync(() -> playlistService.importPlaylists(), pool)
                 .thenRun(() -> pool.shutdown())
-                .thenRun(() -> scanning = false);
+                .thenRun(() -> setScanning(false));
     }
 
     private void doScanLibrary(ForkJoinPool pool) {
@@ -270,6 +288,7 @@ public class MediaScannerService {
     private void scanFile(MediaFile file, MusicFolder musicFolder, MediaLibraryStatistics statistics,
                           Map<String, AtomicInteger> albumCount, Map<String, Artist> artists, Map<String, Album> albums, Genres genres, Map<String, Boolean> encountered, boolean isPodcast) {
         if (scanCount.incrementAndGet() % 250 == 0) {
+            broadcastScanStatus();
             LOG.info("Scanned media library with {} entries.", scanCount.get());
         }
 
@@ -298,8 +317,8 @@ public class MediaScannerService {
         updateGenres(file, genres);
         encountered.putIfAbsent(file.getPath(), Boolean.TRUE);
 
-        if (file.getDurationSeconds() != null) {
-            statistics.incrementTotalDurationInSeconds(file.getDurationSeconds());
+        if (file.getDuration() != null) {
+            statistics.incrementTotalDurationInSeconds(file.getDuration());
         }
         if (file.getFileSize() != null) {
             statistics.incrementTotalLengthInBytes(file.getFileSize());
@@ -342,8 +361,8 @@ public class MediaScannerService {
 
             firstEncounter.set(!lastScanned.equals(a.getLastScanned()));
 
-            if (file.getDurationSeconds() != null) {
-                a.incrementDurationSeconds(file.getDurationSeconds());
+            if (file.getDuration() != null) {
+                a.incrementDuration(file.getDuration());
             }
             if (file.isAudio()) {
                 a.incrementSongCount();
@@ -447,5 +466,9 @@ public class MediaScannerService {
 
     public void setPlaylistService(PlaylistService playlistService) {
         this.playlistService = playlistService;
+    }
+
+    public void setMessagingTemplate(SimpMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.airsonic.player.controller;
 
-import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.TransferStatus;
 import org.airsonic.player.service.MediaFileService;
@@ -35,7 +34,7 @@ import org.springframework.web.servlet.view.RedirectView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.util.List;
+import java.util.Optional;
 
 /**
  * Controller for showing what's currently playing.
@@ -57,17 +56,15 @@ public class NowPlayingController {
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
         Player player = playerService.getPlayer(request, response);
-        List<TransferStatus> statuses = statusService.getStreamStatusesForPlayer(player);
+        TransferStatus status = statusService.getStreamStatusesForPlayer(player).stream().findFirst()
+                .orElseGet(() -> statusService.getInactiveStreamStatusForPlayer(player));
 
-        MediaFile current = statuses.isEmpty() ? null : mediaFileService.getMediaFile(statuses.get(0).getFile());
-        MediaFile dir = current == null ? null : mediaFileService.getParentOf(current);
-
-        String url;
-        if (dir != null && !mediaFileService.isRoot(dir)) {
-            url = "main.view?id=" + dir.getId();
-        } else {
-            url = "home.view";
-        }
+        String url = Optional.ofNullable(status)
+                .map(s -> mediaFileService.getMediaFile(s.getFile()))
+                .map(current -> mediaFileService.getParentOf(current))
+                .filter(dir -> !mediaFileService.isRoot(dir))
+                .map(dir -> "main.view?id=" + dir.getId())
+                .orElse("home.view");
 
         return new ModelAndView(new RedirectView(url));
     }

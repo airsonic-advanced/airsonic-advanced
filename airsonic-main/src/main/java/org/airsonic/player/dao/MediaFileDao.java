@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
@@ -47,7 +48,7 @@ import java.util.*;
 public class MediaFileDao extends AbstractDao {
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileDao.class);
     private static final String INSERT_COLUMNS = "path, folder, type, format, title, album, artist, album_artist, disc_number, " +
-                                                "track_number, year, genre, bit_rate, variable_bit_rate, duration_seconds, file_size, width, height, cover_art_path, " +
+                                                "track_number, year, genre, bit_rate, variable_bit_rate, duration, file_size, width, height, cover_art_path, " +
                                                 "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, " +
                                                 "version, mb_release_id, mb_recording_id";
 
@@ -134,7 +135,7 @@ public class MediaFileDao extends AbstractDao {
      *
      * @param file The media file to create/update.
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createOrUpdateMediaFile(MediaFile file) {
         LOG.trace("Creating/Updating new media file at {}", file.getPath());
         String sql = "update media_file set " +
@@ -151,7 +152,7 @@ public class MediaFileDao extends AbstractDao {
                      "genre=?," +
                      "bit_rate=?," +
                      "variable_bit_rate=?," +
-                     "duration_seconds=?," +
+                     "duration=?," +
                      "file_size=?," +
                      "width=?," +
                      "height=?," +
@@ -174,7 +175,7 @@ public class MediaFileDao extends AbstractDao {
         int n = update(sql,
                        file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
                        file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
-                       file.isVariableBitRate(), file.getDurationSeconds(), file.getFileSize(), file.getWidth(), file.getHeight(),
+                file.isVariableBitRate(), file.getDuration(), file.getFileSize(), file.getWidth(), file.getHeight(),
                        file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
                        file.getChanged(), file.getLastScanned(), file.getChildrenLastUpdated(), file.isPresent(), VERSION,
                        file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId(), file.getPath());
@@ -192,7 +193,7 @@ public class MediaFileDao extends AbstractDao {
             update("insert into media_file (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")",
                    file.getPath(), file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
                    file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
-                   file.isVariableBitRate(), file.getDurationSeconds(), file.getFileSize(), file.getWidth(), file.getHeight(),
+                   file.isVariableBitRate(), file.getDuration(), file.getFileSize(), file.getWidth(), file.getHeight(),
                    file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
                    file.getCreated(), file.getChanged(), file.getLastScanned(),
                    file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId());
@@ -695,6 +696,7 @@ public class MediaFileDao extends AbstractDao {
     }
 
     private static class MediaFileMapper implements RowMapper<MediaFile> {
+        @Override
         public MediaFile mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new MediaFile(
                     rs.getInt(1),
@@ -712,7 +714,7 @@ public class MediaFileDao extends AbstractDao {
                     rs.getString(13),
                     rs.getInt(14) == 0 ? null : rs.getInt(14),
                     rs.getBoolean(15),
-                    rs.getInt(16) == 0 ? null : rs.getInt(16),
+                    rs.getDouble(16),
                     rs.getLong(17) == 0 ? null : rs.getLong(17),
                     rs.getInt(18) == 0 ? null : rs.getInt(18),
                     rs.getInt(19) == 0 ? null : rs.getInt(19),
@@ -733,6 +735,7 @@ public class MediaFileDao extends AbstractDao {
     }
 
     private static class MusicFileInfoMapper implements RowMapper<MediaFile> {
+        @Override
         public MediaFile mapRow(ResultSet rs, int rowNum) throws SQLException {
             MediaFile file = new MediaFile();
             file.setPlayCount(rs.getInt(1));
@@ -743,6 +746,7 @@ public class MediaFileDao extends AbstractDao {
     }
 
     private static class GenreMapper implements RowMapper<Genre> {
+        @Override
         public Genre mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Genre(rs.getString(1), rs.getInt(2), rs.getInt(3));
         }

@@ -14,9 +14,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class TestCaseUtils {
 
@@ -48,7 +45,7 @@ public class TestCaseUtils {
      * @return current REST api version.
      */
     public static String restApiVersion() {
-        return new JAXBWriter().getRestProtocolVersion();
+        return JAXBWriter.getRestProtocolVersion();
     }
 
     /**
@@ -57,29 +54,6 @@ public class TestCaseUtils {
     public static void cleanAirsonicHomeForTest() throws IOException {
         Path airsonicHomeDir = Paths.get(airsonicHomePathForTest());
         MoreFiles.deleteDirectoryContents(airsonicHomeDir, RecursiveDeleteOption.ALLOW_INSECURE);
-    }
-
-    /**
-     * Constructs a map of records count per table.
-     *
-     * @param daoHelper DaoHelper object
-     * @return Map table name -> records count
-     */
-    public static Map<String, Integer> recordsInAllTables(AbstractDao dao) {
-        List<String> tableNames = dao.queryForStrings("" +
-                      "select table_name " +
-                      "from information_schema.system_tables " +
-                      "where table_type <> 'SYSTEM TABLE'");
-
-        return tableNames.parallelStream()
-                .collect(Collectors.toConcurrentMap(table -> table, table -> recordsInTable(table, dao)));
-    }
-
-    /**
-     * Counts records in a table.
-     */
-    public static Integer recordsInTable(String tableName, AbstractDao dao) {
-        return dao.queryForInt("select count(*) from " + tableName, -1);
     }
 
     public static void waitForScanFinish(MediaScannerService mediaScannerService) {

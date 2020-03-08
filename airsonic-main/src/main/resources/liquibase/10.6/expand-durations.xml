@@ -1,0 +1,53 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="add-durations-to-mediafile" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="media_file" columnName="duration" />
+            </not>
+        </preConditions>
+        <addColumn tableName="media_file">
+            <column name="duration" type="double" />
+        </addColumn>
+        <sql>update media_file set duration = duration_seconds</sql>
+        <rollback>
+            <dropColumn tableName="media_file" columnName="duration"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="add-durations-to-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="album" columnName="duration" />
+            </not>
+        </preConditions>
+        <addColumn tableName="album">
+            <column name="duration" type="double" defaultValueNumeric="0.0">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <sql>update album set duration = duration_seconds</sql>
+        <rollback>
+            <dropColumn tableName="album" columnName="duration"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="add-durations-to-playlist" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="playlist" columnName="duration" />
+            </not>
+        </preConditions>
+        <addColumn tableName="playlist">
+            <column name="duration" type="double" defaultValueNumeric="0.0">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <sql>update playlist set duration = duration_seconds</sql>
+        <rollback>
+            <dropColumn tableName="playlist" columnName="duration"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

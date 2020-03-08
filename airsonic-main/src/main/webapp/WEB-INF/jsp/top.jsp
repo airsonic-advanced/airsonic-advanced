@@ -4,13 +4,44 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/multiService.js'/>"></script>
 
     <script type="text/javascript">
         var previousQuery = "";
         var instantSearchTimeout;
         var showSideBar = ${model.showSideBar ? 'true' : 'false'};
+
+        function init() {
+            top.StompClient.subscribe("top.jsp", {
+                "/user/queue/settings/sidebar": function(msg) {
+                    toggleLeftFrameCallback(JSON.parse(msg.body));
+                }
+            });
+
+            top.StompClient.onConnect.push(function() {
+                $("#connectionStatus img").attr("src", "<spring:theme code='connectedImage'/>");
+                $("#connectionStatus div").text("<fmt:message key='top.connected' />");
+            });
+
+            top.StompClient.onDisconnect.push(function() {
+                $("#connectionStatus img").attr("src", "<spring:theme code='disconnectedImage'/>");
+                $("#connectionStatus div").text("<fmt:message key='top.disconnected' />");
+            });
+
+            top.StompClient.onConnecting.push(function() {
+                $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
+                $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
+            });
+        }
+
+        function toggleLeftFrameCallback(show) {
+            if (showSideBar != show) {
+                if (show) {
+                    doShowLeftFrame();
+                } else {
+                    doHideLeftFrame();
+                }
+            }
+        }
 
         function triggerInstantSearch() {
             if (instantSearchTimeout) {
@@ -28,18 +59,26 @@
         }
 
         function showLeftFrame() {
+            doShowLeftFrame();
+            top.StompClient.send("/app/settings/sidebar", true);
+        }
+
+        function doShowLeftFrame() {
             $("#show-left-frame").hide();
             $("#hide-left-frame").show();
             toggleLeftFrame(230);
-            multiService.setShowSideBar(true);
             showSideBar = true;
         }
 
         function hideLeftFrame() {
+            doHideLeftFrame();
+            top.StompClient.send("/app/settings/sidebar", false);
+        }
+
+        function doHideLeftFrame() {
             $("#hide-left-frame").hide();
             $("#show-left-frame").show();
             toggleLeftFrame(0);
-            multiService.setShowSideBar(false);
             showSideBar = false;
         }
 
@@ -60,10 +99,20 @@
                 duration: duration
             });
         }
+        
+        function toggleConnectionStatus() {
+            $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
+            $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
+            if (top.StompClient.state == 'connected') {
+                top.StompClient.disconnect();
+            } else if (top.StompClient.state == 'dc') {
+                top.StompClient.connect();
+            }
+        }
     </script>
 </head>
 
-<body class="bgcolor2 topframe" style="margin:0.4em 1em 0 1em;">
+<body class="bgcolor2 topframe" style="margin:0.4em 1em 0 1em;" onload="init()">
 
 <span id="dummy-animation-target" style="max-width:0;display: none"></span>
 
@@ -154,11 +203,19 @@
         </td>
 
         <td style="padding-left:15pt;padding-right:5pt;vertical-align: right;width: 100%;text-align: center">
+            <a id="connectionStatus" href="javascript:void(0)" onclick="toggleConnectionStatus();">
+                <img src="<spring:theme code='disconnectedImage'/>" alt="connect" height="24">
+                <div class="detail">
+                    <fmt:message key="top.disconnected"></fmt:message>
+                </div>
+            </a>
+        </td>
+
+        <td style="padding-left:15pt;padding-right:5pt;vertical-align: right;width: 100%;text-align: center">
             <a href="<c:url value='/logout'/>" target="_top">
                 <img src="<spring:theme code='logoutImage'/>" alt="logout" height="24">
                 <div class="detail">
-                    <fmt:message key="top.logout" var="logout"></fmt:message>
-                    <c:out value="${logout}"/>
+                    <fmt:message key="top.logout"></fmt:message>
                 </div>
             </a>
         </td>

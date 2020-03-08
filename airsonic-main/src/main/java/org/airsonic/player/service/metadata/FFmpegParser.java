@@ -93,7 +93,7 @@ public class FFmpegParser extends MetaDataParser {
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]));
             final JsonNode result = objectMapper.readTree(process.getInputStream());
 
-            metaData.setDurationSeconds(result.at("/format/duration").asInt());
+            metaData.setDuration(result.at("/format/duration").asDouble());
             // Bitrate is in Kb/s
             metaData.setBitRate(result.at("/format/bit_rate").asInt() / 1000);
 

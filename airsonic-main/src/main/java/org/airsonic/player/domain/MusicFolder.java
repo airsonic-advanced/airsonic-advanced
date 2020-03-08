@@ -80,6 +80,10 @@ public class MusicFolder implements Serializable {
         return id;
     }
 
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
     /**
      * Returns the path of the music folder.
      *

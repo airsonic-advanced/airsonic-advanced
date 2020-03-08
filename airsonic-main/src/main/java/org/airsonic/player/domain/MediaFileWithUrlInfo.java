@@ -175,12 +175,12 @@ public class MediaFileWithUrlInfo {
         file.setVariableBitRate(variableBitRate);
     }
 
-    public Integer getDurationSeconds() {
-        return file.getDurationSeconds();
+    public Double getDuration() {
+        return file.getDuration();
     }
 
-    public void setDurationSeconds(Integer durationSeconds) {
-        file.setDurationSeconds(durationSeconds);
+    public void setDuration(Double duration) {
+        file.setDuration(duration);
     }
 
     public String getDurationString() {

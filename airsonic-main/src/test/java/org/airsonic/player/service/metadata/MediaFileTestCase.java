@@ -53,9 +53,9 @@ public class MediaFileTestCase extends TestCase {
         doTestGetDurationAsString(360000, "100:00:00");
     }
 
-    private void doTestGetDurationAsString(int seconds, String expected) {
+    private void doTestGetDurationAsString(double seconds, String expected) {
         MediaFile mediaFile = new MediaFile();
-        mediaFile.setDurationSeconds(seconds);
+        mediaFile.setDuration(seconds);
         assertEquals("Error in getDurationString().", expected, mediaFile.getDurationString());
     }
 }

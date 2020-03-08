@@ -55,9 +55,6 @@ public class PersonalSettingsCommand {
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
     private int paginationSize;
-    private String lastFmUsername;
-    private String lastFmPassword;
-    private String listenBrainzToken;
 
     public User getUser() {
         return user;
@@ -241,30 +238,6 @@ public class PersonalSettingsCommand {
 
     public void setListenBrainzEnabled(boolean listenBrainzEnabled) {
         this.listenBrainzEnabled = listenBrainzEnabled;
-    }
-
-    public String getLastFmUsername() {
-        return lastFmUsername;
-    }
-
-    public void setLastFmUsername(String lastFmUsername) {
-        this.lastFmUsername = lastFmUsername;
-    }
-
-    public String getLastFmPassword() {
-        return lastFmPassword;
-    }
-
-    public void setLastFmPassword(String lastFmPassword) {
-        this.lastFmPassword = lastFmPassword;
-    }
-
-    public String getListenBrainzToken() {
-        return listenBrainzToken;
-    }
-
-    public void setListenBrainzToken(String listenBrainzToken) {
-        this.listenBrainzToken = listenBrainzToken;
     }
 
     public boolean isQueueFollowingSongs() {

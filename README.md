@@ -1,13 +1,16 @@
 <!--
 # README.md
-# airsonic/airsonic
+# airsonic-advanced/airsonic-advanced
 -->
-Airsonic
-========
-[![Build Status](https://travis-ci.org/airsonic/airsonic.svg?branch=master)](https://travis-ci.org/airsonic/airsonic)
-[![Coverity scan](https://scan.coverity.com/projects/17971/badge.svg)](https://scan.coverity.com/projects/airsonic)
+Airsonic-Advanced
+=================
+[![Build Status](https://travis-ci.org/airsonic-advanced/airsonic-advanced.svg?branch=master)](https://travis-ci.org/airsonic-advanced/airsonic-advanced)
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/airsonic/airsonic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic/airsonic/context:javascript)
 [![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/airsonic/airsonic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic/airsonic/context:java)
+
+What is Airsonic-Advanced?
+--------------------------
+Airsonic-Advanced is a more modern implementation of the Airsonic fork with several key performance and feature enhancements. It adds and supersedes several features in Airsonic.
 
 What is Airsonic?
 -----------------
@@ -20,9 +23,56 @@ If you have constrained bandwidth, you may set an upper limit for the bitrate of
 
 In addition to being a streaming media server, Airsonic works very well as a local jukebox. The intuitive web interface, as well as search and index facilities, are optimized for efficient browsing through large media libraries. Airsonic also comes with an integrated Podcast receiver, with many of the same features as you find in iTunes.
 
-Based on Java technology, Airsonic runs on most platforms, including Windows, Mac, Linux and Unix variants.
+Written in Java, Airsonic runs on most platforms, including Windows, Mac, Linux and Unix variants.
 
 ![Screenshot](contrib/assets/screenshot.png)
+
+Feature Enhancements:
+---------------------
+The following is an incomplete list of features that are enhanced from Airsonic:
+- More modern base frameworks and libraries
+  - Spring Boot 2.x (instead of 1.x), Spring Framework 5.x (instead of 4.x). Plus all the additional dependency upgrades due to the base libaries being upgraded (including EhCache, upgraded SQL connectors etc.)
+- Security
+  - A completely revamped credential system that actually stores credentials securely instead of openly. Includes encryption for credentials that need to be retrievable later (such as for third-party locations) and backwards compatibility. Also includes modern password hashing algorithms such as bcrypt, Argon for password storage.
+- More compliant with web specs and utilizes frameworks to apply them instead of custom home-implemented solutions
+  - RFC 7233 for Range headers
+  - Send correct ETags and Last-Modified headers to aid in client-side caching
+- Performance enhancements
+  - A more efficient and compliant streaming engine, utilizing piping and threading
+  - Removal of pessimistic locking throughout the software in favor of more modern concurrency techniques
+  - Aggressively uses multi-threading and parallelization for most operations, including but not limited to:
+    - Massively parallelized engine for media scanning (media scanning is done much much faster)
+    - Other various use cases utilizing async or parallel options via fork-join pools
+  - Use of websockets to communicate with web-clients instead of polling
+    - Much lighter on resource utilization as well as more dynamic
+    - Does not have to keep running the same command client side again every 10 seconds to check statuses
+    - Server pushes status updates when they're needed when something has changed
+    - Web clients can update UIs immediately (live views)
+    - Removal of DWR (10 year old technology used as an interface between the web-client and the server)
+    - Provides status indicator whether client is connected to server
+- Bugfixes:
+  - Several race condition fixes
+  - Consistency checks and refactors
+- Miscellaneous
+  - Uses JSR 310 (Java time) instead of older Java packages for time/duration tracking
+  - Uses Java's NIO for handling files instead of the older IO packages
+  - More precise song duration calculation
+  - Ability to use Repeat-One in play queues in web-clients
+- Testing
+  - Various fixes to make it compatible with multiple external DBs
+  - Automated tests are performed against external DBs
+    - Postgres
+    - MySQL
+    - MariaDB
+  - Uses failsafe for integration testing instead of cucumber
+- Build and deployment
+  - An updated Docker image with OpenJDK 11 base layer.
+  - A more advanced build pipeline including automatic releases and deploys at merge
+    - Allows people to grab the newest build without compiling from source as soon as features/enhancements are merged, instead of waiting for the next stable build (which may be months away)
+
+The complete list of PRs that were used to enhance Airsonic can be seen on the PRs page. At some point an automatic changelog generator will be added to keep track.
+
+Airsonic-Advanced will occasionally backport features introduced in the base Airsonic fork, but is generally much more modern and bleeding edge than Airsonic.
 
 History
 -----
@@ -40,6 +90,8 @@ To reiterate this more clearly:
 Airsonic's goal is to provide a full-featured, stable, self-hosted media server
 based on the Subsonic codebase that is free, open source, and community driven.
 
+Around November 2019, Airsonic-Advanced was forked off the base Airsonic fork due to differences in pace and review of development. Several key features of the framework were outdated, and attempts to upgrade them occasionally took upto a year. Airsonic-Advanced tries a modern implementation and bleeding edge approach to development, and is thus usually ahead of the base fork in dependencies and features.
+
 Pull Requests are always welcome. Keep in mind that we strive to balance
 stability with new features. As such, all Pull Requests are reviewed before
 being merged to ensure we continue to meet our goals.
@@ -47,7 +99,7 @@ being merged to ensure we continue to meet our goals.
 License
 -------
 
-Airsonic is free software and licensed under the [GNU General Public License version 3](http://www.gnu.org/copyleft/gpl.html). The code in this repository (and associated binaries) are free of any "license key" or other restrictions. If you wish to thank the maintainer of this repository, please consider a donation to the [Electronic Frontier Foundation](https://supporters.eff.org/donate).
+Airsonic-Advanced and Airsonic are free software and licensed under the [GNU General Public License version 3](http://www.gnu.org/copyleft/gpl.html). The code in this repository (and associated binaries) are free of any "license key" or other restrictions. If you wish to thank the maintainer of this repository, please consider a donation to the [Electronic Frontier Foundation](https://supporters.eff.org/donate).
 
 The [Subsonic source code](https://github.com/airsonic/subsonic-svn) was released under the GPLv3 through version 6.0-beta1. Beginning with 6.0-beta2, source is no longer provided. Binaries of Subsonic are only available under a commercial license. There is a [Subsonic Premium](http://www.subsonic.org/pages/premium.jsp) service which adds functionality not available in Airsonic. Subsonic also offers RPM, Deb, Exe, and other pre-built packages that Airsonic [currently does not](https://github.com/airsonic/airsonic/issues/65).
 
@@ -59,6 +111,16 @@ and are licensed under [MIT license](https://github.com/feathericons/feather/blo
 
 Usage
 -----
+Airsonic-Advanced can be downloaded from
+[GitHub](https://github.com/airsonic-advanced/airsonic-advanced/releases).
+
+Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced).
+
+Please note that for Docker images, the volume mounting points have changed and are different from Airsonic. Airsonic mount points are at /airsonic/* inside the container. Airsonic-Advanced tries to use the same volume locations as the default war image at /var/* in order to remain consistent if people want to switch between the containers and non-containers.
+  - `Music:/airsonic/music` -> `Music:/var/music`
+  - `Podcasts:/airsonic/podcast` -> `Podcasts:/var/podcast`
+  - `Playlists:/airsonic/playlists` -> `Playlists:/var/playlists`
+  - `/airsonic/data` -> `/var/airsonic`
 
 Airsonic can be downloaded from
 [GitHub](https://github.com/airsonic/airsonic/releases).
@@ -68,7 +130,7 @@ Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for in
 
 Community
 ---------
-We have several places outside of github for community discussion, questions, etc:
+Airsonic itself has several places outside of github for community discussion, questions, etc:
 
 - [#airsonic:matrix.org on Matrix](https://matrix.to/#/#airsonic:matrix.org)
 - [#airsonic on IRC](http://webchat.freenode.net?channels=%23airsonic)

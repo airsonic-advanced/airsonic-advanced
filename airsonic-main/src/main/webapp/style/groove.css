@@ -73,7 +73,7 @@ a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
 }
 
 /* Button colors */
-input[type="button"] {
+input[type="button"], button {
     color: #000000;
 }
 

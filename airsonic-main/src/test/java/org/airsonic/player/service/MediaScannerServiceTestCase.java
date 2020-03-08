@@ -6,7 +6,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.io.Resources;
 
 import org.airsonic.player.TestCaseUtils;
-import org.airsonic.player.TestCaseUtils.TestDao;
+import org.airsonic.player.api.ScanningTestUtils;
 import org.airsonic.player.dao.*;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.Artist;
@@ -14,6 +14,7 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.util.HomeRule;
 import org.airsonic.player.util.MusicFolderTestData;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -23,7 +24,6 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -33,8 +33,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -53,7 +54,6 @@ import static org.junit.Assert.assertEquals;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest
-@Import(TestDao.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class MediaScannerServiceTestCase {
 
@@ -72,9 +72,6 @@ public class MediaScannerServiceTestCase {
     private MusicFolderDao musicFolderDao;
 
     @Autowired
-    private TestDao testDao;
-
-    @Autowired
     private MediaFileService mediaFileService;
 
     @Autowired
@@ -89,9 +86,19 @@ public class MediaScannerServiceTestCase {
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
+    private UUID cleanupId = null;
+
     @Before
     public void setup() {
         TestCaseUtils.waitForScanFinish(mediaScannerService);
+    }
+
+    @After
+    public void cleanup() {
+        if (cleanupId != null) {
+            ScanningTestUtils.after(cleanupId, settingsService);
+            cleanupId = null;
+        }
     }
 
     /**
@@ -99,21 +106,11 @@ public class MediaScannerServiceTestCase {
      */
     @Test
     public void testScanLibrary() {
-        musicFolderDao.getAllMusicFolders().forEach(musicFolder -> musicFolderDao.deleteMusicFolder(musicFolder.getId()));
-        MusicFolderTestData.getTestMusicFolders().forEach(musicFolderDao::createMusicFolder);
-        settingsService.clearMusicFolderCache();
-
         Timer globalTimer = metrics.timer(MetricRegistry.name(MediaScannerServiceTestCase.class, "Timer.global"));
 
         Timer.Context globalTimerContext = globalTimer.time();
-        TestCaseUtils.execScan(mediaScannerService);
+        cleanupId = ScanningTestUtils.before(MusicFolderTestData.getTestMusicFolders(), settingsService, mediaScannerService);
         globalTimerContext.stop();
-
-        System.out.println("--- Report of records count per table ---");
-        Map<String, Integer> records = TestCaseUtils.recordsInAllTables(testDao);
-        records.keySet().forEach(tableName -> System.out.println(tableName + " : " + records.get(tableName).toString()));
-        System.out.println("--- *********************** ---");
-
 
         // Music Folder Music must have 3 children
         List<MediaFile> listeMusicChildren = mediaFileDao.getChildrenOf(MusicFolderTestData.resolveMusicFolderPath().toString());
@@ -135,7 +132,7 @@ public class MediaScannerServiceTestCase {
         Assert.assertEquals(5, allAlbums.size());
         System.out.println("--- *********************** ---");
 
-        List<MediaFile> listeSongs = mediaFileDao.getSongsByGenre("Baroque Instrumental", 0, 0, musicFolderDao.getAllMusicFolders());
+        List<MediaFile> listeSongs = mediaFileDao.getSongsByGenre("Baroque Instrumental", 0, Integer.MAX_VALUE, musicFolderDao.getAllMusicFolders());
         Assert.assertEquals(2, listeSongs.size());
 
         // display out metrics report
@@ -157,9 +154,7 @@ public class MediaScannerServiceTestCase {
         Files.copy(Paths.get(Resources.getResource("MEDIAS/piano.mp3").toURI()), musicFile);
 
         MusicFolder musicFolder = new MusicFolder(1, temporaryFolder.getRoot().toPath(), "Music", true, Instant.now());
-        musicFolderDao.createMusicFolder(musicFolder);
-        settingsService.clearMusicFolderCache();
-        TestCaseUtils.execScan(mediaScannerService);
+        cleanupId = ScanningTestUtils.before(Arrays.asList(musicFolder), settingsService, mediaScannerService);
         MediaFile mediaFile = mediaFileService.getMediaFile(musicFile);
         assertEquals(mediaFile.getFile().toString(), musicFile.toString());
     }
@@ -175,9 +170,7 @@ public class MediaScannerServiceTestCase {
         // Add the "Music3" folder to the database
         Path musicFolderFile = MusicFolderTestData.resolveMusic3FolderPath();
         MusicFolder musicFolder = new MusicFolder(1, musicFolderFile, "Music3", true, Instant.now());
-        musicFolderDao.createMusicFolder(musicFolder);
-        settingsService.clearMusicFolderCache();
-        TestCaseUtils.execScan(mediaScannerService);
+        cleanupId = ScanningTestUtils.before(Arrays.asList(musicFolder), settingsService, mediaScannerService);
 
         // Retrieve the "Music3" folder from the database to make
         // sure that we don't accidentally operate on other folders
