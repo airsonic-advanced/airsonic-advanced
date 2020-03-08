@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.util.concurrent.RateLimiter;
+
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MusicFolderDao;
@@ -31,6 +33,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -106,11 +110,17 @@ public class SettingsService {
     private static final String KEY_DLNA_ENABLED = "DlnaEnabled";
     private static final String KEY_DLNA_SERVER_NAME = "DlnaServerName";
     private static final String KEY_DLNA_BASE_LAN_URL = "DlnaBaseLANURL";
+    private static final String KEY_UPNP_PORT = "UPnpPort";
     private static final String KEY_SONOS_ENABLED = "SonosEnabled";
     private static final String KEY_SONOS_SERVICE_NAME = "SonosServiceName";
     private static final String KEY_SONOS_SERVICE_ID = "SonosServiceId";
     private static final String KEY_JWT_KEY = "JWTKey";
     private static final String KEY_REMEMBER_ME_KEY = "RememberMeKey";
+    private static final String KEY_ENCRYPTION_PASSWORD = "EncryptionKeyPassword";
+    private static final String KEY_ENCRYPTION_SALT = "EncryptionKeySalt";
+    private static final String KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER = "DecodablePasswordEncoder";
+    private static final String KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER = "NonDecodablePasswordEncoder";
+    private static final String KEY_PREFER_NONDECODABLE_PASSWORDS = "PreferNonDecodablePasswords";
 
     private static final String KEY_SMTP_SERVER = "SmtpServer";
     private static final String KEY_SMTP_ENCRYPTION = "SmtpEncryption";
@@ -157,7 +167,7 @@ public class SettingsService {
             "Use it to share your music with friends, or to listen to your own music while at work. You can stream to multiple " +
             "players simultaneously, for instance to one player in your kitchen and another in your living room.\n" +
             "\\\\ \\\\\n" +
-            "To change or remove this message, log in with administrator rights and go to {link:Settings > General|generalSettings.view}.";
+            "To change or remove this message, log in with administrator rights and go to <a href='settings.view'>Settings</a> > <a href='generalSettings.view'>General</a>.";
     private static final String DEFAULT_LOGIN_MESSAGE = null;
     private static final String DEFAULT_LOCALE_LANGUAGE = "en";
     private static final String DEFAULT_LOCALE_COUNTRY = "";
@@ -190,12 +200,16 @@ public class SettingsService {
     private static final boolean DEFAULT_DLNA_ENABLED = false;
     private static final String DEFAULT_DLNA_SERVER_NAME = "Airsonic";
     private static final String DEFAULT_DLNA_BASE_LAN_URL = null;
+    private static final int DEFAULT_UPNP_PORT = 4041;
     private static final boolean DEFAULT_SONOS_ENABLED = false;
     private static final String DEFAULT_SONOS_SERVICE_NAME = "Airsonic";
     private static final int DEFAULT_SONOS_SERVICE_ID = 242;
     private static final String DEFAULT_EXPORT_PLAYLIST_FORMAT = "m3u";
     private static final boolean DEFAULT_IGNORE_SYMLINKS = false;
     private static final String DEFAULT_EXCLUDE_PATTERN_STRING = null;
+    private static final String DEFAULT_PREFERRED_NONDECODABLE_PASSWORD_ENCODER = "bcrypt";
+    private static final String DEFAULT_PREFERRED_DECODABLE_PASSWORD_ENCODER = "encrypted-AES-GCM";
+    private static final boolean DEFAULT_PREFER_NONDECODABLE_PASSWORDS = true;
 
     private static final String DEFAULT_SMTP_SERVER = null;
     private static final String DEFAULT_SMTP_ENCRYPTION = "None";
@@ -240,13 +254,14 @@ public class SettingsService {
     private Set<String> cachedVideoFileTypes;
     private List<MusicFolder> cachedMusicFolders;
     private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
-
+    private RateLimiter downloadRateLimiter;
+    private RateLimiter uploadRateLimiter;
     private Pattern excludePattern;
 
     // Array of obsolete keys.  Used to clean property file.
     private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
             "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "AutoCoverBatch", "MusicMask",
-            "VideoMask", "CoverArtMask, HlsCommand", "HlsCommand2", "JukeboxCommand",
+            "VideoMask", "CoverArtMask", "HlsCommand", "HlsCommand2", "JukeboxCommand",
             "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
             "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",
             "UrlRedirectFrom", "UrlRedirectionEnabled", "UrlRedirectType", "Port", "HttpsPort",
@@ -322,6 +337,10 @@ public class SettingsService {
 
     public static String getDefaultJDBCPassword() {
         return "";
+    }
+
+    public int getUPnpPort() {
+        return getInt(KEY_UPNP_PORT, DEFAULT_UPNP_PORT);
     }
 
     public static Path getLogFile() {
@@ -631,14 +650,34 @@ public class SettingsService {
      * @return The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public long getDownloadBitrateLimit() {
-        return Long.parseLong(getProperty(KEY_DOWNLOAD_BITRATE_LIMIT, "" + DEFAULT_DOWNLOAD_BITRATE_LIMIT));
+        return getLong(KEY_DOWNLOAD_BITRATE_LIMIT, DEFAULT_DOWNLOAD_BITRATE_LIMIT);
+    }
+
+    public RateLimiter getDownloadBitrateLimiter() {
+        if (downloadRateLimiter == null) {
+            downloadRateLimiter = RateLimiter.create(adjustBitrateLimit(getDownloadBitrateLimit()));
+        }
+        return downloadRateLimiter;
+    }
+
+    /**
+     * Convert rate given in KB to bytes and accounts for 0 (meaning no bitrate)
+     */
+    private static Double adjustBitrateLimit(double rate) {
+        double rateLimitInBytes = rate * 1024.0;
+        if (rate == 0) {
+            rateLimitInBytes = Double.POSITIVE_INFINITY;
+        }
+
+        return rateLimitInBytes;
     }
 
     /**
      * @param limit The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setDownloadBitrateLimit(long limit) {
-        setProperty(KEY_DOWNLOAD_BITRATE_LIMIT, String.valueOf(limit));
+        setLong(KEY_DOWNLOAD_BITRATE_LIMIT, limit);
+        getDownloadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
     /**
@@ -648,11 +687,19 @@ public class SettingsService {
         return getLong(KEY_UPLOAD_BITRATE_LIMIT, DEFAULT_UPLOAD_BITRATE_LIMIT);
     }
 
+    public RateLimiter getUploadBitrateLimiter() {
+        if (uploadRateLimiter == null) {
+            uploadRateLimiter = RateLimiter.create(adjustBitrateLimit(getUploadBitrateLimit()));
+        }
+        return uploadRateLimiter;
+    }
+
     /**
      * @param limit The upload bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setUploadBitrateLimit(long limit) {
         setLong(KEY_UPLOAD_BITRATE_LIMIT, limit);
+        getUploadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
     public String getDownsamplingCommand() {
@@ -1106,6 +1153,7 @@ public class SettingsService {
      * @param username The username.
      * @return User-specific settings. Never <code>null</code>.
      */
+    @Cacheable(cacheNames = "userSettingsCache")
     public UserSettings getUserSettings(String username) {
         UserSettings settings = userDao.getUserSettings(username);
         return settings == null ? createDefaultUserSettings(username) : settings;
@@ -1128,9 +1176,6 @@ public class SettingsService {
         settings.setDefaultAlbumList(AlbumListType.RANDOM);
         settings.setLastFmEnabled(false);
         settings.setListenBrainzEnabled(false);
-        settings.setLastFmUsername(null);
-        settings.setLastFmPassword(null);
-        settings.setListenBrainzToken(null);
         settings.setChanged(Instant.now());
         settings.setPaginationSize(40);
 
@@ -1156,6 +1201,7 @@ public class SettingsService {
      *
      * @param settings The user-specific settings.
      */
+    @CacheEvict(cacheNames = "userSettingsCache", key = "#settings.username")
     public void updateUserSettings(UserSettings settings) {
         userDao.updateUserSettings(settings);
     }
@@ -1425,6 +1471,46 @@ public class SettingsService {
 
     public void setJWTKey(String jwtKey) {
         setString(KEY_JWT_KEY, jwtKey);
+    }
+
+    public String getEncryptionPassword() {
+        return getString(KEY_ENCRYPTION_PASSWORD, null);
+    }
+
+    public void setEncryptionPassword(String key) {
+        setString(KEY_ENCRYPTION_PASSWORD, key);
+    }
+
+    public String getEncryptionSalt() {
+        return getString(KEY_ENCRYPTION_SALT, null);
+    }
+
+    public void setEncryptionSalt(String salt) {
+        setString(KEY_ENCRYPTION_SALT, salt);
+    }
+
+    public String getDecodablePasswordEncoder() {
+        return getString(KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER, DEFAULT_PREFERRED_DECODABLE_PASSWORD_ENCODER);
+    }
+
+    public void setDecodablePasswordEncoder(String encoder) {
+        setString(KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER, encoder);
+    }
+
+    public String getNonDecodablePasswordEncoder() {
+        return getString(KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER, DEFAULT_PREFERRED_NONDECODABLE_PASSWORD_ENCODER);
+    }
+
+    public void setNonDecodablePasswordEncoder(String encoder) {
+        setString(KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER, encoder);
+    }
+
+    public boolean getPreferNonDecodablePasswords() {
+        return getBoolean(KEY_PREFER_NONDECODABLE_PASSWORDS, DEFAULT_PREFER_NONDECODABLE_PASSWORDS);
+    }
+
+    public void setPreferNonDecodablePasswords(boolean preference) {
+        setBoolean(KEY_PREFER_NONDECODABLE_PASSWORDS, preference);
     }
 
     public void setEnvironment(Environment env) {

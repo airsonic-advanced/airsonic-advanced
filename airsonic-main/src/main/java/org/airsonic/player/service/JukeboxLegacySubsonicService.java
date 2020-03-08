@@ -58,6 +58,7 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
     private AudioPlayer audioPlayer;
     private Player player;
     private TransferStatus status;
+    private PlayStatus playStatus;
     private MediaFile currentPlayingFile;
     private float gain = AudioPlayer.DEFAULT_GAIN;
     private int offset;
@@ -108,7 +109,7 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
                 }
 
                 if (file != null) {
-                    int duration = file.getDurationSeconds() == null ? 0 : file.getDurationSeconds() - offset;
+                    double duration = file.getDuration() == null ? 0 : file.getDuration() - offset;
                     TranscodingService.Parameters parameters = new TranscodingService.Parameters(file, new VideoTranscodingSettings(0, 0, offset, duration, false));
                     String command = settingsService.getJukeboxCommand();
                     parameters.setTranscoding(new Transcoding(null, null, null, null, command, null, null, false));
@@ -128,6 +129,7 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
         }
     }
 
+    @Override
     public synchronized void stateChanged(AudioPlayer audioPlayer, AudioPlayer.State state) {
         if (state == AudioPlayer.State.EOM) {
             player.getPlayQueue().next();
@@ -160,15 +162,22 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
         LOG.info(player.getUsername() + " starting jukebox for \"" + FileUtil.getShortPath(file.getFile()) + "\"");
         status = statusService.createStreamStatus(player);
         status.setFile(file.getFile());
-        status.addBytesTransfered(file.getFileSize());
+        status.addBytesTransferred(file.getFileSize());
         mediaFileService.incrementPlayCount(file);
+        playStatus = new PlayStatus(status.getId(), file, status.getPlayer(), status.getMillisSinceLastUpdate());
+        statusService.addActiveLocalPlay(playStatus);
         scrobble(file, false);
     }
 
     private void onSongEnd(MediaFile file) {
         LOG.info(player.getUsername() + " stopping jukebox for \"" + FileUtil.getShortPath(file.getFile()) + "\"");
+        if (playStatus != null) {
+            statusService.removeActiveLocalPlay(playStatus);
+            playStatus = null;
+        }
         if (status != null) {
             statusService.removeStreamStatus(status);
+            status = null;
         }
         scrobble(file, true);
     }

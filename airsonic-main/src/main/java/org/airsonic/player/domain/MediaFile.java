@@ -53,7 +53,7 @@ public class MediaFile {
     private String genre;
     private Integer bitRate;
     private boolean variableBitRate;
-    private Integer durationSeconds;
+    private Double duration;
     private Long fileSize;
     private Integer width;
     private Integer height;
@@ -74,7 +74,7 @@ public class MediaFile {
 
     public MediaFile(int id, String path, String folder, MediaType mediaType, String format, String title,
                      String albumName, String artist, String albumArtist, Integer discNumber, Integer trackNumber, Integer year, String genre, Integer bitRate,
-                     boolean variableBitRate, Integer durationSeconds, Long fileSize, Integer width, Integer height, String coverArtPath,
+                     boolean variableBitRate, Double duration, Long fileSize, Integer width, Integer height, String coverArtPath,
                      String parentPath, int playCount, Instant lastPlayed, String comment, Instant created, Instant changed, Instant lastScanned,
                      Instant childrenLastUpdated, boolean present, int version, String musicBrainzReleaseId, String musicBrainzRecordingId) {
         this.id = id;
@@ -92,7 +92,7 @@ public class MediaFile {
         this.genre = genre;
         this.bitRate = bitRate;
         this.variableBitRate = variableBitRate;
-        this.durationSeconds = durationSeconds;
+        this.duration = duration;
         this.fileSize = fileSize;
         this.width = width;
         this.height = height;
@@ -270,20 +270,20 @@ public class MediaFile {
         this.variableBitRate = variableBitRate;
     }
 
-    public Integer getDurationSeconds() {
-        return durationSeconds;
+    public Double getDuration() {
+        return duration;
     }
 
-    public void setDurationSeconds(Integer durationSeconds) {
-        this.durationSeconds = durationSeconds;
+    public void setDuration(Double duration) {
+        this.duration = duration;
     }
 
     public String getDurationString() {
-        if (durationSeconds == null) {
+        if (duration == null) {
             return null;
         }
         // Return in M:SS or H:MM:SS
-        return StringUtil.formatDuration(durationSeconds);
+        return StringUtil.formatDuration((long) (duration * 1000));
     }
 
     public Long getFileSize() {
@@ -427,13 +427,28 @@ public class MediaFile {
     }
 
     @Override
-    public boolean equals(Object o) {
-        return o instanceof MediaFile && ((MediaFile) o).path.equals(path);
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        MediaFile other = (MediaFile) obj;
+        if (path == null) {
+            if (other.path != null)
+                return false;
+        } else if (!path.equals(other.path))
+            return false;
+        return true;
     }
 
     @Override
     public int hashCode() {
-        return path.hashCode();
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((path == null) ? 0 : path.hashCode());
+        return result;
     }
 
     public Path getCoverArtFile() {

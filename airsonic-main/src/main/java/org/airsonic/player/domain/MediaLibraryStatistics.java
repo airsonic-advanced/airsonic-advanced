@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.domain;
 
+import com.google.common.util.concurrent.AtomicDouble;
+
 import java.time.Instant;
 import java.util.Objects;
 
@@ -37,7 +39,7 @@ public class MediaLibraryStatistics {
     private AtomicInteger albumCount = new AtomicInteger(0);
     private AtomicInteger songCount = new AtomicInteger(0);
     private AtomicLong totalLengthInBytes = new AtomicLong(0);
-    private AtomicLong totalDurationInSeconds = new AtomicLong(0);
+    private AtomicDouble totalDurationInSeconds = new AtomicDouble(0);
 
     public MediaLibraryStatistics() {}
 
@@ -61,7 +63,7 @@ public class MediaLibraryStatistics {
         this.totalLengthInBytes.set(totalLengthInBytes);
     }
 
-    public void setTotalDurationInSeconds(long totalDurationInSeconds) {
+    public void setTotalDurationInSeconds(double totalDurationInSeconds) {
         this.totalDurationInSeconds.set(totalDurationInSeconds);
     }
 
@@ -90,7 +92,7 @@ public class MediaLibraryStatistics {
         totalLengthInBytes.addAndGet(n);
     }
 
-    public void incrementTotalDurationInSeconds(long n) {
+    public void incrementTotalDurationInSeconds(double n) {
         totalDurationInSeconds.addAndGet(n);
     }
 
@@ -110,7 +112,7 @@ public class MediaLibraryStatistics {
         return totalLengthInBytes.get();
     }
 
-    public long getTotalDurationInSeconds() {
+    public double getTotalDurationInSeconds() {
         return totalDurationInSeconds.get();
     }
 

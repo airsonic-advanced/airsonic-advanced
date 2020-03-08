@@ -1,4 +1,6 @@
 
+// assume websockets are loaded
+
 var songPlayingTimerId = null;
 
 var javaJukeboxPlayerModel = {
@@ -33,13 +35,19 @@ function refreshView() {
 }
 
 function onJavaJukeboxStart() {
-  playQueueService.start();
+  StompClient.send("/app/playqueues/" + playerId + "/start", "");
+}
+
+function javaJukeboxStartCallback() {
   javaJukeboxPlayerModel.playing = true;
   refreshView();
 }
 
 function onJavaJukeboxStop() {
-  playQueueService.stop();
+  StompClient.send("/app/playqueues/" + playerId + "/stop", "");
+}
+
+function javaJukeboxStopCallback() {
   javaJukeboxPlayerModel.playing = false;
   refreshView();
 }
@@ -47,22 +55,29 @@ function onJavaJukeboxStop() {
 function onJavaJukeboxVolumeChanged() {
     var value = $("#javaJukeboxVolumeSlider").slider("value");
     var gain = value / 100;
-    playQueueService.setGain(gain);
+    StompClient.send("/app/playqueues/" + playerId + "/jukebox/gain", gain);
+}
+
+function javaJukeboxGainCallback(gain) {
+    $("#javaJukeboxVolumeSlider").slider("option", "value", Math.floor(gain * 100));
 }
 
 function onJavaJukeboxPositionChanged() {
     var pos = $("#javaJukeboxSongPositionSlider").slider("value");
-    playQueueService.setJukeboxPosition(pos);
-    javaJukeboxPlayerModel.songPosition = pos;
+    StompClient.send("/app/playqueues/" + playerId + "/jukebox/position", pos);
+}
+
+function javaJukeboxPositionCallback(pos) {
+    javaJukeboxPlayerModel.songPosition = pos || 0;
     refreshView();
 }
 
-function updateJavaJukeboxPlayerControlBar(song){
+function updateJavaJukeboxPlayerControlBar(song, pos) {
     if (song != null) {
         var playingStream = song.streamUrl;
         if (playingStream != javaJukeboxPlayerModel.currentStreamUrl) {
             javaJukeboxPlayerModel.currentStreamUrl = playingStream;
-            newSongPlaying(song);
+            newSongPlaying(song, pos);
         }
     }
 }
@@ -74,11 +89,11 @@ function songTimeAsString(timeInSeconds) {
     return minutes + ":" + ("00" + seconds).slice(-2);
 }
 
-function newSongPlaying(song) {
+function newSongPlaying(song, pos) {
     javaJukeboxPlayerModel.songDuration = song.duration;
     $("#javaJukeboxSongPositionSlider").slider({max: javaJukeboxPlayerModel.songDuration, value: 0, animate: "fast", range: "min"});
     javaJukeboxPlayerModel.playing = true;
-    javaJukeboxPlayerModel.songPosition = 0;
+    javaJukeboxPlayerModel.songPosition = pos || 0;
     refreshView();
 }
 

@@ -19,13 +19,14 @@ import java.util.Map;
 @Configuration
 @EnableTransactionManagement
 public class DatabaseConfiguration {
-    @Value("${DatabaseConfigEmbedUrl:#{T(org.airsonic.player.service.SettingsService).getDefaultJDBCUrl()}}")
+    // must write in this way to catch empty env vars
+    @Value("#{'${DatabaseConfigEmbedUrl:}'?:T(org.airsonic.player.service.SettingsService).getDefaultJDBCUrl()}")
     private String url;
-    @Value("${DatabaseConfigEmbedUsername:#{T(org.airsonic.player.service.SettingsService).getDefaultJDBCUsername()}}")
+    @Value("#{'${DatabaseConfigEmbedUsername:}'?:T(org.airsonic.player.service.SettingsService).getDefaultJDBCUsername()}")
     private String user;
-    @Value("${DatabaseConfigEmbedPassword:#{T(org.airsonic.player.service.SettingsService).getDefaultJDBCPassword()}}")
+    @Value("#{'${DatabaseConfigEmbedPassword:}'?:T(org.airsonic.player.service.SettingsService).getDefaultJDBCPassword()}")
     private String password;
-    @Value("${DatabaseConfigEmbedDriver:org.hsqldb.jdbc.JDBCDriver}")
+    @Value("#{'${DatabaseConfigEmbedDriver:}'?:'org.hsqldb.jdbc.JDBCDriver'}")
     private String driver;
 
     @Bean
@@ -49,9 +50,9 @@ public class DatabaseConfiguration {
 
     @Bean
     public SpringLiquibase liquibase(DataSource dataSource,
-                                     @Value("${DatabaseMysqlMaxlength:512}")
+                                     @Value("#{'${DatabaseMysqlMaxlength:}'?:'384'}")
                                      String mysqlVarcharLimit,
-                                     @Value("${DatabaseUsertableQuote:}")
+                                     @Value("#{'${DatabaseUsertableQuote:}'?:''}")
                                      String userTableQuote) {
         SpringLiquibase springLiquibase = new SpringLiquibase();
         springLiquibase.setDataSource(dataSource);
@@ -64,5 +65,4 @@ public class DatabaseConfiguration {
         springLiquibase.setChangeLogParameters(parameters);
         return springLiquibase;
     }
-
 }

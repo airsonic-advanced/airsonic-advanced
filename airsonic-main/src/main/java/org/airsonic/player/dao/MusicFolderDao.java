@@ -74,12 +74,17 @@ public class MusicFolderDao extends AbstractDao {
      * @param musicFolder The music folder to create.
      */
     public void createMusicFolder(MusicFolder musicFolder) {
-        String sql = "insert into music_folder (" + INSERT_COLUMNS + ") values (?, ?, ?, ?)";
-        update(sql, musicFolder.getPath().toString(), musicFolder.getName(), musicFolder.isEnabled(), musicFolder.getChanged());
+        if (getMusicFolderForPath(musicFolder.getPath().toString()) == null) {
+            String sql = "insert into music_folder (" + INSERT_COLUMNS + ") values (?, ?, ?, ?)";
+            update(sql, musicFolder.getPath().toString(), musicFolder.getName(), musicFolder.isEnabled(), musicFolder.getChanged());
 
-        Integer id = queryForInt("select max(id) from music_folder", 0);
-        update("insert into music_folder_user (music_folder_id, username) select ?, username from " + userDao.getUserTable(), id);
-        LOG.info("Created music folder " + musicFolder.getPath());
+            Integer id = queryForInt("select max(id) from music_folder", 0);
+
+            update("insert into music_folder_user (music_folder_id, username) select ?, username from " + userDao.getUserTable(), id);
+            musicFolder.setId(id);
+
+            LOG.info("Created music folder {} with id {}", musicFolder.getPath(), musicFolder.getId());
+        }
     }
 
     /**
@@ -118,6 +123,7 @@ public class MusicFolderDao extends AbstractDao {
     }
 
     private static class MusicFolderRowMapper implements RowMapper<MusicFolder> {
+        @Override
         public MusicFolder mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new MusicFolder(rs.getInt(1), Paths.get(rs.getString(2)), rs.getString(3), rs.getBoolean(4), Optional.ofNullable(rs.getTimestamp(5)).map(x -> x.toInstant()).orElse(null));
         }

@@ -31,6 +31,7 @@ public class JukeboxJavaService {
 
 
     private TransferStatus status;
+    private PlayStatus playStatus;
     private Map<Integer, com.github.biconou.AudioPlayer.api.Player> activeAudioPlayers = new HashMap<>();
     private Map<String, List<com.github.biconou.AudioPlayer.api.Player>> activeAudioPlayersPerMixer = new HashMap<>();
     private final static String DEFAULT_MIXER_ENTRY_KEY = "_default";
@@ -178,20 +179,30 @@ public class JukeboxJavaService {
     private void onSongStart(Player player) {
         MediaFile file = player.getPlayQueue().getCurrentFile();
         log.info("[onSongStart] {} starting jukebox for \"{}\"", player.getUsername(), FileUtil.getShortPath(file.getFile()));
+        if (playStatus != null) {
+            statusService.removeActiveLocalPlay(playStatus);
+            playStatus = null;
+        }
         if (status != null) {
             statusService.removeStreamStatus(status);
             status = null;
         }
         status = statusService.createStreamStatus(player);
         status.setFile(file.getFile());
-        status.addBytesTransfered(file.getFileSize());
+        status.addBytesTransferred(file.getFileSize());
         mediaFileService.incrementPlayCount(file);
+        playStatus = new PlayStatus(status.getId(), file, status.getPlayer(), status.getMillisSinceLastUpdate());
+        statusService.addActiveLocalPlay(playStatus);
         scrobble(player, file, false);
     }
 
     private void onSongEnd(Player player) {
         MediaFile file = player.getPlayQueue().getCurrentFile();
         log.info("[onSongEnd] {} stopping jukebox for \"{}\"", player.getUsername(), FileUtil.getShortPath(file.getFile()));
+        if (playStatus != null) {
+            statusService.removeActiveLocalPlay(playStatus);
+            playStatus = null;
+        }
         if (status != null) {
             statusService.removeStreamStatus(status);
             status = null;

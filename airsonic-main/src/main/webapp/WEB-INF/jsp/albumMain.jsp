@@ -5,10 +5,6 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/starService.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/multiService.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
@@ -34,29 +30,46 @@
                 }
             }});
 
+        top.StompClient.subscribe("albumMain.jsp", {
+            '/user/queue/playlists/writable': function(msg) {
+                playlistSelectionCallback(JSON.parse(msg.body));
+            },
+            '/user/queue/playlists/files/append': function(msg) {
+                $().toastmessage("showSuccessToast", "<fmt:message key='playlist.toast.appendtoplaylist'/>");
+            }
+        });
+
         <c:if test="${model.showArtistInfo}">
-        loadArtistInfo();
+        top.StompClient.subscribe("albumMain.jsp", {
+            "/user/queue/artist/info": function(msg) {
+                loadArtistInfoCallback(JSON.parse(msg.body));
+            }
+        }, loadArtistInfo);
         </c:if>
     }
 
+    <c:if test="${model.showArtistInfo}">
     function loadArtistInfo() {
-        multiService.getArtistInfo(${model.dir.id}, 8, 0, function (artistInfo) {
-            if (artistInfo.similarArtists.length > 0) {
-                var html = "";
-                for (var i = 0; i < artistInfo.similarArtists.length; i++) {
-                    html += "<a href='main.view?id=" + artistInfo.similarArtists[i].mediaFileId + "' target='main'>" +
-                            escapeHtml(artistInfo.similarArtists[i].artistName) + "</a>";
-                    if (i < artistInfo.similarArtists.length - 1) {
-                        html += " <span class='similar-artist-divider'>|</span> ";
-                    }
-                }
-                $("#similarArtists").append(html);
-                $("#similarArtists").show();
-                $("#similarArtistsTitle").show();
-                $("#similarArtistsRadio").show();
-            }
-        });
+        top.StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: ${model.dir.id}, maxSimilarArtists: 8, maxTopSongs: 0}));
     }
+
+    function loadArtistInfoCallback(artistInfo) {
+        if (artistInfo.similarArtists.length > 0) {
+            var html = "";
+            for (var i = 0; i < artistInfo.similarArtists.length; i++) {
+                html += "<a href='main.view?id=" + artistInfo.similarArtists[i].mediaFileId + "' target='main'>" +
+                        escapeHtml(artistInfo.similarArtists[i].artistName) + "</a>";
+                if (i < artistInfo.similarArtists.length - 1) {
+                    html += " <span class='similar-artist-divider'>|</span> ";
+                }
+            }
+            $("#similarArtists").append(html);
+            $("#similarArtists").show();
+            $("#similarArtistsTitle").show();
+            $("#similarArtistsRadio").show();
+        }
+    }
+    </c:if>
 
     <!-- actionSelected() is invoked when the users selects from the "More actions..." combo box. -->
     function actionSelected(id) {
@@ -105,11 +118,11 @@
     function toggleStar(mediaFileId, imageId) {
         if ($(imageId).attr("src").indexOf("<spring:theme code='ratingOnImage'/>") != -1) {
             $(imageId).attr("src", "<spring:theme code='ratingOffImage'/>");
-            starService.unstar(mediaFileId);
+            top.StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
         }
         else if ($(imageId).attr("src").indexOf("<spring:theme code='ratingOffImage'/>") != -1) {
             $(imageId).attr("src", "<spring:theme code='ratingOnImage'/>");
-            starService.star(mediaFileId);
+            top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
         }
     }
 
@@ -130,9 +143,10 @@
     }
 
     function onAppendPlaylist() {
-        playlistService.getWritablePlaylists(playlistCallback);
+        // retrieve writable lists so we can open dialog to ask user which playlist to append to
+        top.StompClient.send("/app/playlists/writable", "");
     }
-    function playlistCallback(playlists) {
+    function playlistSelectionCallback(playlists) {
         $("#dialog-select-playlist-list").empty();
         for (var i = 0; i < playlists.length; i++) {
             var playlist = playlists[i];
@@ -144,17 +158,15 @@
     function appendPlaylist(playlistId) {
         $("#dialog-select-playlist").dialog("close");
 
-        var mediaFileIds = new Array();
+        var mediaFileIds = [];
         for (var i = 0; i < ${fn:length(model.files)}; i++) {
             var checkbox = $("#songIndex" + i);
             if (checkbox && checkbox.is(":checked")) {
                 mediaFileIds.push($("#songId" + i).html());
             }
         }
-        playlistService.appendToPlaylist(playlistId, mediaFileIds, function (){
-            top.left.updatePlaylists();
-            $().toastmessage("showSuccessToast", "<fmt:message key='playlist.toast.appendtoplaylist'/>");
-        });
+
+        top.StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
     }
     function showAllAlbums() {
         window.location.href = updateQueryStringParameter(window.location.href, "showAll", "1");
@@ -321,8 +333,8 @@
                             <c:param name="asTable" value="true"/>
                         </c:import>
 
-                        <td class="fit"><input type="checkbox" id="songIndex${loopStatus.count - 1}">
-                            <span id="songId${loopStatus.count - 1}" style="display: none">${song.id}</span></td>
+                        <td class="fit"><input type="checkbox" id="songIndex${loopStatus.index}">
+                            <span id="songId${loopStatus.index}" style="display: none">${song.id}</span></td>
 
                         <c:if test="${model.visibility.trackNumberVisible}">
                             <td class="fit rightalign">

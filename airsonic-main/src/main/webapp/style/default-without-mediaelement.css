@@ -194,7 +194,7 @@ form {
     margin: 0;
 }
 
-input, textarea, select {
+input, textarea, select, button {
     font-size: 90%;
     padding: 3px;
     border-radius: 3px;
@@ -202,18 +202,18 @@ input, textarea, select {
     vertical-align: middle;
 }
 
-input[type=submit], input[type=button] {
+input[type=submit], input[type=button], button {
     background: white;
     padding-left: 1em;
     padding-right: 1em;
     color: black;
 }
 
-input[type=submit]:hover, input[type=button]:hover {
+input[type=submit]:hover, input[type=button]:hover, button:hover {
     text-decoration: none;
 }
 
-input[type=submit]:active, input[type=button]:active {
+input[type=submit]:active, input[type=button]:active, button:active {
     background: #e9e9e9;
 }
 
@@ -458,6 +458,12 @@ img {
 #javaJukeboxSongPositionSlider {
     width : 200px;
     height : 4px;
+}
+
+/* Blur effect */
+.blur {
+  color: transparent;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.7);
 }
 
 /* Javascript-zoom related styles */

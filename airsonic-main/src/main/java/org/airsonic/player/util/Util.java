@@ -62,7 +62,7 @@ public final class Util {
     }
 
     public static String getDefaultPodcastFolder() {
-        String def = isWindows() ? "c:\\music\\Podcast" : "/var/music/Podcast";
+        String def = isWindows() ? "c:\\podcast" : "/var/podcast";
         return System.getProperty("airsonic.defaultPodcastFolder", def);
     }
 
@@ -181,6 +181,14 @@ public final class Util {
             return Class.forName(className).isInstance(o);
         } catch (ClassNotFoundException e) {
             return false;
+        }
+    }
+
+    public static String toJson(Object object) {
+        try {
+            return objectMapper.writeValueAsString(object);
+        } catch (Exception e) {
+            return null;
         }
     }
 
