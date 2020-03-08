@@ -1,4 +1,4 @@
-FROM alpine:3.9
+FROM adoptopenjdk/openjdk11:alpine-jre
 
 LABEL description="Airsonic-Advanced is a free, web-based media streamer, providing ubiquitous access to your music." \
       url="https://github.com/airsonic-advanced/airsonic-advanced"
@@ -15,9 +15,7 @@ RUN apk --no-cache add \
     fontconfig \
     ttf-dejavu \
     ca-certificates \
-    tini \
-    curl \
-    openjdk8-jre
+    tini
 
 COPY run.sh /usr/local/bin/run.sh
 
