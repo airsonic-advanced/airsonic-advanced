@@ -123,6 +123,10 @@ public class UploadController {
                 throw new Exception("Missing 'dir' parameter.");
             }
 
+            if (!Files.exists(dir)) {
+                Files.createDirectories(dir);
+            }
+
             // Look for file items.
             for (Object o : items) {
                 FileItem item = (FileItem) o;
@@ -135,10 +139,6 @@ public class UploadController {
 
                         if (!securityService.isUploadAllowed(targetFile)) {
                             throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(targetFile.toString()));
-                        }
-
-                        if (!Files.exists(dir)) {
-                            Files.createDirectories(dir);
                         }
 
                         item.write(targetFile.toFile());

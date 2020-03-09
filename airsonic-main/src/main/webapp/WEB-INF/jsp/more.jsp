@@ -297,7 +297,7 @@
         <table>
             <tr>
                 <td><fmt:message key="more.upload.source"/></td>
-                <td colspan="2"><input type="file" id="file" name="file" size="40"/></td>
+                <td colspan="2"><input type="file" id="file" name="file" size="40" multiple="multiple"/></td>
             </tr>
             <tr>
                 <td><fmt:message key="more.upload.target"/></td>
