@@ -143,7 +143,7 @@ public class UserDao extends AbstractDao {
     }
 
     public boolean createCredential(UserCredential credential) {
-        String sql = "insert into user_credentials (" + USER_CREDENTIALS_COLUMNS + ") values (" + questionMarks(USER_CREDENTIALS_COLUMNS) + ')';
+        String sql = "insert into user_credentials (" + USER_CREDENTIALS_COLUMNS + ") values (" + questionMarks(USER_CREDENTIALS_COLUMNS) + ")";
         return update(sql,
                 credential.getUsername(),
                 credential.getAppUsername(),
