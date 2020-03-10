@@ -19,6 +19,9 @@
  */
 package org.airsonic.player.controller;
 
+import com.github.junrar.Archive;
+import com.github.junrar.exception.RarException;
+import com.github.junrar.rarfile.FileHeader;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.RateLimiter;
@@ -61,6 +64,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.FileChannel;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -90,7 +94,7 @@ public class UploadController {
     @Autowired
     private SimpMessagingTemplate brokerTemplate;
 
-    private static final Set<String> SUPPORTED_ZIP_FORMATS = ImmutableSet.of("zip", "7z", "cpio", "jar", "tar");
+    private static final Set<String> SUPPORTED_ZIP_FORMATS = ImmutableSet.of("zip", "7z", "rar", "cpio", "jar", "tar");
 
     @PostMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) {
@@ -195,6 +199,61 @@ public class UploadController {
         LOG.info("Unzipping {}", file);
         boolean unzipped = false;
 
+        // rar files
+        if (file.getFileName().toString().toLowerCase().endsWith(".rar")) {
+            LOG.info("Trying rar-specific extraction method for {}", file);
+            try (Archive zip = new Archive(file.toFile(), null)) {
+                if (zip.isEncrypted()) {
+                    throw new AccessDeniedException(file.toString(), null, "Archive is encrypted");
+                }
+
+                for (FileHeader fh : zip) {
+                    if (fh.isEncrypted()) {
+                        LOG.info("Can't read {} in {}", fh.getFileNameString(), file);
+                        continue;
+                    }
+
+                    copyEntry(file, new ArchiveEntry() {
+                        @Override
+                        public boolean isDirectory() {
+                            return fh.isDirectory();
+                        }
+
+                        @Override
+                        public long getSize() {
+                            return fh.getFullUnpackSize();
+                        }
+
+                        @Override
+                        public String getName() {
+                            if (fh.isFileHeader() && fh.isUnicode()) {
+                                return fh.getFileNameW();
+                            } else {
+                                return fh.getFileNameString();
+                            }
+                        }
+
+                        @Override
+                        public Date getLastModifiedDate() {
+                            return fh.getArcTime();
+                        }
+                    }, dest -> {
+                        try (OutputStream os = Files.newOutputStream(dest)) {
+                            zip.extractFile(fh, os);
+                        } catch (RarException e) {
+                            throw new IOException(e);
+                        }
+                    }, unzippedFiles, exceptions);
+                }
+            } catch (Exception e) {
+                LOG.warn("Something went wrong unzipping {}", file, e);
+                exceptions.add(e);
+            } finally {
+                unzipped = true;
+                FileUtil.delete(file);
+            }
+        }
+
         // zip files
         if (file.getFileName().toString().toLowerCase().endsWith(".zip")) {
             LOG.info("Trying zip-specific extraction method for {}", file);
@@ -215,6 +274,7 @@ public class UploadController {
                 }
             } catch (Exception e) {
                 LOG.warn("Something went wrong unzipping {}", file, e);
+                exceptions.add(e);
             } finally {
                 unzipped = true;
                 FileUtil.delete(file);
@@ -239,6 +299,7 @@ public class UploadController {
                 }
             } catch (Exception e) {
                 LOG.warn("Something went wrong unzipping {}", file, e);
+                exceptions.add(e);
             } finally {
                 unzipped = true;
                 FileUtil.delete(file);
@@ -260,6 +321,7 @@ public class UploadController {
                 }
             } catch (Exception e) {
                 LOG.warn("Something went wrong unzipping {}", file, e);
+                exceptions.add(e);
             } finally {
                 FileUtil.delete(file);
             }

@@ -205,6 +205,11 @@
             <artifactId>xz</artifactId>
             <version>1.8</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.junrar</groupId>
+            <artifactId>junrar</artifactId>
+            <version>4.0.0</version>
+        </dependency>
 
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
