@@ -228,7 +228,7 @@ public class SettingsService {
     private static final String DEFAULT_DATABASE_CONFIG_EMBED_USERNAME = null;
     private static final String DEFAULT_DATABASE_CONFIG_EMBED_PASSWORD = null;
     private static final String DEFAULT_DATABASE_CONFIG_JNDI_NAME = null;
-    private static final Integer DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH = 512;
+    private static final Integer DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH = 384;
     private static final String DEFAULT_DATABASE_USERTABLE_QUOTE = null;
 
     private static final String LOCALES_FILE = "/org/airsonic/player/i18n/locales.txt";

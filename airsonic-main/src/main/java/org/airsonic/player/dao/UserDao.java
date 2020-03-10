@@ -143,7 +143,7 @@ public class UserDao extends AbstractDao {
     }
 
     public boolean createCredential(UserCredential credential) {
-        String sql = "insert into user_credentials (" + USER_CREDENTIALS_COLUMNS + ") values (" + questionMarks(USER_CREDENTIALS_COLUMNS) + ')';
+        String sql = "insert into user_credentials (" + USER_CREDENTIALS_COLUMNS + ") values (" + questionMarks(USER_CREDENTIALS_COLUMNS) + ")";
         return update(sql,
                 credential.getUsername(),
                 credential.getAppUsername(),
@@ -309,7 +309,7 @@ public class UserDao extends AbstractDao {
     public boolean updateUserSettings(UserSettings settings) {
         update("delete from user_settings where username=?", settings.getUsername());
 
-        String sql = "insert into user_settings (" + USER_SETTINGS_COLUMNS + ") values (" + questionMarks(USER_SETTINGS_COLUMNS) + ')';
+        String sql = "insert into user_settings (" + USER_SETTINGS_COLUMNS + ") values (" + questionMarks(USER_SETTINGS_COLUMNS) + ")";
         String locale = settings.getLocale() == null ? null : settings.getLocale().toString();
         UserSettings.Visibility main = settings.getMainVisibility();
         UserSettings.Visibility playlist = settings.getPlaylistVisibility();
@@ -358,7 +358,7 @@ public class UserDao extends AbstractDao {
             } else if (ROLE_ID_SHARE.equals(role)) {
                 user.setShareRole(true);
             } else {
-                LOG.warn("Unknown role: '" + role + '\'');
+                LOG.warn("Unknown role: {}", role);
             }
         }
     }
