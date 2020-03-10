@@ -238,12 +238,12 @@ public class UploadController {
                             return fh.getArcTime();
                         }
                     }, dest -> {
-                        try (OutputStream os = Files.newOutputStream(dest)) {
-                            zip.extractFile(fh, os);
-                        } catch (RarException e) {
-                            throw new IOException(e);
-                        }
-                    }, unzippedFiles, exceptions);
+                            try (OutputStream os = Files.newOutputStream(dest)) {
+                                zip.extractFile(fh, os);
+                            } catch (RarException e) {
+                                throw new IOException(e);
+                            }
+                        }, unzippedFiles, exceptions);
                 }
             } catch (Exception e) {
                 LOG.warn("Something went wrong unzipping {}", file, e);
