@@ -18,7 +18,7 @@ env:
 stages:
   - test
   - name: deploy_edge
-    if: type = push && tag is blank
+    if: type = push && tag is blank && commit_message =~ /^Merge pull request #.*$/
 
 install: skip
 
