@@ -58,6 +58,11 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Uses Java's NIO for handling files instead of the older IO packages
   - More precise song duration calculation
   - Ability to use Repeat-One in play queues in web-clients
+  - Ability to upload multiple files simultaneously
+  - Ability to upload and extract more archive formats:
+    - rar
+    - 7z
+    - tar
 - Testing
   - Various fixes to make it compatible with multiple external DBs
   - Automated tests are performed against external DBs
