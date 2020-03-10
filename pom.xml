@@ -371,6 +371,7 @@
                                 <ignoredUnusedDeclaredDependency>org.seamless:seamless-http*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>taglibs:string:jar*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.seamless:seamless-http*</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.tukaani:xz:*</ignoredUnusedDeclaredDependency>
                                 <!-- Needed for airsonic-booter to load Airsonic correctly -->
                                 <ignoredUnusedDeclaredDependency>org.springframework.security:*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot*</ignoredUnusedDeclaredDependency>
