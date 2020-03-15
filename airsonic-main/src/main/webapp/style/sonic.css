@@ -25,7 +25,6 @@
     border: 1px solid #696969;
 }
 
-
 /* The primary foreground color (black). */
 body {
     color: #696969;
@@ -40,6 +39,26 @@ h1, .detail, .albumComment {
 /* Foreground colour used for h2, bold and tr. */
 h2, b, tr {
     color: #696969;
+}
+
+/* regular foreground color */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: #696969;
+}
+
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: #333333 !important;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color: 696969 !important;
+}
+
+/* regular color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: #696969 !important;
 }
 
 /* Table sizing */
@@ -57,7 +76,6 @@ table {
     background-image:url( "../icons/sonic/back.png" );
 }
 
-
 /* Link colour */
 a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
     color: #333333;
@@ -65,7 +83,6 @@ a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
 
 /* Link hover colour */
 a:hover, a:hover * {
-    text-decoration: underline;
     color: #696969;
 }
 

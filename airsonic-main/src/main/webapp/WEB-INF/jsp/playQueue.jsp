@@ -3,6 +3,7 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
+    <%@ include file="table.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/playQueueCast.js'/>"></script>
@@ -18,12 +19,16 @@
         .ui-slider {
             cursor: pointer;
         }
+        #playQueueSpacer {
+            height: 1em;
+        }
+        #playQueueHeading {
+            display: inline-block;
+        }
+        #playQueueInfo {
+            display: inline-block;
+        }
     </style>
-</head>
-
-<body class="bgcolor2 playlistframe" onload="init()">
-
-<span id="dummy-animation-target" style="max-width: ${model.autoHide ? 50 : 150}px; display: none"></span>
 
 <script type="text/javascript" language="javascript">
     var playerId = ${model.player.id};
@@ -32,7 +37,7 @@
     // playQueueCallback function below.
 
     // List of songs (of type PlayQueueInfo.Entry)
-    var songs = null;
+    var songs = [];
 
     // Stream URL of the media being played
     var currentStreamUrl = null;
@@ -49,13 +54,123 @@
     var internetRadioEnabled = false;
 
     // Is the play queue visible? (Initially hidden if set to "auto-hide" in the settings)
-    var isVisible = ${model.autoHide ? 'false' : 'true'};
+    var isVisible = false; //${model.autoHide ? 'false' : 'true'};
 
     // Initialize the Cast player (ChromeCast support)
     var CastPlayer = new CastPlayer();
 
+    var musicTable = null;
+
     function init() {
-        <c:if test="${model.autoHide}">initAutoHide();</c:if>
+        var ratingOnImage = "<spring:theme code='ratingOnImage'/>";
+        var ratingOffImage = "<spring:theme code='ratingOffImage'/>";
+
+        musicTable = $("#playQueueMusic").DataTable( {
+            deferRender: true,
+            ordering: true,
+            order: [],
+            orderFixed: [ 0, 'asc' ],
+            orderMulti: false,
+            lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
+            processing: true,
+            autoWidth: true,
+            scrollCollapse: true,
+            scrollY: "60vh",
+            dom: "<'#playQueueHeading'><'#playQueueInfo'><'#playQueueSpacer'>lfrtip",
+            select: {
+                style: "multi",
+                selector: ".songIndex"
+            },
+            rowReorder: {
+                dataSrc: "seq",
+                selector: "td:not(.not-draggable)"
+            },
+            language: {
+                emptyTable: "<fmt:message key='playlist.empty'/>"
+            },
+            ajax: function(ajaxData, callback) {
+                for ( var i=0, ien=songs.length ; i<ien ; i++ ) {
+                  songs[i].seq = i;
+                }
+                callback({data: songs});
+            },
+            stripeClasses: ["bgcolor1", "bgcolor2"],
+            columnDefs: [{ targets: "_all", orderable: false }],
+            columns: [
+                { data: "seq", className: "detail fit", visible: true },
+                { data: "starred",
+                  name: "starred",
+                  className: "fit not-draggable",
+                  render: function(starred, type) {
+                      if (type == "display") {
+                          return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
+                      }
+                      return starred ? "onlystarred" : "unstarred";
+                  }
+                },
+                { data: null,
+                  searchable: false,
+                  name: "remove",
+                  className: "fit not-draggable",
+                  defaultContent: "<img class='removeSong' src=\"<spring:theme code='removeImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist.remove'/>\" title=\"<fmt:message key='playlist.remove'/>\">"
+                },
+                { data: null,
+                  searchable: false,
+                  name: "songcheckbox",
+                  className: "fit not-draggable",
+                  defaultContent: "<input type='checkbox' class='songIndex'>"
+                },
+                { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible} },
+                { data: "title",
+                  className: "detail songTitle truncate",
+                  render: function(title, type, row) {
+                      if (type == "display") {
+                          var img = "<img class='currentImage' src=\"<spring:theme code='currentImage'/>\" alt='' style='display:none;padding-right: 0.5em' />";
+                          if (!${model.player.externalWithPlaylist}) {
+                              return img + "<a class='titleUrl' href='javascript:void(0)'>" + title + "</a>";
+                          } else {
+                              return img + title;
+                          }
+                      }
+                      return title;
+                  }
+                },
+                { data: "album",
+                  visible: ${model.visibility.albumVisible},
+                  className: "detail truncate",
+                  render: function(album, type, row) {
+                      if (type == "display") {
+                          return "<a href='"+ row.albumUrl + "' target='" + (!internetRadioEnabled ? "main" : "_blank' rel='noopener noreferrer") + "'>" + album + "</a>";
+                      }
+                      return album;
+                  }
+                },
+                { data: "artist", className: "detail truncate", visible: ${model.visibility.artistVisible} },
+                { data: "genre", className: "detail truncate", visible: ${model.visibility.genreVisible} },
+                { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
+                { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
+                { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
+                { data: "durationAsString", className: "detail fit rightalign", visible: ${model.visibility.durationVisible} },
+                { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible} }
+            ]
+        } );
+
+        $("#playQueueMusic tbody").on( "click", ".starSong", function () {
+            onStar(musicTable.row( $(this).parents('tr') ).index());
+        } );
+        $("#playQueueMusic tbody").on( "click", ".removeSong", function () {
+            onRemove(musicTable.row( $(this).parents('tr') ).index());
+        } );
+        $("#playQueueMusic tbody").on( "click", ".titleUrl", function () {
+            onSkip(musicTable.row( $(this).parents('tr') ).index());
+        } );
+        musicTable.on( "row-reordered", function (e, diff, edit) {
+            musicTable.one( "draw", function () {
+                onRearrange(musicTable.rows().indexes().toArray());
+            });
+        });
+
+        $("#playQueueHeading").html("<h2><fmt:message key='playlist.more.playlist'/></h2>");
 
         top.StompClient.subscribe("playQueue.jsp", {
             // Now playing
@@ -119,34 +234,8 @@
             }});
 
         <c:if test="${model.player.web}">createMediaElementPlayer();</c:if>
-
-        $("#playlistBody").sortable({
-            stop: function(event, ui) {
-                var indexes = [];
-                $("#playlistBody").children().each(function() {
-                    var id = $(this).attr("id").replace("pattern", "");
-                    if (id.length > 0) {
-                        indexes.push(parseInt(id));
-                    }
-                });
-                onRearrange(indexes);
-            },
-            cursor: "move",
-            axis: "y",
-            containment: "parent",
-            helper: function(e, tr) {
-                var originals = tr.children();
-                var trclone = tr.clone();
-                trclone.children().each(function(index) {
-                    // Set cloned cell sizes to match the original sizes
-                    $(this).width(originals.eq(index).width());
-                    $(this).css("maxWidth", originals.eq(index).width());
-                    $(this).css("border-top", "1px solid black");
-                    $(this).css("border-bottom", "1px solid black");
-                });
-                return trclone;
-            }
-        });
+        <c:if test="${model.autoHide}">initAutoHide();</c:if>
+        onTogglePlayQueue(true);
 
         /** Toggle between <a> and <span> in order to disable play queue action buttons */
         $.fn.toggleLink = function(newState) {
@@ -194,24 +283,27 @@
     }
 
     function onHidePlayQueue() {
-      setFrameHeight(50);
+      top.document.getElementById("playQueueFrameset").rows = "*,50";
       isVisible = false;
+      $("#spacer").show();
       $(".playqueue-shown").hide();
       $(".playqueue-hidden").show();
     }
 
     function onShowPlayQueue() {
-      var height = $("body").height() + 25;
-      height = Math.min(height, window.top.innerHeight * 0.8);
-      setFrameHeight(height);
+      top.document.getElementById("playQueueFrameset").rows = "*," + Math.floor(window.top.innerHeight * 0.7);
       isVisible = true;
+      $("#spacer").hide();
       $(".playqueue-shown").show();
       $(".playqueue-hidden").hide();
     }
 
-    function onTogglePlayQueue() {
-      if (isVisible) onHidePlayQueue();
-      else onShowPlayQueue();
+    function onTogglePlayQueue(visible) {
+      if (visible) {
+          onShowPlayQueue();
+      } else {
+          onHidePlayQueue();
+      }
     }
 
     function initAutoHide() {
@@ -221,19 +313,6 @@
 
         $(window).mouseenter(function () {
             onShowPlayQueue();
-        });
-    }
-
-    function setFrameHeight(height) {
-        <%-- Disable animation in Chrome. It stopped working in Chrome 44. --%>
-        var duration = navigator.userAgent.indexOf("Chrome") != -1 ? 0 : 400;
-
-        $("#dummy-animation-target").stop();
-        $("#dummy-animation-target").animate({"max-width": height}, {
-            step: function (now, fx) {
-                top.document.getElementById("playQueueFrameset").rows = "*," + now;
-            },
-            duration: duration
         });
     }
 
@@ -519,18 +598,15 @@
     function onShuffle() {
         top.StompClient.send("/app/playqueues/${model.player.id}/shuffle", "");
     }
-    function toggleStar(mediaFileId, imageId) {
-        if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
-            $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-            top.StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
-        }
-        else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
-            $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-            top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
-        }
-    }
     function onStar(index) {
-        toggleStar(songs[index].id, '#starSong' + index);
+        songs[index].starred = !songs[index].starred;
+
+        if (songs[index].starred) {
+            top.StompClient.send("/app/rate/mediafile/star", songs[index].id);
+        } else {
+            top.StompClient.send("/app/rate/mediafile/unstar", songs[index].id);
+        }
+        musicTable.cell(index, "starred:name").invalidate().draw();
     }
     function onStarCurrent() {
         onStar(currentSongIndex);
@@ -539,13 +615,7 @@
         top.StompClient.send("/app/playqueues/${model.player.id}/remove", JSON.stringify([index]));
     }
     function onRemoveSelected() {
-        var indexes = [];
-        for (var i = 0; i < songs.length; i++) {
-            if ($("#songIndex" + i).is(":checked")) {
-                indexes.push(i);
-            }
-        }
-        top.StompClient.send("/app/playqueues/${model.player.id}/remove", JSON.stringify(indexes));
+        top.StompClient.send("/app/playqueues/${model.player.id}/remove", JSON.stringify(musicTable.rows({ selected: true }).indexes().toArray()));
     }
 
     function onRearrange(indexes) {
@@ -592,12 +662,7 @@
     function appendPlaylist(playlistId) {
         $("#dialog-select-playlist").dialog("close");
 
-        var mediaFileIds = [];
-        for (var i = 0; i < songs.length; i++) {
-            if ($("#songIndex" + i).is(":checked")) {
-                mediaFileIds.push(songs[i].id);
-            }
-        }
+        var mediaFileIds = musicTable.rows({selected:true}).data().map(function(d) { return d.id; }).toArray();
 
         top.StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
     }
@@ -669,73 +734,24 @@
         $("#undoQueue").toggleLink(!internetRadioEnabled);
 
         if (songs.length == 0) {
-            $("#songCountAndDuration").text("");
-            $("#empty").show();
+            $("#playQueueInfo").text("");
         } else {
-            $("#songCountAndDuration").html(songs.length + " <fmt:message key="playlist2.songs"/> &ndash; " + playQueue.durationAsString);
-            $("#empty").hide();
+            $("#playQueueInfo").html("&nbsp;|&nbsp;" + songs.length + " <fmt:message key='playlist2.songs'/> &nbsp;|&nbsp;" + playQueue.durationAsString);
         }
 
-        // Delete all the rows except for the "pattern" row
-        $("#playlistBody").children().not("#pattern").remove();
-
-        // Create a new set cloned from the pattern row
-        var id = songs.length;
-        while (id--) {
-            var song  = songs[id];
-            var node = cloneNodeBySelector("#pattern", id);
-            node.insertAfter("#pattern");
-
-            node.find("#trackNumber" + id).text(song.trackNumber);
-
-            if (!internetRadioEnabled) {
-                // Show star/remove buttons in all cases...
-
-                // Show star rating
-                if (song.starred) {
-                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
-                } else {
-                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
-                }
-            } else {
-                // ...except from when internet radio is playing.
-                node.find("#starSong" + id).hide();
-                node.find("#removeSong" + id).hide();
-                node.find("#songIndex" + id).hide();
-            }
-
-            if (node.find("#currentImage" + id) && song.streamUrl == currentStreamUrl) {
-                node.find("#currentImage" + id).show();
-                if (isJavaJukeboxPresent()) {
-                    updateJavaJukeboxPlayerControlBar(song);
-                }
-            }
-
-            node.find("#title" + id).text(song.title).attr("title", song.title);
-            node.find("#titleUrl" + id).text(song.title).attr("title", song.title).click(function () {onSkip(parseInt(this.id.substring(8)))});
-
-            node.find("#album" + id).text(song.album).attr("title", song.album);
-            node.find("#albumUrl" + id).attr("href", song.albumUrl);
-            // Open external internet radio links in new windows
-            if (internetRadioEnabled) {
-                node.find("#albumUrl" + id).attr({
-                    target: "_blank",
-                    rel: "noopener noreferrer",
-                });
-            }
-            node.find("#artist" + id).text(song.artist).attr("title", song.artist);
-            node.find("#genre" + id).text(song.genre);
-            node.find("#year" + id).text(parseInt(song.year) ? song.year : "");
-            node.find("#bitRate" + id).text(song.bitRate);
-            node.find("#duration" + id).text(song.durationAsString)
-            node.find("#format" + id).text(song.format);
-            node.find("#fileSize" + id).text(song.fileSize);
-
-            node.addClass((id % 2 == 0) ? "bgcolor1" : "bgcolor2");
-
-            // Note: show() method causes page to scroll to top.
-            node.css("display", "table-row");
+        if (internetRadioEnabled) {
+            musicTable.column("starred:name").visible(false, false);
+            musicTable.column("remove:name").visible(false, false);
+            musicTable.column("songcheckbox:name").visible(false, false);
+        } else {
+            musicTable.column("starred:name").visible(true, false);
+            musicTable.column("remove:name").visible(true, false);
+            musicTable.column("songcheckbox:name").visible(true, false);
         }
+
+        currentSongIndex = getCurrentSongIndex();
+        musicTable.ajax.reload().columns.adjust();
+        updateCurrentImage();
 
         if (playQueue.sendM3U) {
             parent.frames.main.location.href="play.m3u?";
@@ -778,7 +794,8 @@
 
     function updateCurrentImage() {
         $(".currentImage").hide();
-        $("#currentImage" + currentSongIndex).show();
+        $(musicTable.rows().nodes()).removeClass("currently-playing");
+        $(musicTable.row(currentSongIndex).node()).addClass("currently-playing").find(".currentImage").show();
     }
 
     function getCurrentSongIndex() {
@@ -826,26 +843,20 @@
     }
 
     function getSelectedIndexes() {
-        var result = "";
-        for (var i = 0; i < songs.length; i++) {
-            if ($("#songIndex" + i).is(":checked")) {
-                result += "i=" + i + "&";
-            }
-        }
-        return result;
+        return musicTable.rows({ selected: true }).indexes().map(function(i) { return "i=" + i; }).join("&");
     }
 
     function selectAll(b) {
-        for (var i = 0; i < songs.length; i++) {
-            if (b) {
-                $("#songIndex" + i).attr("checked", "checked");
-            } else {
-                $("#songIndex" + i).removeAttr("checked");
-            }
+        if (b) {
+            musicTable.rows().select();
+        } else {
+            musicTable.rows().deselect();
         }
     }
-
 </script>
+</head>
+
+<body class="bgcolor2 playlistframe" onload="init()">
 
 <c:choose>
     <c:when test="${model.player.javaJukebox}">
@@ -989,7 +1000,7 @@
 
                     <c:if test="${not model.autoHide}">
                     <td style="white-space:nowrap; text-align:right; width:100%; padding-right:1.5em">
-                      <a href="javascript:onTogglePlayQueue()">
+                      <a href="javascript:onTogglePlayQueue(!isVisible)">
                         <img class="playqueue-shown" src="<spring:theme code='playQueueHide'/>" alt="Hide play queue" title="Hide play queue" style="cursor:pointer; height:18px;"/>
                         <img class="playqueue-hidden" src="<spring:theme code='playQueueShow'/>" alt="Show play queue" title="Show play queue" style="cursor:pointer; height:18px; display: none;"/>
                       </a>
@@ -1001,68 +1012,8 @@
     </c:otherwise>
 </c:choose>
 
-
-<h2 style="float:left"><fmt:message key="playlist.more.playlist"/></h2>
-<h2 id="songCountAndDuration" style="float:right;padding-right:1em"></h2>
-<div style="clear:both"></div>
-<p id="empty"><em><fmt:message key="playlist.empty"/></em></p>
-
-<table class="music indent" style="cursor:pointer">
-    <tbody id="playlistBody">
-        <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
-            <td class="fit">
-                <img id="starSong" onclick="onStar(parseInt(this.id.substring(8)))" src="<spring:theme code='ratingOffImage'/>"
-                     style="cursor:pointer;height:18px;" alt="" title=""></td>
-            <td class="fit">
-                <img id="removeSong" onclick="onRemove(parseInt(this.id.substring(10)))" src="<spring:theme code='removeImage'/>"
-                     style="cursor:pointer; height:18px;" alt="<fmt:message key='playlist.remove'/>" title="<fmt:message key='playlist.remove'/>"></td>
-            <td class="fit"><input type="checkbox" class="checkbox" id="songIndex"></td>
-
-            <c:if test="${model.visibility.trackNumberVisible}">
-                <td class="fit rightalign"><span class="detail" id="trackNumber">1</span></td>
-            </c:if>
-
-            <td class="truncate">
-                <img id="currentImage" class="currentImage" src="<spring:theme code='currentImage'/>" alt="" style="display:none;padding-right: 0.5em">
-                <c:choose>
-                    <c:when test="${model.player.externalWithPlaylist}">
-                        <span id="title" class="songTitle">Title</span>
-                    </c:when>
-                    <c:otherwise>
-                        <span class="songTitle"><a id="titleUrl" href="javascript:void(0)">Title</a></span>
-                    </c:otherwise>
-                </c:choose>
-            </td>
-
-            <c:if test="${model.visibility.albumVisible}">
-                <td class="truncate"><a id="albumUrl" target="main"><span id="album" class="detail">Album</span></a></td>
-            </c:if>
-            <c:if test="${model.visibility.artistVisible}">
-                <td class="truncate"><span id="artist" class="detail">Artist</span></td>
-            </c:if>
-            <c:if test="${model.visibility.genreVisible}">
-                <td class="truncate"><span id="genre" class="detail">Genre</span></td>
-            </c:if>
-            <c:if test="${model.visibility.yearVisible}">
-                <td class="fit rightalign"><span id="year" class="detail">Year</span></td>
-            </c:if>
-            <c:if test="${model.visibility.formatVisible}">
-                <td class="fit rightalign"><span id="format" class="detail">Format</span></td>
-            </c:if>
-            <c:if test="${model.visibility.fileSizeVisible}">
-                <td class="fit rightalign"><span id="fileSize" class="detail">Format</span></td>
-            </c:if>
-            <c:if test="${model.visibility.durationVisible}">
-                <td class="fit rightalign"><span id="duration" class="detail">Duration</span></td>
-            </c:if>
-            <c:if test="${model.visibility.bitRateVisible}">
-                <td class="fit rightalign"><span id="bitRate" class="detail">Bit Rate</span></td>
-            </c:if>
-        </tr>
-    </tbody>
-</table>
-
-<div style="height:3.2em"></div>
+<div id="spacer" style="height:55px"></div>
+<table class="music indent hover nowrap stripe compact" id="playQueueMusic" style="cursor:pointer"></table>
 
 <div id="dialog-select-playlist" title="<fmt:message key='main.addtoplaylist.title'/>" style="display: none;">
     <p><fmt:message key="main.addtoplaylist.text"/></p>

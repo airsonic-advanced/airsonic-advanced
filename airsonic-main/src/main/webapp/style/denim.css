@@ -5,7 +5,9 @@
  *
  */
 
-@import "default.css";
+@import "default-without-mediaelement.css";
+@import "mediaelement-dark.css";
+@import "dark-theme.css";
 
 /* The primary background colour. */
 .bgcolor1, table.music tr:nth-of-type(even) {
@@ -25,7 +27,6 @@
     border: 1px solid #EFE9D9;
 }
 
-
 /* The secondary foreground colour used for h1, details etc. */
 h1, .detail, .albumComment {
     color: #EFE9D9;
@@ -34,6 +35,46 @@ h1, .detail, .albumComment {
 /* Foreground colour used for h2, bold and tr. */
 h2, b, tr {
     color: #EFE9D9;
+}
+
+/* regular foreground color */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: #EFE9D9;
+}
+
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: #B6BEC2 !important;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color: #B6BEC2 !important;
+}
+
+/* regular color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: #EFE9D9 !important;
+}
+
+table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+    background-color: #527CAD;
+}
+
+table.dataTable tbody>tr.selected, table.dataTable tbody>tr>.selected {
+    background-color: #7497BE;
+}
+
+table.dataTable.hover tbody>tr.selected:hover, table.dataTable.hover tbody>tr>.selected:hover, table.dataTable.display tbody>tr.selected:hover, table.dataTable.display tbody>tr>.selected:hover {
+    background-color: #6389B6;
+}
+
+table.music.dataTable tbody tr.currently-playing {
+    background-color: #395779;
+}
+
+table.music.dataTable tbody tr.currently-playing:hover {
+    background-color: #314B68;
 }
 
 /* Table sizing */
@@ -47,12 +88,10 @@ table {
     background-position:right;
 }
 
-
 /* Back image */
 .back {
     background-image:url( "../icons/denim/back.png" );
 }
-
 
 /* Link colour */
 a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
@@ -61,7 +100,6 @@ a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
 
 /* Link hover colour */
 a:hover, a:hover * {
-    text-decoration: underline;
     color: #B6BEC2;
 }
 
