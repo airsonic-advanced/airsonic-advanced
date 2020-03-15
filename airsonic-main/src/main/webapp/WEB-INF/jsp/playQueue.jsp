@@ -53,8 +53,8 @@
     // Is the "internet radio" playing?
     var internetRadioEnabled = false;
 
-    // Is the play queue visible? (Initially hidden if set to "auto-hide" in the settings)
-    var isVisible = false; //${model.autoHide ? 'false' : 'true'};
+    // Is the play queue visible?
+    var isVisible = false;
 
     // Initialize the Cast player (ChromeCast support)
     var CastPlayer = new CastPlayer();
@@ -1013,7 +1013,7 @@
 </c:choose>
 
 <div id="spacer" style="height:55px"></div>
-<table class="music indent hover nowrap stripe compact" id="playQueueMusic" style="cursor:pointer"></table>
+<table class="music indent hover nowrap stripe compact hide-table-header" id="playQueueMusic" style="cursor:pointer"></table>
 
 <div id="dialog-select-playlist" title="<fmt:message key='main.addtoplaylist.title'/>" style="display: none;">
     <p><fmt:message key="main.addtoplaylist.text"/></p>
