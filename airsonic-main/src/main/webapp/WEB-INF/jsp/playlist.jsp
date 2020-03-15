@@ -3,11 +3,150 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
+    <%@ include file="table.jsp" %>
     <script type="text/javascript" language="javascript">
         var playlistId = ${model.playlist.id};
-        var songs;
+        var songs = [];
 
         function init() {
+            var ratingOnImage = "<spring:theme code='ratingOnImage'/>";
+            var ratingOffImage = "<spring:theme code='ratingOffImage'/>";
+
+            playlistMusicTable = $("#playlistMusic").DataTable( {
+                deferRender: true,
+                ordering: true,
+                order: [],
+                orderFixed: [ 4, 'asc' ],
+                orderMulti: false,
+                lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
+                processing: true,
+                autoWidth: true,
+                scrollCollapse: true,
+                scrollY: "60vh",
+              <c:if test="${model.editAllowed}">
+                rowReorder: {
+                    dataSrc: "seq",
+                    selector: "td:not(.not-draggable)"
+                },
+              </c:if>
+                language: {
+                    emptyTable: "<fmt:message key='playlist2.empty'/>"
+                },
+                ajax: function(ajaxData, callback) {
+                    for ( var i=0, len=songs.length ; i<len ; i++ ) {
+                      songs[i].seq = i;
+                    }
+                    callback({data: songs});
+                },
+                stripeClasses: ["bgcolor2", "bgcolor1"],
+                columnDefs: [{ targets: "_all", orderable: false }],
+                columns: [
+                    { data: "starred",
+                      name: "starred",
+                      className: "fit not-draggable",
+                      render: function(starred, type) {
+                          if (type == "display") {
+                              return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
+                          }
+                          return starred ? "onlystarred" : "unstarred";
+                      }
+                    },
+                    { data: "present",
+                      searchable: false,
+                      name: "play",
+                      className: "fit not-draggable",
+                      render: function(present, type, row) {
+                          if (type == "display") {
+                              if (present) {
+                                  return "<img class='playSong' src=\"<spring:theme code='playImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.play'/>\" title=\"<fmt:message key='common.play'/>\">";
+                              } else {
+                                  return "";
+                              }
+                          }
+                          return present ? "available" : "missing";
+                      }
+                    },
+                    { data: "present",
+                      searchable: false,
+                      name: "addLast",
+                      className: "fit not-draggable",
+                      render: function(present, type, row) {
+                          if (type == "display") {
+                              if (present) {
+                                  return "<img class='addSongLast' src=\"<spring:theme code='addImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.add'/>\" title=\"<fmt:message key='common.add'/>\">";
+                              } else {
+                                  return "";
+                              }
+                          }
+                          return present ? "available" : "missing";
+                      }
+                    },
+                    { data: "present",
+                      searchable: false,
+                      name: "addNext",
+                      className: "fit not-draggable",
+                      render: function(present, type, row) {
+                          if (type == "display") {
+                              if (present) {
+                                  return "<img class='addSongNext' src=\"<spring:theme code='addNextImage'/>\" style='height:18px;' alt=\"<fmt:message key='main.addnext'/>\" title=\"<fmt:message key='main.addnext'/>\">";
+                              } else {
+                                  return "";
+                              }
+                          }
+                          return present ? "available" : "missing";
+                      }
+                    },
+                    { data: "seq", className: "detail fit", visible: true },
+                    { data: "present",
+                      className: "detail fit",
+                      render: function(present, type, row) {
+                          if (type == "display") {
+                              if (present) {
+                                  return "";
+                              } else {
+                                  return "<span class='playlist-missing'><fmt:message key='playlist.missing'/></span>";
+                              }
+                          }
+                          return present ? "available" : "missing";
+                      }
+                    },
+                    { data: "title",
+                      className: "detail songTitle truncate"
+                    },
+                    { data: "album",
+                      className: "detail truncate",
+                      render: function(album, type, row) {
+                          if (type == "display") {
+                              return "<a href='main.view?id=" + row.id + "' target='main' title='" + album + "' + alt='" + album + "'>" + album + "</a>";
+                          }
+                          return album;
+                      }
+                    },
+                    { data: "artist", className: "detail truncate" },
+                    { data: "durationAsString", className: "detail fit rightalign" },
+                    { data: null,
+                      searchable: false,
+                      name: "remove",
+                      visible: ${model.editAllowed},
+                      className: "fit not-draggable",
+                      defaultContent: "<img class='removeSong' src=\"<spring:theme code='removeImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist.remove'/>\" title=\"<fmt:message key='playlist.remove'/>\">"
+                    }
+                ]
+            } );
+
+            $("#playlistMusic tbody").on( "click", ".starSong", function () {
+                onStar(playlistMusicTable.row( $(this).parents('tr') ).index());
+            } );
+            $("#playlistMusic tbody").on( "click", ".playSong", function () {
+                onPlay(playlistMusicTable.row( $(this).parents('tr') ).index());
+            } );
+            $("#playlistMusic tbody").on( "click", ".addSongLast", function () {
+                onAdd(playlistMusicTable.row( $(this).parents('tr') ).index());
+            } );
+            $("#playlistMusic tbody").on( "click", ".addSongNext", function () {
+                onAddNext(playlistMusicTable.row( $(this).parents('tr') ).index());
+            } );
+
             top.StompClient.subscribe("playlist.jsp", {
                 '/user/queue/playlists/deleted': function(msg) {
                     deletedPlaylistCallback(JSON.parse(msg.body));
@@ -31,6 +170,15 @@
             });
 
             <c:if test="${model.editAllowed}">
+            $("#playlistMusic tbody").on( "click", ".removeSong", function () {
+                onRemove(playlistMusicTable.row( $(this).parents('tr') ).index());
+            } );
+            playlistMusicTable.on( "row-reordered", function (e, diff, edit) {
+                playlistMusicTable.one( "draw", function () {
+                    onRearrange(playlistMusicTable.rows().indexes().toArray());
+                });
+            });
+
             $("#dialog-edit").dialog({resizable: true, width:400, autoOpen: false,
                 buttons: {
                     "<fmt:message key="common.save"/>": function() {
@@ -55,34 +203,6 @@
                         $(this).dialog("close");
                     } 
                 }});
-
-            $("#playlistBody").sortable({
-                stop: function(event, ui) {
-                    var indexes = [];
-                    $("#playlistBody").children().each(function() {
-                        var id = $(this).attr("id").replace("pattern", "");
-                        if (id.length > 0) {
-                            indexes.push(parseInt(id));
-                        }
-                    });
-                    onRearrange(indexes);
-                },
-                cursor: "move",
-                axis: "y",
-                containment: "parent",
-                helper: function(e, tr) {
-                    var originals = tr.children();
-                    var trclone = tr.clone();
-                    trclone.children().each(function(index) {
-                        // Set cloned cell sizes to match the original sizes
-                        $(this).width(originals.eq(index).width());
-                        $(this).css("maxWidth", originals.eq(index).width());
-                        $(this).css("border-top", "1px solid black");
-                        $(this).css("border-bottom", "1px solid black");
-                    });
-                    return trclone;
-                }
-            });
             </c:if>
         }
 
@@ -123,47 +243,7 @@
 
         function updatedPlaylistEntriesCallback(entries) {
             this.songs = entries
-
-            if (songs.length == 0) {
-                $("#empty").show();
-            } else {
-                $("#empty").hide();
-            }
-
-            // Delete all the rows except for the "pattern" row
-            $("#playlistBody").children().not("#pattern").remove();
-
-            // Create a new set cloned from the pattern row
-            var id = songs.length;
-            while (id--) {
-                var song  = songs[id];
-                var node = cloneNodeBySelector("#pattern", id);
-                node.insertAfter("#pattern");
-
-                if (song.starred) {
-                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
-                } else {
-                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
-                }
-                if (!song.present) {
-                    node.find("#missing" + id).show();
-                    node.find("#play" + id).hide();
-                    node.find("#add" + id).hide();
-                    node.find("#addNext" + id).hide();
-                }
-                node.find("#index" + id).text(id);
-                node.find("#title" + id).text(song.title);
-                node.find("#title" + id).attr("title", song.title);
-                node.find("#album" + id).text(song.album);
-                node.find("#album" + id).attr("title", song.album);
-                node.find("#albumUrl" + id).attr("href", "main.view?id=" + song.id);
-                node.find("#artist" + id).text(song.artist);
-                node.find("#artist" + id).attr("title", song.artist);
-                node.find("#songDuration" + id).text(song.durationAsString);
-
-                // Note: show() method causes page to scroll to top.
-                node.css("display", "table-row");
-            }
+            playlistMusicTable.ajax.reload().columns.adjust();
         }
 
         function onPlay(index) {
@@ -184,16 +264,14 @@
             $().toastmessage('showSuccessToast', '<fmt:message key="main.addnext.toast"/>')
         }
         function onStar(index) {
-            var imageId = "#starSong" + index;
-            var mediaFileId = songs[index].id
-            if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
-                $(imageId).attr("src", "<spring:theme code="ratingOffImage"/>");
-                top.StompClient.send("/app/rate/mediafile/unstar", mediaFileId);
+            songs[index].starred = !songs[index].starred;
+
+            if (songs[index].starred) {
+                top.StompClient.send("/app/rate/mediafile/star", songs[index].id);
+            } else {
+                top.StompClient.send("/app/rate/mediafile/unstar", songs[index].id);
             }
-            else if ($(imageId).attr("src").indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
-                $(imageId).attr("src", "<spring:theme code="ratingOnImage"/>");
-                top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
-            }
+            playlistMusicTable.cell(index, "starred:name").invalidate().draw();
         }
         <c:if test="${model.editAllowed}">
         function onRemove(index) {
@@ -216,8 +294,6 @@
         .playlist-missing {
             color: red;
             border: 1px solid red;
-            display: none;
-            font-size: 90%;
             padding-left: 5px;
             padding-right: 5px;
             margin-right: 5px;
@@ -276,38 +352,7 @@
 
 <div style="height:0.7em;clear:both"></div>
 
-<p id="empty" style="display: none;"><em><fmt:message key="playlist2.empty"/></em></p>
-
-<table class="music" style="cursor:pointer">
-    <tbody id="playlistBody">
-    <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
-        <td class="fit">
-            <img id="starSong" onclick="onStar(parseInt(this.id.substring(8)))" src="<spring:theme code='ratingOffImage'/>"
-                 style="cursor:pointer;height:18px;" alt="" title=""></td>
-        <td class="fit">
-            <img id="play" src="<spring:theme code='playImage'/>" alt="<fmt:message key='common.play'/>" title="<fmt:message key='common.play'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onPlay(parseInt(this.id.substring(4)))"></td>
-        <td class="fit">
-            <img id="add" src="<spring:theme code='addImage'/>" alt="<fmt:message key='common.add'/>" title="<fmt:message key='common.add'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAdd(parseInt(this.id.substring(3)))"></td>
-        <td class="fit" style="padding-right:30px">
-            <img id="addNext" src="<spring:theme code='addNextImage'/>" alt="<fmt:message key='main.addnext'/>" title="<fmt:message key='main.addnext'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAddNext(parseInt(this.id.substring(7)))"></td>
-
-        <td class="fit rightalign"><span id="index">1</span></td>
-        <td class="fit"><span id="missing" class="playlist-missing"><fmt:message key="playlist.missing"/></span></td>
-        <td class="truncate"><span id="title" class="songTitle">Title</span></td>
-        <td class="truncate"><a id="albumUrl" target="main"><span id="album" class="detail">Album</span></a></td>
-        <td class="truncate"><span id="artist" class="detail">Artist</span></td>
-        <td class="fit rightalign"><span id="songDuration" class="detail">Duration</span></td>
-
-        <c:if test="${model.editAllowed}">
-            <td class="fit">
-                <img id="removeSong" onclick="onRemove(parseInt(this.id.substring(10)))" src="<spring:theme code='removeImage'/>"
-                     style="cursor:pointer;height:18px;" alt="<fmt:message key='playlist.remove'/>" title="<fmt:message key='playlist.remove'/>"></td>
-        </c:if>
-    </tr>
-    </tbody>
+<table class="music indent hover nowrap stripe compact hide-table-header" id="playlistMusic" style="cursor:pointer">
 </table>
 
 <c:if test="${model.editAllowed}">
