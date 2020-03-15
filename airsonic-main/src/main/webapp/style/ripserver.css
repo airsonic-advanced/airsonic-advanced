@@ -16,6 +16,20 @@
     background-color: #EBEFF9
 }
 
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: #0076b6 !important;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color: orange !important;
+}
+
+table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+    background-color: #D8E0F3;
+}
+
 .mainframe {
     background-image:url('../icons/ripserver/background.png');
     background-repeat:no-repeat;

@@ -39,6 +39,44 @@ h2, b, tr {
     color: #5c5c5c;
 }
 
+/* regular foreground color */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: #5c5c5c;
+}
+
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: black !important;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color: #5c5c5c !important;
+    border-color: #5c5c5c;
+}
+
+/* regular color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: #5c5c5c !important;
+    border-color: #5c5c5c;
+}
+
+table.dataTable tbody>tr.selected, table.dataTable tbody>tr>.selected {
+    background-color: #CCCCCC;
+}
+
+table.dataTable.hover tbody>tr.selected:hover, table.dataTable.hover tbody>tr>.selected:hover, table.dataTable.display tbody>tr.selected:hover, table.dataTable.display tbody>tr>.selected:hover {
+    background-color: #BFBFBF;
+}
+
+table.music.dataTable tbody tr.currently-playing {
+    background-color: #B3B3B3;
+}
+
+table.music.dataTable tbody tr.currently-playing:hover {
+    background-color: #A6A6A6;
+}
+
 /* Link color */
 a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
     color: black
@@ -46,7 +84,6 @@ a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
 
 /* Link hover color */
 a:hover, a:hover * {
-    text-decoration: underline;
     color: #5c5c5c;
 }
 

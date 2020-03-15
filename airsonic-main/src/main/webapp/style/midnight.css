@@ -6,6 +6,7 @@
 
 @import "default-without-mediaelement.css";
 @import "mediaelement-dark.css";
+@import "dark-theme.css";
 
 /* The primary background color. */
 .bgcolor1, table.music tr:nth-of-type(even) {
@@ -32,6 +33,46 @@ h2, b, tr {
     color: #DDDDDD;
 }
 
+/* regular foreground color */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: #DDDDDD;
+}
+
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: #BAD9F2 !important;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color: orange !important;
+}
+
+/* regular color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: #DDDDDD !important;
+}
+
+table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+    background-color: #444448;
+}
+
+table.dataTable tbody>tr.selected, table.dataTable tbody>tr>.selected {
+    background-color: #7c7a85;
+}
+
+table.dataTable.hover tbody>tr.selected:hover, table.dataTable.hover tbody>tr>.selected:hover, table.dataTable.display tbody>tr.selected:hover, table.dataTable.display tbody>tr>.selected:hover {
+    background-color: #5A5A5F;
+}
+
+table.music.dataTable tbody tr.currently-playing {
+    background-color: #3e3d42;
+}
+
+table.music.dataTable tbody tr.currently-playing:hover {
+    background-color: #323135;
+}
+
 /* Link color */
 a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
     color: #BAD9F2
@@ -39,25 +80,7 @@ a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
 
 /* Link hover color */
 a:hover, a:hover * {
-    text-decoration: underline;
     color: orange;
-}
-
-/* Disabled links color and behavior */
-a.disabled, a.disabled span, span.disabled {
-    cursor: default;
-    text-decoration: none;
-    color: #999;
-}
-
-/* Color for warning messages. */
-.warning {
-    color: orange;
-}
-
-/* Simple border. */
-.border1, .ruleTableHeader, .ruleTableCell, .log {
-    border: 1px solid white;
 }
 
 /* Scrollbar colors (supported on IE and Opera) */

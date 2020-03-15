@@ -12,7 +12,9 @@
  * BUUF artwork: Based on icons by Paul Davey aka Mattahan. All rights reserved.
  */
 
-@import "default.css";
+@import "default-without-mediaelement.css";
+@import "mediaelement-dark.css";
+@import "dark-theme.css";
 
 /* The primary background colour, light gray. Images used to force background on left frame headings and playlist. */
 .bgcolor1, table.music tr:nth-of-type(even) {
@@ -28,7 +30,31 @@
 
 /* Foreground colour used for h1, h2, b, tr, details and albumcomments. */
 h1, h2, b, tr, .detail, .albumComment {
-    color: #ffAE00;
+    color: #FFAE00;
+}
+
+/* regular foreground color */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: #FFAE00;
+}
+
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: #ffAE00 !important;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color: #169F30 !important;
+}
+
+/* regular color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: #FFAE00 !important;
+}
+
+table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+    background-color: #574A42;
 }
 
 /* Table sizing */
@@ -81,6 +107,7 @@ body {
     background-color: #D1D9E1;
     scrollbar-arrow-color: #636363;
     scrollbar-track-color: #D1D9E1;
+    color: #FFAE00;
 }
 
 /* The album comments. */
