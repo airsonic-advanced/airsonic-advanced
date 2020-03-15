@@ -690,9 +690,6 @@
 
             if (!internetRadioEnabled) {
                 // Show star/remove buttons in all cases...
-                node.find("#starSong" + id).show();
-                node.find("#removeSong" + id).show();
-                node.find("#songIndex" + id).show();
 
                 // Show star rating
                 if (song.starred) {
