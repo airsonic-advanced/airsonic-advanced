@@ -26,19 +26,124 @@
     <%@ include file="jquery.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
-
-</head><body class="mainframe bgcolor1" onload="init();">
-
+    <style type="text/css">
+        #topSongsSpacer {
+            height: 1em;
+        }
+        #topSongsHeader {
+            display: inline-block;
+        }
+    </style>
 <script type="text/javascript" language="javascript">
 
-    var topSongs;
+    var topSongs = [];
+    var artistTopSongsTable = null;
 
     function init() {
         $("a.fancy").fancyZoom({
             minBorder: 30
         });
-
         <c:if test="${model.showArtistInfo}">
+        var ratingOnImage = "<spring:theme code='ratingOnImage'/>";
+        var ratingOffImage = "<spring:theme code='ratingOffImage'/>";
+
+        artistTopSongsTable = $("#artistTopSongs").DataTable( {
+            deferRender: true,
+            ordering: true,
+            order: [],
+            orderFixed: [ 4, 'asc' ],
+            orderMulti: false,
+            lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
+            processing: true,
+            autoWidth: true,
+            scrollCollapse: true,
+            scrollY: "60vh",
+            dom: "<'#topSongsHeader'><'#topSongsSpacer'>lfrtip",
+            ajax: function(ajaxData, callback) {
+                for ( var i=0, len=topSongs.length ; i<len ; i++ ) {
+                  topSongs[i].seq = i;
+                }
+                callback({data: topSongs});
+            },
+            stripeClasses: ["bgcolor2", "bgcolor1"],
+            columnDefs: [{ targets: "_all", orderable: false }],
+            columns: [
+                { data: "starred",
+                  name: "starred",
+                  className: "fit not-draggable",
+                  render: function(starred, type) {
+                      if (type == "display") {
+                          return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
+                      }
+                      return starred ? "onlystarred" : "unstarred";
+                  }
+                },
+                { data: null,
+                  searchable: false,
+                  name: "play",
+                  className: "fit not-draggable",
+                  defaultContent: "<img class='playSong' src=\"<spring:theme code='playImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.play'/>\" title=\"<fmt:message key='common.play'/>\">"
+                },
+                { data: null,
+                  searchable: false,
+                  name: "addLast",
+                  className: "fit not-draggable",
+                  defaultContent: "<img class='addSongLast' src=\"<spring:theme code='addImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.add'/>\" title=\"<fmt:message key='common.add'/>\">"
+                },
+                { data: null,
+                  searchable: false,
+                  name: "addNext",
+                  className: "fit not-draggable",
+                  defaultContent: "<img class='addSongNext' src=\"<spring:theme code='addNextImage'/>\" style='height:18px;' alt=\"<fmt:message key='main.addnext'/>\" title=\"<fmt:message key='main.addnext'/>\">"
+                },
+                { data: "seq", className: "detail fit", visible: true },
+                { data: "title",
+                  className: "detail songTitle truncate",
+                  render: function(title, type, row) {
+                      if (type == "display") {
+                          return "<span title='" + title + "' + alt='" + title + "'>" + title + "</span>";
+                      }
+                      return title;
+                  }
+                },
+                { data: "album",
+                  className: "detail truncate",
+                  render: function(album, type, row) {
+                      if (type == "display") {
+                          return "<a href='main.view?id=" + row.id + "' target='main' title='" + album + "' + alt='" + album + "'>" + album + "</a>";
+                      }
+                      return album;
+                  }
+                },
+                { data: "artist",
+                  className: "detail truncate",
+                  render: function(artist, type, row) {
+                      if (type == "display") {
+                          return "<span title='" + artist + "' + alt='" + artist + "'>" + artist + "</span>";
+                      }
+                      return artist;
+                  }
+                },
+                { data: "durationAsString", className: "detail fit rightalign" }
+            ]
+        } );
+
+        $("#artistTopSongs tbody").on( "click", ".starSong", function () {
+            toggleStarTopSong(artistTopSongsTable.row( $(this).parents('tr') ).index());
+        } );
+        $("#artistTopSongs tbody").on( "click", ".playSong", function () {
+            playTopSong(artistTopSongsTable.row( $(this).parents('tr') ).index());
+        } );
+        $("#artistTopSongs tbody").on( "click", ".addSongLast", function () {
+            addTopSong(artistTopSongsTable.row( $(this).parents('tr') ).index());
+        } );
+        $("#artistTopSongs tbody").on( "click", ".addSongNext", function () {
+            addNextTopSong(artistTopSongsTable.row( $(this).parents('tr') ).index());
+        } );
+
+        $("#topSongsHeader").html("<h2><fmt:message key='<fmt:message key="main.topsongs"/>'/></h2>");
+        $("#artistTopSongs_wrapper").hide();
+
         top.StompClient.subscribe("artistMain.jsp", {
             "/user/queue/artist/info": function(msg) {
                 loadArtistInfoCallback(JSON.parse(msg.body));
@@ -86,43 +191,23 @@
         this.topSongs = artistInfo.topSongs;
 
         if (topSongs.length > 0) {
-            $("#topSongsHeader").show();
             $("#playTopSongs").show();
-
-            // Delete all the rows except for the "pattern" row
-            $("#topSongsBody").children().not("#pattern").remove();
-
-            // Create a new set cloned from the pattern row
-            var id = topSongs.length;
-            while (id--) {
-                var song  = topSongs[id];
-
-                var node = cloneNodeBySelector("#pattern", id);
-                node.insertAfter("#pattern");
-                if (song.starred) {
-                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
-                } else {
-                    node.find("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
-                }
-                node.find("#rank" + id).text(i + 1);
-                node.find("#title" + id).text(song.title);
-                node.find("#title" + id).attr("title", song.title);
-                node.find("#album" + id).text(song.album);
-                node.find("#album" + id).attr("title", song.album);
-                node.find("#albumUrl" + id).attr("href", "main.view?id=" + song.id);
-                node.find("#artist" + id).text(song.artist);
-                node.find("#artist" + id).attr("title", song.artist);
-                node.find("#songDuration" + id).text(song.durationAsString);
-
-                // Note: show() method causes page to scroll to top.
-                node.css("display", "table-row");
-            }
+            $("#artistTopSongs_wrapper").show();
         }
+
+        artistTopSongsTable.ajax.reload().columns.adjust();
     }
     </c:if>
 
-    function toggleStarTopSong(index, imageId) {
-        toggleStar(topSongs[index].id, imageId);
+    function toggleStarTopSong(index) {
+        topSongs[index].starred = !topSongs[index].starred;
+
+        if (topSongs[index].starred) {
+            top.StompClient.send("/app/rate/mediafile/star", topSongs[index].id);
+        } else {
+            top.StompClient.send("/app/rate/mediafile/unstar", topSongs[index].id);
+        }
+        artistTopSongsTable.cell(index, "starred:name").invalidate().draw();
     }
 
     function toggleStar(mediaFileId, imageId) {
@@ -164,7 +249,13 @@
     function showAllAlbums() {
         window.location.href = updateQueryStringParameter(window.location.href, "showAll", "1");
     }
+    function toggleComment() {
+        $("#commentForm").toggle();
+        $("#comment").toggle();
+    }
 </script>
+
+</head><body class="mainframe bgcolor1" onload="init();">
 
 <div style="float:left">
     <h1>
@@ -222,13 +313,6 @@
         <input type="submit" value="<fmt:message key='common.save'/>">
     </form>
 </div>
-
-<script type='text/javascript'>
-    function toggleComment() {
-        $("#commentForm").toggle();
-        $("#comment").toggle();
-    }
-</script>
 
 <c:choose>
     <c:when test="${model.viewAsList}">
@@ -318,30 +402,7 @@
     <tr><td style="height: 100%"></td></tr>
 </table>
 
-<h2 id="topSongsHeader" style="display:none; padding-top:1em"><fmt:message key="main.topsongs"/></h2>
-
-<table class="music indent">
-    <tbody id="topSongsBody">
-    <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
-        <td class="fit">
-            <img id="starSong" style="height:18px;" onclick="toggleStarTopSong(parseInt(this.id.substring(8)), '#starSong' + this.id.substring(8))" src="<spring:theme code='ratingOffImage'/>"
-                 style="cursor:pointer" alt="" title=""></td>
-        <td class="fit">
-            <img id="play" src="<spring:theme code='playImage'/>" alt="<fmt:message key='common.play'/>" title="<fmt:message key='common.play'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="playTopSong(parseInt(this.id.substring(4)))"></td>
-        <td class="fit">
-            <img id="add" src="<spring:theme code='addImage'/>" alt="<fmt:message key='common.add'/>" title="<fmt:message key='common.add'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="addTopSong(parseInt(this.id.substring(3)))"></td>
-        <td class="fit" style="padding-right:30px">
-            <img id="addNext" src="<spring:theme code='addNextImage'/>" alt="<fmt:message key='main.addnext'/>" title="<fmt:message key='main.addnext'/>"
-                 style="padding-right:0.1em;cursor:pointer" onclick="addNextTopSong(parseInt(this.id.substring(7)))"></td>
-        <td class="fit rightalign"><span id="rank" class="detail">Rank</span></td>
-        <td class="truncate"><span id="title" class="songTitle">Title</span></td>
-        <td class="truncate"><a id="albumUrl" target="main"><span id="album" class="detail">Album</span></a></td>
-        <td class="truncate"><span id="artist" class="detail">Artist</span></td>
-        <td class="fit rightalign"><span id="songDuration" class="detail">Duration</span></td>
-    </tr>
-    </tbody>
+<table id="artistTopSongs" class="music indent hover nowrap stripe compact hide-table-header">
 </table>
 
 </body>
