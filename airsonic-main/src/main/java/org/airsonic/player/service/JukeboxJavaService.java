@@ -5,7 +5,6 @@ import com.github.biconou.AudioPlayer.api.PlayerListener;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.service.jukebox.JavaPlayerFactory;
 import org.airsonic.player.util.FileUtil;
-import org.airsonic.player.util.Util;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -87,9 +86,6 @@ public class JukeboxJavaService {
         com.github.biconou.AudioPlayer.api.Player audioPlayer = null;
 
         String mixer = getMixer(airsonicPlayer.getJavaJukeboxMixer());
-        System.out.println("**********MIXERS:" + Util.debugObject(AudioSystem.getMixerInfo()));
-        System.out.println("**********SPECMIXER:" + airsonicPlayer.getJavaJukeboxMixer());
-        System.out.println("**********MIXER:" + mixer);
 
         if (mixer != null) {
             log.info("use mixer : {}", mixer);
