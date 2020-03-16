@@ -132,9 +132,9 @@
                       if (type == "display") {
                           var img = "<img class='currentImage' src=\"<spring:theme code='currentImage'/>\" alt='' style='display:none;padding-right: 0.5em' />";
                           if (!${model.player.externalWithPlaylist}) {
-                              return img + "<a class='titleUrl' href='javascript:void(0)'>" + title + "</a>";
+                              return img + "<a class='titleUrl' href='javascript:void(0)' title='" + title + "' + alt='" + title + "'>" + title + "</a>";
                           } else {
-                              return img + title;
+                              return img + "<span title='" + title + "' + alt='" + title + "'>" + title + "</span>";
                           }
                       }
                       return title;
@@ -145,13 +145,31 @@
                   className: "detail truncate",
                   render: function(album, type, row) {
                       if (type == "display") {
-                          return "<a href='"+ row.albumUrl + "' target='" + (!internetRadioEnabled ? "main" : "_blank' rel='noopener noreferrer") + "'>" + album + "</a>";
+                          return "<a href='"+ row.albumUrl + "' target='" + (!internetRadioEnabled ? "main" : "_blank' rel='noopener noreferrer") + "' title='" + album + "' + alt='" + album + "'>" + album + "</a>";
                       }
                       return album;
                   }
                 },
-                { data: "artist", className: "detail truncate", visible: ${model.visibility.artistVisible} },
-                { data: "genre", className: "detail truncate", visible: ${model.visibility.genreVisible} },
+                { data: "artist",
+                  className: "detail truncate",
+                  visible: ${model.visibility.artistVisible},
+                  render: function(artist, type) {
+                      if (type == "display") {
+                          return "<span title='" + artist + "' + alt='" + artist + "'>" + artist + "</span>";
+                      }
+                      return artist;
+                  }
+                },
+                { data: "genre",
+                  className: "detail truncate",
+                  visible: ${model.visibility.genreVisible},
+                  render: function(genre, type) {
+                      if (type == "display") {
+                          return "<span title='" + genre + "' + alt='" + genre + "'>" + genre + "</span>";
+                      }
+                      return genre;
+                  }
+                },
                 { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
                 { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
                 { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
