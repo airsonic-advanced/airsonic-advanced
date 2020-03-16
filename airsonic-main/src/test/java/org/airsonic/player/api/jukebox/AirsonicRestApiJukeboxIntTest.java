@@ -33,6 +33,7 @@ public class AirsonicRestApiJukeboxIntTest extends AbstractAirsonicRestApiJukebo
         jukeboxPlayer.setUsername("admin");
         jukeboxPlayer.setClientId(CLIENT_NAME + "-jukebox");
         jukeboxPlayer.setTechnology(PlayerTechnology.JAVA_JUKEBOX);
+        jukeboxPlayer.setJavaJukeboxMixer("somemixer");
         playerService.createPlayer(jukeboxPlayer);
     }
 
