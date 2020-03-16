@@ -67,6 +67,11 @@
 
         musicTable = $("#playQueueMusic").DataTable( {
             deferRender: true,
+            createdRow: function(row, data, dataIndex, cells) {
+                if (currentSongIndex == dataIndex) {
+                    $(row).addClass("currently-playing").find(".currentImage").show();
+                }
+            },
             ordering: true,
             order: [],
             orderFixed: [ 0, 'asc' ],
@@ -793,8 +798,7 @@
     }
 
     function updateCurrentImage() {
-        $(".currentImage").hide();
-        $(musicTable.rows().nodes()).removeClass("currently-playing");
+        $(musicTable.rows().nodes()).removeClass("currently-playing").find(".currentImage").hide();
         $(musicTable.row(currentSongIndex).node()).addClass("currently-playing").find(".currentImage").show();
     }
 
