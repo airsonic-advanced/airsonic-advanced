@@ -63,7 +63,7 @@ public class JukeboxJavaService {
         return activeAudioPlayers.compute(airsonicPlayer.getId(), (id, pair) -> {
             if (pair == null) {
                 pair = initAudioPlayer(airsonicPlayer);
-            } else if (!StringUtils.equals(pair.getRight(), airsonicPlayer.getJavaJukeboxMixer())) {
+            } else if (!StringUtils.equals(pair.getRight(), getMixer(airsonicPlayer.getJavaJukeboxMixer()))) {
                 // mixer has changed, remove old one and create new one
                 pair.getLeft().close();
                 activeAudioPlayersPerMixer.getOrDefault(pair.getRight(), Collections.emptyList()).remove(pair.getLeft());
@@ -75,7 +75,6 @@ public class JukeboxJavaService {
         }).getLeft();
     }
 
-
     private Pair<com.github.biconou.AudioPlayer.api.Player, String> initAudioPlayer(final Player airsonicPlayer) {
 
         if (!airsonicPlayer.getTechnology().equals(PlayerTechnology.JAVA_JUKEBOX)) {
@@ -86,10 +85,7 @@ public class JukeboxJavaService {
 
         com.github.biconou.AudioPlayer.api.Player audioPlayer = null;
 
-        String mixer = airsonicPlayer.getJavaJukeboxMixer();
-        if (StringUtils.isBlank(airsonicPlayer.getJavaJukeboxMixer())) {
-            mixer = getDefaultMixer();
-        }
+        String mixer = getMixer(airsonicPlayer.getJavaJukeboxMixer());
 
         if (mixer != null) {
             log.info("use mixer : {}", mixer);
@@ -221,8 +217,9 @@ public class JukeboxJavaService {
         }
     }
 
-    private static String getDefaultMixer() {
-        return AudioSystem.getMixerInfo().length > 0 ? AudioSystem.getMixerInfo()[0].getName() : null;
+    private static String getMixer(String mixer) {
+        return Optional.ofNullable(mixer).filter(StringUtils::isNotBlank).orElseGet(
+                () -> AudioSystem.getMixerInfo().length > 0 ? AudioSystem.getMixerInfo()[0].getName() : null);
     }
 
     /**
@@ -272,10 +269,7 @@ public class JukeboxJavaService {
             });
 
             // Close any other player using the same mixer.
-            String mixer = airsonicPlayer.getJavaJukeboxMixer();
-            if (StringUtils.isBlank(mixer)) {
-                mixer = getDefaultMixer();
-            }
+            String mixer = getMixer(airsonicPlayer.getJavaJukeboxMixer());
             List<com.github.biconou.AudioPlayer.api.Player> playersForSameMixer = activeAudioPlayersPerMixer.get(mixer);
             synchronized (playersForSameMixer) {
                 playersForSameMixer.forEach(player -> {

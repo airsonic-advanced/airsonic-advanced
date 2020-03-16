@@ -55,7 +55,7 @@ public class JukeboxJavaServiceUnitTest {
         // When
         service.play(airsonicPlayer);
         // Then
-        verify(javaPlayerFactory).createJavaPlayer();
+        verify(javaPlayerFactory).createJavaPlayer(anyString());
         verify(player).play();
     }
 
@@ -76,14 +76,13 @@ public class JukeboxJavaServiceUnitTest {
         // When
         service.play(airsonicPlayer);
         // Then
-        verify(javaPlayerFactory).createJavaPlayer();
+        verify(javaPlayerFactory).createJavaPlayer(anyString());
         verify(player).play();
         // When
         service.stop(airsonicPlayer);
         // Then
         verifyNoMoreInteractions(javaPlayerFactory);
         verify(player).pause();
-
     }
 
     @Test
@@ -93,7 +92,7 @@ public class JukeboxJavaServiceUnitTest {
         // When
         service.play(airsonicPlayer);
         // Then
-        verify(javaPlayerFactory).createJavaPlayer();
+        verify(javaPlayerFactory).createJavaPlayer(anyString());
         verify(player, never()).play();
     }
 
@@ -112,14 +111,14 @@ public class JukeboxJavaServiceUnitTest {
         // When
         service.play(airsonicPlayer);
         // Then
-        verify(javaPlayerFactory).createJavaPlayer();
+        verify(javaPlayerFactory).createJavaPlayer(anyString());
         verify(player, never()).play();
     }
 
     @Test(expected = RuntimeException.class)
     public void playerInitProblem() {
         // Given
-        when(javaPlayerFactory.createJavaPlayer()).thenReturn(null);
+        when(javaPlayerFactory.createJavaPlayer(anyString())).thenReturn(null);
         // When
         service.play(airsonicPlayer);
     }
