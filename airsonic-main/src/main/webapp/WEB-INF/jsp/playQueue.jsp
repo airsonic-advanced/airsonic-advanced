@@ -94,7 +94,7 @@
                 emptyTable: "<fmt:message key='playlist.empty'/>"
             },
             ajax: function(ajaxData, callback) {
-                for ( var i=0, ien=songs.length ; i<ien ; i++ ) {
+                for ( var i=0, len=songs.length ; i<len ; i++ ) {
                   songs[i].seq = i;
                 }
                 callback({data: songs});
@@ -324,9 +324,12 @@
     function onNowPlayingChanged(nowPlayingInfo) {
         if (nowPlayingInfo != null && nowPlayingInfo.streamUrl != currentStreamUrl && nowPlayingInfo.playerId == ${model.player.id}) {
         <c:if test="${not model.player.web}">
+            // TODO this should be keying off skip callbacks (and skip callbacks should be getting emitted)
+            // otherwise there is an issue with the same song appearing multiple times on the playqueue (we'll always select the first)
             currentStreamUrl = nowPlayingInfo.streamUrl;
             currentSongIndex = getCurrentSongIndex();
-            updateCurrentImage();
+
+            playQueueSkipCallback({index: currentSongIndex, offset: 0});
         </c:if>
             return true;
         }
@@ -370,7 +373,7 @@
             if ($('#audioPlayer').get(0).src) {
                 $('#audioPlayer').get(0).play();  // Resume playing if the player was paused
             } else {
-                skip(0);  // Start the first track if the player was not yet loaded
+                onSkip(0);  // Start the first track if the player was not yet loaded
             }
         } else {
             top.StompClient.send("/app/playqueues/${model.player.id}/start", "");
@@ -462,18 +465,31 @@
     }
 
     function playQueueSkipCallback(location) {
+        if (location.index < 0 || location.index >= songs.length) {
+            return;
+        }
+
+        var song = songs[location.index];
+        currentStreamUrl = song.streamUrl;
+        currentSongIndex = location.index;
+        updateCurrentImage();
+
       <c:choose>
       <c:when test="${model.player.web}">
-        skip(location.index, location.offset / 1000);
+        webSkip(song, location.offset / 1000);
       </c:when>
       <c:otherwise>
-        currentStreamUrl = songs[location.index].streamUrl;
-        currentSongIndex = location.index;
         if (isJavaJukeboxPresent()) {
-            updateJavaJukeboxPlayerControlBar(songs[location.index], location.offset / 1000);
+            updateJavaJukeboxPlayerControlBar(song, location.offset / 1000);
         }
       </c:otherwise>
       </c:choose>
+
+        updateWindowTitle(song);
+
+      <c:if test="${model.notify}">
+        showNotification(song);
+      </c:if>
     }
 
     function onSkip(index, offset) {
@@ -487,16 +503,7 @@
     </c:choose>
     }
 
-    function skip(index, position) {
-        if (index < 0 || index >= songs.length) {
-            return;
-        }
-
-        var song = songs[index];
-        currentStreamUrl = song.streamUrl;
-        currentSongIndex = index;
-        updateCurrentImage();
-
+    function webSkip(song, position) {
         // Handle ChromeCast player.
         if (CastPlayer.castSession) {
             CastPlayer.loadCastMedia(song, position);
@@ -504,12 +511,6 @@
         } else {
             loadMediaElementPlayer(song, position);
         }
-
-        updateWindowTitle(song);
-
-        <c:if test="${model.notify}">
-        showNotification(song);
-        </c:if>
     }
 
     function loadMediaElementPlayer(song, position) {
