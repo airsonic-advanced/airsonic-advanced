@@ -43,7 +43,7 @@ public class JukeboxJavaServiceUnitTest {
         service = new JukeboxJavaService(audioScrobblerService, statusService, securityService, mediaFileService, javaPlayerFactory);
         when(airsonicPlayer.getTechnology()).thenReturn(PlayerTechnology.JAVA_JUKEBOX);
         when(airsonicPlayer.getUsername()).thenReturn(USER_NAME);
-        when(javaPlayerFactory.createJavaPlayer()).thenReturn(player);
+        when(javaPlayerFactory.createJavaPlayer(anyString())).thenReturn(player);
         when(securityService.getUserByName(USER_NAME)).thenReturn(user);
         when(user.isJukeboxRole()).thenReturn(true);
         when(airsonicPlayer.getPlayQueue()).thenReturn(playQueue);
