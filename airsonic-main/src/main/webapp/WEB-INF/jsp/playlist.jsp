@@ -111,7 +111,13 @@
                       }
                     },
                     { data: "title",
-                      className: "detail songTitle truncate"
+                      className: "detail songTitle truncate",
+                      render: function(title, type, row) {
+                          if (type == "display") {
+                              return "<span title='" + title + "' + alt='" + title + "'>" + title + "</span>";
+                          }
+                          return title;
+                      }
                     },
                     { data: "album",
                       className: "detail truncate",
@@ -122,7 +128,15 @@
                           return album;
                       }
                     },
-                    { data: "artist", className: "detail truncate" },
+                    { data: "artist",
+                      className: "detail truncate",
+                      render: function(artist, type, row) {
+                          if (type == "display") {
+                              return "<span title='" + artist + "' + alt='" + artist + "'>" + artist + "</span>";
+                          }
+                          return artist;
+                      }
+                    },
                     { data: "durationAsString", className: "detail fit rightalign" },
                     { data: null,
                       searchable: false,
