@@ -218,8 +218,9 @@ public class JukeboxJavaService {
     }
 
     private static String getMixer(String mixer) {
-        return Optional.ofNullable(mixer).filter(StringUtils::isNotBlank).orElseGet(
-                () -> AudioSystem.getMixerInfo().length > 0 ? AudioSystem.getMixerInfo()[0].getName() : null);
+        return Optional.ofNullable(mixer)
+                .filter(StringUtils::isNotBlank)
+                .orElseGet(() -> AudioSystem.getMixerInfo().length > 0 ? AudioSystem.getMixerInfo()[0].getName() : null);
     }
 
     /**
