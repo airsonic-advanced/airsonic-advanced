@@ -40,8 +40,9 @@ The following is an incomplete list of features that are enhanced from Airsonic:
 - Performance enhancements
   - A more efficient and compliant streaming engine, utilizing piping and threading
   - Removal of pessimistic locking throughout the software in favor of more modern concurrency techniques
+  - Much faster UI rendering for browsers, especially for massive playlists
   - Aggressively uses multi-threading and parallelization for most operations, including but not limited to:
-    - Massively parallelized engine for media scanning (media scanning is done much much faster)
+    - Massively parallelized engine for media scanning (media scanning is done much much faster, ~8x)
     - Other various use cases utilizing async or parallel options via fork-join pools
   - Use of websockets to communicate with web-clients instead of polling
     - Much lighter on resource utilization as well as more dynamic
@@ -50,6 +51,12 @@ The following is an incomplete list of features that are enhanced from Airsonic:
     - Web clients can update UIs immediately (live views)
     - Removal of DWR (10 year old technology used as an interface between the web-client and the server)
     - Provides status indicator whether client is connected to server
+- UI:
+    - Utilize a dedicated library (DataTables) to render tables
+      - Deferred rendering and data manipulation outside the DOM allows much faster rendering (~10x-800x!)
+        - The bigger the table, the more performance benefits it sees
+        - Play queue that took about 800s to render in the browser, can now render in < 1s
+      - Allow optional paging and accessible searching within tables
 - Bugfixes:
   - Several race condition fixes
   - Consistency checks and refactors
