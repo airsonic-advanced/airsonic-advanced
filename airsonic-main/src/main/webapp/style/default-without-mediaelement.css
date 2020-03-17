@@ -71,9 +71,49 @@ h1, h2, .detail, .albumComment {
 /* regular color + .border1 border-color */
 .dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
     color: #696969 !important;
-    background-color: none;
     background: none;
     border-color: black;
+}
+
+div.dt-buttons {
+    padding-top: 0.25em;
+    float: right;
+}
+
+/* a:link color */
+button.dt-button, div.dt-button, a.dt-button {
+    color: #006699;
+    background: none;
+    margin: unset;
+    font-size: unset;
+    box-shadow: unset;
+    border: none;
+    line-height: unset;
+}
+
+/* a:hover color + .border1 border-color */
+button.dt-button:hover:not(.disabled), div.dt-button:hover:not(.disabled), a.dt-button:hover:not(.disabled) {
+    color: #DD6900;
+    background: none;
+    border: 1px solid black;
+}
+
+button.dt-button:focus:not(.disabled),
+button.dt-button:active:not(.disabled),
+button.dt-button:active:not(.disabled):hover:not(.disabled),
+div.dt-button:focus:not(.disabled),
+div.dt-button:active:not(.disabled),
+div.dt-button:active:not(.disabled):hover:not(.disabled),
+a.dt-button:focus:not(.disabled),
+a.dt-button:active:not(.disabled),
+a.dt-button:active:not(.disabled):hover:not(.disabled) {
+    background: none;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+.dataTables_wrapper .dataTables_processing {
+    background: none;
 }
 
 table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
@@ -249,6 +289,7 @@ input[type=submit], input[type=button], button {
     padding-left: 1em;
     padding-right: 1em;
     color: black;
+    font-family: Verdana, Tahoma, Geneva, arial, sans-serif;
 }
 
 input[type=submit]:hover, input[type=button]:hover, button:hover {

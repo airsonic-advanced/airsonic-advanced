@@ -47,7 +47,7 @@ h2, b, tr {
 }
 
 /* a:hover color + .border1 border-color */
-.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover, button.dt-button:hover:not(.disabled), div.dt-button:hover:not(.disabled), a.dt-button:hover:not(.disabled) {
     color: #a3a3a3 !important;
     border-color: #a3a3a3;
 }
