@@ -77,11 +77,21 @@
             orderFixed: [ 0, 'asc' ],
             orderMulti: false,
             lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
+            buttons: [
+                {
+                  text: "<fmt:message key='main.nowplaying'/>",
+                  action: function (e, dt, node, config) {
+                      if (currentSongIndex != -1) {
+                          dt.row(currentSongIndex).show().draw(false);
+                      }
+                  }
+                }
+            ],
             processing: true,
             autoWidth: true,
             scrollCollapse: true,
             scrollY: "60vh",
-            dom: "<'#playQueueHeading'><'#playQueueInfo'><'#playQueueSpacer'>lfrtip",
+            dom: "<'#playQueueHeading'><'#playQueueInfo'><'#playQueueSpacer'>lfrtipB",
             select: {
                 style: "multi",
                 selector: ".songIndex"

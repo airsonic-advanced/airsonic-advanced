@@ -17,7 +17,7 @@
 }
 
 /* a:link color */
-.dataTables_wrapper .dataTables_paginate .paginate_button {
+.dataTables_wrapper .dataTables_paginate .paginate_button, button.dt-button, div.dt-button, a.dt-button {
     color: #057368 !important;
 }
 

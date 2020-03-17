@@ -31,12 +31,12 @@ h2, b, tr {
 }
 
 /* a:link color */
-.dataTables_wrapper .dataTables_paginate .paginate_button {
+.dataTables_wrapper .dataTables_paginate .paginate_button, button.dt-button, div.dt-button, a.dt-button {
     color: #000000 !important;
 }
 
 /* a:hover color + .border1 border-color */
-.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover, button.dt-button:hover:not(.disabled), div.dt-button:hover:not(.disabled), a.dt-button:hover:not(.disabled) {
     color: #FFFFFF !important;
 }
 
