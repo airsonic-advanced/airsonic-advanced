@@ -24,6 +24,7 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
+    <%@ include file="table.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <style type="text/css">
@@ -141,7 +142,7 @@
             addNextTopSong(artistTopSongsTable.row( $(this).parents('tr') ).index());
         } );
 
-        $("#topSongsHeader").html("<h2><fmt:message key='<fmt:message key="main.topsongs"/>'/></h2>");
+        $("#topSongsHeader").html("<h2><fmt:message key='main.topsongs'/></h2>");
         $("#artistTopSongs_wrapper").hide();
 
         top.StompClient.subscribe("artistMain.jsp", {
