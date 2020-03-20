@@ -51,7 +51,7 @@
             deferRender: true,
             ordering: true,
             order: [],
-            orderFixed: [ 4, 'asc' ],
+            orderFixed: [ 0, 'asc' ],
             orderMulti: false,
             lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
             processing: true,
@@ -68,6 +68,7 @@
             stripeClasses: ["bgcolor2", "bgcolor1"],
             columnDefs: [{ targets: "_all", orderable: false }],
             columns: [
+                { data: "seq", className: "detail fit", visible: true },
                 { data: "starred",
                   name: "starred",
                   className: "fit not-draggable",
@@ -96,7 +97,6 @@
                   className: "fit not-draggable",
                   defaultContent: "<img class='addSongNext' src=\"<spring:theme code='addNextImage'/>\" style='height:18px;' alt=\"<fmt:message key='main.addnext'/>\" title=\"<fmt:message key='main.addnext'/>\">"
                 },
-                { data: "seq", className: "detail fit", visible: true },
                 { data: "title",
                   className: "detail songTitle truncate",
                   render: function(title, type, row) {
