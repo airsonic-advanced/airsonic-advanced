@@ -146,7 +146,7 @@ public class SettingsService {
     private static final String KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH = "DatabaseMysqlMaxlength";
     private static final String KEY_DATABASE_USERTABLE_QUOTE = "DatabaseUsertableQuote";
 
-    public static final String KEY_PROPERTIES_FILE_UPGRADE_RETAIN_OBSOLETE_KEYS = "PropertiesFileUpgradeRetainObsoleteKeys";
+    public static final String KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS = "PropertiesFileRetainObsoleteKeys";
 
     // Default values.
     private static final String DEFAULT_JWT_KEY = null;
@@ -284,7 +284,7 @@ public class SettingsService {
 
     public static void migrateKeys(Map<String, String> keyMaps) {
         ConfigurationPropertiesService cps = ConfigurationPropertiesService.getInstance();
-        Boolean retainObsoleteKeys = Optional.ofNullable(cps.getProperty(KEY_PROPERTIES_FILE_UPGRADE_RETAIN_OBSOLETE_KEYS)).map(x -> Boolean.valueOf((String) x)).orElse(true);
+        Boolean retainObsoleteKeys = Optional.ofNullable(cps.getProperty(KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS)).map(x -> Boolean.valueOf((String) x)).orElse(true);
 
         // needs to be processed serially
         keyMaps.entrySet().stream().filter(e -> cps.containsKey(e.getKey())).forEach(e -> {
