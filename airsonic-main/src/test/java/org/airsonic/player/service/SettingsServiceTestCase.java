@@ -182,12 +182,12 @@ public class SettingsServiceTestCase {
 
         assertEquals("hello", env.getProperty("bla"));
         assertEquals("hello", env.getProperty("bla2"));
-        assertNull(env.getProperty("bla3"));
+        assertEquals("hello", env.getProperty("bla3"));
     }
 
     @Test
     public void migrateKeys_deleteKeys_NonBackwardsCompatible() {
-        ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY, "false");
+        ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS, "false");
         ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
 
         Map<String, String> keyMaps = new LinkedHashMap<>();
@@ -203,7 +203,7 @@ public class SettingsServiceTestCase {
 
     @Test
     public void migrateKeys_withKeys_ExplicitlyBackwardsCompatible() {
-        ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY, "true");
+        ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS, "true");
         ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
         ConfigurationPropertiesService.getInstance().setProperty("bla3", "hello2");
 
@@ -242,7 +242,7 @@ public class SettingsServiceTestCase {
 
     @Test
     public void migrateKeys_withKeys_NonBackwardsCompatible() {
-        ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY, "false");
+        ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS, "false");
         ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
         ConfigurationPropertiesService.getInstance().setProperty("bla3", "hello2");
 
