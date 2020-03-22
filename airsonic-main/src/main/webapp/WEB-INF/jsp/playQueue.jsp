@@ -7,6 +7,9 @@
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/playQueueCast.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
+    <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/speed/speed.min.css'/>">
     <style type="text/css">
         .ui-slider .ui-slider-handle {
             width: 11px;
@@ -60,6 +63,7 @@
     var CastPlayer = new CastPlayer();
 
     var musicTable = null;
+    var audioPlayer = null;
 
     function init() {
         var ratingOnImage = "<spring:theme code='ratingOnImage'/>";
@@ -375,7 +379,19 @@
         // we modify the media elements (e.g. adding event handlers). Running
         // MediaElement.js's automatic initialization does not guarantee that
         // (it depends on when we call createMediaElementPlayer at load time).
-        $('#audioPlayer').mediaelementplayer();
+        audioPlayer = new MediaElementPlayer("audioPlayer", {
+            alwaysShowControls: true,
+            enableKeyboard: false,
+            useDefaultControls: true,
+            features: ["speed"],
+            defaultSpeed: "1.00",
+            speeds: ["8.00", "2.00", "1.50", "1.25", "1.00", "0.75", "0.5"],
+            success: function(mediaElement, originalNode, instance) {
+                // "hack" html5 renderer and reinitialize speed
+                instance.media.rendererName = "html5";
+                instance.buildspeed(instance, instance.getElement(instance.controls), instance.getElement(instance.layers), instance.media);
+            }
+        });
 
         // Once playback reaches the end, go to the next song, if any.
         $('#audioPlayer').on("ended", onEnded);
@@ -911,7 +927,7 @@
                     <c:if test="${model.player.web}">
                         <td>
                             <div id="player" style="width:340px; height:40px">
-                                <audio id="audioPlayer" data-mejsoptions='{"alwaysShowControls": true, "enableKeyboard": false}' width="340px" height="40px" tabindex="-1" />
+                                <audio id="audioPlayer" width="340px" height="40px" tabindex="-1" />
                             </div>
                             <div id="castPlayer" style="display: none">
                                 <div style="float:left">
