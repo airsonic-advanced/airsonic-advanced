@@ -914,7 +914,7 @@
         </div>
     </c:when>
     <c:otherwise>
-        <div class="bgcolor2" style="position:fixed; bottom:0; width:100%;padding-top:10px;">
+        <div class="bgcolor2" style="position:fixed; bottom:0; width:100%; padding-top:10px; z-index:1">
             <table style="white-space:nowrap; margin-bottom:0;">
                 <tr style="white-space:nowrap;">
                     <c:if test="${model.user.settingsRole and fn:length(model.players) gt 1}">
