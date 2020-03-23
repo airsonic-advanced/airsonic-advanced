@@ -34,7 +34,7 @@
         </repository>
         <repository>
           <id>4thline-repo</id>
-          <url>http://4thline.org/m2</url>
+          <url>https://4thline.org/m2</url>
           <snapshots>
               <enabled>false</enabled>
           </snapshots>
@@ -50,29 +50,10 @@
     </pluginRepositories>
 
     <scm>
-        <connection>scm:git:git://github.com/airsonic/airsonic.git</connection>
-        <developerConnection>scm:git:git@github.com:airsonic/airsonic.git</developerConnection>
-        <url>https://github.com/airsonic/airsonic.git</url>
+        <connection>scm:git:git://github.com/airsonic-advanced/airsonic-advanced.git</connection>
+        <developerConnection>scm:git:git@github.com:airsonic-advanced/airsonic-advanced.git</developerConnection>
+        <url>https://github.com/airsonic-advanced/airsonic-advanced.git</url>
     </scm>
-
-<!--    <ciManagement>
-        <system>continuum</system>
-        <notifiers>
-            <notifier>
-                <type>mail</type>
-                <configuration>
-                    <address>sindre@activeobjects.no</address>
-                </configuration>
-            </notifier>
-        </notifiers>
-    </ciManagement> -->
-
-    <developers>
-        <developer>
-            <name>Eugene E. Kashpureff Jr</name>
-            <email>eugene@kashpureff.org</email>
-        </developer>
-    </developers>
 
     <modules>
         <module>subsonic-rest-api</module>
