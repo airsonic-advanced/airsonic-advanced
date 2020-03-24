@@ -8,7 +8,7 @@
     <script type="text/javascript">
         var previousQuery = "";
         var instantSearchTimeout;
-        var showSideBar = ${model.showSideBar ? 'true' : 'false'};
+        var showSideBar = ${model.showSideBar};
 
         function init() {
             top.StompClient.subscribe("top.jsp", {
@@ -64,10 +64,11 @@
         }
 
         function doShowLeftFrame() {
-            $("#show-left-frame").hide();
-            $("#hide-left-frame").show();
-            toggleLeftFrame(230);
-            showSideBar = true;
+            $("div.left-nav-container", window.parent.document).show('slide', {direction:"left"}, 100, function() {
+                $("#show-left-frame").hide();
+                $("#hide-left-frame").show();
+                showSideBar = true;
+            });
         }
 
         function hideLeftFrame() {
@@ -76,27 +77,10 @@
         }
 
         function doHideLeftFrame() {
-            $("#hide-left-frame").hide();
-            $("#show-left-frame").show();
-            toggleLeftFrame(0);
-            showSideBar = false;
-        }
-
-        function toggleLeftFrameVisible() {
-            if (showSideBar) hideLeftFrame();
-            else showLeftFrame();
-        }
-
-        function toggleLeftFrame(width) {
-            <%-- Disable animation in Chrome. It stopped working in Chrome 44. --%>
-            var duration = navigator.userAgent.indexOf("Chrome") != -1 ? 0 : 400;
-
-            $("#dummy-animation-target").stop();
-            $("#dummy-animation-target").animate({"max-width": width}, {
-                step: function (now, fx) {
-                    top.document.getElementById("mainFrameset").cols = now + ",*";
-                },
-                duration: duration
+            $("div.left-nav-container", window.parent.document).hide('slide', {direction:"left"}, 100, function() {
+                $("#hide-left-frame").hide();
+                $("#show-left-frame").show();
+                showSideBar = false;
             });
         }
         
