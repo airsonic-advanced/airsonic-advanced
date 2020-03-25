@@ -53,8 +53,9 @@
             $("#playlistOverflow").empty();
             for (var i = 0; i < playlists.length; i++) {
                 var playlist = playlists[i];
-                var node = $("<p class='dense truncate playlist' id='playlistid-" + playlist.id + "'><a target='main' href='playlist.view?id=" +
-                        playlist.id + "'>" + escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")</a></p>");
+                var playlistName = escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")";
+                var node = $("<p class='dense truncate playlist' id='playlistid-" + playlist.id + "' title='" + playlistName + "'><a target='main' href='playlist.view?id=" +
+                        playlist.id + "'>" + playlistName + "</a></p>");
                 var overflow = i > 9;
                 if (!overflow) {
                     node.addClass("nonoverflown");
@@ -73,8 +74,9 @@
 
         function updatedPlaylistCallback(playlist) {
             var oldNode = $("#playlistid-" + playlist.id);
-            var node = $("<p class='dense truncate playlist' id='playlistid-" + playlist.id + "'><a target='main' href='playlist.view?id=" +
-                        playlist.id + "'>" + escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")</a></p>");
+            var playlistName = escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")";
+            var node = $("<p class='dense truncate playlist' id='playlistid-" + playlist.id + "' title='" + playlistName + "'><a target='main' href='playlist.view?id=" +
+                        playlist.id + "'>" + playlistName + "</a></p>");
             if (oldNode.length == 0) {
                 var overflow = $(".playlist").length > 10;
                 if (!overflow) {
