@@ -2,7 +2,6 @@
 <%@ include file="head.jsp" %>
 <%@ include file="jquery.jsp" %>
 <%@ include file="table.jsp" %>
-<script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
 <script type="text/javascript" src="<c:url value='/script/playQueueCast.js'/>"></script>
 <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
@@ -704,10 +703,13 @@
         },
         playlistSelectionCallback(playlists) {
             $("#dialog-select-playlist-list").empty();
+            var pq = this;
             for (var i = 0; i < playlists.length; i++) {
                 var playlist = playlists[i];
-                $("<p class='dense'><b><a href='#' onclick='playQueue.appendPlaylist(" + playlist.id + ")'>" + escapeHtml(playlist.name)
-                        + "</a></b></p>").appendTo("#dialog-select-playlist-list");
+                $("<p>").addClass("dense").append(
+                    $("<b>").append(
+                        $("<a>").attr("href","#").attr("onclick", "playQueue.appendPlaylist(" + playlist.id + ")").text(playlist.name)))
+                .appendTo("#dialog-select-playlist-list");
             }
             $("#dialog-select-playlist").dialog("open");
         },
