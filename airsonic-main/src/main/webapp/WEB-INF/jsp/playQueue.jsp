@@ -704,10 +704,9 @@
         },
         playlistSelectionCallback(playlists) {
             $("#dialog-select-playlist-list").empty();
-            var pq = this;
             for (var i = 0; i < playlists.length; i++) {
                 var playlist = playlists[i];
-                $("<p class='dense'><b><a href='#' onclick='pq.appendPlaylist(" + playlist.id + ")'>" + escapeHtml(playlist.name)
+                $("<p class='dense'><b><a href='#' onclick='playQueue.appendPlaylist(" + playlist.id + ")'>" + escapeHtml(playlist.name)
                         + "</a></b></p>").appendTo("#dialog-select-playlist-list");
             }
             $("#dialog-select-playlist").dialog("open");
@@ -855,7 +854,7 @@
 
         <!-- actionSelected() is invoked when the users selects from the "More actions..." combo box. -->
         actionSelected(id) {
-            var selectedIndexes = getSelectedIndexes();
+            var selectedIndexes = this.getSelectedIndexes();
             if (id == "top") {
                 return;
             } else if (id == "savePlayQueue") {
@@ -867,7 +866,7 @@
             } else if (id == "downloadPlaylist") {
                 location.href = "download.view?player=${model.player.id}";
             } else if (id == "sharePlaylist") {
-                parent.frames.main.location.href = "createShare.view?player=${model.player.id}&" + getSelectedIndexes();
+                parent.frames.main.location.href = "createShare.view?player=${model.player.id}&" + selectedIndexes;
             } else if (id == "sortByTrack") {
                 this.onSortByTrack();
             } else if (id == "sortByArtist") {
@@ -901,9 +900,7 @@
         }
     };
 
-    $(document).ready(function() {
-        playQueue.init();
-    });
+    $(document).ready(() => playQueue.init());
 </script>
 
 <table class="music indent hover nowrap stripe compact hide-table-header" id="playQueueMusic" style="cursor:pointer; width: 100%;"></table>
