@@ -102,7 +102,7 @@
                   className: "detail songTitle truncate",
                   render: function(title, type, row) {
                       if (type == "display") {
-                          return "<span title='" + title + "' + alt='" + title + "'>" + title + "</span>";
+                          return $("<span>").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
                       }
                       return title;
                   }
@@ -111,7 +111,7 @@
                   className: "detail truncate",
                   render: function(album, type, row) {
                       if (type == "display") {
-                          return "<a href='main.view?id=" + row.id + "' target='main' title='" + album + "' + alt='" + album + "'>" + album + "</a>";
+                          return $("<a>").attr("href", "main.view?id=" + row.id).attr("target", "main").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
                       }
                       return album;
                   }
@@ -120,7 +120,7 @@
                   className: "detail truncate",
                   render: function(artist, type, row) {
                       if (type == "display") {
-                          return "<span title='" + artist + "' + alt='" + artist + "'>" + artist + "</span>";
+                          return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
                       }
                       return artist;
                   }

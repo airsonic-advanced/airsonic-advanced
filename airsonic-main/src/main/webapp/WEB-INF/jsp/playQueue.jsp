@@ -146,9 +146,9 @@
                       if (type == "display") {
                           var img = "<img class='currentImage' src=\"<spring:theme code='currentImage'/>\" alt='' style='display:none;padding-right: 0.5em' />";
                           if (!${model.player.externalWithPlaylist}) {
-                              return img + "<a class='titleUrl' href='javascript:void(0)' title='" + title + "' + alt='" + title + "'>" + title + "</a>";
+                              return img + $("<a>").addClass("titleUrl").attr("href", "javascript:void(0)").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
                           } else {
-                              return img + "<span title='" + title + "' + alt='" + title + "'>" + title + "</span>";
+                              return img + $("<span>").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
                           }
                       }
                       return title;
@@ -159,7 +159,7 @@
                   className: "detail truncate",
                   render: function(album, type, row) {
                       if (type == "display") {
-                          return "<a href='"+ row.albumUrl + "' target='" + (!internetRadioEnabled ? "main" : "_blank' rel='noopener noreferrer") + "' title='" + album + "' + alt='" + album + "'>" + album + "</a>";
+                          return $("<a>").attr("href", row.albumUrl).attr("target", !internetRadioEnabled ? "main" : "_blank").attr("rel", !internetRadioEnabled ? "" : "noopener noreferrer").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
                       }
                       return album;
                   }
@@ -169,7 +169,7 @@
                   visible: ${model.visibility.artistVisible},
                   render: function(artist, type) {
                       if (type == "display") {
-                          return "<span title='" + artist + "' + alt='" + artist + "'>" + artist + "</span>";
+                          return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
                       }
                       return artist;
                   }
@@ -179,7 +179,7 @@
                   visible: ${model.visibility.genreVisible},
                   render: function(genre, type) {
                       if (type == "display") {
-                          return "<span title='" + genre + "' + alt='" + genre + "'>" + genre + "</span>";
+                          return $("<span>").attr("title", genre).attr("alt", genre).text(genre)[0].outerHTML;
                       }
                       return genre;
                   }
