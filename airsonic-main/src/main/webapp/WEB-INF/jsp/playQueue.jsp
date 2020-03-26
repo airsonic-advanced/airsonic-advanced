@@ -346,7 +346,7 @@
         },
 
         isJavaJukeboxPresent() {
-            return $("#javaJukeboxPlayerControlBarContainer").length==1;
+            return typeof JavaJukeBox != "undefined";
         },
 
         playQueuePlayStatusCallback(status) {
@@ -910,159 +910,167 @@
 
 <table class="music indent hover nowrap stripe compact hide-table-header" id="playQueueMusic" style="cursor:pointer; width: 100%;"></table>
 
-<c:choose>
-    <c:when test="${model.player.javaJukebox}">
-        <div id="javaJukeboxPlayerControlBarContainer">
-            <%@ include file="javaJukeboxPlayerControlBar.jspf" %>
+<div class="bgcolor2 playqueue-controlbar">
+  <c:if test="${model.user.settingsRole and model.players.size() > 1}">
+    <div style="padding-right: 5px">
+        <select name="player" onchange="location='playQueue.view?player=' + options[selectedIndex].value;">
+          <c:forEach items="${model.players}" var="player">
+            <option ${player.id eq model.player.id ? "selected" : ""} value="${player.id}">${player.shortDescription}</option>
+          </c:forEach>
+        </select>
+    </div>
+  </c:if>
+
+  <c:choose>
+  <c:when test="${model.player.javaJukebox}">
+    <!--<div id="javaJukeboxPlayerControlBarContainer">-->
+        <%@ include file="javaJukeboxPlayerControlBar.jspf" %>
+    <!--</div>-->
+  </c:when>
+  <c:otherwise>
+  <c:if test="${model.player.web}">
+    <div>
+        <div id="player" style="width:340px; height:40px">
+            <audio id="audioPlayer" width="340px" height="40px" tabindex="-1" />
         </div>
-    </c:when>
-    <c:otherwise>
-        <div class="bgcolor2" style="width:100%; padding-top:10px; z-index:1">
-            <table style="white-space:nowrap; margin-bottom:0;">
-                <tr style="white-space:nowrap;">
-                    <c:if test="${model.user.settingsRole and model.players.size() > 1}">
-                        <td style="padding-right: 5px"><select name="player" onchange="location='playQueue.view?player=' + options[selectedIndex].value;">
-                            <c:forEach items="${model.players}" var="player">
-                                <option ${player.id eq model.player.id ? "selected" : ""} value="${player.id}">${player.shortDescription}</option>
-                            </c:forEach>
-                        </select></td>
-                    </c:if>
-                    <c:if test="${model.player.web}">
-                        <td>
-                            <div id="player" style="width:340px; height:40px">
-                                <audio id="audioPlayer" width="340px" height="40px" tabindex="-1" />
-                            </div>
-                            <div id="castPlayer" style="display: none">
-                                <div style="float:left">
-                                    <img alt="Play" id="castPlay" src="<spring:theme code='castPlayImage'/>" onclick="playQueue.CastPlayer.playCast()" style="cursor:pointer">
-                                    <img alt="Pause" id="castPause" src="<spring:theme code='castPauseImage'/>" onclick="playQueue.CastPlayer.pauseCast()" style="cursor:pointer; display:none">
-                                    <img alt="Mute on" id="castMuteOn" src="<spring:theme code='volumeImage'/>" onclick="playQueue.CastPlayer.castMuteOn()" style="cursor:pointer">
-                                    <img alt="Mute off" id="castMuteOff" src="<spring:theme code='muteImage'/>" onclick="playQueue.CastPlayer.castMuteOff()" style="cursor:pointer; display:none">
-                                </div>
-                                <div style="float:left">
-                                    <div id="castVolume" style="width:80px;height:4px;margin-left:10px;margin-right:10px;margin-top:8px"></div>
-                                    <script type="text/javascript">
-                                        $("#castVolume").slider({max: 100, value: 50, animate: "fast", range: "min"});
-                                        $("#castVolume").on("slidestop", playQueue.onCastVolumeChanged);
-                                    </script>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <img alt="Cast on" id="castOn" src="<spring:theme code='castIdleImage'/>" onclick="playQueue.CastPlayer.launchCastApp()" style="cursor:pointer; display:none">
-                            <img alt="Cast off" id="castOff" src="<spring:theme code='castActiveImage'/>" onclick="playQueue.CastPlayer.stopCastApp()" style="cursor:pointer; display:none">
-                        </td>
-                    </c:if>
-
-                    <c:if test="${model.user.streamRole and not model.player.web}">
-                        <td>
-                            <img alt="Start" id="start" src="<spring:theme code='castPlayImage'/>" onclick="playQueue.onStart()" style="cursor:pointer">
-                            <img alt="Stop" id="stop" src="<spring:theme code='castPauseImage'/>" onclick="playQueue.onStop()" style="cursor:pointer; display:none">
-                        </td>
-                    </c:if>
-
-                    <c:if test="${model.player.jukebox}">
-                        <td style="white-space:nowrap;">
-                            <img src="<spring:theme code='volumeImage'/>" alt="">
-                        </td>
-                        <td style="white-space:nowrap;">
-                            <div id="jukeboxVolume" style="width:80px;height:4px"></div>
-                            <script type="text/javascript">
-                                $("#jukeboxVolume").slider({max: 100, value: 50, animate: "fast", range: "min"});
-                                $("#jukeboxVolume").on("slidestop", playQueue.onJukeboxVolumeChanged);
-                            </script>
-                        </td>
-                    </c:if>
-
-                    <c:if test="${model.player.web}">
-                        <td><span class="header">
-                            <img src="<spring:theme code='backImage'/>" alt="Play previous" title="Play previous" onclick="playQueue.onPrevious()" style="cursor:pointer"></span>
-                        </td>
-                        <td><span class="header">
-                            <img src="<spring:theme code='forwardImage'/>" alt="Play next" title="Play next" onclick="playQueue.onNext('OFF')" style="cursor:pointer"></span> |
-                        </td>
-                    </c:if>
-
-                    <td style="white-space:nowrap;">
-                      <span class="header">
-                        <a href="javascript:playQueue.onClear()" class="player-control">
-                            <img src="<spring:theme code='clearImage'/>" alt="Clear playlist" title="Clear playlist" style="cursor:pointer; height:18px">
-                        </a>
-                      </span> |</td>
-
-                    <td style="white-space:nowrap;">
-                      <span class="header">
-                        <a href="javascript:playQueue.onShuffle()" id="shuffleQueue" class="player-control">
-                            <img src="<spring:theme code='shuffleImage'/>" alt="Shuffle" title="Shuffle" style="cursor:pointer; height:18px">
-                        </a>
-                      </span> |</td>
-
-                    <c:if test="${model.player.web or model.player.jukebox or model.player.external}">
-                        <td style="white-space:nowrap;">
-                          <span class="header">
-                            <a href="javascript:playQueue.onToggleRepeat()" id="repeatQueue" class="player-control">
-                              <img id="toggleRepeat" src="<spring:theme code='repeatOff'/>" alt="Toggle repeat" title="Toggle repeat" style="cursor:pointer; height:18px">
-                            </a>
-                          </span> |</td>
-                    </c:if>
-
-                    <td style="white-space:nowrap;">
-                      <span class="header">
-                        <a href="javascript:playQueue.onUndo()" id="undoQueue" class="player-control">
-                          <img src="<spring:theme code='undoImage'/>" alt="Undo" title="Undo" style="cursor:pointer; height:18px">
-                        </a>
-                      </span>  |</td>
-
-                    <c:if test="${model.user.settingsRole}">
-                        <td style="white-space:nowrap;">
-                          <span class="header">
-                            <a href="playerSettings.view?id=${model.player.id}" target="main" class="player-control">
-                              <img src="<spring:theme code='settingsImage'/>" alt="Settings" title="Settings" style="cursor:pointer; height:18px">
-                            </a>
-                          </span> |</td>
-                    </c:if>
-
-                    <td style="white-space:nowrap;"><select id="moreActions" onchange="playQueue.actionSelected(this.options[selectedIndex].id)">
-                        <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
-                        <optgroup label="<fmt:message key='playlist.more.playlist'/>">
-                            <option id="savePlayQueue"><fmt:message key="playlist.saveplayqueue"/></option>
-                            <option id="loadPlayQueue"><fmt:message key="playlist.loadplayqueue"/></option>
-                            <option id="savePlaylist"><fmt:message key="playlist.save"/></option>
-                            <c:if test="${model.user.downloadRole}">
-                            <option id="downloadPlaylist"><fmt:message key="common.download"/></option>
-                            </c:if>
-                            <c:if test="${model.user.shareRole}">
-                            <option id="sharePlaylist"><fmt:message key="main.more.share"/></option>
-                            </c:if>
-                            <option id="sortByTrack"><fmt:message key="playlist.more.sortbytrack"/></option>
-                            <option id="sortByAlbum"><fmt:message key="playlist.more.sortbyalbum"/></option>
-                            <option id="sortByArtist"><fmt:message key="playlist.more.sortbyartist"/></option>
-                        </optgroup>
-                        <optgroup label="<fmt:message key='playlist.more.selection'/>">
-                            <option id="selectAll"><fmt:message key="playlist.more.selectall"/></option>
-                            <option id="selectNone"><fmt:message key="playlist.more.selectnone"/></option>
-                            <option id="removeSelected"><fmt:message key="playlist.remove"/></option>
-                            <c:if test="${model.user.downloadRole}">
-                                <option id="download"><fmt:message key="common.download"/></option>
-                            </c:if>
-                            <option id="appendPlaylist"><fmt:message key="playlist.append"/></option>
-                        </optgroup>
-                    </select>
-                    </td>
-
-                    <c:if test="${not model.autoHide}">
-                    <td style="white-space:nowrap; text-align:right; width:100%; padding-right:1.5em">
-                      <a href="javascript:playQueue.onTogglePlayQueue(!playQueue.isVisible)">
-                        <img class="playqueue-shown" src="<spring:theme code='playQueueHide'/>" alt="Hide play queue" title="Hide play queue" style="cursor:pointer; height:18px;"/>
-                        <img class="playqueue-hidden" src="<spring:theme code='playQueueShow'/>" alt="Show play queue" title="Show play queue" style="cursor:pointer; height:18px; display: none;"/>
-                      </a>
-                    </td>
-                    </c:if>
-
-                </tr></table>
+        <div id="castPlayer" style="display: none">
+            <div style="float:left">
+                <img alt="Play" id="castPlay" src="<spring:theme code='castPlayImage'/>" onclick="playQueue.CastPlayer.playCast()" style="cursor:pointer">
+                <img alt="Pause" id="castPause" src="<spring:theme code='castPauseImage'/>" onclick="playQueue.CastPlayer.pauseCast()" style="cursor:pointer; display:none">
+                <img alt="Mute on" id="castMuteOn" src="<spring:theme code='volumeImage'/>" onclick="playQueue.CastPlayer.castMuteOn()" style="cursor:pointer">
+                <img alt="Mute off" id="castMuteOff" src="<spring:theme code='muteImage'/>" onclick="playQueue.CastPlayer.castMuteOff()" style="cursor:pointer; display:none">
+            </div>
+            <div style="float:left">
+                <div id="castVolume" style="width:80px;height:4px;margin-left:10px;margin-right:10px;margin-top:8px"></div>
+                <script type="text/javascript">
+                    $("#castVolume").slider({max: 100, value: 50, animate: "fast", range: "min"});
+                    $("#castVolume").on("slidestop", playQueue.onCastVolumeChanged);
+                </script>
+            </div>
         </div>
-    </c:otherwise>
-</c:choose>
+    </div>
+    <div>
+        <img alt="Cast on" id="castOn" src="<spring:theme code='castIdleImage'/>" onclick="playQueue.CastPlayer.launchCastApp()" style="cursor:pointer; display:none">
+        <img alt="Cast off" id="castOff" src="<spring:theme code='castActiveImage'/>" onclick="playQueue.CastPlayer.stopCastApp()" style="cursor:pointer; display:none">
+    </div>
+  </c:if>
+
+  <c:if test="${model.user.streamRole and not model.player.web}">
+    <div>
+        <img alt="Start" id="start" src="<spring:theme code='castPlayImage'/>" onclick="playQueue.onStart()" style="cursor:pointer">
+        <img alt="Stop" id="stop" src="<spring:theme code='castPauseImage'/>" onclick="playQueue.onStop()" style="cursor:pointer; display:none">
+    </div>
+  </c:if>
+
+  <c:if test="${model.player.jukebox}">
+    <div style="white-space:nowrap;">
+        <img src="<spring:theme code='volumeImage'/>" alt="">
+    </div>
+    <div style="white-space:nowrap;">
+        <div id="jukeboxVolume" style="width:80px;height:4px"></div>
+        <script type="text/javascript">
+            $("#jukeboxVolume").slider({max: 100, value: 50, animate: "fast", range: "min"});
+            $("#jukeboxVolume").on("slidestop", playQueue.onJukeboxVolumeChanged);
+        </script>
+    </div>
+  </c:if>
+
+  <c:if test="${model.player.web}">
+    <div><span class="header">
+        <img src="<spring:theme code='backImage'/>" alt="Play previous" title="Play previous" onclick="playQueue.onPrevious()" style="cursor:pointer"></span>
+    </div>
+    <div><span class="header">
+        <img src="<spring:theme code='forwardImage'/>" alt="Play next" title="Play next" onclick="playQueue.onNext('OFF')" style="cursor:pointer"></span> |
+    </div>
+  </c:if>
+
+    <div style="white-space:nowrap;">
+        <span class="header">
+            <a href="javascript:playQueue.onClear()" class="player-control">
+                <img src="<spring:theme code='clearImage'/>" alt="Clear playlist" title="Clear playlist" style="cursor:pointer; height:18px">
+            </a>
+        </span> |
+    </div>
+
+    <div style="white-space:nowrap;">
+        <span class="header">
+            <a href="javascript:playQueue.onShuffle()" id="shuffleQueue" class="player-control">
+                <img src="<spring:theme code='shuffleImage'/>" alt="Shuffle" title="Shuffle" style="cursor:pointer; height:18px">
+            </a>
+        </span> |
+    </div>
+
+  <c:if test="${model.player.web or model.player.jukebox or model.player.external}">
+    <div style="white-space:nowrap;">
+        <span class="header">
+            <a href="javascript:playQueue.onToggleRepeat()" id="repeatQueue" class="player-control">
+                <img id="toggleRepeat" src="<spring:theme code='repeatOff'/>" alt="Toggle repeat" title="Toggle repeat" style="cursor:pointer; height:18px">
+            </a>
+        </span> |
+    </div>
+  </c:if>
+
+    <div style="white-space:nowrap;">
+        <span class="header">
+            <a href="javascript:playQueue.onUndo()" id="undoQueue" class="player-control">
+                <img src="<spring:theme code='undoImage'/>" alt="Undo" title="Undo" style="cursor:pointer; height:18px">
+            </a>
+        </span>  |
+    </div>
+
+  <c:if test="${model.user.settingsRole}">
+    <div style="white-space:nowrap;">
+        <span class="header">
+            <a href="playerSettings.view?id=${model.player.id}" target="main" class="player-control">
+                <img src="<spring:theme code='settingsImage'/>" alt="Settings" title="Settings" style="cursor:pointer; height:18px">
+            </a>
+        </span> |
+    </div>
+  </c:if>
+
+    <div style="white-space:nowrap;">
+        <span class="header">
+            <select id="moreActions" onchange="playQueue.actionSelected(this.options[selectedIndex].id)">
+                <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
+                <optgroup label="<fmt:message key='playlist.more.playlist'/>">
+	                <option id="savePlayQueue"><fmt:message key="playlist.saveplayqueue"/></option>
+	                <option id="loadPlayQueue"><fmt:message key="playlist.loadplayqueue"/></option>
+	                <option id="savePlaylist"><fmt:message key="playlist.save"/></option>
+	              <c:if test="${model.user.downloadRole}">
+	                <option id="downloadPlaylist"><fmt:message key="common.download"/></option>
+	              </c:if>
+                  <c:if test="${model.user.shareRole}">
+                    <option id="sharePlaylist"><fmt:message key="main.more.share"/></option>
+                  </c:if>
+	                <option id="sortByTrack"><fmt:message key="playlist.more.sortbytrack"/></option>
+	                <option id="sortByAlbum"><fmt:message key="playlist.more.sortbyalbum"/></option>
+	                <option id="sortByArtist"><fmt:message key="playlist.more.sortbyartist"/></option>
+	            </optgroup>
+	            <optgroup label="<fmt:message key='playlist.more.selection'/>">
+	                <option id="selectAll"><fmt:message key="playlist.more.selectall"/></option>
+	                <option id="selectNone"><fmt:message key="playlist.more.selectnone"/></option>
+	                <option id="removeSelected"><fmt:message key="playlist.remove"/></option>
+	              <c:if test="${model.user.downloadRole}">
+	                <option id="download"><fmt:message key="common.download"/></option>
+	              </c:if>
+	                <option id="appendPlaylist"><fmt:message key="playlist.append"/></option>
+	            </optgroup>
+	        </select>
+        </span>
+    </div>
+
+  <c:if test="${not model.autoHide}">
+    <div style="white-space:nowrap; text-align:right; width:100%; padding-right:1.5em">
+        <a href="javascript:playQueue.onTogglePlayQueue(!playQueue.isVisible)">
+            <img class="playqueue-shown" src="<spring:theme code='playQueueHide'/>" alt="Hide play queue" title="Hide play queue" style="cursor:pointer; height:18px;"/>
+            <img class="playqueue-hidden" src="<spring:theme code='playQueueShow'/>" alt="Show play queue" title="Show play queue" style="cursor:pointer; height:18px; display: none;"/>
+        </a>
+    </div>
+  </c:if>
+
+  </c:otherwise>
+  </c:choose>
+</div>
 
 <div id="dialog-select-playlist" title="<fmt:message key='main.addtoplaylist.title'/>" style="display: none;">
     <p><fmt:message key="main.addtoplaylist.text"/></p>

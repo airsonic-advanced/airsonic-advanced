@@ -530,6 +530,15 @@ img {
     color: black;
 }
 
+.playqueue-controlbar {
+    width: 100%;
+    padding-top: 10px;
+    z-index: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
 /*
  * Styles related to java jukebox controls
  */
