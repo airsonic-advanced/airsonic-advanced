@@ -905,6 +905,9 @@
     $(document).ready(() => playQueue.init());
 </script>
 
+<!-- marker div so we can get parent -->
+<div id="playqueue-container-child"></div>
+
 <table class="music indent hover nowrap stripe compact hide-table-header" id="playQueueMusic" style="cursor:pointer; width: 100%;"></table>
 
 <c:choose>
