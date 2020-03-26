@@ -352,22 +352,22 @@
         playQueuePlayStatusCallback(status) {
             if (this.isJavaJukeboxPresent()) {
                 if (status == "PLAYING") {
-                    this.javaJukeboxStartCallback();
+                    JavaJukeBox.javaJukeboxStartCallback();
                 } else {
-                    this.javaJukeboxStopCallback();
+                    JavaJukeBox.javaJukeboxStopCallback();
                 }
             }
         },
 
         jukeBoxPositionCallback(pos) {
             if (this.isJavaJukeboxPresent()) {
-                this.javaJukeboxPositionCallback(pos);
+                JavaJukeBox.javaJukeboxPositionCallback(pos);
             }
         },
         jukeBoxGainCallback(gain) {
             $("#jukeboxVolume").slider("option", "value", Math.floor(gain * 100)); // update UI
             if (this.isJavaJukeboxPresent()) {
-                this.javaJukeboxGainCallback(gain);
+                JavaJukeBox.javaJukeboxGainCallback(gain);
             }
         },
         onJukeboxVolumeChanged() {
@@ -525,7 +525,7 @@
           </c:when>
           <c:otherwise>
             if (this.isJavaJukeboxPresent()) {
-                this.updateJavaJukeboxPlayerControlBar(song, location.offset / 1000);
+                JavaJukeBox.updateJavaJukeboxPlayerControlBar(song, location.offset / 1000);
             }
           </c:otherwise>
           </c:choose>

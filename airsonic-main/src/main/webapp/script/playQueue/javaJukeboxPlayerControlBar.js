@@ -1,114 +1,118 @@
 
 // assume websockets are loaded
 
-var songPlayingTimerId = null;
+var JavaJukeBox = {
+  songPlayingTimerId: null,
 
-var javaJukeboxPlayerModel = {
-  currentStreamUrl : null,
-  playing : false,
-  songDuration : null,
-  songPosition : 0
-};
+  javaJukeboxPlayerModel: {
+    currentStreamUrl: null,
+    playing: false,
+    songDuration: null,
+    songPosition: 0
+  },
 
-function refreshView() {
-  if (javaJukeboxPlayerModel.playing == true) {
-    if (songPlayingTimerId == null) {
-      songPlayingTimerId = setInterval(songPlayingTimer, 1000);
+  refreshView() {
+    if (this.javaJukeboxPlayerModel.playing == true) {
+      if (this.songPlayingTimerId == null) {
+        var jb = this;
+        this.songPlayingTimerId = setInterval(jb.songPlayingTimer, 1000);
+      }
+      document.getElementById('startIcon').style.display = 'none';
+      document.getElementById('pauseIcon').style.display = 'block';
+    } else {
+      if (this.songPlayingTimerId != null) {
+        this.clearInterval(this.songPlayingTimerId);
+        this.songPlayingTimerId = null;
+      }
+      document.getElementById('pauseIcon').style.display = 'none';
+      document.getElementById('startIcon').style.display = 'block';
     }
-    document.getElementById('startIcon').style.display = 'none';
-    document.getElementById('pauseIcon').style.display = 'block';
-  } else {
-    if (songPlayingTimerId != null) {
-        clearInterval(songPlayingTimerId);
-        songPlayingTimerId = null;
+    if (this.javaJukeboxPlayerModel.songDuration == null) {
+      $("#playingDurationDisplay").html("-:--");
+    } else {
+      $("#playingDurationDisplay").html(this.songTimeAsString(this.javaJukeboxPlayerModel.songDuration));
     }
-    document.getElementById('pauseIcon').style.display = 'none';
-    document.getElementById('startIcon').style.display = 'block';
+    $("#playingPositionDisplay").html(this.songTimeAsString(this.javaJukeboxPlayerModel.songPosition));
+    $("#javaJukeboxSongPositionSlider").slider("value", this.javaJukeboxPlayerModel.songPosition);
+  },
+
+  onJavaJukeboxStart() {
+    StompClient.send("/app/playqueues/" + playQueue.playerId + "/start", "");
+  },
+
+  javaJukeboxStartCallback() {
+    this.javaJukeboxPlayerModel.playing = true;
+    this.refreshView();
   }
-  if (javaJukeboxPlayerModel.songDuration == null) {
-    $("#playingDurationDisplay").html("-:--");
-  } else {
-    $("#playingDurationDisplay").html(songTimeAsString(javaJukeboxPlayerModel.songDuration));
-  }
-  $("#playingPositionDisplay").html(songTimeAsString(javaJukeboxPlayerModel.songPosition));
-  $("#javaJukeboxSongPositionSlider").slider("value",javaJukeboxPlayerModel.songPosition);
-}
 
-function onJavaJukeboxStart() {
-  StompClient.send("/app/playqueues/" + playerId + "/start", "");
-}
+  onJavaJukeboxStop() {
+    StompClient.send("/app/playqueues/" + playQueue.playerId + "/stop", "");
+  },
 
-function javaJukeboxStartCallback() {
-  javaJukeboxPlayerModel.playing = true;
-  refreshView();
-}
+  javaJukeboxStopCallback() {
+    this.javaJukeboxPlayerModel.playing = false;
+    this.refreshView();
+  },
 
-function onJavaJukeboxStop() {
-  StompClient.send("/app/playqueues/" + playerId + "/stop", "");
-}
-
-function javaJukeboxStopCallback() {
-  javaJukeboxPlayerModel.playing = false;
-  refreshView();
-}
-
-function onJavaJukeboxVolumeChanged() {
+  onJavaJukeboxVolumeChanged() {
     var value = $("#javaJukeboxVolumeSlider").slider("value");
     var gain = value / 100;
-    StompClient.send("/app/playqueues/" + playerId + "/jukebox/gain", gain);
-}
+    StompClient.send("/app/playqueues/" + playQueue.playerId + "/jukebox/gain", gain);
+  },
 
-function javaJukeboxGainCallback(gain) {
+  javaJukeboxGainCallback(gain) {
     $("#javaJukeboxVolumeSlider").slider("option", "value", Math.floor(gain * 100));
-}
+  },
 
-function onJavaJukeboxPositionChanged() {
+  onJavaJukeboxPositionChanged() {
     var pos = $("#javaJukeboxSongPositionSlider").slider("value");
-    StompClient.send("/app/playqueues/" + playerId + "/jukebox/position", pos);
-}
+    StompClient.send("/app/playqueues/" + playQueue.playerId + "/jukebox/position", pos);
+  },
 
-function javaJukeboxPositionCallback(pos) {
-    javaJukeboxPlayerModel.songPosition = pos || 0;
-    refreshView();
-}
+  javaJukeboxPositionCallback(pos) {
+    this.javaJukeboxPlayerModel.songPosition = pos || 0;
+    this.refreshView();
+  },
 
-function updateJavaJukeboxPlayerControlBar(song, pos) {
+  updateJavaJukeboxPlayerControlBar(song, pos) {
     if (song != null) {
         var playingStream = song.streamUrl;
-        if (playingStream != javaJukeboxPlayerModel.currentStreamUrl) {
-            javaJukeboxPlayerModel.currentStreamUrl = playingStream;
-            newSongPlaying(song, pos);
+        if (playingStream != this.javaJukeboxPlayerModel.currentStreamUrl) {
+            this.javaJukeboxPlayerModel.currentStreamUrl = playingStream;
+            this.newSongPlaying(song, pos);
         }
     }
-}
+  },
 
-function songTimeAsString(timeInSeconds) {
+  songTimeAsString(timeInSeconds) {
     var minutes = Math.floor(timeInSeconds / 60);
     var seconds = timeInSeconds - minutes * 60;
 
     return minutes + ":" + ("00" + seconds).slice(-2);
-}
+  },
 
-function newSongPlaying(song, pos) {
-    javaJukeboxPlayerModel.songDuration = song.duration;
-    $("#javaJukeboxSongPositionSlider").slider({max: javaJukeboxPlayerModel.songDuration, value: 0, animate: "fast", range: "min"});
-    javaJukeboxPlayerModel.playing = true;
-    javaJukeboxPlayerModel.songPosition = pos || 0;
-    refreshView();
-}
+  newSongPlaying(song, pos) {
+    this.javaJukeboxPlayerModel.songDuration = song.duration;
+    $("#javaJukeboxSongPositionSlider").slider({max: this.javaJukeboxPlayerModel.songDuration, value: 0, animate: "fast", range: "min"});
+    this.javaJukeboxPlayerModel.playing = true;
+    this.javaJukeboxPlayerModel.songPosition = pos || 0;
+    this.refreshView();
+  },
 
-function songPlayingTimer() {
-    javaJukeboxPlayerModel.songPosition += 1;
-    refreshView();
-}
+  songPlayingTimer() {
+    this.javaJukeboxPlayerModel.songPosition += 1;
+    this.refreshView();
+  },
 
-function initJavaJukeboxPlayerControlBar() {
+  initJavaJukeboxPlayerControlBar() {
+    var jb = this;
     $("#javaJukeboxSongPositionSlider").slider({max: 100, value: 0, animate: "fast", range: "min"});
-    $("#javaJukeboxSongPositionSlider").slider("value",0);
-    $("#javaJukeboxSongPositionSlider").on("slidestop", onJavaJukeboxPositionChanged);
+    $("#javaJukeboxSongPositionSlider").slider("value", 0);
+    $("#javaJukeboxSongPositionSlider").on("slidestop", function() { jb.onJavaJukeboxPositionChanged(); });
 
     $("#javaJukeboxVolumeSlider").slider({max: 100, value: 50, animate: "fast", range: "min"});
-    $("#javaJukeboxVolumeSlider").on("slidestop", onJavaJukeboxVolumeChanged);
+    $("#javaJukeboxVolumeSlider").on("slidestop", function() { jb.onJavaJukeboxVolumeChanged(); });
 
-    refreshView();
+    this.refreshView();
+  }
 }
