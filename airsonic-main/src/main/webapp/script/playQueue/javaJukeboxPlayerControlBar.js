@@ -15,13 +15,13 @@ var JavaJukeBox = {
     if (this.javaJukeboxPlayerModel.playing == true) {
       if (this.songPlayingTimerId == null) {
         var jb = this;
-        this.songPlayingTimerId = setInterval(jb.songPlayingTimer, 1000);
+        this.songPlayingTimerId = setInterval(function() { jb.songPlayingTimer(); }, 1000);
       }
       document.getElementById('startIcon').style.display = 'none';
       document.getElementById('pauseIcon').style.display = 'block';
     } else {
       if (this.songPlayingTimerId != null) {
-        this.clearInterval(this.songPlayingTimerId);
+        clearInterval(this.songPlayingTimerId);
         this.songPlayingTimerId = null;
       }
       document.getElementById('pauseIcon').style.display = 'none';
@@ -43,7 +43,7 @@ var JavaJukeBox = {
   javaJukeboxStartCallback() {
     this.javaJukeboxPlayerModel.playing = true;
     this.refreshView();
-  }
+  },
 
   onJavaJukeboxStop() {
     StompClient.send("/app/playqueues/" + playQueue.playerId + "/stop", "");
