@@ -899,6 +899,17 @@
             } else {
                 this.musicTable.rows().deselect();
             }
+        },
+
+        onPlayerChanged(playerId) {
+            var playqueueParent = $("#playqueue-container-child").parent();
+            $.ajax("http://localhost:8080/playQueue.view?player=" + playerId, {
+              success: data => {
+                  top.StompClient.unsubscribeOwner("playQueue.jsp");
+                  playqueueParent.html(data);
+              },
+              method: "GET",
+            });
         }
     };
 
@@ -913,7 +924,7 @@
 <div class="bgcolor2 playqueue-controlbar">
   <c:if test="${model.user.settingsRole and model.players.size() > 1}">
     <div style="padding-right: 5px">
-        <select name="player" onchange="location='playQueue.view?player=' + options[selectedIndex].value;">
+        <select name="player" onchange="playQueue.onPlayerChanged(options[selectedIndex].value)">
           <c:forEach items="${model.players}" var="player">
             <option ${player.id eq model.player.id ? "selected" : ""} value="${player.id}">${player.shortDescription}</option>
           </c:forEach>
@@ -923,9 +934,7 @@
 
   <c:choose>
   <c:when test="${model.player.javaJukebox}">
-    <!--<div id="javaJukeboxPlayerControlBarContainer">-->
-        <%@ include file="javaJukeboxPlayerControlBar.jspf" %>
-    <!--</div>-->
+    <%@ include file="javaJukeboxPlayerControlBar.jspf" %>
   </c:when>
   <c:otherwise>
   <c:if test="${model.player.web}">
