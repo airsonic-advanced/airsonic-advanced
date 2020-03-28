@@ -18,19 +18,36 @@
             });
 
             top.StompClient.onConnect.push(function() {
-                $("#connectionStatus img").attr("src", "<spring:theme code='connectedImage'/>");
-                $("#connectionStatus div").text("<fmt:message key='top.connected' />");
+                setConnectedImage();
             });
 
             top.StompClient.onDisconnect.push(function() {
-                $("#connectionStatus img").attr("src", "<spring:theme code='disconnectedImage'/>");
-                $("#connectionStatus div").text("<fmt:message key='top.disconnected' />");
+                setDisconnectedImage();
             });
 
             top.StompClient.onConnecting.push(function() {
-                $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
-                $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
+                setConnectingImage();
             });
+
+            // in case this frame instantiates too late
+            if (top.StompClient.state == 'connected') {
+                setConnectedImage();
+            }
+        }
+
+        function setConnectedImage() {
+            $("#connectionStatus img").attr("src", "<spring:theme code='connectedImage'/>");
+            $("#connectionStatus div").text("<fmt:message key='top.connected' />");
+        }
+
+        function setDisconnectedImage() {
+            $("#connectionStatus img").attr("src", "<spring:theme code='disconnectedImage'/>");
+            $("#connectionStatus div").text("<fmt:message key='top.disconnected' />");
+        }
+
+        function setConnectingImage() {
+            $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
+            $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
         }
 
         function toggleLeftFrameCallback(show) {
@@ -85,8 +102,7 @@
         }
         
         function toggleConnectionStatus() {
-            $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
-            $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
+            setConnectingImage();
             if (top.StompClient.state == 'connected') {
                 top.StompClient.disconnect();
             } else if (top.StompClient.state == 'dc') {
