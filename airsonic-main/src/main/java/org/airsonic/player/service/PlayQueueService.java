@@ -101,8 +101,12 @@ public class PlayQueueService {
             jukeboxService.skip(player, index, (int) (offset / 1000));
         }
 
-        runAsync(() -> brokerTemplate.convertAndSendToUser(player.getUsername(),
-                "/queue/playqueues/" + player.getId() + "/skip", ImmutableMap.of("index", index, "offset", offset)));
+        runAsync(() -> {
+            brokerTemplate.convertAndSendToUser(player.getUsername(),
+                    "/queue/playqueues/" + player.getId() + "/skip", ImmutableMap.of("index", index, "offset", offset));
+            brokerTemplate.convertAndSendToUser(player.getUsername(),
+                    "/queue/playqueues/" + player.getId() + "/playstatus", player.getPlayQueue().getStatus());
+        });
     }
 
     public void reloadSearchCriteria(Player player, String sessionId) {
