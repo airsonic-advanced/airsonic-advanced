@@ -76,7 +76,6 @@ public class PlayQueueController {
     @ResponseBody
     public Map<String, Object> getPlayer(HttpServletRequest request, HttpServletResponse response) throws Exception {
         Player player = playerService.getPlayer(request, response);
-        return ImmutableMap.of("id", player.getId(), "description", player.getDescription(), "tech",
-                player.getTechnology());
+        return ImmutableMap.of("id", player.getId(), "description", player.getShortDescription(), "tech", player.getTechnology());
     }
 }
