@@ -3,9 +3,10 @@
 <%@ include file="jquery.jsp" %>
 <%@ include file="table.jsp" %>
 <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
-<script type="text/javascript" src="<c:url value='/script/playQueueCast.js'/>"></script>
 <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
 <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
+<script type="text/javascript" src="<c:url value='/script/playQueueCast.js'/>"></script>
+<script type="text/javascript" src="<c:url value='/script/playQueue/javaJukeboxPlayerControlBar.js'/>"></script>
 <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/speed/speed.min.css'/>">
 <style type="text/css">
     .ui-slider .ui-slider-handle {
@@ -68,7 +69,8 @@
     };
     
     var playQueue = {
-        playerId: ${model.player.id},
+        // Changed when player is changed
+        player: {},
 
         // These variables store the media player state, received via websockets in the
         // playQueueCallback function below.
@@ -180,7 +182,7 @@
                       render(title, type, row) {
                           if (type == "display") {
                               var img = "<img class='currentImage' src=\"<spring:theme code='currentImage'/>\" alt='' style='display: none; padding-right: 0.5em' />";
-                              if (!${model.player.externalWithPlaylist}) {
+                              if (playQueue.player.tech != "EXTERNAL_WITH_PLAYLIST") {
                                   return img + $("<a>").addClass("titleUrl").attr("href", "javascript:void(0)").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
                               } else {
                                   return img + $("<span>").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
@@ -268,33 +270,6 @@
                 },
                 '/user/queue/playlists/create/playqueue'(msg) {
                     pq.playlistUpdatedCallback(JSON.parse(msg.body), "<fmt:message key='playlist.toast.saveasplaylist'/>");
-                },
-
-                // Playqueues
-                '/user/queue/playqueues/${model.player.id}/playstatus'(msg) {
-                    pq.playQueuePlayStatusCallback(JSON.parse(msg.body));
-                },
-                '/user/queue/playqueues/${model.player.id}/updated'(msg) {
-                    pq.playQueueCallback(JSON.parse(msg.body));
-                },
-                '/user/queue/playqueues/${model.player.id}/skip'(msg) {
-                    pq.playQueueSkipCallback(JSON.parse(msg.body));
-                },
-                '/user/queue/playqueues/${model.player.id}/save'(msg) {
-                    $().toastmessage("showSuccessToast", "<fmt:message key='playlist.toast.saveplayqueue'/> (" + JSON.parse(msg.body) + ")");
-                },
-                '/user/queue/playqueues/${model.player.id}/repeat'(msg) {
-                    pq.playQueueRepeatStatusCallback(JSON.parse(msg.body));
-                },
-                '/user/queue/playqueues/${model.player.id}/jukebox/gain'(msg) {
-                    pq.jukeBoxGainCallback(JSON.parse(msg.body));
-                },
-                '/user/queue/playqueues/${model.player.id}/jukebox/position'(msg) {
-                    pq.jukeBoxPositionCallback(JSON.parse(msg.body));
-                },
-                //one-time
-                '/app/playqueues/${model.player.id}/get'(msg) {
-                    pq.playQueueCallback(JSON.parse(msg.body));
                 }
             });
 
@@ -305,9 +280,103 @@
                     }
                 }});
 
-            <c:if test="${model.player.web}">pq.createMediaElementPlayer();</c:if>
+            pq.createMediaElementPlayer();
+            JavaJukeBox.initJavaJukeboxPlayerControlBar();
             <c:if test="${model.autoHide}">pq.initAutoHide();</c:if>
             pq.onTogglePlayQueue(${!model.autoHide});
+
+            // load default player
+            pq.onPlayerChanged(null);
+        },
+
+        onPlayerChanged(playerId) {
+            var pq = this;
+            var playerUrl = "<c:url value='/playQueue/player'/>";
+            if (playerId) {
+                playerUrl = playerUrl + "?player=" + playerId;
+            }
+            // use ajax to set player cookie (not possible via websocket)
+            $.ajax(playerUrl, {
+              method: "GET",
+              success: player => {
+                  pq.onStop();
+                  // emulate callback because callbacks for the player will be deregistered by the time call returns
+                  // TODO if error happens, we won't receive it
+                  pq.playQueuePlayStatusCallback("STOPPED");
+
+                  //reset everything
+                  $(".player-tech").hide();
+                  pq.unsubscribePlayerSpecificCallbacks();
+                  pq.currentStreamUrl = null;
+                  pq.currentSongIndex = -1;
+                  if (pq.player.tech == 'JAVA_JUKEBOX') {
+                      JavaJukeBox.reset();
+                  } else if (pq.player.tech == 'WEB') {
+                      if (this.CastPlayer.castSession) {
+                          pq.CastPlayer.stopCastApp();
+                      }
+                      // no need to change src on audioPlayer because start button will see currentSongIndex
+                      //pq.audioPlayer.setSrc(null);
+                  }
+
+                  //switch to new player
+                  $("#playerSelector").val(player.id)
+                  pq.player = player;
+                  $(".player-tech-" + player.tech.toLowerCase()).show();
+                  if (player.tech == 'JAVA_JUKEBOX') {
+                      //show regular jukebox controls also
+                      $(".player-tech-jukebox").show();
+                  }
+                  if (player.tech != 'WEB') {
+                      $(".player-tech-non-web").show();
+                  }
+                  pq.subscribePlayerSpecificCallbacks();
+              }
+            });
+        },
+
+        playerSpecificCallbacks: {},
+
+        unsubscribePlayerSpecificCallbacks() {
+            for (var topic in this.playerSpecificCallbacks) {
+                top.StompClient.unsubscribe(topic, "playQueue.jsp");
+                delete this.playerSpecificCallbacks[topic];
+            }
+        },
+
+        subscribePlayerSpecificCallbacks() {
+            if (this.player.id) {
+                var pq = this;
+
+                // Playqueues
+                pq.playerSpecificCallbacks['/user/queue/playqueues/' + this.player.id + '/playstatus'] = function(msg) {
+                    pq.playQueuePlayStatusCallback(JSON.parse(msg.body));
+                };
+                pq.playerSpecificCallbacks['/user/queue/playqueues/' + this.player.id + '/updated'] = function(msg) {
+                    pq.playQueueCallback(JSON.parse(msg.body));
+                };
+                pq.playerSpecificCallbacks['/user/queue/playqueues/' + this.player.id + '/skip'] = function(msg) {
+                    pq.playQueueSkipCallback(JSON.parse(msg.body));
+                };
+                pq.playerSpecificCallbacks['/user/queue/playqueues/' + this.player.id + '/save'] = function(msg) {
+                    $().toastmessage("showSuccessToast", "<fmt:message key='playlist.toast.saveplayqueue'/> (" + JSON.parse(msg.body) + ")");
+                };
+                pq.playerSpecificCallbacks['/user/queue/playqueues/' + this.player.id + '/repeat'] = function(msg) {
+                    pq.playQueueRepeatStatusCallback(JSON.parse(msg.body));
+                };
+                pq.playerSpecificCallbacks['/user/queue/playqueues/' + this.player.id + '/jukebox/gain'] = function(msg) {
+                    pq.jukeBoxGainCallback(JSON.parse(msg.body));
+                };
+                pq.playerSpecificCallbacks['/user/queue/playqueues/' + this.player.id + '/jukebox/position'] = function(msg) {
+                    pq.jukeBoxPositionCallback(JSON.parse(msg.body));
+                };
+                //one-time
+                pq.playerSpecificCallbacks['/app/playqueues/' + this.player.id + '/get'] = function(msg) {
+                    pq.playQueueCallback(JSON.parse(msg.body));
+                };
+
+                top.StompClient.subscribe("playQueue.jsp", pq.playerSpecificCallbacks);
+            }
         },
 
         // Show/hide play queue
@@ -345,34 +414,17 @@
             });
         },
 
-        isJavaJukeboxPresent() {
-            return typeof JavaJukeBox != "undefined";
-        },
-
-        playQueuePlayStatusCallback(status) {
-            if (this.isJavaJukeboxPresent()) {
-                if (status == "PLAYING") {
-                    JavaJukeBox.javaJukeboxStartCallback();
-                } else {
-                    JavaJukeBox.javaJukeboxStopCallback();
-                }
-            }
-        },
-
         jukeBoxPositionCallback(pos) {
-            if (this.isJavaJukeboxPresent()) {
+            if (this.player.tech == 'JAVA_JUKEBOX') {
                 JavaJukeBox.javaJukeboxPositionCallback(pos);
             }
         },
         jukeBoxGainCallback(gain) {
             $("#jukeboxVolume").slider("option", "value", Math.floor(gain * 100)); // update UI
-            if (this.isJavaJukeboxPresent()) {
-                JavaJukeBox.javaJukeboxGainCallback(gain);
-            }
         },
         onJukeboxVolumeChanged() {
             var value = parseInt($("#jukeboxVolume").slider("option", "value"));
-            top.StompClient.send("/app/playqueues/${model.player.id}/jukebox/gain", value / 100);
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/jukebox/gain", value / 100);
         },
         onCastVolumeChanged() {
             var value = parseInt($("#castVolume").slider("option", "value"));
@@ -391,30 +443,30 @@
                 if (volume < 0) volume = 0;
                 this.CastPlayer.setCastVolume(volume / 100, false);
                 $("#castVolume").slider("option", "value", volume); // Need to update UI
-            } else if ($('#audioPlayer').get(0)) {
-                var volume = parseFloat($('#audioPlayer').get(0).volume)*100 + gain;
+            } else if (this.player.tech == 'WEB') {
+                var volume = parseFloat(this.audioPlayer.volume)*100 + gain;
                 if (volume > 100) volume = 100;
                 if (volume < 0) volume = 0;
-                $('#audioPlayer').get(0).volume = volume / 100;
+                this.audioPlayer.volume = volume / 100;
             } else {
                 var volume = parseInt($("#jukeboxVolume").slider("option", "value")) + gain;
                 if (volume > 100) volume = 100;
                 if (volume < 0) volume = 0;
-                top.StompClient.send("/app/playqueues/${model.player.id}/jukebox/gain", volume / 100);
+                top.StompClient.send("/app/playqueues/" + this.player.id + "/jukebox/gain", volume / 100);
                 // UI updated at callback
             }
         },
 
         onNowPlayingChanged(nowPlayingInfo) {
-            if (nowPlayingInfo != null && nowPlayingInfo.streamUrl != this.currentStreamUrl && nowPlayingInfo.playerId == ${model.player.id}) {
-            <c:if test="${not model.player.web}">
-                // TODO this should be keying off skip callbacks (and skip callbacks should be getting emitted)
-                // otherwise there is an issue with the same song appearing multiple times on the playqueue (we'll always select the first)
-                this.currentStreamUrl = nowPlayingInfo.streamUrl;
-                this.currentSongIndex = this.getCurrentSongIndex();
+            if (nowPlayingInfo != null && nowPlayingInfo.streamUrl != this.currentStreamUrl && nowPlayingInfo.playerId == this.player.id) {
+                if (this.player.tech != 'WEB') {
+                    // TODO this should be keying off skip callbacks (and skip callbacks should be getting emitted)
+                    // otherwise there is an issue with the same song appearing multiple times on the playqueue (we'll always select the first)
+                    this.currentStreamUrl = nowPlayingInfo.streamUrl;
+                    this.currentSongIndex = this.getCurrentSongIndex();
 
-                this.playQueueSkipCallback({index: this.currentSongIndex, offset: 0});
-            </c:if>
+                    this.playQueueSkipCallback({index: this.currentSongIndex, offset: 0});
+                }
                 return true;
             }
             return false;
@@ -425,6 +477,7 @@
         },
 
         createMediaElementPlayer() {
+            var pq = this;
             // Manually run MediaElement.js initialization.
             this.audioPlayer = new MediaElementPlayer("audioPlayer", {
                 alwaysShowControls: true,
@@ -437,11 +490,19 @@
                     // "hack" html5 renderer and reinitialize speed
                     instance.media.rendererName = "html5";
                     instance.buildspeed(instance, instance.getElement(instance.controls), instance.getElement(instance.layers), instance.media);
+
+                    // Once playback reaches the end, go to the next song, if any.
+                    $(mediaElement).on("ended", () => pq.onEnded());
+
+                    // skip to first song if no src loaded
+                    $(".mejs__controls .mejs__button.mejs__playpause-button.mejs__play button").on("click", () => {
+                        if (!instance.src || pq.currentSongIndex == -1) {
+                            pq.onSkip(0);
+                            return false;
+                        }
+                    });
                 }
             });
-
-            // Once playback reaches the end, go to the next song, if any.
-            $('#audioPlayer').on("ended", () => this.onEnded());
         },
 
         onClear() {
@@ -450,7 +511,24 @@
             ok = confirm("<fmt:message key="playlist.confirmclear"/>");
         </c:if>
             if (ok) {
-                top.StompClient.send("/app/playqueues/${model.player.id}/clear", "");
+                top.StompClient.send("/app/playqueues/" + this.player.id + "/clear", "");
+            }
+        },
+
+        playQueuePlayStatusCallback(status) {
+            if (status == "PLAYING") {
+                $("#audioStart").hide();
+                $("#audioStop").show();
+            } else {
+                $("#audioStop").hide();
+                $("#audioStart").show();
+            }
+            if (this.player.tech == 'JAVA_JUKEBOX') {
+                if (status == "PLAYING") {
+                    JavaJukeBox.javaJukeboxStartCallback();
+                } else {
+                    JavaJukeBox.javaJukeboxStopCallback();
+                }
             }
         },
 
@@ -460,14 +538,14 @@
         onStart() {
             if (this.CastPlayer.castSession) {
                 this.CastPlayer.playCast();
-            } else if ($('#audioPlayer').get(0)) {
-                if ($('#audioPlayer').get(0).src) {
-                    $('#audioPlayer').get(0).play();  // Resume playing if the player was paused
+            } else if (this.player.tech == 'WEB') {
+                if (this.audioPlayer.src) {
+                    this.audioPlayer.play();  // Resume playing if the player was paused
                 } else {
                     this.onSkip(0);  // Start the first track if the player was not yet loaded
                 }
             } else {
-                top.StompClient.send("/app/playqueues/${model.player.id}/start", "");
+                top.StompClient.send("/app/playqueues/" + this.player.id + "/start", "");
             }
         },
 
@@ -477,17 +555,15 @@
         onStop() {
             if (this.CastPlayer.castSession) {
                 this.CastPlayer.pauseCast();
-            } else if ($('#audioPlayer').get(0)) {
-                $('#audioPlayer').get(0).pause();
+            } else if (this.player.tech == 'WEB') {
+               this.audioPlayer.pause();
             } else {
-                top.StompClient.send("/app/playqueues/${model.player.id}/stop", "");
+                top.StompClient.send("/app/playqueues/" + this.player.id + "/stop", "");
             }
         },
 
         /**
          * Toggle play/pause
-         *
-         * FIXME: Only works for the Web player for now
          */
         onToggleStartStop() {
             if (this.CastPlayer.castSession) {
@@ -497,15 +573,14 @@
                 } else {
                     this.onStart();
                 }
-            } else if ($('#audioPlayer').get(0)) {
-                var playing = $("#audioPlayer").get(0).paused != null && !$("#audioPlayer").get(0).paused;
-                if (playing) {
-                    this.onStop();
-                } else {
+            } else if (this.player.tech == 'WEB') {
+                if (this.audioPlayer.paused) {
                     this.onStart();
+                } else {
+                    this.onStop();
                 }
             } else {
-                top.StompClient.send("/app/playqueues/${model.player.id}/toggleStartStop", "");
+                top.StompClient.send("/app/playqueues/" + this.player.id + "/toggleStartStop", "");
             }
         },
 
@@ -519,17 +594,11 @@
             this.currentSongIndex = location.index;
             this.updateCurrentImage();
 
-          <c:choose>
-          <c:when test="${model.player.web}">
-            this.webSkip(song, location.offset / 1000);
-          </c:when>
-          <c:otherwise>
-            if (this.isJavaJukeboxPresent()) {
+            if (this.player.tech == 'WEB') {
+                this.webSkip(song, location.offset / 1000);
+            } else if (this.player.tech == 'JAVA_JUKEBOX') {
                 JavaJukeBox.updateJavaJukeboxPlayerControlBar(song, location.offset / 1000);
             }
-          </c:otherwise>
-          </c:choose>
-
             this.updateWindowTitle(song);
 
           <c:if test="${model.notify}">
@@ -538,14 +607,11 @@
         },
 
         onSkip(index, offset) {
-          <c:choose>
-          <c:when test="${model.player.web}">
-            this.playQueueSkipCallback({index: index, offset: offset});
-          </c:when>
-          <c:otherwise>
-            top.StompClient.send("/app/playqueues/${model.player.id}/skip", JSON.stringify({index: index, offset: offset}));
-          </c:otherwise>
-          </c:choose>
+            if (this.player.tech == 'WEB') {
+                this.playQueueSkipCallback({index: index, offset: offset});
+            } else {
+                top.StompClient.send("/app/playqueues/" + this.player.id + "/skip", JSON.stringify({index: index, offset: offset}));
+            }
         },
 
         webSkip(song, position) {
@@ -559,7 +625,7 @@
         },
 
         loadMediaElementPlayer(song, position) {
-            var player = $('#audioPlayer').get(0);
+            var player = this.audioPlayer;
 
             // Is this a new song?
             if (player.src == null || !player.src.endsWith(song.streamUrl)) {
@@ -590,7 +656,7 @@
         onNext(repeatStatus) {
             var index = this.currentSongIndex;
             if (this.shuffleRadioEnabled && (index + 1) >= this.songs.length) {
-                top.StompClient.send("/app/playqueues/${model.player.id}/reloadsearch", "");
+                top.StompClient.send("/app/playqueues/" + this.player.id + "/reloadsearch", "");
             } else if (repeatStatus == 'TRACK') {
                 this.onSkip(index);
             } else {
@@ -605,49 +671,49 @@
             this.onSkip(this.currentSongIndex - 1);
         },
         onPlay(id) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/mediafile", JSON.stringify({id: id}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/mediafile", JSON.stringify({id: id}));
         },
         onPlayShuffle(albumListType, offset, count, genre, decade) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/shuffle", JSON.stringify({albumListType: albumListType, offset: offset, count: count, genre: genre, decade: decade}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/shuffle", JSON.stringify({albumListType: albumListType, offset: offset, count: count, genre: genre, decade: decade}));
         },
         onPlayPlaylist(id, index) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/playlist", JSON.stringify({id: id, index: index}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/playlist", JSON.stringify({id: id, index: index}));
         },
         onPlayInternetRadio(id, index) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/radio", JSON.stringify({id: id, index: index}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/radio", JSON.stringify({id: id, index: index}));
         },
         onPlayTopSong(id, index) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/topsongs", JSON.stringify({id: id, index: index}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/topsongs", JSON.stringify({id: id, index: index}));
         },
         onPlayPodcastChannel(id) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/podcastchannel", JSON.stringify({id: id}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/podcastchannel", JSON.stringify({id: id}));
         },
         onPlayPodcastEpisode(id) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/podcastepisode", JSON.stringify({id: id}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/podcastepisode", JSON.stringify({id: id}));
         },
         onPlayNewestPodcastEpisode(index) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/podcastepisode/newest", JSON.stringify({index: index}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/podcastepisode/newest", JSON.stringify({index: index}));
         },
         onPlayStarred() {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/starred", "");
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/starred", "");
         },
         onPlayRandom(id, count) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/random", JSON.stringify({id: id, count: count}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/random", JSON.stringify({id: id, count: count}));
         },
         onPlaySimilar(id, count) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/similar", JSON.stringify({id: id, count: count}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/similar", JSON.stringify({id: id, count: count}));
         },
         onAdd(id) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/add", JSON.stringify({ids: [id]}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/add", JSON.stringify({ids: [id]}));
         },
         onAddNext(id) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/add", JSON.stringify({ids: [id], index: this.currentSongIndex + 1}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/add", JSON.stringify({ids: [id], index: this.currentSongIndex + 1}));
         },
         onAddPlaylist(id) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/add/playlist", JSON.stringify({id: id}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/add/playlist", JSON.stringify({id: id}));
         },
         onShuffle() {
-            top.StompClient.send("/app/playqueues/${model.player.id}/shuffle", "");
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/shuffle", "");
         },
         onStar(index) {
             this.songs[index].starred = !this.songs[index].starred;
@@ -663,39 +729,42 @@
             this.onStar(this.currentSongIndex);
         },
         onRemove(index) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/remove", JSON.stringify([index]));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/remove", JSON.stringify([index]));
         },
         onRemoveSelected() {
-            top.StompClient.send("/app/playqueues/${model.player.id}/remove", JSON.stringify(this.musicTable.rows({ selected: true }).indexes().toArray()));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/remove", JSON.stringify(this.musicTable.rows({ selected: true }).indexes().toArray()));
         },
 
         onRearrange(indexes) {
-            top.StompClient.send("/app/playqueues/${model.player.id}/rearrange", JSON.stringify(indexes));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/rearrange", JSON.stringify(indexes));
         },
         onToggleRepeat() {
-            top.StompClient.send("/app/playqueues/${model.player.id}/toggleRepeat", "");
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/toggleRepeat", "");
         },
         onUndo() {
-            top.StompClient.send("/app/playqueues/${model.player.id}/undo", "");
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/undo", "");
         },
         onSortByTrack() {
-            top.StompClient.send("/app/playqueues/${model.player.id}/sort", "TRACK");
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/sort", "TRACK");
         },
         onSortByArtist() {
-            top.StompClient.send("/app/playqueues/${model.player.id}/sort", "ARTIST");
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/sort", "ARTIST");
         },
         onSortByAlbum() {
-            top.StompClient.send("/app/playqueues/${model.player.id}/sort", "ALBUM");
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/sort", "ALBUM");
         },
         onSavePlayQueue() {
-            var positionMillis = $('#audioPlayer').get(0) ? Math.round(1000.0 * $('#audioPlayer').get(0).currentTime) : 0;
-            top.StompClient.send("/app/playqueues/${model.player.id}/save", JSON.stringify({index: this.currentSongIndex, offset: positionMillis}));
+            var positionMillis = 0;
+            if (this.player.tech == 'WEB') {
+                poitionMillis = Math.round(this.audioPlayer.currentTime * 1000.0);
+            }
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/save", JSON.stringify({index: this.currentSongIndex, offset: positionMillis}));
         },
         onLoadPlayQueue() {
-            top.StompClient.send("/app/playqueues/${model.player.id}/play/saved", "");
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/saved", "");
         },
         onSavePlaylist() {
-            top.StompClient.send("/app/playlists/create/playqueue", "${model.player.id}");
+            top.StompClient.send("/app/playlists/create/playqueue", this.player.id);
         },
         onAppendPlaylist() {
             // retrieve writable lists so we can open dialog to ask user which playlist to append to
@@ -866,9 +935,9 @@
             } else if (id == "savePlaylist") {
                 this.onSavePlaylist();
             } else if (id == "downloadPlaylist") {
-                location.href = "download.view?player=${model.player.id}";
+                location.href = "download.view?player=" + this.player.id;
             } else if (id == "sharePlaylist") {
-                parent.frames.main.location.href = "createShare.view?player=${model.player.id}&" + selectedIndexes;
+                parent.frames.main.location.href = "createShare.view?player=" + this.player.id + "&" + selectedIndexes;
             } else if (id == "sortByTrack") {
                 this.onSortByTrack();
             } else if (id == "sortByArtist") {
@@ -882,7 +951,7 @@
             } else if (id == "removeSelected") {
                 this.onRemoveSelected();
             } else if (id == "download" && selectedIndexes != "") {
-                location.href = "download.view?player=${model.player.id}&" + selectedIndexes;
+                location.href = "download.view?player=" + this.player.id + "&" + selectedIndexes;
             } else if (id == "appendPlaylist" && selectedIndexes != "") {
                 this.onAppendPlaylist();
             }
@@ -901,44 +970,28 @@
             }
         },
 
-        onPlayerChanged(playerId) {
-            var playqueueParent = $("#playqueue-container-child").parent();
-            $.ajax("http://localhost:8080/playQueue.view?player=" + playerId, {
-              success: data => {
-                  top.StompClient.unsubscribeOwner("playQueue.jsp");
-                  playqueueParent.html(data);
-              },
-              method: "GET",
-            });
+        playerSettingsPage() {
+            top.frames.main.location.href = "playerSettings.view?id=" + this.player.id;
         }
     };
 
     $(document).ready(() => playQueue.init());
 </script>
 
-<!-- marker div so we can get parent -->
-<div id="playqueue-container-child"></div>
-
 <table class="music indent hover nowrap stripe compact hide-table-header" id="playQueueMusic" style="cursor:pointer; width: 100%;"></table>
 
 <div class="bgcolor2 playqueue-controlbar">
   <c:if test="${model.user.settingsRole and model.players.size() > 1}">
     <div style="padding-right: 5px">
-        <select name="player" onchange="playQueue.onPlayerChanged(options[selectedIndex].value)">
+        <select id="playerSelector" name="playerSelector" onchange="playQueue.onPlayerChanged(options[selectedIndex].value)">
           <c:forEach items="${model.players}" var="player">
-            <option ${player.id eq model.player.id ? "selected" : ""} value="${player.id}">${player.shortDescription}</option>
+            <option value="${player.id}">${player.shortDescription}</option>
           </c:forEach>
         </select>
     </div>
   </c:if>
 
-  <c:choose>
-  <c:when test="${model.player.javaJukebox}">
-    <%@ include file="javaJukeboxPlayerControlBar.jspf" %>
-  </c:when>
-  <c:otherwise>
-  <c:if test="${model.player.web}">
-    <div>
+    <div class="player-tech player-tech-web">
         <div id="player" style="width:340px; height:40px">
             <audio id="audioPlayer" width="340px" height="40px" tabindex="-1" />
         </div>
@@ -953,45 +1006,54 @@
                 <div id="castVolume" style="width:80px;height:4px;margin-left:10px;margin-right:10px;margin-top:8px"></div>
                 <script type="text/javascript">
                     $("#castVolume").slider({max: 100, value: 50, animate: "fast", range: "min"});
-                    $("#castVolume").on("slidestop", playQueue.onCastVolumeChanged);
+                    $("#castVolume").on("slidestop", () => playQueue.onCastVolumeChanged());
                 </script>
             </div>
         </div>
     </div>
-    <div>
+    <div class="player-tech player-tech-web">
         <img alt="Cast on" id="castOn" src="<spring:theme code='castIdleImage'/>" onclick="playQueue.CastPlayer.launchCastApp()" style="cursor:pointer; display:none">
         <img alt="Cast off" id="castOff" src="<spring:theme code='castActiveImage'/>" onclick="playQueue.CastPlayer.stopCastApp()" style="cursor:pointer; display:none">
     </div>
-  </c:if>
 
-  <c:if test="${model.user.streamRole and not model.player.web}">
-    <div>
-        <img alt="Start" id="start" src="<spring:theme code='castPlayImage'/>" onclick="playQueue.onStart()" style="cursor:pointer">
-        <img alt="Stop" id="stop" src="<spring:theme code='castPauseImage'/>" onclick="playQueue.onStop()" style="cursor:pointer; display:none">
+  <c:if test="${model.user.streamRole}">
+    <div class="player-tech player-tech-non-web">
+        <img alt="Start" id="audioStart" src="<spring:theme code='castPlayImage'/>" onclick="playQueue.onStart()" style="cursor:pointer">
+        <img alt="Stop" id="audioStop" src="<spring:theme code='castPauseImage'/>" onclick="playQueue.onStop()" style="cursor:pointer; display:none">
     </div>
   </c:if>
 
-  <c:if test="${model.player.jukebox}">
-    <div style="white-space:nowrap;">
+    <div class="player-tech player-tech-java_jukebox">
+        <span id="playingPositionDisplay" class="javaJukeBoxPlayerControlBarSongTime"/>
+    </div>
+    <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
+        <div id="javaJukeboxSongPositionSlider"></div>
+    </div>
+    <div class="player-tech player-tech-java_jukebox">
+        <span id="playingDurationDisplay" class="javaJukeBoxPlayerControlBarSongTime"/>
+    </div>
+
+    <div class="player-tech player-tech-jukebox" style="white-space:nowrap;">
         <img src="<spring:theme code='volumeImage'/>" alt="">
     </div>
-    <div style="white-space:nowrap;">
+    <div class="player-tech player-tech-jukebox" style="white-space:nowrap;">
         <div id="jukeboxVolume" style="width:80px;height:4px"></div>
         <script type="text/javascript">
             $("#jukeboxVolume").slider({max: 100, value: 50, animate: "fast", range: "min"});
-            $("#jukeboxVolume").on("slidestop", playQueue.onJukeboxVolumeChanged);
+            $("#jukeboxVolume").on("slidestop", () => playQueue.onJukeboxVolumeChanged());
         </script>
     </div>
-  </c:if>
 
-  <c:if test="${model.player.web}">
-    <div><span class="header">
-        <img src="<spring:theme code='backImage'/>" alt="Play previous" title="Play previous" onclick="playQueue.onPrevious()" style="cursor:pointer"></span>
+    <div class="player-tech player-tech-web">
+        <span class="header">
+            <img src="<spring:theme code='backImage'/>" alt="Play previous" title="Play previous" onclick="playQueue.onPrevious()" style="cursor:pointer">
+        </span>
     </div>
-    <div><span class="header">
-        <img src="<spring:theme code='forwardImage'/>" alt="Play next" title="Play next" onclick="playQueue.onNext('OFF')" style="cursor:pointer"></span> |
+    <div class="player-tech player-tech-web">
+        <span class="header">
+            <img src="<spring:theme code='forwardImage'/>" alt="Play next" title="Play next" onclick="playQueue.onNext('OFF')" style="cursor:pointer">
+        </span> |
     </div>
-  </c:if>
 
     <div style="white-space:nowrap;">
         <span class="header">
@@ -1009,15 +1071,13 @@
         </span> |
     </div>
 
-  <c:if test="${model.player.web or model.player.jukebox or model.player.external}">
-    <div style="white-space:nowrap;">
+    <div class="player-tech player-tech-web player-tech-jukebox player-tech-external" style="white-space:nowrap;">
         <span class="header">
             <a href="javascript:playQueue.onToggleRepeat()" id="repeatQueue" class="player-control">
                 <img id="toggleRepeat" src="<spring:theme code='repeatOff'/>" alt="Toggle repeat" title="Toggle repeat" style="cursor:pointer; height:18px">
             </a>
         </span> |
     </div>
-  </c:if>
 
     <div style="white-space:nowrap;">
         <span class="header">
@@ -1030,7 +1090,7 @@
   <c:if test="${model.user.settingsRole}">
     <div style="white-space:nowrap;">
         <span class="header">
-            <a href="playerSettings.view?id=${model.player.id}" target="main" class="player-control">
+            <a href="javascript:playQueue.playerSettingsPage()" class="player-control">
                 <img src="<spring:theme code='settingsImage'/>" alt="Settings" title="Settings" style="cursor:pointer; height:18px">
             </a>
         </span> |
@@ -1039,7 +1099,7 @@
 
     <div style="white-space:nowrap;">
         <span class="header">
-            <select id="moreActions" onchange="playQueue.actionSelected(this.options[selectedIndex].id)">
+            <select id="moreActions" onchange="playQueue.actionSelected(options[selectedIndex].id)">
                 <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
                 <optgroup label="<fmt:message key='playlist.more.playlist'/>">
 	                <option id="savePlayQueue"><fmt:message key="playlist.saveplayqueue"/></option>
@@ -1077,8 +1137,6 @@
     </div>
   </c:if>
 
-  </c:otherwise>
-  </c:choose>
 </div>
 
 <div id="dialog-select-playlist" title="<fmt:message key='main.addtoplaylist.title'/>" style="display: none;">

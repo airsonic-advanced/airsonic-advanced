@@ -1,5 +1,5 @@
 
-// assume websockets are loaded
+// assume jquery, websockets, playqueue are loaded
 
 var JavaJukeBox = {
   songPlayingTimerId: null,
@@ -17,15 +17,11 @@ var JavaJukeBox = {
         var jb = this;
         this.songPlayingTimerId = setInterval(function() { jb.songPlayingTimer(); }, 1000);
       }
-      document.getElementById('startIcon').style.display = 'none';
-      document.getElementById('pauseIcon').style.display = 'block';
     } else {
       if (this.songPlayingTimerId != null) {
         clearInterval(this.songPlayingTimerId);
         this.songPlayingTimerId = null;
       }
-      document.getElementById('pauseIcon').style.display = 'none';
-      document.getElementById('startIcon').style.display = 'block';
     }
     if (this.javaJukeboxPlayerModel.songDuration == null) {
       $("#playingDurationDisplay").html("-:--");
@@ -36,17 +32,9 @@ var JavaJukeBox = {
     $("#javaJukeboxSongPositionSlider").slider("value", this.javaJukeboxPlayerModel.songPosition);
   },
 
-  onJavaJukeboxStart() {
-    StompClient.send("/app/playqueues/" + playQueue.playerId + "/start", "");
-  },
-
   javaJukeboxStartCallback() {
     this.javaJukeboxPlayerModel.playing = true;
     this.refreshView();
-  },
-
-  onJavaJukeboxStop() {
-    StompClient.send("/app/playqueues/" + playQueue.playerId + "/stop", "");
   },
 
   javaJukeboxStopCallback() {
@@ -54,19 +42,9 @@ var JavaJukeBox = {
     this.refreshView();
   },
 
-  onJavaJukeboxVolumeChanged() {
-    var value = $("#javaJukeboxVolumeSlider").slider("value");
-    var gain = value / 100;
-    StompClient.send("/app/playqueues/" + playQueue.playerId + "/jukebox/gain", gain);
-  },
-
-  javaJukeboxGainCallback(gain) {
-    $("#javaJukeboxVolumeSlider").slider("option", "value", Math.floor(gain * 100));
-  },
-
   onJavaJukeboxPositionChanged() {
     var pos = $("#javaJukeboxSongPositionSlider").slider("value");
-    StompClient.send("/app/playqueues/" + playQueue.playerId + "/jukebox/position", pos);
+    StompClient.send("/app/playqueues/" + playQueue.player.id + "/jukebox/position", pos);
   },
 
   javaJukeboxPositionCallback(pos) {
@@ -107,11 +85,16 @@ var JavaJukeBox = {
   initJavaJukeboxPlayerControlBar() {
     var jb = this;
     $("#javaJukeboxSongPositionSlider").slider({max: 100, value: 0, animate: "fast", range: "min"});
-    $("#javaJukeboxSongPositionSlider").slider("value", 0);
     $("#javaJukeboxSongPositionSlider").on("slidestop", function() { jb.onJavaJukeboxPositionChanged(); });
 
-    $("#javaJukeboxVolumeSlider").slider({max: 100, value: 50, animate: "fast", range: "min"});
-    $("#javaJukeboxVolumeSlider").on("slidestop", function() { jb.onJavaJukeboxVolumeChanged(); });
+    this.refreshView();
+  },
+
+  reset() {
+    this.javaJukeboxPlayerModel.currentStreamUrl = null;
+    this.javaJukeboxPlayerModel.playing = false;
+    this.javaJukeboxPlayerModel.songDuration = null;
+    this.javaJukeboxPlayerModel.songPosition = 0;
 
     this.refreshView();
   }
