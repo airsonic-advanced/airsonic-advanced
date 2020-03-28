@@ -141,7 +141,7 @@
             // can also delete the subscription to the topic itself (if that is the last owner), but not necessary
         },
         unsubscribeOwner: function(owner) {
-            for (topic in this.subscriptions) {
+            for (var topic in this.subscriptions) {
                 this.unsubscribe(topic, owner);
             }
         },
