@@ -102,13 +102,6 @@ public class GeneralSettingsController {
         Locale locale = settingsService.getAvailableLocales()[localeIndex];
 
         redirectAttributes.addFlashAttribute("settings_toast", true);
-        redirectAttributes.addFlashAttribute(
-                "settings_reload",
-                   !settingsService.getIndexString().equals(command.getIndex())
-                || !settingsService.getIgnoredArticles().equals(command.getIgnoredArticles())
-                || !settingsService.getShortcuts().equals(command.getShortcuts())
-                || !settingsService.getThemeId().equals(theme.getId())
-                || !settingsService.getLocale().equals(locale));
 
         settingsService.setIndexString(command.getIndex());
         settingsService.setIgnoredArticles(command.getIgnoredArticles());
