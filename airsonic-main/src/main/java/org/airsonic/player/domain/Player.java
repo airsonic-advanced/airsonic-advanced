@@ -24,8 +24,8 @@ import org.apache.commons.lang.StringUtils;
 import java.time.Instant;
 
 /**
- * Represens a remote player.  A player has a unique ID, a user-defined name, a logged-on user,
- * miscellaneous identifiers, and an associated playlist.
+ * Represents a remote player. A player has a unique ID, a user-defined name, a
+ * logged-on user, miscellaneous identifiers, and an associated playlist.
  *
  * @author Sindre Mehus
  */
