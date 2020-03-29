@@ -270,6 +270,17 @@
                 },
                 '/user/queue/playlists/create/playqueue'(msg) {
                     pq.playlistUpdatedCallback(JSON.parse(msg.body), "<fmt:message key='playlist.toast.saveasplaylist'/>");
+                },
+
+                // Players
+                '/user/queue/players/updated'(msg) {
+                    pq.onPlayerUpdated(JSON.parse(msg.body));
+                },
+                '/user/queue/players/created'(msg) {
+                    pq.onPlayerCreated(JSON.parse(msg.body));
+                },
+                '/topic/players/deleted'(msg) {
+                    pq.onPlayerDeleted(JSON.parse(msg.body));
                 }
             });
 
@@ -320,7 +331,7 @@
                   }
 
                   //switch to new player
-                  $("#playerSelector").val(player.id)
+                  $("#playerSelector").val(player.id);
                   pq.player = player;
                   $(".player-tech-" + player.tech.toLowerCase()).show();
                   if (player.tech == 'JAVA_JUKEBOX') {
@@ -376,6 +387,34 @@
                 };
 
                 top.StompClient.subscribe("playQueue.jsp", pq.playerSpecificCallbacks);
+            }
+        },
+
+        // Player updates
+        onPlayerCreated(player) {
+            // create node if necessary
+            if ($("#playerSelector option[value='" + player.id + "']").length == 0) {
+                $("#playerSelector").append($("<option>").val(player.id).text(player.description));
+            }
+            if (this.player.id == player.id) {
+                $("#playerSelector").val(player.id);
+            }
+        },
+        onPlayerUpdated(player) {
+            this.onPlayerCreated(player);
+            $("#playerSelector option[value='" + player.id + "']").replaceWith($("<option>").val(player.id).text(player.description));
+            if (this.player.id == player.id) {
+                $("#playerSelector").val(player.id);
+            }
+            if (this.player.id == player.id && this.player.tech != player.tech) {
+                this.onPlayerChanged(player.id);
+            }
+        },
+        onPlayerDeleted(id) {
+            $("#playerSelector option[value='" + id + "']").remove();
+
+            if (this.player.id == id) {
+                this.onPlayerChanged(null);
             }
         },
 
@@ -519,14 +558,25 @@
             if (status == "PLAYING") {
                 $("#audioStart").hide();
                 $("#audioStop").show();
+                if (this.CastPlayer.castSession) {
+                    this.CastPlayer.playCast();
+                } else if (this.player.tech == 'WEB') {
+                    if (this.audioPlayer.src) {
+                        this.audioPlayer.play();  // Resume playing if the player was paused
+                    } else {
+                        this.onSkip(0);  // Start the first track if the player was not yet loaded
+                    }
+                } else if (this.player.tech == 'JAVA_JUKEBOX') {
+                    JavaJukeBox.javaJukeboxStartCallback();
+                }
             } else {
                 $("#audioStop").hide();
                 $("#audioStart").show();
-            }
-            if (this.player.tech == 'JAVA_JUKEBOX') {
-                if (status == "PLAYING") {
-                    JavaJukeBox.javaJukeboxStartCallback();
-                } else {
+                if (this.CastPlayer.castSession) {
+                    this.CastPlayer.pauseCast();
+                } else if (this.player.tech == 'WEB') {
+                    this.audioPlayer.pause();
+                } else if (this.player.tech == 'JAVA_JUKEBOX') {
                     JavaJukeBox.javaJukeboxStopCallback();
                 }
             }
@@ -536,14 +586,9 @@
          * Start/resume playing from the current playlist
          */
         onStart() {
-            if (this.CastPlayer.castSession) {
-                this.CastPlayer.playCast();
-            } else if (this.player.tech == 'WEB') {
-                if (this.audioPlayer.src) {
-                    this.audioPlayer.play();  // Resume playing if the player was paused
-                } else {
-                    this.onSkip(0);  // Start the first track if the player was not yet loaded
-                }
+            // simulate immediate callback
+            if (this.CastPlayer.castSession || this.player.tech == 'WEB') {
+                this.playQueuePlayStatusCallback("PLAYING");
             } else {
                 top.StompClient.send("/app/playqueues/" + this.player.id + "/start", "");
             }
@@ -553,10 +598,9 @@
          * Pause playing
          */
         onStop() {
-            if (this.CastPlayer.castSession) {
-                this.CastPlayer.pauseCast();
-            } else if (this.player.tech == 'WEB') {
-               this.audioPlayer.pause();
+            // simulate immediate callback
+            if (this.CastPlayer.castSession || this.player.tech == 'WEB') {
+                this.playQueuePlayStatusCallback("STOPPED");
             } else {
                 top.StompClient.send("/app/playqueues/" + this.player.id + "/stop", "");
             }
@@ -564,6 +608,7 @@
 
         /**
          * Toggle play/pause
+         * TODO: Nobody calls this
          */
         onToggleStartStop() {
             if (this.CastPlayer.castSession) {
