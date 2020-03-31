@@ -1,0 +1,53 @@
+name: Java CI with Maven
+
+on:
+ # push:
+#    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  DEFAULT_MUSIC_FOLDER: /tmp/music
+  EXCLUDED_TEST_GROUPS:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        jdk: [11] #[1.8, 9, 11, 13]
+        db: [postgres:9.6-alpine] #[internal, postgres:9.6-alpine, postgres:12.2-alpine, mysql:5.7, mysql:8.0, mariadb:10.2, mariadb:10.5]
+        include:
+          - jdk: 11
+            db: 'postgres:9.6-alpine'
+            services: 
+              postgres:
+                image: 'postgres:9.6-alpine'
+                ports:
+                  - 5432:5432
+              env:
+                POSTGRES_PASSWORD: pass
+            env:
+              EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
+              DatabaseConfigType: embed
+              DatabaseConfigEmbedDriver: org.postgresql.Driver
+              DatabaseConfigEmbedUrl: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified'
+              DatabaseConfigEmbedUsername: postgres
+              DatabaseConfigEmbedPassword: pass
+              DatabaseUsertableQuote: '"'
+    env: ${{ matrix.env }}
+    services: ${{ matrix.services }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ matrix.jdk} }
+    - name: Cache Maven packages
+      uses: actions/cache@v1
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    - name: Build with Maven
+      run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
