@@ -26,6 +26,8 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
       - run: mkdir -p ${DEFAULT_MUSIC_FOLDER}
+      - run: ${{ matrix.cfg.run }}
+        if: matrix.cfg.executeManualcommand
       - name: Build with Maven
         run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
 
@@ -55,13 +57,13 @@ jobs:
                 env:
                   POSTGRES_PASSWORD: pass
             env:
-              EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
               DatabaseConfigType: embed
               DatabaseConfigEmbedDriver: org.postgresql.Driver
               DatabaseConfigEmbedUrl: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified'
               DatabaseConfigEmbedUsername: postgres
               DatabaseConfigEmbedPassword: pass
               DatabaseUsertableQuote: '"'
+              EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           - jdk: 11
             services:
               postgres:
@@ -78,68 +80,96 @@ jobs:
               DatabaseConfigEmbedPassword: pass
               DatabaseUsertableQuote: '"'
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
-          #TODO for mysql,mariadb: add collation: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin when supported by github actions on services
+          #TODO for mysql,mariadb: add collation: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin when supported by github actions on services and remove the manual run commands
           - jdk: 11
-            services:
+            executeManualCommand: true
+            run: >
+              docker pull ${DB};
+              docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=${DatabaseConfigEmbedPassword} -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
+              until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=${DatabaseConfigEmbedUsername} --password=${DatabaseConfigEmbedPassword} -e 'SELECT 1' &> /dev/null; do sleep 1; done;
+            services: {}
+            services2:
               mysql:
                 image: 'mysql:5.7'
                 ports:
                   - 3306:3306
                 env:
-                  #MYSQL_DATABASE: airsonic
+                  MYSQL_DATABASE: airsonic
                   MYSQL_ROOT_PASSWORD: pass
             env:
+              DB: 'mysql:5.7'
               DatabaseConfigType: embed
               DatabaseConfigEmbedDriver: com.mysql.jdbc.Driver
-              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&characterSetResults=utf8mb4&connectionCollation=utf8mb4_bin'
+              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic'
               DatabaseConfigEmbedUsername: root
               DatabaseConfigEmbedPassword: pass
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           - jdk: 11
-            services:
+            executeManualCommand: true
+            run: >
+              docker pull ${DB};
+              docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=${DatabaseConfigEmbedPassword} -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
+              until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=${DatabaseConfigEmbedUsername} --password=${DatabaseConfigEmbedPassword} -e 'SELECT 1' &> /dev/null; do sleep 1; done;
+            services: {}
+            services2:
               mysql:
                 image: 'mysql:8.0'
                 ports:
                   - 3306:3306
                 env:
-                  #MYSQL_DATABASE: airsonic
+                  MYSQL_DATABASE: airsonic
                   MYSQL_ROOT_PASSWORD: pass
             env:
+              DB: 'mysql:8.0'
               DatabaseConfigType: embed
               DatabaseConfigEmbedDriver: com.mysql.jdbc.Driver
-              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&characterSetResults=utf8mb4&connectionCollation=utf8mb4_bin'
+              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic'
               DatabaseConfigEmbedUsername: root
               DatabaseConfigEmbedPassword: pass
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           - jdk: 11
-            services:
+            executeManualCommand: true
+            run: >
+              docker pull ${DB};
+              docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=${DatabaseConfigEmbedPassword} -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
+              until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=${DatabaseConfigEmbedUsername} --password=${DatabaseConfigEmbedPassword} -e 'SELECT 1' &> /dev/null; do sleep 1; done;
+            services: {}
+            services2:
               mysql:
                 image: 'mariadb:10.2'
                 ports:
                   - 3306:3306
                 env:
-                  #MYSQL_DATABASE: airsonic
+                  MYSQL_DATABASE: airsonic
                   MYSQL_ROOT_PASSWORD: pass
             env:
+              DB: 'mariadb:10.2'
               DatabaseConfigType: embed
               DatabaseConfigEmbedDriver: org.mariadb.jdbc.Driver
-              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&characterSetResults=utf8mb4&connectionCollation=utf8mb4_bin'
+              DatabaseConfigEmbedUrl: 'jdbc:mariadb://localhost:3306/airsonic'
               DatabaseConfigEmbedUsername: root
               DatabaseConfigEmbedPassword: pass
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           - jdk: 11
-            services:
+            executeManualCommand: true
+            run: >
+              docker pull ${DB};
+              docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=${DatabaseConfigEmbedPassword} -e MYSQL_DATABASE=airsonic -p 3306:3306 ${DB} --character-set-server=utf8mb4 --collation-server=utf8mb4_bin;
+              until docker run --rm --link mysql:ms ${DB} mysql --host=ms --user=${DatabaseConfigEmbedUsername} --password=${DatabaseConfigEmbedPassword} -e 'SELECT 1' &> /dev/null; do sleep 1; done;
+            services: {}
+            services2:
               mysql:
                 image: 'mariadb:10.5'
                 ports:
                   - 3306:3306
                 env:
-                  #MYSQL_DATABASE: airsonic
+                  MYSQL_DATABASE: airsonic
                   MYSQL_ROOT_PASSWORD: pass
             env:
+              DB: 'mariadb:10.5'
               DatabaseConfigType: embed
               DatabaseConfigEmbedDriver: org.mariadb.jdbc.Driver
-              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&characterSetResults=utf8mb4&connectionCollation=utf8mb4_bin'
+              DatabaseConfigEmbedUrl: 'jdbc:mariadb://localhost:3306/airsonic'
               DatabaseConfigEmbedUsername: root
               DatabaseConfigEmbedPassword: pass
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
