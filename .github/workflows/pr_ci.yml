@@ -15,11 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        jdk: [11] #[1.8, 9, 11, 13]
-        db: ['internal', 'postgres:9.6-alpine'] #[internal, postgres:9.6-alpine, postgres:12.2-alpine, mysql:5.7, mysql:8.0, mariadb:10.2, mariadb:10.5]
-        include:
+        #jdk: [11] #[1.8, 9, 11, 13]
+        #db: ['internal', 'postgres:9.6-alpine'] #[internal, postgres:9.6-alpine, postgres:12.2-alpine, mysql:5.7, mysql:8.0, mariadb:10.2, mariadb:10.5]
+        cfg:
           - jdk: 11
-            db: 'postgres:9.6-alpine'
             services: 
               postgres:
                 image: 'postgres:9.6-alpine'
@@ -36,17 +35,16 @@ jobs:
               DatabaseConfigEmbedPassword: pass
               DatabaseUsertableQuote: '"'
           - jdk: 11
-            db: 'internal'
             services: {}
             env: {}
-    env: ${{ matrix.env }}
-    services: ${{ matrix.services }}
+    env: ${{ matrix.cfg.env }}
+    services: ${{ matrix.cfg.services }}
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK
       uses: actions/setup-java@v1
       with:
-        java-version: ${{ matrix.jdk }}
+        java-version: ${{ matrix.cfg.jdk }}
     - name: Cache Maven packages
       uses: actions/cache@v1
       with:
