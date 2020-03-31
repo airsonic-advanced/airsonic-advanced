@@ -30,6 +30,7 @@ jobs:
         run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
 
     strategy:
+      fail-fast: false
       matrix:
         cfg:
           - jdk: 1.8
@@ -90,7 +91,7 @@ jobs:
             env:
               DatabaseConfigType: embed
               DatabaseConfigEmbedDriver: com.mysql.jdbc.Driver
-              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic'
+              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic?useUnicode=true&characterEncoding=UTF-8&characterSetResults=utf8mb4&connectionCollation=utf8mb4_bin'
               DatabaseConfigEmbedUsername: root
               DatabaseConfigEmbedPassword: pass
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
@@ -106,7 +107,7 @@ jobs:
             env:
               DatabaseConfigType: embed
               DatabaseConfigEmbedDriver: com.mysql.jdbc.Driver
-              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic'
+              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic?useUnicode=true&characterEncoding=UTF-8&characterSetResults=utf8mb4&connectionCollation=utf8mb4_bin'
               DatabaseConfigEmbedUsername: root
               DatabaseConfigEmbedPassword: pass
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
@@ -122,7 +123,7 @@ jobs:
             env:
               DatabaseConfigType: embed
               DatabaseConfigEmbedDriver: org.mariadb.jdbc.Driver
-              DatabaseConfigEmbedUrl: 'jdbc:mariadb://localhost:3306/airsonic'
+              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic?useUnicode=true&characterEncoding=UTF-8&characterSetResults=utf8mb4&connectionCollation=utf8mb4_bin'
               DatabaseConfigEmbedUsername: root
               DatabaseConfigEmbedPassword: pass
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
@@ -138,7 +139,7 @@ jobs:
             env:
               DatabaseConfigType: embed
               DatabaseConfigEmbedDriver: org.mariadb.jdbc.Driver
-              DatabaseConfigEmbedUrl: 'jdbc:mariadb://localhost:3306/airsonic'
+              DatabaseConfigEmbedUrl: 'jdbc:mysql://localhost:3306/airsonic?useUnicode=true&characterEncoding=UTF-8&characterSetResults=utf8mb4&connectionCollation=utf8mb4_bin'
               DatabaseConfigEmbedUsername: root
               DatabaseConfigEmbedPassword: pass
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
