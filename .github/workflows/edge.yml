@@ -34,8 +34,8 @@ jobs:
           ver=$(grep "version=" airsonic-main/target/generated/build-metadata/build.properties | cut -d"=" -f2);
           ts=$(grep "timestamp=" airsonic-main/target/generated/build-metadata/build.properties | cut -d"=" -f2);
           # Note this doesn't completely follow semver because docker tags do not take a + sign
-          tag=$ver\.$ts
-          echo $tag
+          tag=$ver\.$ts;
+          echo $tag;
           echo ::set-output name=tag::$tag
       - name: Deploy to GitHub Release
         id: create_release
