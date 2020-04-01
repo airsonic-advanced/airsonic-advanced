@@ -4,7 +4,8 @@ cache:
     - $HOME/.m2
 
 # do not build on tagged commits to avoid infinite loops
-if: type = push && tag is blank && commit_message =~ /^Merge pull request #.*$/
+#if: type = push && tag is blank && commit_message =~ /^Merge pull request #.*$/
+if: false
 
 services:
   - docker
