@@ -403,7 +403,7 @@
     <tr><td style="height: 100%"></td></tr>
 </table>
 
-<table id="artistTopSongs" class="music indent hover nowrap stripe compact hide-table-header">
+<table id="artistTopSongs" class="music indent hover nowrap stripe compact hide-table-header" style="width: 100%;">
 </table>
 
 </body>

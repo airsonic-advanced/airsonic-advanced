@@ -141,10 +141,15 @@
             return topic.startsWith("/app/");
         },
         unsubscribe: function(topic, owner) {
-            if (topic && owner && this.subscriptions[topic][owner]) {
+            if (topic && owner && this.subscriptions[topic] && this.subscriptions[topic][owner]) {
                 delete this.subscriptions[topic][owner];
             }
             // can also delete the subscription to the topic itself (if that is the last owner), but not necessary
+        },
+        unsubscribeOwner: function(owner) {
+            for (var topic in this.subscriptions) {
+                this.unsubscribe(topic, owner);
+            }
         },
         disconnect: function() {
             var stompclient = this;

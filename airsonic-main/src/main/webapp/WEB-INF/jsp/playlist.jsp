@@ -366,7 +366,7 @@
 
 <div style="height:0.7em;clear:both"></div>
 
-<table class="music indent hover nowrap stripe compact hide-table-header" id="playlistMusic" style="cursor:pointer">
+<table class="music indent hover nowrap stripe compact hide-table-header" id="playlistMusic" style="cursor: pointer; width: 100%;">
 </table>
 
 <c:if test="${model.editAllowed}">

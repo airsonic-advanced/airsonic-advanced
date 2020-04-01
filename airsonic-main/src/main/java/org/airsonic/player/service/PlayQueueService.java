@@ -15,6 +15,7 @@ import org.airsonic.player.domain.PlayQueue.RepeatStatus;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastStatus;
+import org.airsonic.player.domain.RandomSearchCriteria;
 import org.airsonic.player.domain.SavedPlayQueue;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.util.StringUtil;
@@ -101,8 +102,12 @@ public class PlayQueueService {
             jukeboxService.skip(player, index, (int) (offset / 1000));
         }
 
-        runAsync(() -> brokerTemplate.convertAndSendToUser(player.getUsername(),
-                "/queue/playqueues/" + player.getId() + "/skip", ImmutableMap.of("index", index, "offset", offset)));
+        runAsync(() -> {
+            brokerTemplate.convertAndSendToUser(player.getUsername(),
+                    "/queue/playqueues/" + player.getId() + "/skip", ImmutableMap.of("index", index, "offset", offset));
+            brokerTemplate.convertAndSendToUser(player.getUsername(),
+                    "/queue/playqueues/" + player.getId() + "/playstatus", player.getPlayQueue().getStatus());
+        });
     }
 
     public void reloadSearchCriteria(Player player, String sessionId) {
@@ -377,6 +382,13 @@ public class PlayQueueService {
         if (broadcast) {
             broadcastPlayQueue(player, !player.isExternalWithPlaylist());
         }
+    }
+
+    public void addRandomCriteria(Player player, boolean append, RandomSearchCriteria criteria, boolean autoRandom) {
+        player.getPlayQueue().addFiles(append, mediaFileService.getRandomSongs(criteria, player.getUsername()));
+        player.getPlayQueue().setRandomSearchCriteria(autoRandom ? criteria : null);
+        player.getPlayQueue().setInternetRadio(null);
+        broadcastPlayQueue(player, !player.isExternalWithPlaylist());
     }
 
     public void addPlaylist(Player player, int id, boolean removeVideoFiles) {

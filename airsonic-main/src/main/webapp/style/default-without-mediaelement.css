@@ -177,7 +177,6 @@ body {
     scrollbar-darkshadow-color: #98AAB1;
 }
 
-
 /* Login page */
 
 #loginframe {
@@ -252,6 +251,11 @@ p {
     white-space: nowrap;
     margin: 0;
     line-height: 1.5em
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 h1 {
@@ -524,6 +528,15 @@ img {
 
 .context-menu-item {
     color: black;
+}
+
+.playqueue-controlbar {
+    width: 100%;
+    padding-top: 10px;
+    z-index: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 }
 
 /*
