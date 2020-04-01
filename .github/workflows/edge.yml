@@ -58,7 +58,7 @@ jobs:
           docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitcommit-${{ github.sha }};
           docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitrun-${{ github.run_id }};
       - name: Login to Docker Hub
-        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
       - name: Deploy to DockerHub
         run: |
           docker push airsonicadvanced/airsonic-advanced:latest;
