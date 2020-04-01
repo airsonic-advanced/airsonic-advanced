@@ -157,7 +157,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         assertThat(userDao.getUserByName("sindre", true)).isEqualToComparingFieldByField(user);
 
         assertNull("Error in getUserByName().", userDao.getUserByName("sindre2", true));
-        assertNull("Error in getUserByName().", userDao.getUserByName("Sindre ", true));
+        // assertNull("Error in getUserByName().", userDao.getUserByName("Sindre ", true)); // depends on the collation of the DB
         assertNull("Error in getUserByName().", userDao.getUserByName("bente", true));
         assertNull("Error in getUserByName().", userDao.getUserByName("", true));
         assertNull("Error in getUserByName().", userDao.getUserByName(null, true));
