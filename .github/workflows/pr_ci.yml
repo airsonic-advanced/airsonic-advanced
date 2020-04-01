@@ -82,6 +82,7 @@ jobs:
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           #TODO for mysql,mariadb: add collation: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin when supported by github actions on services and remove the manual run commands
           - jdk: 11
+            db: 'mysql:5.7'
             executeManualCommand: true
             run: >
               docker pull ${DB};
@@ -105,6 +106,7 @@ jobs:
               DatabaseConfigEmbedPassword: pass
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           - jdk: 11
+            db: 'mysql:8.0'
             executeManualCommand: true
             run: >
               docker pull ${DB};
@@ -128,6 +130,7 @@ jobs:
               DatabaseConfigEmbedPassword: pass
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           - jdk: 11
+            db: 'mariadb:10.2'
             executeManualCommand: true
             run: >
               docker pull ${DB};
@@ -151,6 +154,7 @@ jobs:
               DatabaseConfigEmbedPassword: pass
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           - jdk: 11
+            db: 'mariadb:10.5'
             executeManualCommand: true
             run: >
               docker pull ${DB};
