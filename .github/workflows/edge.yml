@@ -29,14 +29,14 @@ jobs:
       - name: Calculate tags
         if: success()
         id: tagcalc
-        run: >
+        run: |
           # Create tag
           ver=$(grep "version=" airsonic-main/target/generated/build-metadata/build.properties | cut -d"=" -f2);
           ts=$(grep "timestamp=" airsonic-main/target/generated/build-metadata/build.properties | cut -d"=" -f2);
           # Note this doesn't completely follow semver because docker tags do not take a + sign
           tag=$ver\.$ts;
           echo $tag;
-          echo ::set-output name=tag::$tag
+          echo "::set-output name=tag::$tag"
       - name: Deploy to GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -51,7 +51,7 @@ jobs:
             airsonic-main/target/airsonic.war
             airsonic-main/target/artifacts-checksums.sha
       - name: Tag Docker Images
-        run: >
+        run: |
           # Tag the docker image
           docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge-${{ steps.tagcalc.outputs.tag }};
           docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge-latest;
@@ -60,7 +60,7 @@ jobs:
       - name: Login to Docker Hub
         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
       - name: Deploy to DockerHub
-        run: >
+        run: |
           docker push airsonicadvanced/airsonic-advanced:latest;
           docker push airsonicadvanced/airsonic-advanced:edge-latest;
           docker push airsonicadvanced/airsonic-advanced:edge-${{ steps.tagcalc.outputs.tag }};
