@@ -4,7 +4,7 @@ cache:
     - $HOME/.m2
 
 # do not build on tagged commits to avoid infinite loops
-if: tag is blank
+if: type = push && tag is blank && commit_message =~ /^Merge pull request #.*$/
 
 services:
   - docker
@@ -18,7 +18,6 @@ env:
 stages:
   - test
   - name: deploy_edge
-    if: type = push && tag is blank && commit_message =~ /^Merge pull request #.*$/
 
 install: skip
 
