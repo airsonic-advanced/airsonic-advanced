@@ -109,8 +109,13 @@
             pq.musicTable = $("#playQueueMusic").DataTable( {
                 deferRender: true,
                 createdRow(row, data, dataIndex, cells) {
+                    var rowNode = $(row);
                     if (pq.currentSongIndex == dataIndex) {
-                        $(row).addClass("currently-playing").find(".currentImage").show();
+                        rowNode.addClass("currently-playing").find(".currentImage").show();
+                    }
+
+                    if (rowNode.hasClass("selected")) {
+                        rowNode.find(".songIndex input").prop("checked", true);
                     }
                 },
                 ordering: true,
@@ -229,6 +234,12 @@
                 ]
             } );
 
+            pq.musicTable.on( 'select', function ( e, dt, type, indexes ) {
+                pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", true);
+            } );
+            pq.musicTable.on( 'deselect', function ( e, dt, type, indexes ) {
+                pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
+            } );
             $("#playQueueMusic tbody").on( "click", ".starSong", function () {
                 pq.onStar(pq.musicTable.row( $(this).parents('tr') ).index());
             } );
