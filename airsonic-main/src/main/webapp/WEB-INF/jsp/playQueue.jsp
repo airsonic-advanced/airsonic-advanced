@@ -613,7 +613,9 @@
             if (this.CastPlayer.castSession || this.player.tech == 'WEB') {
                 this.playQueuePlayStatusCallback("STOPPED");
             } else {
-                top.StompClient.send("/app/playqueues/" + this.player.id + "/stop", "");
+                if (this.player.id) {
+                    top.StompClient.send("/app/playqueues/" + this.player.id + "/stop", "");
+                }
             }
         },
 
