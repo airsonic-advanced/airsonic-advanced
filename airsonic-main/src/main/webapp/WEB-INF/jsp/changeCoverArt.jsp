@@ -1,10 +1,25 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
 
     <script type="text/javascript" language="javascript">
+        function cloneNodeBySelector(selector, idToAppend) {
+            var cloned = $(selector).clone();
+            cloned.each(function() {
+                if (this.id) {
+                    this.id = this.id + idToAppend;
+                }
+            });
+            cloned.find("*").each(function() {
+                if (this.id) {
+                    this.id = this.id + idToAppend;
+                }
+            });
+
+            return cloned;
+        }
 
         function setImage(imageUrl) {
             $("#wait").show();
