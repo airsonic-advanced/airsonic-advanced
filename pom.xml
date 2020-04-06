@@ -25,6 +25,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.compiler.version>1.8</java.compiler.version>
         <cxf.version>3.3.6</cxf.version>
+        <!-- Temporarily here because Spring Boot had a Postgres driver with a breaking change, remove once spring boot updates or we move to a breaking change -->
+        <postgresql.version>42.2.12</postgresql.version>
         <docker.container.repo>airsonicadvanced/airsonic-advanced</docker.container.repo>
     </properties>
 
