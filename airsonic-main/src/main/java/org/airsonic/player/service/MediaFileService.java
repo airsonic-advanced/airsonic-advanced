@@ -21,9 +21,11 @@ package org.airsonic.player.service;
 
 import com.google.common.io.MoreFiles;
 
+import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.metadata.JaudiotaggerParser;
 import org.airsonic.player.service.metadata.MetaData;
 import org.airsonic.player.service.metadata.MetaDataParser;
@@ -45,6 +47,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,6 +74,8 @@ public class MediaFileService {
     private JaudiotaggerParser parser;
     @Autowired
     private MetaDataParserFactory metaDataParserFactory;
+    @Autowired
+    private LocaleResolver localeResolver;
     private boolean memoryCacheEnabled = true;
 
     /**
@@ -660,6 +665,23 @@ public class MediaFileService {
             album.incrementPlayCount();
             albumDao.createOrUpdateAlbum(album);
         }
+    }
+
+    public List<MediaFileEntry> toMediaFileEntryList(List<MediaFile> files, boolean calculateStarred, String username,
+            Function<MediaFile, String> streamUrlGenerator, Function<MediaFile, String> remoteStreamUrlGenerator,
+            Function<MediaFile, String> remoteCoverArtUrlGenerator) {
+        Locale locale = Optional.ofNullable(username).map(localeResolver::resolveLocale).orElse(null);
+        List<MediaFileEntry> entries = new ArrayList<>(files.size());
+        for (MediaFile file : files) {
+            String streamUrl = Optional.ofNullable(streamUrlGenerator).map(g -> g.apply(file)).orElse(null);
+            String remoteStreamUrl = Optional.ofNullable(remoteStreamUrlGenerator).map(g -> g.apply(file)).orElse(null);
+            String remoteCoverArtUrl = Optional.ofNullable(remoteCoverArtUrlGenerator).map(g -> g.apply(file)).orElse(null);
+
+            boolean starred = calculateStarred && getMediaFileStarredDate(file.getId(), username) != null;
+            entries.add(MediaFileEntry.fromMediaFile(file, locale, starred, streamUrl, remoteStreamUrl, remoteCoverArtUrl));
+        }
+
+        return entries;
     }
 
     public int getAlbumCount(List<MusicFolder> musicFolders) {
