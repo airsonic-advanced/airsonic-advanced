@@ -195,7 +195,7 @@
                       visible: ${model.visibility.albumVisible},
                       className: "detail truncate",
                       render(album, type, row) {
-                          if (type == "display") {
+                          if (type == "display" && album != null) {
                               return $("<a>").attr("href", row.albumUrl).attr("target", !pq.internetRadioEnabled ? "main" : "_blank").attr("rel", !pq.internetRadioEnabled ? "" : "noopener noreferrer").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
                           }
                           return album;
@@ -205,7 +205,7 @@
                       className: "detail truncate",
                       visible: ${model.visibility.artistVisible},
                       render(artist, type) {
-                          if (type == "display") {
+                          if (type == "display" && artist != null) {
                               return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
                           }
                           return artist;
@@ -215,7 +215,7 @@
                       className: "detail truncate",
                       visible: ${model.visibility.genreVisible},
                       render(genre, type) {
-                          if (type == "display") {
+                          if (type == "display" && genre != null) {
                               return $("<span>").attr("title", genre).attr("alt", genre).text(genre)[0].outerHTML;
                           }
                           return genre;
