@@ -12,7 +12,7 @@
         .entire-panel {
             display: flex;
             flex-direction: column;
-            height: 98vh;
+            height: 100vh;
         }
         .main-navigation {
             width: 100%;
@@ -62,7 +62,7 @@
     </style>
 </head>
 
-<body class="bgcolor2" style="height: 100%;">
+<body class="bgcolor2" style="height: 100%; margin: 0">
     <div class="entire-panel">
         <iframe id="upper" name="upper" src="top.view?" class="bgcolor2 main-navigation"></iframe>
 
