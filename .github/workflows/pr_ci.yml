@@ -59,7 +59,7 @@ jobs:
             env:
               DatabaseConfigType: embed
               DatabaseConfigEmbedDriver: org.postgresql.Driver
-              DatabaseConfigEmbedUrl: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified'
+              DatabaseConfigEmbedUrl: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified&raiseExceptionOnSilentRollback=false'
               DatabaseConfigEmbedUsername: postgres
               DatabaseConfigEmbedPassword: pass
               DatabaseUsertableQuote: '"'
@@ -75,7 +75,7 @@ jobs:
             env:
               DatabaseConfigType: embed
               DatabaseConfigEmbedDriver: org.postgresql.Driver
-              DatabaseConfigEmbedUrl: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified'
+              DatabaseConfigEmbedUrl: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified&raiseExceptionOnSilentRollback=false'
               DatabaseConfigEmbedUsername: postgres
               DatabaseConfigEmbedPassword: pass
               DatabaseUsertableQuote: '"'
