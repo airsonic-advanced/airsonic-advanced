@@ -112,7 +112,7 @@ public class MediaFileService {
         result = createMediaFile(file);
 
         // Put in database.
-        mediaFileDao.createOrUpdateMediaFile(result);
+        updateMediaFile(result);
 
         return result;
     }
@@ -158,7 +158,7 @@ public class MediaFileService {
         }
         LOG.debug("Updating database file from disk (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
         mediaFile = createMediaFile(mediaFile.getFile());
-        mediaFileDao.createOrUpdateMediaFile(mediaFile);
+        updateMediaFile(mediaFile);
         return mediaFile;
     }
 
@@ -380,7 +380,7 @@ public class MediaFileService {
                         if (media == null) {
                             media = createMediaFile(x);
                             // Add children that are not already stored.
-                            mediaFileDao.createOrUpdateMediaFile(media);
+                            updateMediaFile(media);
                         } else {
                             media = checkLastModified(media, false); //has to be false, only time it's called
                         }
@@ -395,7 +395,7 @@ public class MediaFileService {
             // Update timestamp in parent.
             parent.setChildrenLastUpdated(parent.getChanged());
             parent.setPresent(true);
-            mediaFileDao.createOrUpdateMediaFile(parent);
+            updateMediaFile(parent);
 
             return result;
         } catch (IOException e) {
@@ -547,10 +547,9 @@ public class MediaFileService {
         return MediaFile.MediaType.MUSIC;
     }
 
-    @CacheEvict(key = "#mediaFile.file")
     public void refreshMediaFile(MediaFile mediaFile) {
         mediaFile = createMediaFile(mediaFile.getFile());
-        mediaFileDao.createOrUpdateMediaFile(mediaFile);
+        updateMediaFile(mediaFile);
     }
 
     @CacheEvict(allEntries = true)
@@ -633,6 +632,7 @@ public class MediaFileService {
         this.metaDataParserFactory = metaDataParserFactory;
     }
 
+    @CacheEvict(key = "#mediaFile.file")
     public void updateMediaFile(MediaFile mediaFile) {
         mediaFileDao.createOrUpdateMediaFile(mediaFile);
     }

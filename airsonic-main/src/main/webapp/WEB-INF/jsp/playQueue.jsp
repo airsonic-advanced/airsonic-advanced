@@ -109,8 +109,13 @@
             pq.musicTable = $("#playQueueMusic").DataTable( {
                 deferRender: true,
                 createdRow(row, data, dataIndex, cells) {
+                    var rowNode = $(row);
                     if (pq.currentSongIndex == dataIndex) {
-                        $(row).addClass("currently-playing").find(".currentImage").show();
+                        rowNode.addClass("currently-playing").find(".currentImage").show();
+                    }
+
+                    if (rowNode.hasClass("selected")) {
+                        rowNode.find(".songIndex input").prop("checked", true);
                     }
                 },
                 ordering: true,
@@ -195,7 +200,7 @@
                       visible: ${model.visibility.albumVisible},
                       className: "detail truncate",
                       render(album, type, row) {
-                          if (type == "display") {
+                          if (type == "display" && album != null) {
                               return $("<a>").attr("href", row.albumUrl).attr("target", !pq.internetRadioEnabled ? "main" : "_blank").attr("rel", !pq.internetRadioEnabled ? "" : "noopener noreferrer").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
                           }
                           return album;
@@ -205,7 +210,7 @@
                       className: "detail truncate",
                       visible: ${model.visibility.artistVisible},
                       render(artist, type) {
-                          if (type == "display") {
+                          if (type == "display" && artist != null) {
                               return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
                           }
                           return artist;
@@ -215,7 +220,7 @@
                       className: "detail truncate",
                       visible: ${model.visibility.genreVisible},
                       render(genre, type) {
-                          if (type == "display") {
+                          if (type == "display" && genre != null) {
                               return $("<span>").attr("title", genre).attr("alt", genre).text(genre)[0].outerHTML;
                           }
                           return genre;
@@ -229,6 +234,12 @@
                 ]
             } );
 
+            pq.musicTable.on( 'select', function ( e, dt, type, indexes ) {
+                pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", true);
+            } );
+            pq.musicTable.on( 'deselect', function ( e, dt, type, indexes ) {
+                pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
+            } );
             $("#playQueueMusic tbody").on( "click", ".starSong", function () {
                 pq.onStar(pq.musicTable.row( $(this).parents('tr') ).index());
             } );
@@ -602,7 +613,9 @@
             if (this.CastPlayer.castSession || this.player.tech == 'WEB') {
                 this.playQueuePlayStatusCallback("STOPPED");
             } else {
-                top.StompClient.send("/app/playqueues/" + this.player.id + "/stop", "");
+                if (this.player.id) {
+                    top.StompClient.send("/app/playqueues/" + this.player.id + "/stop", "");
+                }
             }
         },
 
