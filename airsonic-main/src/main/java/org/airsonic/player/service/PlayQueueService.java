@@ -554,9 +554,8 @@ public class PlayQueueService {
             String streamUrl = url + "stream?player=" + player.getId() + "&id=" + file.getId();
             String coverArtUrl = url + "coverArt.view?id=" + file.getId();
 
-            String remoteStreamUrl = jwtSecurityService
-                    .addJWTToken(url + "ext/stream?player=" + player.getId() + "&id=" + file.getId());
-            String remoteCoverArtUrl = jwtSecurityService.addJWTToken(url + "ext/coverArt.view?id=" + file.getId());
+            String remoteStreamUrl = jwtSecurityService.addJWTToken(player.getUsername(), url + "ext/stream?player=" + player.getId() + "&id=" + file.getId());
+            String remoteCoverArtUrl = jwtSecurityService.addJWTToken(player.getUsername(), url + "ext/coverArt.view?id=" + file.getId());
 
             boolean starred = mediaFileService.getMediaFileStarredDate(file.getId(), player.getUsername()) != null;
             entries.add(new PlayQueueInfo.Entry(file.getId(), file.getTrackNumber(), file.getTitle(), file.getArtist(),

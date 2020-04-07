@@ -1,6 +1,7 @@
 package org.airsonic.player.security;
 
 import org.airsonic.player.service.JWTSecurityService;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,7 +13,6 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.util.StringUtils;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -31,8 +31,7 @@ public class JWTRequestParameterProcessingFilter implements Filter {
         failureHandler = new SimpleUrlAuthenticationFailureHandler(failureUrl);
     }
 
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
-        Optional<JWTAuthenticationToken> token = findToken(request);
+    public Authentication attemptAuthentication(Optional<JWTAuthenticationToken> token) throws AuthenticationException {
         if (token.isPresent()) {
             return authenticationManager.authenticate(token.get());
         }
@@ -40,11 +39,9 @@ public class JWTRequestParameterProcessingFilter implements Filter {
     }
 
     private static Optional<JWTAuthenticationToken> findToken(HttpServletRequest request) {
-        String token = request.getParameter(JWTSecurityService.JWT_PARAM_NAME);
-        if (!StringUtils.isEmpty(token)) {
-            return Optional.of(new JWTAuthenticationToken(AuthorityUtils.NO_AUTHORITIES, token, request.getRequestURI() + "?" + request.getQueryString()));
-        }
-        return Optional.empty();
+        return Optional.ofNullable(request.getParameter(JWTSecurityService.JWT_PARAM_NAME))
+                .filter(StringUtils::isNotEmpty)
+                .map(t -> new JWTAuthenticationToken(null, t, request.getRequestURI() + "?" + request.getQueryString()));
     }
 
     @Override
@@ -58,7 +55,8 @@ public class JWTRequestParameterProcessingFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) resp;
 
-        if (!findToken(request).isPresent()) {
+        Optional<JWTAuthenticationToken> token = findToken(request);
+        if (!token.isPresent()) {
             chain.doFilter(req, resp);
             return;
         }
@@ -70,7 +68,7 @@ public class JWTRequestParameterProcessingFilter implements Filter {
         Authentication authResult;
 
         try {
-            authResult = attemptAuthentication(request, response);
+            authResult = attemptAuthentication(token);
             if (authResult == null) {
                 // return immediately as subclass has indicated that it hasn't completed
                 // authentication
