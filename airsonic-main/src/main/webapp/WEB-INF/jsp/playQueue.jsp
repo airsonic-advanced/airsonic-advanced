@@ -394,7 +394,7 @@
                 };
                 //one-time
                 pq.playerSpecificCallbacks['/app/playqueues/' + this.player.id + '/get'] = function(msg) {
-                    pq.playQueueCallback(JSON.parse(msg.body));
+                    pq.playQueueCallback(JSON.parse(msg.body), true);
                 };
 
                 top.StompClient.subscribe("playQueue.jsp", pq.playerSpecificCallbacks);
@@ -581,8 +581,6 @@
                     this.player.playStatus = status;
                     if (this.player.tech == 'JAVA_JUKEBOX') {
                         JavaJukeBox.javaJukeboxStartCallback();
-                    } else if (this.player.tech == 'EXTERNAL' || this.player.tech == 'EXTERNAL_WITH_PLAYLIST') {
-                        parent.frames.main.location.href="play.m3u?";
                     }
                 }
             } else {
@@ -883,7 +881,7 @@
             }
         },
 
-        playQueueCallback(playQueue) {
+        playQueueCallback(playQueue, initial) {
             this.songs = playQueue.entries;
             this.shuffleRadioEnabled = playQueue.shuffleRadioEnabled;
             this.internetRadioEnabled = playQueue.internetRadioEnabled;
@@ -896,6 +894,12 @@
 
             this.playQueueRepeatStatusCallback(playQueue.repeatStatus);
             this.playQueuePlayStatusCallback(playQueue.playStatus);
+
+            // download m3u for external player only once at the beginning, every subsequent change is just reflected on the server
+            // download m3u for external with playlist player every time the playlist changes
+            if ((this.player.tech == 'EXTERNAL' && initial) || this.player.tech == 'EXTERNAL_WITH_PLAYLIST') {
+                parent.frames.main.location.href="play.m3u?";
+            }
 
             // Disable some UI items if internet radio is playing
             $("select#moreActions #loadPlayQueue").prop("disabled", this.internetRadioEnabled);
