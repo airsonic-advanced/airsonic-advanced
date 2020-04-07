@@ -4,7 +4,7 @@
 -->
 Airsonic-Advanced
 =================
-[![Build Status](https://travis-ci.org/airsonic-advanced/airsonic-advanced.svg?branch=master)](https://travis-ci.org/airsonic-advanced/airsonic-advanced)
+![](https://github.com/airsonic-advanced/airsonic-advanced/workflows/Edge%20Deploy%20CI%20(Maven)/badge.svg)
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/airsonic-advanced/airsonic-advanced.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic-advanced/airsonic-advanced/context:javascript)
 [![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/airsonic-advanced/airsonic-advanced.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic-advanced/airsonic-advanced/context:java)
 
