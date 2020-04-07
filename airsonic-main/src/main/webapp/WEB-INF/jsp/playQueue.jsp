@@ -125,7 +125,9 @@
                 order: [],
                 orderFixed: [ 0, 'asc' ],
                 orderMulti: false,
-                lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
+                pageLength: ${model.initialPaginationSize},
+              <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSize)) ? '' : ', '.concat(model.initialPaginationSize)}" />
+                lengthMenu: [[10, 20, 50, 100, -1 ${paginationaddition}], [10, 20, 50, 100, "All" ${paginationaddition}]],
                 buttons: [
                     {
                       text: "<fmt:message key='main.nowplaying'/>",
