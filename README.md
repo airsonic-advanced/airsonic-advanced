@@ -52,6 +52,8 @@ The following is an incomplete list of features that are enhanced from Airsonic:
     - Removal of DWR (10 year old technology used as an interface between the web-client and the server)
     - Provides status indicator whether client is connected to server
 - UI:
+    - HTML5 compliant
+      - Redesigned layout: Uses iframes instead of framesets and frames
     - Utilize a dedicated library (DataTables) to render tables
       - Deferred rendering and data manipulation outside the DOM allows much faster rendering (~10x-800x!)
         - The bigger the table, the more performance benefits it sees
@@ -61,6 +63,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Several race condition fixes
   - Consistency checks and refactors
 - Miscellaneous
+  - Works with JDK14
   - Uses JSR 310 (Java time) instead of older Java packages for time/duration tracking
   - Uses Java's NIO for handling files instead of the older IO packages
   - More precise song duration calculation
