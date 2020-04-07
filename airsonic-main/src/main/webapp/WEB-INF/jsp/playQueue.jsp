@@ -33,7 +33,7 @@
 
 <script type="text/javascript" language="javascript">
     "use strict";
-    
+
     /** Toggle between <a> and <span> in order to disable play queue action buttons */
     $.fn.toggleLink = function(newState) {
         $(this).each(function(ix, elt) {
@@ -67,7 +67,7 @@
             return true;
         });
     };
-    
+
     var playQueue = {
         // Changed when player is changed
         player: {},
@@ -85,6 +85,9 @@
 
         // Is autorepeat enabled?
         repeatStatus: 'OFF',
+
+        // Play status on the server
+        playStatus: 'PLAYING',
 
         // Is the "shuffle radio" playing? (More > Shuffle Radio)
         shuffleRadioEnabled: false,
@@ -565,20 +568,20 @@
             }
         },
 
-        playQueuePlayStatusCallback(status) {
+        playQueuePlayStatusCallback(status, nonWebOnly) {
+            this.playStatus = status;
             if (status == "PLAYING") {
                 $("#audioStart").hide();
                 $("#audioStop").show();
-                if (this.CastPlayer.castSession) {
+                if (this.CastPlayer.castSession && !nonWebOnly) {
                     this.CastPlayer.playCast();
-                } else if (this.player.tech == 'WEB') {
+                } else if (this.player.tech == 'WEB' && !nonWebOnly) {
                     if (this.audioPlayer.src) {
                         this.audioPlayer.play();  // Resume playing if the player was paused
                     } else {
                         this.onSkip(0);  // Start the first track if the player was not yet loaded
                     }
-                } else if (status != this.player.playStatus) {
-                    this.player.playStatus = status;
+                } else {
                     if (this.player.tech == 'JAVA_JUKEBOX') {
                         JavaJukeBox.javaJukeboxStartCallback();
                     }
@@ -586,12 +589,11 @@
             } else {
                 $("#audioStop").hide();
                 $("#audioStart").show();
-                if (this.CastPlayer.castSession) {
+                if (this.CastPlayer.castSession && !nonWebOnly) {
                     this.CastPlayer.pauseCast();
-                } else if (this.player.tech == 'WEB') {
+                } else if (this.player.tech == 'WEB' && !nonWebOnly) {
                     this.audioPlayer.pause();
-                } else if (status != this.player.playStatus) {
-                    this.player.playStatus = status;
+                } else {
                     if (this.player.tech == 'JAVA_JUKEBOX') {
                         JavaJukeBox.javaJukeboxStopCallback();
                     }
@@ -893,7 +895,7 @@
             }
 
             this.playQueueRepeatStatusCallback(playQueue.repeatStatus);
-            this.playQueuePlayStatusCallback(playQueue.playStatus);
+            this.playQueuePlayStatusCallback(playQueue.playStatus, true);
 
             // download m3u for external player only once at the beginning, every subsequent change is just reflected on the server
             // download m3u for external with playlist player every time the playlist changes
