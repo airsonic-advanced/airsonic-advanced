@@ -149,7 +149,7 @@ public class HLSController {
                     .queryParam("id", id)
                     .queryParam("player", player.getId())
                     .queryParam("bitRate", kbps));
-            jwtSecurityService.addJWTToken(url);
+            jwtSecurityService.addJWTToken(player.getUsername(), url);
             writer.print(url.toUriString());
             Dimension dimension = bitRate.getRight();
             if (dimension != null) {
@@ -195,7 +195,7 @@ public class HLSController {
                 builder.queryParam("x", dimension.height);
             }
         }
-        jwtSecurityService.addJWTToken(builder);
+        jwtSecurityService.addJWTToken(player.getUsername(), builder);
         return builder.toUriString();
     }
 

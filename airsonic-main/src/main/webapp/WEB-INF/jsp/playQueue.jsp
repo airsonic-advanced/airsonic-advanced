@@ -33,7 +33,7 @@
 
 <script type="text/javascript" language="javascript">
     "use strict";
-    
+
     /** Toggle between <a> and <span> in order to disable play queue action buttons */
     $.fn.toggleLink = function(newState) {
         $(this).each(function(ix, elt) {
@@ -67,7 +67,7 @@
             return true;
         });
     };
-    
+
     var playQueue = {
         // Changed when player is changed
         player: {},
@@ -85,6 +85,9 @@
 
         // Is autorepeat enabled?
         repeatStatus: 'OFF',
+
+        // Play status on the server
+        playStatus: 'PLAYING',
 
         // Is the "shuffle radio" playing? (More > Shuffle Radio)
         shuffleRadioEnabled: false,
@@ -109,8 +112,13 @@
             pq.musicTable = $("#playQueueMusic").DataTable( {
                 deferRender: true,
                 createdRow(row, data, dataIndex, cells) {
+                    var rowNode = $(row);
                     if (pq.currentSongIndex == dataIndex) {
-                        $(row).addClass("currently-playing").find(".currentImage").show();
+                        rowNode.addClass("currently-playing").find(".currentImage").show();
+                    }
+
+                    if (rowNode.hasClass("selected")) {
+                        rowNode.find(".songIndex input").prop("checked", true);
                     }
                 },
                 ordering: true,
@@ -195,7 +203,7 @@
                       visible: ${model.visibility.albumVisible},
                       className: "detail truncate",
                       render(album, type, row) {
-                          if (type == "display") {
+                          if (type == "display" && album != null) {
                               return $("<a>").attr("href", row.albumUrl).attr("target", !pq.internetRadioEnabled ? "main" : "_blank").attr("rel", !pq.internetRadioEnabled ? "" : "noopener noreferrer").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
                           }
                           return album;
@@ -205,7 +213,7 @@
                       className: "detail truncate",
                       visible: ${model.visibility.artistVisible},
                       render(artist, type) {
-                          if (type == "display") {
+                          if (type == "display" && artist != null) {
                               return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
                           }
                           return artist;
@@ -215,7 +223,7 @@
                       className: "detail truncate",
                       visible: ${model.visibility.genreVisible},
                       render(genre, type) {
-                          if (type == "display") {
+                          if (type == "display" && genre != null) {
                               return $("<span>").attr("title", genre).attr("alt", genre).text(genre)[0].outerHTML;
                           }
                           return genre;
@@ -229,6 +237,12 @@
                 ]
             } );
 
+            pq.musicTable.on( 'select', function ( e, dt, type, indexes ) {
+                pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", true);
+            } );
+            pq.musicTable.on( 'deselect', function ( e, dt, type, indexes ) {
+                pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
+            } );
             $("#playQueueMusic tbody").on( "click", ".starSong", function () {
                 pq.onStar(pq.musicTable.row( $(this).parents('tr') ).index());
             } );
@@ -383,7 +397,7 @@
                 };
                 //one-time
                 pq.playerSpecificCallbacks['/app/playqueues/' + this.player.id + '/get'] = function(msg) {
-                    pq.playQueueCallback(JSON.parse(msg.body));
+                    pq.playQueueCallback(JSON.parse(msg.body), true);
                 };
 
                 top.StompClient.subscribe("playQueue.jsp", pq.playerSpecificCallbacks);
@@ -554,30 +568,35 @@
             }
         },
 
-        playQueuePlayStatusCallback(status) {
+        playQueuePlayStatusCallback(status, nonWebOnly) {
+            this.playStatus = status;
             if (status == "PLAYING") {
                 $("#audioStart").hide();
                 $("#audioStop").show();
-                if (this.CastPlayer.castSession) {
+                if (this.CastPlayer.castSession && !nonWebOnly) {
                     this.CastPlayer.playCast();
-                } else if (this.player.tech == 'WEB') {
+                } else if (this.player.tech == 'WEB' && !nonWebOnly) {
                     if (this.audioPlayer.src) {
                         this.audioPlayer.play();  // Resume playing if the player was paused
                     } else {
                         this.onSkip(0);  // Start the first track if the player was not yet loaded
                     }
-                } else if (this.player.tech == 'JAVA_JUKEBOX') {
-                    JavaJukeBox.javaJukeboxStartCallback();
+                } else {
+                    if (this.player.tech == 'JAVA_JUKEBOX') {
+                        JavaJukeBox.javaJukeboxStartCallback();
+                    }
                 }
             } else {
                 $("#audioStop").hide();
                 $("#audioStart").show();
-                if (this.CastPlayer.castSession) {
+                if (this.CastPlayer.castSession && !nonWebOnly) {
                     this.CastPlayer.pauseCast();
-                } else if (this.player.tech == 'WEB') {
+                } else if (this.player.tech == 'WEB' && !nonWebOnly) {
                     this.audioPlayer.pause();
-                } else if (this.player.tech == 'JAVA_JUKEBOX') {
-                    JavaJukeBox.javaJukeboxStopCallback();
+                } else {
+                    if (this.player.tech == 'JAVA_JUKEBOX') {
+                        JavaJukeBox.javaJukeboxStopCallback();
+                    }
                 }
             }
         },
@@ -602,7 +621,9 @@
             if (this.CastPlayer.castSession || this.player.tech == 'WEB') {
                 this.playQueuePlayStatusCallback("STOPPED");
             } else {
-                top.StompClient.send("/app/playqueues/" + this.player.id + "/stop", "");
+                if (this.player.id) {
+                    top.StompClient.send("/app/playqueues/" + this.player.id + "/stop", "");
+                }
             }
         },
 
@@ -644,6 +665,7 @@
             } else if (this.player.tech == 'JAVA_JUKEBOX') {
                 JavaJukeBox.updateJavaJukeboxPlayerControlBar(song, location.offset / 1000);
             }
+
             this.updateWindowTitle(song);
 
           <c:if test="${model.notify}">
@@ -654,7 +676,7 @@
         onSkip(index, offset) {
             if (this.player.tech == 'WEB') {
                 this.playQueueSkipCallback({index: index, offset: offset});
-            } else {
+            } else if (this.player.tech != 'EXTERNAL_WITH_PLAYLIST') {
                 top.StompClient.send("/app/playqueues/" + this.player.id + "/skip", JSON.stringify({index: index, offset: offset}));
             }
         },
@@ -861,7 +883,7 @@
             }
         },
 
-        playQueueCallback(playQueue) {
+        playQueueCallback(playQueue, initial) {
             this.songs = playQueue.entries;
             this.shuffleRadioEnabled = playQueue.shuffleRadioEnabled;
             this.internetRadioEnabled = playQueue.internetRadioEnabled;
@@ -872,12 +894,14 @@
                 this.onStop();
             }
 
-            if ($("#start").length != 0) {
-                $("#start").toggle(!playQueue.stopEnabled);
-                $("#stop").toggle(playQueue.stopEnabled);
-            }
-
             this.playQueueRepeatStatusCallback(playQueue.repeatStatus);
+            this.playQueuePlayStatusCallback(playQueue.playStatus, true);
+
+            // download m3u for external player only once at the beginning, every subsequent change is just reflected on the server
+            // download m3u for external with playlist player every time the playlist changes
+            if ((this.player.tech == 'EXTERNAL' && initial) || this.player.tech == 'EXTERNAL_WITH_PLAYLIST') {
+                parent.frames.main.location.href="play.m3u?";
+            }
 
             // Disable some UI items if internet radio is playing
             $("select#moreActions #loadPlayQueue").prop("disabled", this.internetRadioEnabled);
@@ -916,10 +940,6 @@
             this.currentSongIndex = this.getCurrentSongIndex();
             this.musicTable.ajax.reload().columns.adjust();
             this.updateCurrentImage();
-
-            if (playQueue.sendM3U) {
-                parent.frames.main.location.href="play.m3u?";
-            }
 
             this.jukeBoxGainCallback(playQueue.gain);
         },

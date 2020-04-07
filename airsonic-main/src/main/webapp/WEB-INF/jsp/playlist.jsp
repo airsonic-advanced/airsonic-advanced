@@ -1,4 +1,4 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 
 <html><head>
     <%@ include file="head.jsp" %>
@@ -113,7 +113,7 @@
                     { data: "title",
                       className: "detail songTitle truncate",
                       render: function(title, type, row) {
-                          if (type == "display") {
+                          if (type == "display" && title != null) {
                               return $("<span>").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
                           }
                           return title;
@@ -122,7 +122,7 @@
                     { data: "album",
                       className: "detail truncate",
                       render: function(album, type, row) {
-                          if (type == "display") {
+                          if (type == "display" && album != null) {
                               return $("<a>").attr("href", "main.view?id=" + row.id).attr("target", "main").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
                           }
                           return album;
@@ -131,7 +131,7 @@
                     { data: "artist",
                       className: "detail truncate",
                       render: function(artist, type, row) {
-                          if (type == "display") {
+                          if (type == "display" && artist != null) {
                               return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
                           }
                           return artist;
