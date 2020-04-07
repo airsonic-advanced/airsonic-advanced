@@ -20,6 +20,7 @@
 package org.airsonic.player.ajax;
 
 import org.airsonic.player.domain.PlayQueue.RepeatStatus;
+import org.airsonic.player.domain.PlayQueue.Status;
 import org.airsonic.player.util.StringUtil;
 
 import java.util.List;
@@ -32,23 +33,20 @@ import java.util.List;
 public class PlayQueueInfo {
 
     private final List<Entry> entries;
-    private final boolean stopEnabled;
+    private final Status playStatus;
     private final RepeatStatus repeatStatus;
     private final boolean shuffleRadioEnabled;
     private final boolean internetRadioEnabled;
-    private final boolean sendM3U;
     private final float gain;
     private int startPlayerAt = -1;
     private long startPlayerAtPosition; // millis
 
-    public PlayQueueInfo(List<Entry> entries, boolean stopEnabled, RepeatStatus repeatStatus,
-            boolean shuffleRadioEnabled, boolean internetRadioEnabled, boolean sendM3U, float gain) {
+    public PlayQueueInfo(List<Entry> entries, Status playStatus, RepeatStatus repeatStatus, boolean shuffleRadioEnabled, boolean internetRadioEnabled, float gain) {
         this.entries = entries;
-        this.stopEnabled = stopEnabled;
+        this.playStatus = playStatus;
         this.repeatStatus = repeatStatus;
         this.shuffleRadioEnabled = shuffleRadioEnabled;
         this.internetRadioEnabled = internetRadioEnabled;
-        this.sendM3U = sendM3U;
         this.gain = gain;
     }
 
@@ -56,16 +54,12 @@ public class PlayQueueInfo {
         return entries;
     }
 
+    public Status getPlayStatus() {
+        return playStatus;
+    }
+
     public String getDurationAsString() {
         return StringUtil.formatDuration(Math.round(1000 * entries.parallelStream().filter(e -> e.getDuration() != null).mapToDouble(Entry::getDuration).sum()), false);
-    }
-
-    public boolean isStopEnabled() {
-        return stopEnabled;
-    }
-
-    public boolean isSendM3U() {
-        return sendM3U;
     }
 
     public RepeatStatus getRepeatStatus() {

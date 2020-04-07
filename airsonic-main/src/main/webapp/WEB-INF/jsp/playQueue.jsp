@@ -577,8 +577,13 @@
                     } else {
                         this.onSkip(0);  // Start the first track if the player was not yet loaded
                     }
-                } else if (this.player.tech == 'JAVA_JUKEBOX') {
-                    JavaJukeBox.javaJukeboxStartCallback();
+                } else if (status != this.player.playStatus) {
+                    this.player.playStatus = status;
+                    if (this.player.tech == 'JAVA_JUKEBOX') {
+                        JavaJukeBox.javaJukeboxStartCallback();
+                    } else if (this.player.tech == 'EXTERNAL' || this.player.tech == 'EXTERNAL_WITH_PLAYLIST') {
+                        parent.frames.main.location.href="play.m3u?";
+                    }
                 }
             } else {
                 $("#audioStop").hide();
@@ -587,8 +592,11 @@
                     this.CastPlayer.pauseCast();
                 } else if (this.player.tech == 'WEB') {
                     this.audioPlayer.pause();
-                } else if (this.player.tech == 'JAVA_JUKEBOX') {
-                    JavaJukeBox.javaJukeboxStopCallback();
+                } else if (status != this.player.playStatus) {
+                    this.player.playStatus = status;
+                    if (this.player.tech == 'JAVA_JUKEBOX') {
+                        JavaJukeBox.javaJukeboxStopCallback();
+                    }
                 }
             }
         },
@@ -657,6 +665,7 @@
             } else if (this.player.tech == 'JAVA_JUKEBOX') {
                 JavaJukeBox.updateJavaJukeboxPlayerControlBar(song, location.offset / 1000);
             }
+
             this.updateWindowTitle(song);
 
           <c:if test="${model.notify}">
@@ -667,7 +676,7 @@
         onSkip(index, offset) {
             if (this.player.tech == 'WEB') {
                 this.playQueueSkipCallback({index: index, offset: offset});
-            } else {
+            } else if (this.player.tech != 'EXTERNAL_WITH_PLAYLIST') {
                 top.StompClient.send("/app/playqueues/" + this.player.id + "/skip", JSON.stringify({index: index, offset: offset}));
             }
         },
@@ -885,12 +894,8 @@
                 this.onStop();
             }
 
-            if ($("#start").length != 0) {
-                $("#start").toggle(!playQueue.stopEnabled);
-                $("#stop").toggle(playQueue.stopEnabled);
-            }
-
             this.playQueueRepeatStatusCallback(playQueue.repeatStatus);
+            this.playQueuePlayStatusCallback(playQueue.playStatus);
 
             // Disable some UI items if internet radio is playing
             $("select#moreActions #loadPlayQueue").prop("disabled", this.internetRadioEnabled);
@@ -929,10 +934,6 @@
             this.currentSongIndex = this.getCurrentSongIndex();
             this.musicTable.ajax.reload().columns.adjust();
             this.updateCurrentImage();
-
-            if (playQueue.sendM3U) {
-                parent.frames.main.location.href="play.m3u?";
-            }
 
             this.jukeBoxGainCallback(playQueue.gain);
         },
