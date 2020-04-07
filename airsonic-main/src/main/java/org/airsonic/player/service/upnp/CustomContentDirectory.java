@@ -72,7 +72,7 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
             builder.queryParam("format", TranscodingService.FORMAT_RAW);
         }
 
-        jwtSecurityService.addJWTToken(builder);
+        jwtSecurityService.addJWTToken(JWTSecurityService.USERNAME_ANONYMOUS, builder);
 
         String url = builder.toUriString();
 

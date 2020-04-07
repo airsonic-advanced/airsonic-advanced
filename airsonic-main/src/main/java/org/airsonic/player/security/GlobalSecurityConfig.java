@@ -157,7 +157,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
             AbstractAuthenticationToken token = (AbstractAuthenticationToken) event.getSource();
             Object details = token.getDetails();
             if (details instanceof WebAuthenticationDetails) {
-                LOG.info("Login failed from [" + ((WebAuthenticationDetails) details).getRemoteAddress() + "]");
+                LOG.info("Login failed from [{}]", ((WebAuthenticationDetails) details).getRemoteAddress());
             }
         }
     }
