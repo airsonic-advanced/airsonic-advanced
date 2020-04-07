@@ -2,6 +2,7 @@ package org.airsonic.player.service;
 
 import com.google.common.collect.ImmutableMap;
 
+import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.ajax.PlayQueueInfo;
 import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MediaFileDao;
@@ -17,8 +18,6 @@ import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastStatus;
 import org.airsonic.player.domain.RandomSearchCriteria;
 import org.airsonic.player.domain.SavedPlayQueue;
-import org.airsonic.player.i18n.LocaleResolver;
-import org.airsonic.player.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageType;
@@ -30,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,8 +63,6 @@ public class PlayQueueService {
     private JWTSecurityService jwtSecurityService;
     @Autowired
     private InternetRadioService internetRadioService;
-    @Autowired
-    private LocaleResolver localeResolver;
     @Autowired
     private SimpMessagingTemplate brokerTemplate;
 
@@ -529,7 +525,7 @@ public class PlayQueueService {
     public PlayQueueInfo getPlayQueueInfo(Player player) {
         PlayQueue playQueue = player.getPlayQueue();
 
-        List<PlayQueueInfo.Entry> entries;
+        List<MediaFileEntry> entries;
         if (playQueue.isInternetRadioEnabled()) {
             entries = convertInternetRadio(player);
         } else {
@@ -541,35 +537,19 @@ public class PlayQueueService {
         return new PlayQueueInfo(entries, playQueue.getStatus(), playQueue.getRepeatStatus(), playQueue.isShuffleRadioEnabled(), playQueue.isInternetRadioEnabled(), gain);
     }
 
-    private List<PlayQueueInfo.Entry> convertMediaFileList(Player player) {
-
+    private List<MediaFileEntry> convertMediaFileList(Player player) {
         String url = ""; // NetworkService.getBaseUrl(request);
-        Locale locale = localeResolver.resolveLocale(player.getUsername());
-        PlayQueue playQueue = player.getPlayQueue();
-
-        List<PlayQueueInfo.Entry> entries = new ArrayList<>(playQueue.getFiles().size());
-        for (MediaFile file : playQueue.getFiles()) {
-
-            String albumUrl = url + "main.view?id=" + file.getId();
-            String streamUrl = url + "stream?player=" + player.getId() + "&id=" + file.getId();
-            String coverArtUrl = url + "coverArt.view?id=" + file.getId();
-
-            String remoteStreamUrl = jwtSecurityService.addJWTToken(player.getUsername(), url + "ext/stream?player=" + player.getId() + "&id=" + file.getId());
-            String remoteCoverArtUrl = jwtSecurityService.addJWTToken(player.getUsername(), url + "ext/coverArt.view?id=" + file.getId());
-
-            boolean starred = mediaFileService.getMediaFileStarredDate(file.getId(), player.getUsername()) != null;
-            entries.add(new PlayQueueInfo.Entry(file.getId(), file.getTrackNumber(), file.getTitle(), file.getArtist(),
-                    file.getAlbumName(), file.getGenre(), file.getYear(), formatBitRate(file), file.getDuration(),
-                    file.getDurationString(), file.getFormat(), StringUtil.getMimeType(file.getFormat()),
-                    StringUtil.formatBytes(file.getFileSize(), locale), starred, albumUrl, streamUrl, remoteStreamUrl,
-                    coverArtUrl, remoteCoverArtUrl));
-        }
-
-        return entries;
+        Function<MediaFile, String> streamUrlGenerator = file -> url + "stream?player=" + player.getId() + "&id="
+                + file.getId();
+        Function<MediaFile, String> remoteStreamUrlGenerator = file -> jwtSecurityService
+                .addJWTToken(player.getUsername(), url + "ext/stream?player=" + player.getId() + "&id=" + file.getId());
+        Function<MediaFile, String> remoteCoverArtUrlGenerator = file -> jwtSecurityService
+                .addJWTToken(player.getUsername(), url + "ext/coverArt.view?id=" + file.getId());
+        return mediaFileService.toMediaFileEntryList(player.getPlayQueue().getFiles(), true, player.getUsername(),
+                streamUrlGenerator, remoteStreamUrlGenerator, remoteCoverArtUrlGenerator);
     }
 
-    private List<PlayQueueInfo.Entry> convertInternetRadio(Player player) {
-
+    private List<MediaFileEntry> convertInternetRadio(Player player) {
         PlayQueue playQueue = player.getPlayQueue();
         InternetRadio radio = playQueue.getInternetRadio();
 
@@ -577,13 +557,13 @@ public class PlayQueueService {
         final String radioName = radio.getName();
 
         List<InternetRadioSource> sources = internetRadioService.getInternetRadioSources(radio);
-        List<PlayQueueInfo.Entry> entries = new ArrayList<>(sources.size());
+        List<MediaFileEntry> entries = new ArrayList<>(sources.size());
         for (InternetRadioSource streamSource : sources) {
             // Fake entry id so that the source can be selected in the UI
             int streamId = -(1 + entries.size());
             Integer streamTrackNumber = entries.size();
             String streamUrl = streamSource.getStreamUrl();
-            entries.add(new PlayQueueInfo.Entry(streamId, // Entry id
+            entries.add(new MediaFileEntry(streamId, // Entry id
                     streamTrackNumber, // Track number
                     streamUrl, // Track title (use radio stream URL for now)
                     "", // Track artist
@@ -591,10 +571,12 @@ public class PlayQueueService {
                     "Internet Radio", // Genre
                     0, // Year
                     "", // Bit rate
+                    null, // Dimensions
                     0.0, // Duration
                     "", // Duration (as string)
                     "", // Format
                     "", // Content Type
+                    "", // Entry Type
                     "", // File size
                     false, // Starred
                     radioHomepageUrl, // Album URL (use radio home page URL)
@@ -606,15 +588,5 @@ public class PlayQueueService {
         }
 
         return entries;
-    }
-
-    private static String formatBitRate(MediaFile mediaFile) {
-        if (mediaFile.getBitRate() == null) {
-            return null;
-        }
-        if (mediaFile.isVariableBitRate()) {
-            return mediaFile.getBitRate() + " Kbps vbr";
-        }
-        return mediaFile.getBitRate() + " Kbps";
     }
 }

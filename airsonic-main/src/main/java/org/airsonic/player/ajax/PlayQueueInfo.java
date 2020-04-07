@@ -31,8 +31,7 @@ import java.util.List;
  * @author Sindre Mehus
  */
 public class PlayQueueInfo {
-
-    private final List<Entry> entries;
+    private final List<MediaFileEntry> entries;
     private final Status playStatus;
     private final RepeatStatus repeatStatus;
     private final boolean shuffleRadioEnabled;
@@ -41,7 +40,8 @@ public class PlayQueueInfo {
     private int startPlayerAt = -1;
     private long startPlayerAtPosition; // millis
 
-    public PlayQueueInfo(List<Entry> entries, Status playStatus, RepeatStatus repeatStatus, boolean shuffleRadioEnabled, boolean internetRadioEnabled, float gain) {
+    public PlayQueueInfo(List<MediaFileEntry> entries, Status playStatus, RepeatStatus repeatStatus,
+            boolean shuffleRadioEnabled, boolean internetRadioEnabled, float gain) {
         this.entries = entries;
         this.playStatus = playStatus;
         this.repeatStatus = repeatStatus;
@@ -50,16 +50,16 @@ public class PlayQueueInfo {
         this.gain = gain;
     }
 
-    public List<Entry> getEntries() {
+    public List<MediaFileEntry> getEntries() {
         return entries;
+    }
+
+    public String getDurationAsString() {
+        return StringUtil.formatDuration(Math.round(1000 * entries.parallelStream().filter(e -> e.getDuration() != null).mapToDouble(MediaFileEntry::getDuration).sum()), false);
     }
 
     public Status getPlayStatus() {
         return playStatus;
-    }
-
-    public String getDurationAsString() {
-        return StringUtil.formatDuration(Math.round(1000 * entries.parallelStream().filter(e -> e.getDuration() != null).mapToDouble(Entry::getDuration).sum()), false);
     }
 
     public RepeatStatus getRepeatStatus() {
@@ -94,146 +94,5 @@ public class PlayQueueInfo {
     public PlayQueueInfo setStartPlayerAtPosition(long startPlayerAtPosition) {
         this.startPlayerAtPosition = startPlayerAtPosition;
         return this;
-    }
-
-    public static class Entry {
-        private final int id;
-        private final Integer trackNumber;
-        private final String title;
-        private final String artist;
-        private final String album;
-        private final String genre;
-        private final Integer year;
-        private final String bitRate;
-        private final Double duration;
-        private final String durationAsString;
-        private final String format;
-        private final String contentType;
-        private final String fileSize;
-        private final boolean starred;
-        private final String albumUrl;
-        private final String streamUrl;
-        private final String remoteStreamUrl;
-        private final String coverArtUrl;
-        private final String remoteCoverArtUrl;
-
-        public Entry(
-                int id,
-                Integer trackNumber,
-                String title,
-                String artist,
-                String album,
-                String genre,
-                Integer year,
-                String bitRate,
-                Double duration,
-                String durationAsString,
-                String format,
-                String contentType,
-                String fileSize,
-                boolean starred,
-                String albumUrl,
-                String streamUrl,
-                String remoteStreamUrl,
-                String coverArtUrl,
-                String remoteCoverArtUrl) {
-
-            this.id = id;
-            this.trackNumber = trackNumber;
-            this.title = title;
-            this.artist = artist;
-            this.album = album;
-            this.genre = genre;
-            this.year = year;
-            this.bitRate = bitRate;
-            this.duration = duration;
-            this.durationAsString = durationAsString;
-            this.format = format;
-            this.contentType = contentType;
-            this.fileSize = fileSize;
-            this.starred = starred;
-            this.albumUrl = albumUrl;
-            this.streamUrl = streamUrl;
-            this.remoteStreamUrl = remoteStreamUrl;
-            this.coverArtUrl = coverArtUrl;
-            this.remoteCoverArtUrl = remoteCoverArtUrl;
-        }
-
-        public int getId() {
-            return id;
-        }
-
-        public Integer getTrackNumber() {
-            return trackNumber;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public String getArtist() {
-            return artist;
-        }
-
-        public String getAlbum() {
-            return album;
-        }
-
-        public String getGenre() {
-            return genre;
-        }
-
-        public Integer getYear() {
-            return year;
-        }
-
-        public String getBitRate() {
-            return bitRate;
-        }
-
-        public String getDurationAsString() {
-            return durationAsString;
-        }
-
-        public Double getDuration() {
-            return duration;
-        }
-
-        public String getFormat() {
-            return format;
-        }
-
-        public String getContentType() {
-            return contentType;
-        }
-
-        public String getFileSize() {
-            return fileSize;
-        }
-
-        public boolean isStarred() {
-            return starred;
-        }
-
-        public String getAlbumUrl() {
-            return albumUrl;
-        }
-
-        public String getStreamUrl() {
-            return streamUrl;
-        }
-
-        public String getRemoteStreamUrl() {
-            return remoteStreamUrl;
-        }
-
-        public String getCoverArtUrl() {
-            return coverArtUrl;
-        }
-
-        public String getRemoteCoverArtUrl() {
-            return remoteCoverArtUrl;
-        }
-
     }
 }
