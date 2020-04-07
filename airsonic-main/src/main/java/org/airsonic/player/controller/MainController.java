@@ -64,6 +64,7 @@ public class MainController {
         map.put("partyMode", userSettings.isPartyModeEnabled());
         map.put("brand", settingsService.getBrand());
         map.put("viewAsList", userSettings.isViewAsList());
+        map.put("initialPaginationSize", userSettings.getPaginationSize());
         map.put("initialPathsJSON", Util.toJson(ServletRequestUtils.getStringParameters(request, "path")));
         map.put("initialIdsJSON", Util.toJson(ServletRequestUtils.getIntParameters(request, "id")));
 
