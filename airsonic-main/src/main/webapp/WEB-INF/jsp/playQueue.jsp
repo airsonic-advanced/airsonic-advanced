@@ -1058,7 +1058,7 @@
     </div>
   </c:if>
 
-    <div class="player-tech player-tech-web">
+    <div class="player-tech player-tech-web" style="white-space:nowrap;">
         <div id="player" style="width:340px; height:40px">
             <audio id="audioPlayer" width="340px" height="40px" tabindex="-1" />
         </div>
@@ -1078,25 +1078,25 @@
             </div>
         </div>
     </div>
-    <div class="player-tech player-tech-web">
+    <div class="player-tech player-tech-web" style="white-space:nowrap;">
         <img alt="Cast on" id="castOn" src="<spring:theme code='castIdleImage'/>" onclick="playQueue.CastPlayer.launchCastApp()" style="cursor:pointer; display:none">
         <img alt="Cast off" id="castOff" src="<spring:theme code='castActiveImage'/>" onclick="playQueue.CastPlayer.stopCastApp()" style="cursor:pointer; display:none">
     </div>
 
   <c:if test="${model.user.streamRole}">
-    <div class="player-tech player-tech-non-web">
+    <div class="player-tech player-tech-non-web" style="white-space:nowrap;">
         <img alt="Start" id="audioStart" src="<spring:theme code='castPlayImage'/>" onclick="playQueue.onStart()" style="cursor:pointer">
         <img alt="Stop" id="audioStop" src="<spring:theme code='castPauseImage'/>" onclick="playQueue.onStop()" style="cursor:pointer; display:none">
     </div>
   </c:if>
 
-    <div class="player-tech player-tech-java_jukebox">
+    <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
         <span id="playingPositionDisplay" class="javaJukeBoxPlayerControlBarSongTime"/>
     </div>
     <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
         <div id="javaJukeboxSongPositionSlider"></div>
     </div>
-    <div class="player-tech player-tech-java_jukebox">
+    <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
         <span id="playingDurationDisplay" class="javaJukeBoxPlayerControlBarSongTime"/>
     </div>
 
@@ -1111,12 +1111,12 @@
         </script>
     </div>
 
-    <div class="player-tech player-tech-web">
+    <div class="player-tech player-tech-web" style="white-space:nowrap;">
         <span class="header">
             <img src="<spring:theme code='backImage'/>" alt="Play previous" title="Play previous" onclick="playQueue.onPrevious()" style="cursor:pointer">
         </span>
     </div>
-    <div class="player-tech player-tech-web">
+    <div class="player-tech player-tech-web" style="white-space:nowrap;">
         <span class="header">
             <img src="<spring:theme code='forwardImage'/>" alt="Play next" title="Play next" onclick="playQueue.onNext('OFF')" style="cursor:pointer">
         </span> |
