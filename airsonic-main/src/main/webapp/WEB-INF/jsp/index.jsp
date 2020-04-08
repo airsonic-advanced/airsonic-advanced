@@ -16,11 +16,9 @@
         }
         .main-navigation {
             width: 100%;
-            height: 0%;
-            flex: 10%;
         }
         .lower {
-            flex: 90%;
+            flex: 100%;
             display: flex;
             flex-direction: row;
             height: 100%;
@@ -64,7 +62,7 @@
 
 <body class="bgcolor2" style="height: 100%; margin: 0">
     <div class="entire-panel">
-        <iframe id="upper" name="upper" src="top.view?" class="bgcolor2 main-navigation"></iframe>
+        <iframe id="upper" name="upper" scrolling="no" src="top.view?" onload="this.style.height=(this.contentWindow.document.body.clientHeight+15)+'px';" class="bgcolor2 main-navigation"></iframe>
 
         <div class="lower">
             <div class="bgcolor2 left-nav-container" ${!model.showSideBar ? "style='display: none;'" : ""}>
