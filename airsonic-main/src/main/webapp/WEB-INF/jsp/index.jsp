@@ -43,6 +43,7 @@
         }
         .playqueue-container {
             padding-left: 1em;
+            padding-right: 1em;
         }
         .main-panel {
             flex: 80%;
