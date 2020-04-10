@@ -3,6 +3,8 @@ name: 'Stable Deploy CI (Maven)'
 on:
   push:
     branches: [ stable/** ]
+  create:
+    branches: [ stable/** ]
 
 jobs:
   deploy:
@@ -56,7 +58,7 @@ jobs:
       - name: Tag Docker Images
         run: |
           # Tag the docker image
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:stable-latest;
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:stable;
           docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.tag }};
           docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.minor }};
           docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.major }};
@@ -68,7 +70,7 @@ jobs:
       - name: Deploy to DockerHub
         run: |
           docker push airsonicadvanced/airsonic-advanced:latest;
-          docker push airsonicadvanced/airsonic-advanced:stable-latest;
+          docker push airsonicadvanced/airsonic-advanced:stable;
           docker push airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.tag }};
           docker push airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.minor }};
           docker push airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.major }};
