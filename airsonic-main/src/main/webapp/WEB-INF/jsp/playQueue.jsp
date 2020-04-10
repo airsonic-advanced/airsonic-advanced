@@ -141,7 +141,7 @@
                 processing: true,
                 autoWidth: true,
                 scrollCollapse: true,
-                scrollY: "60vh",
+                scrollY: "calc(80vh - 350px)",
                 dom: "<'#playQueueHeading'><'#playQueueInfo'><'#playQueueSpacer'>lfrtipB",
                 select: {
                     style: "multi",
