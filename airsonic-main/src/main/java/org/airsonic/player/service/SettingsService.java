@@ -145,6 +145,7 @@ public class SettingsService {
     private static final String KEY_DATABASE_CONFIG_JNDI_NAME = "DatabaseConfigJNDIName";
     private static final String KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH = "DatabaseMysqlMaxlength";
     private static final String KEY_DATABASE_USERTABLE_QUOTE = "DatabaseUsertableQuote";
+    private static final String KEY_DATABASE_UPDATE_ROW_LIMIT = "DatabaseUpdateRowLimit";
 
     public static final String KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS = "PropertiesFileRetainObsoleteKeys";
 
@@ -1453,6 +1454,14 @@ public class SettingsService {
 
     public void setDatabaseUsertableQuote(String usertableQuote) {
         setString(KEY_DATABASE_USERTABLE_QUOTE, usertableQuote);
+    }
+
+    public void setDatabaseUpdateRowLimit(int limit) {
+        setInt(KEY_DATABASE_UPDATE_ROW_LIMIT, limit);
+    }
+
+    public int getDatabaseUpdateRowLimit() {
+        return getInt(KEY_DATABASE_UPDATE_ROW_LIMIT, 0);
     }
 
     public String getJWTKey() {

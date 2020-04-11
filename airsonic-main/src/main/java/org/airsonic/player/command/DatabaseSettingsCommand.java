@@ -15,6 +15,7 @@ public class DatabaseSettingsCommand {
     private String JNDIName;
     private int mysqlVarcharMaxlength;
     private String usertableQuote;
+    private int rowUpdateLimit;
 
     public DataSourceConfigType getConfigType() {
         return configType;
@@ -78,5 +79,13 @@ public class DatabaseSettingsCommand {
 
     public void setUsertableQuote(String usertableQuote) {
         this.usertableQuote = usertableQuote;
+    }
+
+    public int getRowUpdateLimit() {
+        return rowUpdateLimit;
+    }
+
+    public void setRowUpdateLimit(int rowUpdateLimit) {
+        this.rowUpdateLimit = rowUpdateLimit;
     }
 }

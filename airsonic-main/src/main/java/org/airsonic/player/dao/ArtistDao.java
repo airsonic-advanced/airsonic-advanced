@@ -21,6 +21,8 @@ package org.airsonic.player.dao;
 
 import org.airsonic.player.domain.Artist;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.service.SettingsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Isolation;
@@ -40,6 +42,9 @@ import java.util.*;
 public class ArtistDao extends AbstractDao {
     private static final String INSERT_COLUMNS = "name, cover_art_path, album_count, last_scanned, present, folder_id";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
+
+    @Autowired
+    private SettingsService settingsService;
 
     private final ArtistMapper rowMapper = new ArtistMapper();
 
@@ -162,7 +167,13 @@ public class ArtistDao extends AbstractDao {
     }
 
     public void markNonPresent(Instant lastScanned) {
-        update("update artist set present=false where last_scanned < ? and present", lastScanned);
+        if (settingsService.getDatabaseUpdateRowLimit() <= 0) {
+            update("update artist set present=false where last_scanned < ? and present", lastScanned);
+        } else {
+            // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
+            String sql = "update artist set present=false where id in (select id from artist where last_scanned < ? and present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
+            while (update(sql, lastScanned) > 0) { }
+        }
     }
 
     public List<Integer> getExpungeCandidates() {
@@ -170,7 +181,13 @@ public class ArtistDao extends AbstractDao {
     }
 
     public void expunge() {
-        update("delete from artist where not present");
+        if (settingsService.getDatabaseUpdateRowLimit() <= 0) {
+            update("delete from artist where not present");
+        } else {
+            // incremental updates to ensure no table locks for extended time and deals with cases where id range isn't contiguous
+            String sql = "delete from artist where id in (select id from artist where not present order by id limit " + settingsService.getDatabaseUpdateRowLimit() + ")";
+            while (update(sql) > 0) { }
+        }
     }
 
     public void starArtist(int artistId, String username) {
