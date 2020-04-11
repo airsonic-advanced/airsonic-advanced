@@ -60,8 +60,6 @@ public class LyricsWSController {
     /**
      * Returns lyrics for the given song and artist.
      *
-     * @param artist The artist.
-     * @param song   The song.
      * @return The lyrics, never <code>null</code> .
      */
     @MessageMapping("/get")
