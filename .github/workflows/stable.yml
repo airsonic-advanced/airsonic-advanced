@@ -1,14 +1,14 @@
 name: 'Stable Deploy CI (Maven)'
 
 on:
-  push:
-    branches: [ stable/** ]
   create:
+  push:
     branches: [ stable/** ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: "github.repository == 'airsonic-advanced/airsonic-advanced' && startsWith(github.ref, 'stable/')"
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK
