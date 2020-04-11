@@ -59,8 +59,8 @@ public class ShoutCastOutputStream extends OutputStream {
     /**
      * Creates a new SHOUTcast-decorated stream for the given output stream.
      *
-     * @param out      The output stream to decorate.
-     * @param playQueue Meta-data is fetched from this playlist.
+     * @param out           The output stream to decorate.
+     * @param titleSupplier Meta-data title is fetched from this supplier.
      */
     public ShoutCastOutputStream(OutputStream out, Supplier<String> titleSupplier) {
         this.out = out;

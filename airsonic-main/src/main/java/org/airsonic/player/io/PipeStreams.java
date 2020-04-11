@@ -131,16 +131,6 @@ public class PipeStreams {
         }
 
         @Override
-        public void mark(int readLimit) {
-            return;
-        }
-
-        @Override
-        public boolean markSupported() {
-            return false;
-        }
-
-        @Override
         public int read() throws IOException {
             byte[] b = new byte[1];
             int result = read(b);
