@@ -141,7 +141,7 @@
                 processing: true,
                 autoWidth: true,
                 scrollCollapse: true,
-                scrollY: "60vh",
+                scrollY: "calc(80vh - 350px)",
                 dom: "<'#playQueueHeading'><'#playQueueInfo'><'#playQueueSpacer'>lfrtipB",
                 select: {
                     style: "multi",
@@ -1060,7 +1060,7 @@
 
     <div class="player-tech player-tech-web" style="white-space:nowrap;">
         <div id="player" style="width:340px; height:40px">
-            <audio id="audioPlayer" width="340px" height="40px" tabindex="-1" />
+            <audio id="audioPlayer" width="340px" height="40px" tabindex="-1" ></audio>
         </div>
         <div id="castPlayer" style="display: none">
             <div style="float:left">
@@ -1091,13 +1091,13 @@
   </c:if>
 
     <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
-        <span id="playingPositionDisplay" class="javaJukeBoxPlayerControlBarSongTime"/>
+        <span id="playingPositionDisplay" class="javaJukeBoxPlayerControlBarSongTime"></span>
     </div>
     <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
         <div id="javaJukeboxSongPositionSlider"></div>
     </div>
     <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
-        <span id="playingDurationDisplay" class="javaJukeBoxPlayerControlBarSongTime"/>
+        <span id="playingDurationDisplay" class="javaJukeBoxPlayerControlBarSongTime"></span>
     </div>
 
     <div class="player-tech player-tech-jukebox" style="white-space:nowrap;">

@@ -43,6 +43,7 @@
         }
         .playqueue-container {
             padding-left: 1em;
+            padding-right: 1em;
         }
         .main-panel {
             flex: 80%;
@@ -60,7 +61,7 @@
     </style>
 </head>
 
-<body class="bgcolor2" style="height: 100%; margin: 0">
+<body class="bgcolor2" style="height: 100%; margin: 0; overflow-y: hidden">
     <div class="entire-panel">
         <iframe id="upper" name="upper" scrolling="no" src="top.view?" onload="this.style.height=(this.contentWindow.document.body.clientHeight+15)+'px';" class="bgcolor2 main-navigation"></iframe>
 
