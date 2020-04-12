@@ -5,6 +5,7 @@
 Airsonic-Advanced
 =================
 ![](https://github.com/airsonic-advanced/airsonic-advanced/workflows/Edge%20Deploy%20CI%20(Maven)/badge.svg)
+![](https://github.com/airsonic-advanced/airsonic-advanced/workflows/Stable%20Deploy%20CI%20(Maven)/badge.svg)
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/airsonic-advanced/airsonic-advanced.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic-advanced/airsonic-advanced/context:javascript)
 [![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/airsonic-advanced/airsonic-advanced.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic-advanced/airsonic-advanced/context:java)
 
@@ -107,9 +108,7 @@ based on the Subsonic codebase that is free, open source, and community driven.
 
 Around November 2019, Airsonic-Advanced was forked off the base Airsonic fork due to differences in pace and review of development. Several key features of the framework were outdated, and attempts to upgrade them occasionally took upto a year. Airsonic-Advanced tries a modern implementation and bleeding edge approach to development, and is thus usually ahead of the base fork in dependencies and features.
 
-Pull Requests are always welcome. Keep in mind that we strive to balance
-stability with new features. As such, all Pull Requests are reviewed before
-being merged to ensure we continue to meet our goals.
+Pull Requests are always welcome. All Pull Requests are reviewed before being merged to ensure we continue to meet our goals.
 
 License
 -------
@@ -128,6 +127,8 @@ Usage
 -----
 Airsonic-Advanced can be downloaded from
 [GitHub](https://github.com/airsonic-advanced/airsonic-advanced/releases).
+
+The release signature may be verified using the [public key](https://github.com/airsonic-advanced/airsonic-advanced/blob/master/releases_public_key.asc).
 
 Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced).
 
