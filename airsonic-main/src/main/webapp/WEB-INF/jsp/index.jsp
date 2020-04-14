@@ -24,17 +24,19 @@
             height: 100%;
         }
         div.left-nav-container {
-            flex: 16%;
+            width: 16%;
+            min-width: 16%;
         }
         .left-navigation {
             width: 100%;
             height: 100%;
         }
-        .non-left-navigation-container {
-            flex: 84%;
+        div.non-left-navigation-container {
+            flex: 1;
             display: flex;
             flex-direction: column;
             height: 100%;
+            width: 84%;
         }
         .main-right-container {
             flex: 1;
