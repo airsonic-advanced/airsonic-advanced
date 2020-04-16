@@ -178,7 +178,7 @@ public class DownloadController {
     }
 
     private static long zipSize(Stream<Entry<String, Long>> paths) {
-        return paths.mapToLong(e -> 30 + 46 + (2 * e.getKey().length()) + e.getValue()).sum() + 22;
+        return paths.mapToLong(e -> 30 + 46 + (2L * e.getKey().length()) + e.getValue()).sum() + 22;
     }
 
     private ResponseDTO prepareResponse(List<MediaFile> files, List<Integer> indices,

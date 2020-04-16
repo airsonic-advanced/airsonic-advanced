@@ -17,7 +17,13 @@
         },
         state: 'dc',
         outstandingConnectionCallbacks: [],
+        resubscriptionCallback: null,
         __doConnectionCallbacks: function(stompclient) {
+            // resubscribe to everything first if needed
+            if (stompclient.resubscriptionCallback != null) {
+                stompclient.resubscriptionCallback();
+                stompclient.resubscriptionCallback = null;
+            }
             while(stompclient.outstandingConnectionCallbacks.length > 0) {
                 var callback = stompclient.outstandingConnectionCallbacks.pop();
                 try {
@@ -38,11 +44,11 @@
                 stompclient.stompClient.heartbeat.incoming = 25000;
                 stompclient.stompClient.heartbeat.outgoing = 25000;
                 // resubscribe to everything again
-                stompclient.outstandingConnectionCallbacks.splice(0, 0, function() {
+                stompclient.resubscriptionCallback = function() {
                     for (var topic in stompclient.subscriptions) {
                         stompclient.__doSubscription(stompclient, topic, stompclient.subscriptions[topic]);
                     }
-                });
+                };
             }
 
             if (stompclient.state == 'connecting') {
@@ -135,10 +141,15 @@
             return topic.startsWith("/app/");
         },
         unsubscribe: function(topic, owner) {
-            if (topic && owner && this.subscriptions[topic][owner]) {
+            if (topic && owner && this.subscriptions[topic] && this.subscriptions[topic][owner]) {
                 delete this.subscriptions[topic][owner];
             }
             // can also delete the subscription to the topic itself (if that is the last owner), but not necessary
+        },
+        unsubscribeOwner: function(owner) {
+            for (var topic in this.subscriptions) {
+                this.unsubscribe(topic, owner);
+            }
         },
         disconnect: function() {
             var stompclient = this;

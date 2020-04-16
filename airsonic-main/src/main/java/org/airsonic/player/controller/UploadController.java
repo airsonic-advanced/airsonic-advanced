@@ -19,6 +19,11 @@
  */
 package org.airsonic.player.controller;
 
+import com.github.junrar.Archive;
+import com.github.junrar.exception.RarException;
+import com.github.junrar.rarfile.FileHeader;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.RateLimiter;
 
 import org.airsonic.player.ajax.UploadInfo;
@@ -31,10 +36,17 @@ import org.airsonic.player.service.StatusService;
 import org.airsonic.player.upload.MonitoredDiskFileItemFactory;
 import org.airsonic.player.upload.UploadListener;
 import org.airsonic.player.util.FileUtil;
+import org.airsonic.player.util.LambdaUtils;
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
+import org.apache.commons.compress.archivers.sevenz.SevenZFile;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,14 +59,18 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.channels.FileChannel;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+
 
 /**
  * Controller which receives uploaded files.
@@ -78,12 +94,15 @@ public class UploadController {
     @Autowired
     private SimpMessagingTemplate brokerTemplate;
 
+    private static final Set<String> SUPPORTED_ZIP_FORMATS = ImmutableSet.of("zip", "7z", "rar", "cpio", "jar", "tar");
+
     @PostMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) {
 
         Map<String, Object> map = new HashMap<>();
         List<Path> uploadedFiles = new ArrayList<>();
         List<Path> unzippedFiles = new ArrayList<>();
+        List<Exception> exceptions = new ArrayList<>();
         TransferStatus status = null;
 
         try {
@@ -123,6 +142,12 @@ public class UploadController {
                 throw new Exception("Missing 'dir' parameter.");
             }
 
+            securityService.checkUploadAllowed(dir, false);
+
+            if (!Files.exists(dir)) {
+                Files.createDirectories(dir);
+            }
+
             // Look for file items.
             for (Object o : items) {
                 FileItem item = (FileItem) o;
@@ -133,28 +158,26 @@ public class UploadController {
 
                         Path targetFile = dir.resolve(Paths.get(fileName).getFileName());
 
-                        if (!securityService.isUploadAllowed(targetFile)) {
-                            throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(targetFile.toString()));
-                        }
-
-                        if (!Files.exists(dir)) {
-                            Files.createDirectories(dir);
+                        try {
+                            securityService.checkUploadAllowed(targetFile, true);
+                        } catch (IOException e) {
+                            exceptions.add(e);
+                            continue;
                         }
 
                         item.write(targetFile.toFile());
                         uploadedFiles.add(targetFile);
-                        LOG.info("Uploaded " + targetFile);
+                        LOG.info("Uploaded {} ", targetFile);
 
-                        if (unzip && targetFile.getFileName().toString().toLowerCase().endsWith(".zip")) {
-                            unzip(targetFile, unzippedFiles);
+                        if (unzip && SUPPORTED_ZIP_FORMATS.contains(MoreFiles.getFileExtension(targetFile).toLowerCase())) {
+                            unzip(targetFile, unzippedFiles, exceptions);
                         }
                     }
                 }
             }
-
         } catch (Exception x) {
             LOG.warn("Uploading failed.", x);
-            map.put("exception", x);
+            exceptions.add(x);
         } finally {
             if (status != null) {
                 statusService.removeUploadStatus(status);
@@ -165,39 +188,175 @@ public class UploadController {
             }
         }
 
+        map.put("exceptions", exceptions);
         map.put("uploadedFiles", uploadedFiles);
         map.put("unzippedFiles", unzippedFiles);
 
         return new ModelAndView("upload", "model", map);
     }
 
-    private void unzip(Path file, List<Path> unzippedFiles) throws Exception {
-        LOG.info("Unzipping " + file);
+    private void unzip(Path file, List<Path> unzippedFiles, List<Exception> exceptions) {
+        LOG.info("Unzipping {}", file);
+        boolean unzipped = false;
 
-        try (ZipInputStream zipInputStream = new ZipInputStream(Files.newInputStream(file))) {
-            ZipEntry entry;
-            while ((entry = zipInputStream.getNextEntry()) != null) {
-                final Path toPath = file.resolveSibling(entry.getName());
-                if (!toPath.normalize().startsWith(file.getParent())) {
-                    throw new Exception("Bad zip filename: " + StringEscapeUtils.escapeHtml(toPath.toString()));
+        // rar files
+        if (file.getFileName().toString().toLowerCase().endsWith(".rar")) {
+            LOG.info("Trying rar-specific extraction method for {}", file);
+            try (Archive zip = new Archive(file.toFile(), null)) {
+                if (zip.isEncrypted()) {
+                    throw new AccessDeniedException(file.toString(), null, "Archive is encrypted");
                 }
 
-                if (entry.isDirectory()) {
-                    Files.createDirectory(toPath);
-                } else {
-                    if (!securityService.isUploadAllowed(toPath)) {
-                        throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(toPath.toString()));
+                for (FileHeader fh : zip) {
+                    if (fh.isEncrypted()) {
+                        LOG.info("Can't read {} in {}", fh.getFileNameString(), file);
+                        continue;
                     }
-                    Files.copy(zipInputStream, toPath);
-                    LOG.info("Unzipped " + toPath);
-                    unzippedFiles.add(toPath);
+
+                    copyEntry(file, new ArchiveEntry() {
+                        @Override
+                        public boolean isDirectory() {
+                            return fh.isDirectory();
+                        }
+
+                        @Override
+                        public long getSize() {
+                            return fh.getFullUnpackSize();
+                        }
+
+                        @Override
+                        public String getName() {
+                            if (fh.isFileHeader() && fh.isUnicode()) {
+                                return fh.getFileNameW();
+                            } else {
+                                return fh.getFileNameString();
+                            }
+                        }
+
+                        @Override
+                        public Date getLastModifiedDate() {
+                            return fh.getArcTime();
+                        }
+                    }, dest -> {
+                            try (OutputStream os = Files.newOutputStream(dest)) {
+                                zip.extractFile(fh, os);
+                            } catch (RarException e) {
+                                throw new IOException(e);
+                            }
+                        }, unzippedFiles, exceptions);
                 }
+            } catch (Exception e) {
+                LOG.warn("Something went wrong unzipping {}", file, e);
+                exceptions.add(e);
+            } finally {
+                unzipped = true;
+                FileUtil.delete(file);
+            }
+        }
+
+        // zip files
+        if (file.getFileName().toString().toLowerCase().endsWith(".zip")) {
+            LOG.info("Trying zip-specific extraction method for {}", file);
+            try (FileChannel channel = FileChannel.open(file); ZipFile zip = new ZipFile(channel)) {
+                Enumeration<ZipArchiveEntry> entries = zip.getEntries();
+                ZipArchiveEntry entry = null;
+                while (entries.hasMoreElements()) {
+                    entry = entries.nextElement();
+
+                    if (!zip.canReadEntryData(entry)) {
+                        LOG.info("Can't read {} in {}", entry.getName(), file);
+                        continue;
+                    }
+
+                    try (InputStream is = zip.getInputStream(entry)) {
+                        copyEntry(file, entry, dest -> Files.copy(is, dest), unzippedFiles, exceptions);
+                    }
+                }
+            } catch (Exception e) {
+                LOG.warn("Something went wrong unzipping {}", file, e);
+                exceptions.add(e);
+            } finally {
+                unzipped = true;
+                FileUtil.delete(file);
+            }
+        }
+
+        // 7z files
+        if (file.getFileName().toString().toLowerCase().endsWith(".7z")) {
+            LOG.info("Trying 7z-specific extraction method for {}", file);
+            try (FileChannel channel = FileChannel.open(file); SevenZFile zip = new SevenZFile(channel)) {
+                byte[] buffer = new byte[8042];
+                SevenZArchiveEntry entry = null;
+                while ((entry = zip.getNextEntry()) != null) {
+                    copyEntry(file, entry, dest -> {
+                        int bytesRead = -1;
+                        try (OutputStream os = Files.newOutputStream(dest)) {
+                            while ((bytesRead = zip.read(buffer)) != -1) {
+                                os.write(buffer, 0, bytesRead);
+                            }
+                        }
+                    }, unzippedFiles, exceptions);
+                }
+            } catch (Exception e) {
+                LOG.warn("Something went wrong unzipping {}", file, e);
+                exceptions.add(e);
+            } finally {
+                unzipped = true;
+                FileUtil.delete(file);
+            }
+        }
+
+        // Generic
+        if (!unzipped) {
+            LOG.info("Trying a generic extraction method for {}", file);
+            try (BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(file));
+                    ArchiveInputStream ais = new ArchiveStreamFactory().createArchiveInputStream(bis)) {
+                ArchiveEntry entry = null;
+                while ((entry = ais.getNextEntry()) != null) {
+                    if (!ais.canReadEntryData(entry)) {
+                        LOG.info("Can't read {} in {}", entry.getName(), file);
+                        continue;
+                    }
+                    copyEntry(file, entry, dest -> Files.copy(ais, dest), unzippedFiles, exceptions);
+                }
+            } catch (Exception e) {
+                LOG.warn("Something went wrong unzipping {}", file, e);
+                exceptions.add(e);
+            } finally {
+                FileUtil.delete(file);
+            }
+        }
+    }
+
+    private void copyEntry(Path file, ArchiveEntry entry, LambdaUtils.ThrowingConsumer<Path, IOException> copier,
+            List<Path> unzippedFiles, List<Exception> exceptions) {
+        final Path toPath = file.resolveSibling(entry.getName());
+        try {
+            if (!toPath.normalize().startsWith(file.getParent())) {
+                throw new IOException("Bad zip filename: " + toPath.toString());
+            }
+            if (entry.isDirectory()) {
+                Files.createDirectories(toPath);
+            } else {
+                Path parent = toPath.getParent();
+                Files.createDirectories(parent);
+                if (!Files.isDirectory(parent)) {
+                    throw new IOException("Failed to create directory: " + parent);
+                }
+
+                securityService.checkUploadAllowed(toPath, true);
+
+                copier.accept(toPath);
+                unzippedFiles.add(toPath);
+                LOG.debug("Unzipped {}", toPath);
+
             }
         } catch (IOException e) {
-            LOG.warn("Something went wrong unzipping {}", file, e);
-        } finally {
-            FileUtil.delete(file);
+            exceptions.add(e);
+            LOG.debug("Could not unzip {}", toPath, e);
         }
+
+        LOG.info("Processed {}", toPath);
     }
 
     /**

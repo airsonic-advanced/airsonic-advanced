@@ -7,6 +7,7 @@ import org.airsonic.player.service.jukebox.JavaPlayerFactory;
 import org.junit.Before;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -22,7 +23,7 @@ public class AirsonicRestApiJukeboxIntTest extends AbstractAirsonicRestApiJukebo
         JavaPlayer mockJavaPlayer = mock(JavaPlayer.class);
         when(mockJavaPlayer.getPlayingInfos()).thenReturn(() -> 0);
         when(mockJavaPlayer.getGain()).thenReturn(0.75f);
-        when(javaPlayerFactory.createJavaPlayer()).thenReturn(mockJavaPlayer);
+        when(javaPlayerFactory.createJavaPlayer(anyString())).thenReturn(mockJavaPlayer);
     }
 
     @Override
@@ -32,6 +33,7 @@ public class AirsonicRestApiJukeboxIntTest extends AbstractAirsonicRestApiJukebo
         jukeboxPlayer.setUsername("admin");
         jukeboxPlayer.setClientId(CLIENT_NAME + "-jukebox");
         jukeboxPlayer.setTechnology(PlayerTechnology.JAVA_JUKEBOX);
+        jukeboxPlayer.setJavaJukeboxMixer("somemixer");
         playerService.createPlayer(jukeboxPlayer);
     }
 

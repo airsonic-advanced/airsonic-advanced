@@ -63,7 +63,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
 
     @Test
     public void testCreateUserTransactionalError() {
-        User user = new User("muff1nman", "noemail") {
+        User user = new User("muff1nman5", "noemail") {
             @Override
             public boolean isPlaylistRole() {
                 throw new RuntimeException();
@@ -71,13 +71,13 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         };
 
         user.setAdminRole(true);
-        UserCredential uc = new UserCredential("muff1nman", "muff1nman", "secret", "noop", App.AIRSONIC);
+        UserCredential uc = new UserCredential("muff1nman5", "muff1nman5", "secret", "noop", App.AIRSONIC);
 
         assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> createTestUser(user, uc));
-        assertThat(userDao.getUserByName("muff1nman", true)).isNull();
+        assertThat(userDao.getUserByName("muff1nman5", true)).isNull();
 
-        User user2 = new User("muff1nman", "noemail");
-        UserCredential uc2 = new UserCredential("muff1nman", "muff1nman", "secret", "noop", App.AIRSONIC) {
+        User user2 = new User("muff1nman6", "noemail");
+        UserCredential uc2 = new UserCredential("muff1nman6", "muff1nman6", "secret", "noop", App.AIRSONIC) {
             @Override
             public String getCredential() {
                 throw new RuntimeException();
@@ -85,7 +85,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         };
 
         assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> createTestUser(user2, uc2));
-        assertThat(userDao.getUserByName("muff1nman", true)).isNull();
+        assertThat(userDao.getUserByName("muff1nman6", true)).isNull();
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -157,7 +157,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         assertThat(userDao.getUserByName("sindre", true)).isEqualToComparingFieldByField(user);
 
         assertNull("Error in getUserByName().", userDao.getUserByName("sindre2", true));
-        assertNull("Error in getUserByName().", userDao.getUserByName("Sindre ", true));
+        // assertNull("Error in getUserByName().", userDao.getUserByName("Sindre ", true)); // depends on the collation of the DB
         assertNull("Error in getUserByName().", userDao.getUserByName("bente", true));
         assertNull("Error in getUserByName().", userDao.getUserByName("", true));
         assertNull("Error in getUserByName().", userDao.getUserByName(null, true));

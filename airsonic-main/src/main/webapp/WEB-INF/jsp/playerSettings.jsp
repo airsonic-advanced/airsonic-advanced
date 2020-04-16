@@ -201,8 +201,4 @@ $(document).ready(function() {
     </c:otherwise>
 </c:choose>
 
-<c:if test="${settings_reload}">
-    <script language="javascript" type="text/javascript">parent.frames.playQueue.location.href="playQueue.view?"</script>
-</c:if>
-
 </body></html>

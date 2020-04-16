@@ -270,7 +270,7 @@
 
 <c:if test="${settings_reload}">
     <script language="javascript" type="text/javascript">
-        parent.location.href="index.view?";
+        parent.location.href="index.view?main=personalSettings.view";
     </script>
 </c:if>
 

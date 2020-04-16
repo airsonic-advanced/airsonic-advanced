@@ -45,6 +45,9 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 
+import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -401,8 +404,14 @@ public class SecurityService implements UserDetailsService {
      *
      * @return Whether the given file may be uploaded.
      */
-    public boolean isUploadAllowed(Path file) {
-        return isInMusicFolder(file) && !Files.exists(file);
+    public void checkUploadAllowed(Path file, boolean checkFileExists) throws IOException {
+        if (!isInMusicFolder(file)) {
+            throw new AccessDeniedException(file.toString(), null, "Specified location is not in writable music folder");
+        }
+
+        if (checkFileExists && Files.exists(file)) {
+            throw new FileAlreadyExistsException(file.toString(), null, "File already exists");
+        }
     }
 
     /**

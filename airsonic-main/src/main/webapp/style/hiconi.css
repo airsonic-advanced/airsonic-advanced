@@ -6,6 +6,7 @@
 
 @import "default-without-mediaelement.css";
 @import "mediaelement-dark.css";
+@import "dark-theme.css";
 
 table {
 	color: #a3a3a3;
@@ -40,22 +41,46 @@ h2, b, tr {
     color: #a3a3a3;
 }
 
-/* Link color */
-a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
-    color: white
+/* regular foreground color */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: #a3a3a3;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover, button.dt-button:hover:not(.disabled), div.dt-button:hover:not(.disabled), a.dt-button:hover:not(.disabled) {
+    color: #a3a3a3 !important;
+    border-color: #a3a3a3;
+}
+
+/* regular color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: #a3a3a3 !important;
+    border-color: #a3a3a3;
+}
+
+table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+    background-color: #262626;
+}
+
+table.dataTable tbody>tr.selected, table.dataTable tbody>tr>.selected {
+    background-color: #4D4D4D;
+}
+
+table.dataTable.hover tbody>tr.selected:hover, table.dataTable.hover tbody>tr>.selected:hover, table.dataTable.display tbody>tr.selected:hover, table.dataTable.display tbody>tr>.selected:hover {
+    background-color: #404040;
+}
+
+table.music.dataTable tbody tr.currently-playing {
+    background-color: #333333;
+}
+
+table.music.dataTable tbody tr.currently-playing:hover {
+    background-color: #262626;
 }
 
 /* Link hover color */
 a:hover, a:hover * {
-    text-decoration: underline;
     color: #a3a3a3;
-}
-
-/* Disabled links color and behavior */
-a.disabled, a.disabled span, span.disabled {
-    cursor: default;
-    text-decoration: none;
-    color: #999;
 }
 
 /* Color for warning messages. */

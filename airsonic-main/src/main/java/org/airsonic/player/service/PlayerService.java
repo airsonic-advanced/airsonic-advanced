@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.airsonic.player.dao.PlayerDao;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.Transcoding;
@@ -28,6 +30,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.ServletRequestUtils;
 
@@ -61,6 +64,8 @@ public class PlayerService {
     private SecurityService securityService;
     @Autowired
     private TranscodingService transcodingService;
+    @Autowired
+    private SimpMessagingTemplate brokerTemplate;
 
     @PostConstruct
     public void init() {
@@ -122,31 +127,10 @@ public class PlayerService {
         // If no player was found, create it.
         if (player == null) {
             player = new Player();
-            createPlayer(player);
-//            LOG.debug("Created player " + player.getId() + " (remoteControlEnabled: " + remoteControlEnabled +
-//                      ", isStreamRequest: " + isStreamRequest + ", username: " + username +
-//                      ", ip: " + request.getRemoteAddr() + ").");
-        }
-
-        // Update player data.
-        boolean isUpdate = false;
-        if (username != null && player.getUsername() == null) {
-            player.setUsername(username);
-            isUpdate = true;
-        }
-        if (!StringUtils.equals(request.getRemoteAddr(), player.getIpAddress()) &&
-                (player.getIpAddress() == null || isStreamRequest || (!isPlayerConnected(player) && player.isDynamicIp()))) {
-            player.setIpAddress(request.getRemoteAddr());
-            isUpdate = true;
-        }
-        String userAgent = request.getHeader("user-agent");
-        if (isStreamRequest) {
-            player.setType(userAgent);
             player.setLastSeen(Instant.now());
-            isUpdate = true;
-        }
-
-        if (isUpdate) {
+            populatePlayer(player, username, request, isStreamRequest);
+            createPlayer(player);
+        } else if (populatePlayer(player, username, request, isStreamRequest)) {
             updatePlayer(player);
         }
 
@@ -172,6 +156,28 @@ public class PlayerService {
         return player;
     }
 
+    private boolean populatePlayer(Player player, String username, HttpServletRequest request, boolean isStreamRequest) {
+        // Update player data.
+        boolean isUpdate = false;
+        if (username != null && player.getUsername() == null) {
+            player.setUsername(username);
+            isUpdate = true;
+        }
+        if (!StringUtils.equals(request.getRemoteAddr(), player.getIpAddress()) &&
+                (player.getIpAddress() == null || isStreamRequest || (!isPlayerConnected(player) && player.isDynamicIp()))) {
+            player.setIpAddress(request.getRemoteAddr());
+            isUpdate = true;
+        }
+        String userAgent = request.getHeader("user-agent");
+        if (isStreamRequest) {
+            player.setType(userAgent);
+            player.setLastSeen(Instant.now());
+            isUpdate = true;
+        }
+
+        return isUpdate;
+    }
+
     /**
      * Updates the given player.
      *
@@ -179,6 +185,10 @@ public class PlayerService {
      */
     public void updatePlayer(Player player) {
         playerDao.updatePlayer(player);
+        if (player.getUsername() != null) {
+            brokerTemplate.convertAndSendToUser(player.getUsername(), "/queue/players/updated",
+                    ImmutableMap.of("id", player.getId(), "description", player.getShortDescription(), "tech", player.getTechnology()));
+        }
     }
 
     /**
@@ -281,6 +291,7 @@ public class PlayerService {
      */
     public synchronized void removePlayerById(int id) {
         playerDao.deletePlayer(id);
+        brokerTemplate.convertAndSend("/topic/players/deleted", id);
     }
 
     /**
@@ -316,6 +327,10 @@ public class PlayerService {
         }
         if (player != null) {
             transcodingService.setTranscodingsForPlayer(player, defaultActiveTranscodings);
+            if (player.getUsername() != null) {
+                brokerTemplate.convertAndSendToUser(player.getUsername(), "/queue/players/created",
+                        ImmutableMap.of("id", player.getId(), "description", player.getShortDescription(), "tech", player.getTechnology()));
+            }
         }
     }
 
