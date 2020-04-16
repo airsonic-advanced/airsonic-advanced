@@ -26,6 +26,7 @@ public class JWTSecurityService {
     public static final String CLAIM_PATH = "path";
     // TODO make this configurable
     public static final int DEFAULT_DAYS_VALID_FOR = 7;
+    public static final String USERNAME_ANONYMOUS = "anonymous";
     private static SecureRandom secureRandom = new SecureRandom();
 
     private final SettingsService settingsService;
@@ -44,28 +45,31 @@ public class JWTSecurityService {
         return Algorithm.HMAC256(jwtKey);
     }
 
-    private static String createToken(String jwtKey, String path, Instant expireDate) {
+    private static String createToken(String jwtKey, String user, String path, Instant expireDate) {
         UriComponents components = UriComponentsBuilder.fromUriString(path).build();
         String query = components.getQuery();
         String claim = components.getPath() + (!StringUtils.isBlank(query) ? "?" + components.getQuery() : "");
         LOG.debug("Creating token with claim " + claim);
         return JWT.create()
+                .withIssuer("airsonic")
+                .withSubject(user)
                 .withClaim(CLAIM_PATH, claim)
                 .withExpiresAt(Date.from(expireDate))
                 .sign(getAlgorithm(jwtKey));
     }
 
-    public String addJWTToken(String uri) {
-        return addJWTToken(UriComponentsBuilder.fromUriString(uri)).build().toString();
+    public String addJWTToken(String user, String uri) {
+        return addJWTToken(user, UriComponentsBuilder.fromUriString(uri)).build().toString();
     }
 
-    public UriComponentsBuilder addJWTToken(UriComponentsBuilder builder) {
-        return addJWTToken(builder, Instant.now().plus(DEFAULT_DAYS_VALID_FOR, ChronoUnit.DAYS));
+    public UriComponentsBuilder addJWTToken(String user, UriComponentsBuilder builder) {
+        return addJWTToken(user, builder, Instant.now().plus(DEFAULT_DAYS_VALID_FOR, ChronoUnit.DAYS));
     }
 
-    public UriComponentsBuilder addJWTToken(UriComponentsBuilder builder, Instant expires) {
+    public UriComponentsBuilder addJWTToken(String user, UriComponentsBuilder builder, Instant expires) {
         String token = JWTSecurityService.createToken(
                 settingsService.getJWTKey(),
+                user,
                 builder.toUriString(),
                 expires);
         builder.queryParam(JWTSecurityService.JWT_PARAM_NAME, token);

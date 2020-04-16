@@ -21,9 +21,11 @@ package org.airsonic.player.service;
 
 import com.google.common.io.MoreFiles;
 
+import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.metadata.JaudiotaggerParser;
 import org.airsonic.player.service.metadata.MetaData;
 import org.airsonic.player.service.metadata.MetaDataParser;
@@ -45,6 +47,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,6 +74,8 @@ public class MediaFileService {
     private JaudiotaggerParser parser;
     @Autowired
     private MetaDataParserFactory metaDataParserFactory;
+    @Autowired
+    private LocaleResolver localeResolver;
     private boolean memoryCacheEnabled = true;
 
     /**
@@ -112,7 +117,7 @@ public class MediaFileService {
         result = createMediaFile(file);
 
         // Put in database.
-        mediaFileDao.createOrUpdateMediaFile(result);
+        updateMediaFile(result);
 
         return result;
     }
@@ -158,7 +163,7 @@ public class MediaFileService {
         }
         LOG.debug("Updating database file from disk (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
         mediaFile = createMediaFile(mediaFile.getFile());
-        mediaFileDao.createOrUpdateMediaFile(mediaFile);
+        updateMediaFile(mediaFile);
         return mediaFile;
     }
 
@@ -380,7 +385,7 @@ public class MediaFileService {
                         if (media == null) {
                             media = createMediaFile(x);
                             // Add children that are not already stored.
-                            mediaFileDao.createOrUpdateMediaFile(media);
+                            updateMediaFile(media);
                         } else {
                             media = checkLastModified(media, false); //has to be false, only time it's called
                         }
@@ -395,7 +400,7 @@ public class MediaFileService {
             // Update timestamp in parent.
             parent.setChildrenLastUpdated(parent.getChanged());
             parent.setPresent(true);
-            mediaFileDao.createOrUpdateMediaFile(parent);
+            updateMediaFile(parent);
 
             return result;
         } catch (IOException e) {
@@ -547,10 +552,9 @@ public class MediaFileService {
         return MediaFile.MediaType.MUSIC;
     }
 
-    @CacheEvict(key = "#mediaFile.file")
     public void refreshMediaFile(MediaFile mediaFile) {
         mediaFile = createMediaFile(mediaFile.getFile());
-        mediaFileDao.createOrUpdateMediaFile(mediaFile);
+        updateMediaFile(mediaFile);
     }
 
     @CacheEvict(allEntries = true)
@@ -633,6 +637,7 @@ public class MediaFileService {
         this.metaDataParserFactory = metaDataParserFactory;
     }
 
+    @CacheEvict(key = "#mediaFile.file")
     public void updateMediaFile(MediaFile mediaFile) {
         mediaFileDao.createOrUpdateMediaFile(mediaFile);
     }
@@ -660,6 +665,23 @@ public class MediaFileService {
             album.incrementPlayCount();
             albumDao.createOrUpdateAlbum(album);
         }
+    }
+
+    public List<MediaFileEntry> toMediaFileEntryList(List<MediaFile> files, boolean calculateStarred, String username,
+            Function<MediaFile, String> streamUrlGenerator, Function<MediaFile, String> remoteStreamUrlGenerator,
+            Function<MediaFile, String> remoteCoverArtUrlGenerator) {
+        Locale locale = Optional.ofNullable(username).map(localeResolver::resolveLocale).orElse(null);
+        List<MediaFileEntry> entries = new ArrayList<>(files.size());
+        for (MediaFile file : files) {
+            String streamUrl = Optional.ofNullable(streamUrlGenerator).map(g -> g.apply(file)).orElse(null);
+            String remoteStreamUrl = Optional.ofNullable(remoteStreamUrlGenerator).map(g -> g.apply(file)).orElse(null);
+            String remoteCoverArtUrl = Optional.ofNullable(remoteCoverArtUrlGenerator).map(g -> g.apply(file)).orElse(null);
+
+            boolean starred = calculateStarred && getMediaFileStarredDate(file.getId(), username) != null;
+            entries.add(MediaFileEntry.fromMediaFile(file, locale, starred, streamUrl, remoteStreamUrl, remoteCoverArtUrl));
+        }
+
+        return entries;
     }
 
     public int getAlbumCount(List<MusicFolder> musicFolders) {

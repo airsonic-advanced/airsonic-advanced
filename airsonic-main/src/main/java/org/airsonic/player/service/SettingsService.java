@@ -146,7 +146,7 @@ public class SettingsService {
     private static final String KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH = "DatabaseMysqlMaxlength";
     private static final String KEY_DATABASE_USERTABLE_QUOTE = "DatabaseUsertableQuote";
 
-    public static final String KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY = "PropertiesFileUpgradeRetainCompatibility";
+    public static final String KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS = "PropertiesFileRetainObsoleteKeys";
 
     // Default values.
     private static final String DEFAULT_JWT_KEY = null;
@@ -228,7 +228,7 @@ public class SettingsService {
     private static final String DEFAULT_DATABASE_CONFIG_EMBED_USERNAME = null;
     private static final String DEFAULT_DATABASE_CONFIG_EMBED_PASSWORD = null;
     private static final String DEFAULT_DATABASE_CONFIG_JNDI_NAME = null;
-    private static final Integer DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH = 512;
+    private static final Integer DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH = 384;
     private static final String DEFAULT_DATABASE_USERTABLE_QUOTE = null;
 
     private static final String LOCALES_FILE = "/org/airsonic/player/i18n/locales.txt";
@@ -284,20 +284,18 @@ public class SettingsService {
 
     public static void migrateKeys(Map<String, String> keyMaps) {
         ConfigurationPropertiesService cps = ConfigurationPropertiesService.getInstance();
-        Boolean backwardsCompatible = Optional.ofNullable(cps.getProperty(KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY)).map(x -> Boolean.valueOf((String) x)).orElse(true);
+        Boolean retainObsoleteKeys = Optional.ofNullable(cps.getProperty(KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS)).map(x -> Boolean.valueOf((String) x)).orElse(true);
 
-        keyMaps.entrySet().forEach(e -> {
-            if (e.getValue() == null) {
-                // this is non backwards-compatible
-                LOG.info("Removing obsolete property [{}]", e.getKey());
-                cps.clearProperty(e.getKey());
-            } else if (cps.containsKey(e.getKey()) && !cps.containsKey(e.getValue())) {
+        // needs to be processed serially
+        keyMaps.entrySet().stream().filter(e -> cps.containsKey(e.getKey())).forEach(e -> {
+            if (e.getValue() != null && !cps.containsKey(e.getValue())) {
                 LOG.info("Migrating obsolete property [{}] to [{}]", e.getKey(), e.getValue());
                 cps.setProperty(e.getValue(), cps.getProperty(e.getKey()));
             }
 
-            //clean house if not backwards-compatible, otherwise don't delete old proprety
-            if (!backwardsCompatible) {
+            // delete old property
+            if (!retainObsoleteKeys) {
+                LOG.info("Removing obsolete property [{}]", e.getKey());
                 cps.clearProperty(e.getKey());
             }
         });
@@ -1177,7 +1175,7 @@ public class SettingsService {
         settings.setLastFmEnabled(false);
         settings.setListenBrainzEnabled(false);
         settings.setChanged(Instant.now());
-        settings.setPaginationSize(40);
+        settings.setPaginationSize(10);
 
         UserSettings.Visibility playlist = settings.getPlaylistVisibility();
         playlist.setArtistVisible(true);

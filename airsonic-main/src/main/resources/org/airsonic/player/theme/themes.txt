@@ -10,6 +10,7 @@ default "Airsonic Default" default_light
 
 # Theme with dark colors.
 midnight "2 Minutes To Midnight" default_dark
+midnight_darkreader "2 Minutes To Midnight (Dark Reader)" midnight
 
 # Theme with even darker colors.
 black "Back In Black" default_dark

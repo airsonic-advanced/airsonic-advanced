@@ -151,7 +151,6 @@ public class CredentialsManagementController {
             success = false;
         }
 
-        redirectAttributes.addFlashAttribute("settings_reload", false);
         redirectAttributes.addFlashAttribute("settings_toast", success);
 
         return "redirect:credentialsSettings.view";
@@ -189,7 +188,6 @@ public class CredentialsManagementController {
                     });
         });
 
-        redirectAttributes.addFlashAttribute("settings_reload", false);
         redirectAttributes.addFlashAttribute("settings_toast", failures.isEmpty());
 
         return "redirect:credentialsSettings.view";
@@ -247,7 +245,6 @@ public class CredentialsManagementController {
             settingsService.save();
         }
 
-        redirectAttributes.addFlashAttribute("settings_reload", false);
         redirectAttributes.addFlashAttribute("settings_toast", success);
 
         return "redirect:/credentialsSettings.view";

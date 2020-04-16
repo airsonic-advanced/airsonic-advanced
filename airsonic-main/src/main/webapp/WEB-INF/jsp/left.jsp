@@ -53,8 +53,9 @@
             $("#playlistOverflow").empty();
             for (var i = 0; i < playlists.length; i++) {
                 var playlist = playlists[i];
-                var node = $("<p class='dense playlist' id='playlistid-" + playlist.id + "'><a target='main' href='playlist.view?id=" +
-                        playlist.id + "'>" + escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")</a></p>");
+                var playlistName = escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")";
+                var node = $("<p class='dense truncate playlist' id='playlistid-" + playlist.id + "' title='" + playlistName + "'><a target='main' href='playlist.view?id=" +
+                        playlist.id + "'>" + playlistName + "</a></p>");
                 var overflow = i > 9;
                 if (!overflow) {
                     node.addClass("nonoverflown");
@@ -73,8 +74,9 @@
 
         function updatedPlaylistCallback(playlist) {
             var oldNode = $("#playlistid-" + playlist.id);
-            var node = $("<p class='dense playlist' id='playlistid-" + playlist.id + "'><a target='main' href='playlist.view?id=" +
-                        playlist.id + "'>" + escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")</a></p>");
+            var playlistName = escapeHtml(playlist.name) + "&nbsp;(" + playlist.fileCount + ")";
+            var node = $("<p class='dense truncate playlist' id='playlistid-" + playlist.id + "' title='" + playlistName + "'><a target='main' href='playlist.view?id=" +
+                        playlist.id + "'>" + playlistName + "</a></p>");
             if (oldNode.length == 0) {
                 var overflow = $(".playlist").length > 10;
                 if (!overflow) {
@@ -142,7 +144,7 @@
 <c:if test="${not empty model.shortcuts}">
     <h2 class="bgcolor1" style="padding-left: 2px"><fmt:message key="left.shortcut"/></h2>
     <c:forEach items="${model.shortcuts}" var="shortcut">
-        <p class="dense" style="padding-left:2px">
+        <p class="dense truncate" style="padding-left:2px">
             <sub:url value="main.view" var="mainUrl">
                 <sub:param name="id" value="${shortcut.id}"/>
             </sub:url>
@@ -165,7 +167,7 @@
     <h2 class="bgcolor1" style="padding-left: 2px"><fmt:message key="left.radio"/></h2>
     <iframe id="radio-playlist-data" style="display:none;"></iframe>
     <c:forEach items="${model.radios}" var="radio">
-        <p class="dense" style="padding-left: 2px">
+        <p class="dense truncate" style="padding-left: 2px">
         <a target="hidden" href="${radio.streamUrl}" class="radio-play" data-id="${radio.id}">
             <img src="<spring:theme code='playImage'/>" alt="<fmt:message key='common.play'/>" title="<fmt:message key='common.play'/>"></a>
             <span style="vertical-align: middle">
@@ -195,7 +197,7 @@
     </table>
 
     <c:forEach items="${entry.value}" var="artist">
-        <p class="dense" style="padding-left:2px">
+        <p class="dense truncate" style="padding-left:2px">
             <span title="${artist.name}">
                 <sub:url value="main.view" var="mainUrl">
                     <c:forEach items="${artist.mediaFiles}" var="mediaFile">
@@ -211,7 +213,7 @@
 <div style="padding-top:1em"></div>
 
 <c:forEach items="${model.singleSongs}" var="song">
-    <p class="dense" style="padding-left:2px">
+    <p class="dense truncate" style="padding-left:2px">
         <span class="songTitle" title="${fn:escapeXml(song.title)}">
             <c:import url="playButtons.jsp">
                 <c:param name="id" value="${song.id}"/>

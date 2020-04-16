@@ -27,6 +27,30 @@ h1, h2, b, tr, .detail, .albumComment {
     color: #333333;
 }
 
+/* regular foreground color */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: #333333;
+}
+
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button, button.dt-button, div.dt-button, a.dt-button {
+    color: #656569 !important;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover, button.dt-button:hover:not(.disabled), div.dt-button:hover:not(.disabled), a.dt-button:hover:not(.disabled) {
+    color: #333333 !important;
+}
+
+/* regular color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: #333333 !important;
+}
+
+table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+    background-color: #B2BFCD;
+}
+
 /* Table sizing */
 table {
     font-size: 100%;

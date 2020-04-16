@@ -2,6 +2,7 @@ package org.airsonic.player.service;
 
 import com.google.common.collect.ImmutableMap;
 
+import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.ajax.PlayQueueInfo;
 import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MediaFileDao;
@@ -15,9 +16,8 @@ import org.airsonic.player.domain.PlayQueue.RepeatStatus;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastStatus;
+import org.airsonic.player.domain.RandomSearchCriteria;
 import org.airsonic.player.domain.SavedPlayQueue;
-import org.airsonic.player.i18n.LocaleResolver;
-import org.airsonic.player.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageType;
@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,8 +64,6 @@ public class PlayQueueService {
     @Autowired
     private InternetRadioService internetRadioService;
     @Autowired
-    private LocaleResolver localeResolver;
-    @Autowired
     private SimpMessagingTemplate brokerTemplate;
 
     public void start(Player player) {
@@ -101,8 +98,12 @@ public class PlayQueueService {
             jukeboxService.skip(player, index, (int) (offset / 1000));
         }
 
-        runAsync(() -> brokerTemplate.convertAndSendToUser(player.getUsername(),
-                "/queue/playqueues/" + player.getId() + "/skip", ImmutableMap.of("index", index, "offset", offset)));
+        runAsync(() -> {
+            brokerTemplate.convertAndSendToUser(player.getUsername(),
+                    "/queue/playqueues/" + player.getId() + "/skip", ImmutableMap.of("index", index, "offset", offset));
+            brokerTemplate.convertAndSendToUser(player.getUsername(),
+                    "/queue/playqueues/" + player.getId() + "/playstatus", player.getPlayQueue().getStatus());
+        });
     }
 
     public void reloadSearchCriteria(Player player, String sessionId) {
@@ -113,7 +114,7 @@ public class PlayQueueService {
             playQueue.addFiles(true, mediaFileService.getRandomSongs(playQueue.getRandomSearchCriteria(), player.getUsername()));
         }
 
-        broadcastPlayQueue(player, false, pq -> pq.setStartPlayerAt(size), sessionId);
+        broadcastPlayQueue(player, pq -> pq.setStartPlayerAt(size), sessionId);
     }
 
     public int savePlayQueue(Player player, int index, long offset) {
@@ -150,7 +151,6 @@ public class PlayQueueService {
                 .map(c -> playQueue.getFiles().indexOf(c)).orElse(-1);
 
         broadcastPlayQueue(player,
-                false,
                 currentIndex == -1 ? identity : pq -> pq.setStartPlayerAt(currentIndex).setStartPlayerAtPosition(positionMillis),
                 sessionId);
     }
@@ -354,7 +354,7 @@ public class PlayQueueService {
         player.getPlayQueue().addFiles(false, files);
         player.getPlayQueue().setRandomSearchCriteria(null);
         player.getPlayQueue().setInternetRadio(radio);
-        broadcastPlayQueue(player, !player.isExternalWithPlaylist(), startAt0, sessionId);
+        broadcastPlayQueue(player, startAt0, sessionId);
     }
 
     public void add(Player player, List<Integer> ids, Integer index, boolean removeVideoFiles, boolean broadcast) {
@@ -375,8 +375,15 @@ public class PlayQueueService {
         playQueue.setRandomSearchCriteria(null);
         playQueue.setInternetRadio(null);
         if (broadcast) {
-            broadcastPlayQueue(player, !player.isExternalWithPlaylist());
+            broadcastPlayQueue(player);
         }
+    }
+
+    public void addRandomCriteria(Player player, boolean append, RandomSearchCriteria criteria, boolean autoRandom) {
+        player.getPlayQueue().addFiles(append, mediaFileService.getRandomSongs(criteria, player.getUsername()));
+        player.getPlayQueue().setRandomSearchCriteria(autoRandom ? criteria : null);
+        player.getPlayQueue().setInternetRadio(null);
+        broadcastPlayQueue(player);
     }
 
     public void addPlaylist(Player player, int id, boolean removeVideoFiles) {
@@ -391,7 +398,7 @@ public class PlayQueueService {
 
         playQueue.setRandomSearchCriteria(null);
         playQueue.setInternetRadio(null);
-        broadcastPlayQueue(player, !player.isExternalWithPlaylist());
+        broadcastPlayQueue(player);
     }
 
     public void reset(Player player, List<Integer> ids, boolean removeVideoFiles) {
@@ -405,17 +412,17 @@ public class PlayQueueService {
         int index = currentFile == null ? -1 : playQueue.getFiles().indexOf(currentFile);
         playQueue.setIndex(index);
         playQueue.setStatus(status);
-        broadcastPlayQueue(player, !player.isExternalWithPlaylist());
+        broadcastPlayQueue(player);
     }
 
     public void clear(Player player) {
         player.getPlayQueue().clear();
-        broadcastPlayQueue(player, !player.isExternalWithPlaylist());
+        broadcastPlayQueue(player);
     }
 
     public void shuffle(Player player) {
         player.getPlayQueue().shuffle();
-        broadcastPlayQueue(player, false);
+        broadcastPlayQueue(player);
     }
 
     public void remove(Player player, List<Integer> indexes) {
@@ -424,22 +431,22 @@ public class PlayQueueService {
         for (int i = indexes.size() - 1; i >= 0; i--) {
             player.getPlayQueue().removeFileAt(indexes.get(i));
         }
-        broadcastPlayQueue(player, false);
+        broadcastPlayQueue(player);
     }
 
     public void rearrange(Player player, List<Integer> indexes) {
         player.getPlayQueue().rearrange(indexes);
-        broadcastPlayQueue(player, false);
+        broadcastPlayQueue(player);
     }
 
     public void up(Player player, int index) {
         player.getPlayQueue().moveUp(index);
-        broadcastPlayQueue(player, false);
+        broadcastPlayQueue(player);
     }
 
     public void down(Player player, int index) {
         player.getPlayQueue().moveDown(index);
-        broadcastPlayQueue(player, false);
+        broadcastPlayQueue(player);
     }
 
     public void toggleRepeat(Player player) {
@@ -456,12 +463,12 @@ public class PlayQueueService {
 
     public void undo(Player player) {
         player.getPlayQueue().undo();
-        broadcastPlayQueue(player, !player.isExternalWithPlaylist());
+        broadcastPlayQueue(player);
     }
 
     public void sort(Player player, PlayQueue.SortOrder order) {
         player.getPlayQueue().sort(order);
-        broadcastPlayQueue(player, false);
+        broadcastPlayQueue(player);
     }
 
     private static final Function<PlayQueueInfo, PlayQueueInfo> identity = pq -> pq;
@@ -486,14 +493,13 @@ public class PlayQueueService {
     // End : Methods dedicated to jukebox
     //
 
-    private void broadcastPlayQueue(Player player, boolean serverSidePlaylist) {
-        broadcastPlayQueue(player, serverSidePlaylist, identity, null);
+    private void broadcastPlayQueue(Player player) {
+        broadcastPlayQueue(player, identity, null);
     }
 
-    private void broadcastPlayQueue(Player player, boolean serverSidePlaylist,
-            Function<PlayQueueInfo, PlayQueueInfo> playQueueModifier, String triggeringSessionId) {
+    private void broadcastPlayQueue(Player player, Function<PlayQueueInfo, PlayQueueInfo> playQueueModifier, String triggeringSessionId) {
         runAsync(() -> {
-            PlayQueueInfo info = playQueueModifier.apply(getPlayQueueInfo(player, serverSidePlaylist));
+            PlayQueueInfo info = playQueueModifier.apply(getPlayQueueInfo(player));
             brokerTemplate.convertAndSendToUser(player.getUsername(),
                     "/queue/playqueues/" + player.getId() + "/updated", info);
             postBroadcast(info, player, triggeringSessionId);
@@ -516,56 +522,34 @@ public class PlayQueueService {
         }
     }
 
-    public PlayQueueInfo getPlayQueueInfo(Player player, boolean serverSidePlaylist) {
+    public PlayQueueInfo getPlayQueueInfo(Player player) {
         PlayQueue playQueue = player.getPlayQueue();
 
-        List<PlayQueueInfo.Entry> entries;
+        List<MediaFileEntry> entries;
         if (playQueue.isInternetRadioEnabled()) {
             entries = convertInternetRadio(player);
         } else {
             entries = convertMediaFileList(player);
         }
 
-        boolean isStopEnabled = playQueue.getStatus() == PlayQueue.Status.PLAYING && !player.isExternalWithPlaylist();
-        boolean m3uSupported = player.isExternal() || player.isExternalWithPlaylist();
-        serverSidePlaylist = player.isAutoControlEnabled() && m3uSupported && serverSidePlaylist;
-
         float gain = jukeboxService.getGain(player);
 
-        return new PlayQueueInfo(entries, isStopEnabled, playQueue.getRepeatStatus(), playQueue.isShuffleRadioEnabled(),
-                playQueue.isInternetRadioEnabled(), serverSidePlaylist, gain);
+        return new PlayQueueInfo(entries, playQueue.getStatus(), playQueue.getRepeatStatus(), playQueue.isShuffleRadioEnabled(), playQueue.isInternetRadioEnabled(), gain);
     }
 
-    private List<PlayQueueInfo.Entry> convertMediaFileList(Player player) {
-
+    private List<MediaFileEntry> convertMediaFileList(Player player) {
         String url = ""; // NetworkService.getBaseUrl(request);
-        Locale locale = localeResolver.resolveLocale(player.getUsername());
-        PlayQueue playQueue = player.getPlayQueue();
-
-        List<PlayQueueInfo.Entry> entries = new ArrayList<>(playQueue.getFiles().size());
-        for (MediaFile file : playQueue.getFiles()) {
-
-            String albumUrl = url + "main.view?id=" + file.getId();
-            String streamUrl = url + "stream?player=" + player.getId() + "&id=" + file.getId();
-            String coverArtUrl = url + "coverArt.view?id=" + file.getId();
-
-            String remoteStreamUrl = jwtSecurityService
-                    .addJWTToken(url + "ext/stream?player=" + player.getId() + "&id=" + file.getId());
-            String remoteCoverArtUrl = jwtSecurityService.addJWTToken(url + "ext/coverArt.view?id=" + file.getId());
-
-            boolean starred = mediaFileService.getMediaFileStarredDate(file.getId(), player.getUsername()) != null;
-            entries.add(new PlayQueueInfo.Entry(file.getId(), file.getTrackNumber(), file.getTitle(), file.getArtist(),
-                    file.getAlbumName(), file.getGenre(), file.getYear(), formatBitRate(file), file.getDuration(),
-                    file.getDurationString(), file.getFormat(), StringUtil.getMimeType(file.getFormat()),
-                    StringUtil.formatBytes(file.getFileSize(), locale), starred, albumUrl, streamUrl, remoteStreamUrl,
-                    coverArtUrl, remoteCoverArtUrl));
-        }
-
-        return entries;
+        Function<MediaFile, String> streamUrlGenerator = file -> url + "stream?player=" + player.getId() + "&id="
+                + file.getId();
+        Function<MediaFile, String> remoteStreamUrlGenerator = file -> jwtSecurityService
+                .addJWTToken(player.getUsername(), url + "ext/stream?player=" + player.getId() + "&id=" + file.getId());
+        Function<MediaFile, String> remoteCoverArtUrlGenerator = file -> jwtSecurityService
+                .addJWTToken(player.getUsername(), url + "ext/coverArt.view?id=" + file.getId());
+        return mediaFileService.toMediaFileEntryList(player.getPlayQueue().getFiles(), true, player.getUsername(),
+                streamUrlGenerator, remoteStreamUrlGenerator, remoteCoverArtUrlGenerator);
     }
 
-    private List<PlayQueueInfo.Entry> convertInternetRadio(Player player) {
-
+    private List<MediaFileEntry> convertInternetRadio(Player player) {
         PlayQueue playQueue = player.getPlayQueue();
         InternetRadio radio = playQueue.getInternetRadio();
 
@@ -573,13 +557,13 @@ public class PlayQueueService {
         final String radioName = radio.getName();
 
         List<InternetRadioSource> sources = internetRadioService.getInternetRadioSources(radio);
-        List<PlayQueueInfo.Entry> entries = new ArrayList<>(sources.size());
+        List<MediaFileEntry> entries = new ArrayList<>(sources.size());
         for (InternetRadioSource streamSource : sources) {
             // Fake entry id so that the source can be selected in the UI
             int streamId = -(1 + entries.size());
             Integer streamTrackNumber = entries.size();
             String streamUrl = streamSource.getStreamUrl();
-            entries.add(new PlayQueueInfo.Entry(streamId, // Entry id
+            entries.add(new MediaFileEntry(streamId, // Entry id
                     streamTrackNumber, // Track number
                     streamUrl, // Track title (use radio stream URL for now)
                     "", // Track artist
@@ -587,10 +571,12 @@ public class PlayQueueService {
                     "Internet Radio", // Genre
                     0, // Year
                     "", // Bit rate
+                    null, // Dimensions
                     0.0, // Duration
                     "", // Duration (as string)
                     "", // Format
                     "", // Content Type
+                    "", // Entry Type
                     "", // File size
                     false, // Starred
                     radioHomepageUrl, // Album URL (use radio home page URL)
@@ -602,15 +588,5 @@ public class PlayQueueService {
         }
 
         return entries;
-    }
-
-    private static String formatBitRate(MediaFile mediaFile) {
-        if (mediaFile.getBitRate() == null) {
-            return null;
-        }
-        if (mediaFile.isVariableBitRate()) {
-            return mediaFile.getBitRate() + " Kbps vbr";
-        }
-        return mediaFile.getBitRate() + " Kbps";
     }
 }

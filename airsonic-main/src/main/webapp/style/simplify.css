@@ -5,7 +5,9 @@
  *
  */
 
-@import "default.css";
+@import "default-without-mediaelement.css";
+@import "mediaelement-dark.css";
+@import "dark-theme.css";
 
 /* The primary background colour. */
 .bgcolor1, table.music tr:nth-of-type(even) {
@@ -25,15 +27,24 @@
     border: 1px solid #FFFFFF;
 }
 
-
-/* The secondary foreground colour used for h1, details etc. */
-h1, .detail, .albumComment {
-    color: #FFFFFF;
+table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+    background-color: #333333;
 }
 
-/* Foreground colour used for h2, bold and tr. */
-h2, b, tr {
-    color: #FFFFFF;
+table.dataTable tbody>tr.selected, table.dataTable tbody>tr>.selected {
+    background-color: #666666;
+}
+
+table.dataTable.hover tbody>tr.selected:hover, table.dataTable.hover tbody>tr>.selected:hover, table.dataTable.display tbody>tr.selected:hover, table.dataTable.display tbody>tr>.selected:hover {
+    background-color: #595959;
+}
+
+table.music.dataTable tbody tr.currently-playing {
+    background-color: #4D4D4D;
+}
+
+table.music.dataTable tbody tr.currently-playing:hover {
+    background-color: #404040;
 }
 
 /* Table sizing */
@@ -47,22 +58,9 @@ table {
     background-position:right;
 }
 
-
 /* Back image */
 .back {
     background-image:url( "../icons/simplify/back.png" );
-}
-
-
-/* Link colour */
-a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
-    color: #FFFFFF;
-}
-
-/* Link hover colour */
-a:hover, a:hover * {
-    text-decoration: underline;
-    color: #FFFFFF;
 }
 
 /* Colour for warning messages. */
@@ -72,7 +70,6 @@ a:hover, a:hover * {
 
 /* The primary foreground colour. */
 body {
-    color: #FFFFFF;
     background-color: #DDDDDD;
 }
 

@@ -448,10 +448,4 @@
 </div>
 </c:if>
 
-<c:if test="${settings_reload}">
-    <script language="javascript" type="text/javascript">
-        parent.location.href="index.view?";
-    </script>
-</c:if>
-
 </body></html>

@@ -172,11 +172,4 @@
 
 </form:form>
 
-<c:if test="${settings_reload}">
-    <script language="javascript" type="text/javascript">
-        parent.frames.left.location.href="left.view?";
-        parent.frames.playQueue.location.href="playQueue.view?";
-    </script>
-</c:if>
-
 </body></html>
