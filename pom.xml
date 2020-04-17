@@ -23,7 +23,7 @@
     <properties>
         <failOnDependencyWarning>true</failOnDependencyWarning>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.compiler.version>1.8</java.compiler.version>
+        <java.version>11</java.version>
         <cxf.version>3.3.6</cxf.version>
         <!-- Temporarily here because Spring Boot had a Postgres driver with a breaking change, remove once spring boot updates or we move to a breaking change -->
         <postgresql.version>42.2.12</postgresql.version>
@@ -257,11 +257,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>${java.compiler.version}</source>
-                    <target>${java.compiler.version}</target>
                     <encoding>UTF-8</encoding>
                     <verbose>false</verbose>
-                    <compilerVersion>${java.compiler.version}</compilerVersion>
                     <showWarnings>true</showWarnings>
                 </configuration>
             </plugin>
