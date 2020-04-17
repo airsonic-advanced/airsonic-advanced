@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.airsonic.player.TestCaseUtils;
 import org.airsonic.player.util.HomeRule;
 import org.apache.commons.configuration2.spring.ConfigurationPropertySource;
@@ -27,16 +29,19 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -159,11 +164,11 @@ public class SettingsServiceTestCase {
     }
 
     @Test
-    public void migrateKeys_noKeys() {
+    public void migratePropFileKeys_noKeys() {
         Map<String, String> keyMaps = new LinkedHashMap<>();
         keyMaps.put("bla", "bla2");
         keyMaps.put("bla2", "bla3");
-        SettingsService.migrateKeys(keyMaps);
+        SettingsService.migratePropFileKeys(keyMaps, ConfigurationPropertiesService.getInstance());
 
         assertNull(env.getProperty("bla"));
         assertNull(env.getProperty("bla2"));
@@ -171,14 +176,14 @@ public class SettingsServiceTestCase {
     }
 
     @Test
-    public void migrateKeys_deleteKeys_BackwardsCompatibilitySet() {
+    public void migratePropFileKeys_deleteKeys_BackwardsCompatibilitySet() {
         ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
 
         Map<String, String> keyMaps = new LinkedHashMap<>();
         keyMaps.put("bla", "bla2");
         keyMaps.put("bla2", "bla3");
         keyMaps.put("bla3", null);
-        SettingsService.migrateKeys(keyMaps);
+        SettingsService.migratePropFileKeys(keyMaps, ConfigurationPropertiesService.getInstance());
 
         assertEquals("hello", env.getProperty("bla"));
         assertEquals("hello", env.getProperty("bla2"));
@@ -186,7 +191,7 @@ public class SettingsServiceTestCase {
     }
 
     @Test
-    public void migrateKeys_deleteKeys_NonBackwardsCompatible() {
+    public void migratePropFileKeys_deleteKeys_NonBackwardsCompatible() {
         ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS, "false");
         ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
 
@@ -194,7 +199,7 @@ public class SettingsServiceTestCase {
         keyMaps.put("bla", "bla2");
         keyMaps.put("bla2", "bla3");
         keyMaps.put("bla3", null);
-        SettingsService.migrateKeys(keyMaps);
+        SettingsService.migratePropFileKeys(keyMaps, ConfigurationPropertiesService.getInstance());
 
         assertNull(env.getProperty("bla"));
         assertNull(env.getProperty("bla2"));
@@ -202,7 +207,7 @@ public class SettingsServiceTestCase {
     }
 
     @Test
-    public void migrateKeys_withKeys_ExplicitlyBackwardsCompatible() {
+    public void migratePropFileKeys_withKeys_ExplicitlyBackwardsCompatible() {
         ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS, "true");
         ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
         ConfigurationPropertiesService.getInstance().setProperty("bla3", "hello2");
@@ -212,7 +217,7 @@ public class SettingsServiceTestCase {
         keyMaps.put("bla2", "bla3");
         keyMaps.put("bla3", "bla4");
         keyMaps.put("bla4", "bla5");
-        SettingsService.migrateKeys(keyMaps);
+        SettingsService.migratePropFileKeys(keyMaps, ConfigurationPropertiesService.getInstance());
 
         assertEquals("hello", env.getProperty("bla"));
         assertEquals("hello", env.getProperty("bla2"));
@@ -222,7 +227,7 @@ public class SettingsServiceTestCase {
     }
 
     @Test
-    public void migrateKeys_withKeys_ImplicitlyBackwardsCompatible() {
+    public void migratePropFileKeys_withKeys_ImplicitlyBackwardsCompatible() {
         ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
         ConfigurationPropertiesService.getInstance().setProperty("bla3", "hello2");
 
@@ -231,7 +236,7 @@ public class SettingsServiceTestCase {
         keyMaps.put("bla2", "bla3");
         keyMaps.put("bla3", "bla4");
         keyMaps.put("bla4", "bla5");
-        SettingsService.migrateKeys(keyMaps);
+        SettingsService.migratePropFileKeys(keyMaps, ConfigurationPropertiesService.getInstance());
 
         assertEquals("hello", env.getProperty("bla"));
         assertEquals("hello", env.getProperty("bla2"));
@@ -241,7 +246,7 @@ public class SettingsServiceTestCase {
     }
 
     @Test
-    public void migrateKeys_withKeys_NonBackwardsCompatible() {
+    public void migratePropFileKeys_withKeys_NonBackwardsCompatible() {
         ConfigurationPropertiesService.getInstance().setProperty(SettingsService.KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS, "false");
         ConfigurationPropertiesService.getInstance().setProperty("bla", "hello");
         ConfigurationPropertiesService.getInstance().setProperty("bla3", "hello2");
@@ -251,12 +256,68 @@ public class SettingsServiceTestCase {
         keyMaps.put("bla2", "bla3");
         keyMaps.put("bla3", "bla4");
         keyMaps.put("bla4", "bla5");
-        SettingsService.migrateKeys(keyMaps);
+        SettingsService.migratePropFileKeys(keyMaps, ConfigurationPropertiesService.getInstance());
 
         assertNull(env.getProperty("bla"));
         assertNull(env.getProperty("bla2"));
         assertNull(env.getProperty("bla3"));
         assertNull(env.getProperty("bla4"));
         assertEquals("hello2", env.getProperty("bla5"));
+    }
+
+    @Test
+    public void migrateEnvKeys_noKeys() {
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        keyMaps.put("bla", "bla2");
+        keyMaps.put("bla2", "bla3");
+        Map<String, Object> migrated = new LinkedHashMap<>();
+        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", Collections.emptyMap()), migrated);
+
+        assertThat(migrated).isEmpty();
+    }
+
+    @Test
+    public void migrateEnvKeys_keyChainPrecedence1() {
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        keyMaps.put("bla", "bla2");
+        keyMaps.put("bla2", "bla3");
+        keyMaps.put("bla3", "bla4");
+
+        Map<String, Object> migrated = new LinkedHashMap<>();
+        // higher precedence starts earlier in the chain order
+        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla", "1")), migrated);
+        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla3", "3")), migrated);
+
+        assertThat(migrated).containsOnly(entry("bla2", "1"), entry("bla3", "1"), entry("bla4", "1"));
+    }
+
+    @Test
+    public void migrateEnvKeys_keyChainPrecedence2() {
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        keyMaps.put("bla", "bla2");
+        keyMaps.put("bla2", "bla3");
+        keyMaps.put("bla3", "bla4");
+
+        Map<String, Object> migrated = new LinkedHashMap<>();
+        // higher precedence starts later in the chain order
+        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla3", "1")), migrated);
+        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla", "3")), migrated);
+
+        assertThat(migrated).containsOnly(entry("bla2", "3"), entry("bla3", "3"), entry("bla4", "1"));
+    }
+
+    @Test
+    public void migrateEnvKeys_deleteKeys() {
+        Map<String, String> keyMaps = new LinkedHashMap<>();
+        keyMaps.put("bla", "bla2");
+        keyMaps.put("bla2", "bla3");
+        keyMaps.put("bla3", null);
+
+        Map<String, Object> migrated = new LinkedHashMap<>();
+        // higher precedence starts later in the chain order
+        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla3", "1")), migrated);
+        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla", "3")), migrated);
+
+        assertThat(migrated).containsOnly(entry("bla2", "3"), entry("bla3", "3"));
     }
 }

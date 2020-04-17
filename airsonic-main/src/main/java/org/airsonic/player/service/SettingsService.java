@@ -26,7 +26,6 @@ import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.*;
-import org.airsonic.player.spring.CustomPropertySourceConfigurer;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
@@ -36,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.PropertySource;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -258,7 +258,7 @@ public class SettingsService {
     private RateLimiter uploadRateLimiter;
     private Pattern excludePattern;
 
-    // Array of obsolete keys.  Used to clean property file.
+    // Array of obsolete properties. Used to clean property file.
     private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
             "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "AutoCoverBatch", "MusicMask",
             "VideoMask", "CoverArtMask", "HlsCommand", "HlsCommand2", "JukeboxCommand",
@@ -268,13 +268,14 @@ public class SettingsService {
             "MediaLibraryStatistics", "LastScanned"
             );
 
-    public static void migrateKeys() {
+    public static Map<String, String> getMigratedPropertyKeys() {
+        Map<String, String> res = new LinkedHashMap<>();
+        OBSOLETE_KEYS.forEach(x -> res.put(x, null));
+
+        res.put("database.config.type", "DatabaseConfigType");
+        res.put("DatabaseConfigType", null);
+
         Map<String, String> keyMaps = new LinkedHashMap<>();
-        OBSOLETE_KEYS.forEach(x -> keyMaps.put(x, null));
-
-        keyMaps.put("database.config.type", "DatabaseConfigType");
-        keyMaps.put("DatabaseConfigType", null);
-
         keyMaps.put("database.config.embed.driver", "DatabaseConfigEmbedDriver");
         keyMaps.put("DatabaseConfigEmbedDriver", KEY_DATABASE_DRIVER);
 
@@ -296,23 +297,60 @@ public class SettingsService {
         keyMaps.put("database.usertable.quote", "DatabaseUsertableQuote");
         keyMaps.put("DatabaseUsertableQuote", KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
 
-        migrateKeys(keyMaps);
+        // Migrate variants first: allow spring props to be passed as env vars
+        // (migrate a_b_c -> a.b-c)
+        keyMaps.entrySet().forEach(e -> {
+            String key = e.getKey().replace(".", "_").replace("-", "_");
+            if (!key.equals(e.getKey()) && !res.containsKey(key)) {
+                res.put(key, e.getKey());
+            }
+            if (e.getValue() != null) {
+                String value = e.getValue().replace(".", "_").replace("-", "_");
+                if (!value.equals(e.getValue()) && !res.containsKey(value)) {
+                    res.put(value, e.getValue());
+                }
+            }
+        });
+
+        res.putAll(keyMaps);
+        return res;
     }
 
-    public static void migrateKeys(Map<String, String> keyMaps) {
-        ConfigurationPropertiesService cps = ConfigurationPropertiesService.getInstance();
+    public static void migratePropertySourceKeys(Map<String, String> keyMaps, PropertySource<?> src, Map<String, Object> migrated) {
+        Map<String, Object> temp = new HashMap<>();
+        // needs to be processed serially
+        keyMaps.entrySet().stream()
+                // ps has the property we're trying to migrate (either directly or migrated earlier within the chain)
+                .filter(e -> StringUtils.isNotBlank(Optional.ofNullable(src.getProperty(e.getKey())).map(Object::toString).orElse(temp.getOrDefault(e.getKey(), "").toString())))
+                // we're not migrating to null, i.e. trying to delete the property
+                .filter(e -> e.getValue() != null)
+                // we're not migrating to a property that is already occupied
+                .filter(e -> StringUtils.isBlank(Optional.ofNullable(src.getProperty(e.getValue())).map(Object::toString).orElse(temp.getOrDefault(e.getValue(), "").toString())))
+                .forEach(e -> {
+                    Object val = Optional.ofNullable(src.getProperty(e.getKey())).orElse(temp.get(e.getKey()));
+                    temp.put(e.getValue(), val);
+                    if (migrated.containsKey(e.getValue())) {
+                        LOG.info("Skipping migrating property [{}] to [{}] in {} (already migrated)", e.getKey(), e.getValue(), src.getName());
+                    } else {
+                        LOG.info("Migrating property [{}] to [{}] in {}", e.getKey(), e.getValue(), src.getName());
+                        migrated.put(e.getValue(), val);
+                    }
+        });
+    }
+
+    public static void migratePropFileKeys(Map<String, String> keyMaps, ConfigurationPropertiesService cps) {
         Boolean retainObsoleteKeys = Optional.ofNullable(cps.getProperty(KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS)).map(x -> Boolean.valueOf((String) x)).orElse(true);
 
         // needs to be processed serially
         keyMaps.entrySet().stream().filter(e -> cps.containsKey(e.getKey())).forEach(e -> {
             if (e.getValue() != null && !cps.containsKey(e.getValue())) {
-                LOG.info("Migrating obsolete property [{}] to [{}]", e.getKey(), e.getValue());
+                LOG.info("Migrating property [{}] to [{}] in properties file", e.getKey(), e.getValue());
                 cps.setProperty(e.getValue(), cps.getProperty(e.getKey()));
             }
 
             // delete old property
             if (!retainObsoleteKeys) {
-                LOG.info("Removing obsolete property [{}]", e.getKey());
+                LOG.info("Removing obsolete property [{}] in properties file", e.getKey());
                 cps.clearProperty(e.getKey());
             }
         });
@@ -320,33 +358,34 @@ public class SettingsService {
         cps.save();
     }
 
-    public static void setDefaultConstants(Environment env) {
+    public static void setDefaultConstants(Environment env, Map<String, Object> defaultConstants) {
         // if jndi is set, everything datasource-related is ignored
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_URL))) {
-            CustomPropertySourceConfigurer.getDefaultConstants().put(KEY_DATABASE_URL, getDefaultJDBCUrl());
+            defaultConstants.put(KEY_DATABASE_URL, getDefaultJDBCUrl());
         }
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_USERNAME))) {
-            CustomPropertySourceConfigurer.getDefaultConstants().put(KEY_DATABASE_USERNAME, getDefaultJDBCUsername());
+            defaultConstants.put(KEY_DATABASE_USERNAME, getDefaultJDBCUsername());
         }
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_PASSWORD))) {
-            CustomPropertySourceConfigurer.getDefaultConstants().put(KEY_DATABASE_PASSWORD, getDefaultJDBCPassword());
+            defaultConstants.put(KEY_DATABASE_PASSWORD, getDefaultJDBCPassword());
         }
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_ROLLBACK_FILE))) {
-            CustomPropertySourceConfigurer.getDefaultConstants().put(KEY_DATABASE_MIGRATION_ROLLBACK_FILE,
+            defaultConstants.put(
+                    KEY_DATABASE_MIGRATION_ROLLBACK_FILE,
                     getAirsonicHome().toAbsolutePath().resolve("rollback.sql").toString());
         }
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH))) {
-            CustomPropertySourceConfigurer.getDefaultConstants().put(
+            defaultConstants.put(
                     KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH,
                     DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH.toString());
         }
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE))) {
-            CustomPropertySourceConfigurer.getDefaultConstants().put(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE,
+            defaultConstants.put(
+                    KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE,
                     DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
         }
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER))) {
-            CustomPropertySourceConfigurer.getDefaultConstants()
-                    .put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER, Util.getDefaultMusicFolder());
+            defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER, Util.getDefaultMusicFolder());
         }
     }
 
