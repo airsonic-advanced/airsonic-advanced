@@ -794,11 +794,18 @@
             filesTable.rows().deselect();
         }
     }
+    // need to keep track if a request was sent because plaQueue may also send a request
+    var awaitingAppendPlaylistRequest = false;
     function onAppendPlaylist() {
+        awaitingAppendPlaylistRequest = true;
         // retrieve writable lists so we can open dialog to ask user which playlist to append to
         top.StompClient.send("/app/playlists/writable", "");
     }
     function playlistSelectionCallback(playlists) {
+        if (!awaitingAppendPlaylistRequest) {
+            return;
+        }
+        awaitingAppendPlaylistRequest = false;
         $("#dialog-select-playlist-list").empty();
         for (var i = 0; i < playlists.length; i++) {
             var playlist = playlists[i];

@@ -835,11 +835,18 @@
         onSavePlaylist() {
             top.StompClient.send("/app/playlists/create/playqueue", this.player.id);
         },
+        // need to keep track if a request was sent because mediaMain may also send a request
+        awaitingAppendPlaylistRequest: false,
         onAppendPlaylist() {
+            this.awaitingAppendPlaylistRequest = true;
             // retrieve writable lists so we can open dialog to ask user which playlist to append to
             top.StompClient.send("/app/playlists/writable", "");
         },
         playlistSelectionCallback(playlists) {
+            if (!this.awaitingAppendPlaylistRequest) {
+                return;
+            }
+            this.awaitingAppendPlaylistRequest = false;
             $("#dialog-select-playlist-list").empty();
             var pq = this;
             for (var i = 0; i < playlists.length; i++) {
