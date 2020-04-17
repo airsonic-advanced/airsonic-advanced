@@ -269,10 +269,9 @@ public class SettingsService {
             );
 
     public static Map<String, String> getMigratedPropertyKeys() {
-        Map<String, String> res = new LinkedHashMap<>();
-        OBSOLETE_KEYS.forEach(x -> res.put(x, null));
-
         Map<String, String> keyMaps = new LinkedHashMap<>();
+        OBSOLETE_KEYS.forEach(x -> keyMaps.put(x, null));
+
         keyMaps.put("database.config.embed.driver", "DatabaseConfigEmbedDriver");
         keyMaps.put("DatabaseConfigEmbedDriver", KEY_DATABASE_DRIVER);
 
@@ -294,23 +293,7 @@ public class SettingsService {
         keyMaps.put("database.usertable.quote", "DatabaseUsertableQuote");
         keyMaps.put("DatabaseUsertableQuote", KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
 
-        // Migrate variants first: allow spring props to be passed as env vars
-        // (migrate a_b_c -> a.b-c)
-        keyMaps.entrySet().forEach(e -> {
-            String key = e.getKey().replace(".", "_").replace("-", "_");
-            if (!key.equals(e.getKey()) && !res.containsKey(key)) {
-                res.put(key, e.getKey());
-            }
-            if (e.getValue() != null) {
-                String value = e.getValue().replace(".", "_").replace("-", "_");
-                if (!value.equals(e.getValue()) && !res.containsKey(value)) {
-                    res.put(value, e.getValue());
-                }
-            }
-        });
-
-        res.putAll(keyMaps);
-        return res;
+        return keyMaps;
     }
 
     public static void migratePropertySourceKeys(Map<String, String> keyMaps, PropertySource<?> src, Map<String, Object> migrated) {
