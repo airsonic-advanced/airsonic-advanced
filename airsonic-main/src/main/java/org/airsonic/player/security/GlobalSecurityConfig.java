@@ -138,7 +138,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
         ENCODERS.put("encrypted-AES-GCM", encoder);
         ENCODERS.put("encrypted-AES-GCM" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(encoder));
 
-        return new DelegatingPasswordEncoder(settingsService.getNonDecodablePasswordEncoder(), ENCODERS) {
+        DelegatingPasswordEncoder pEncoder = new DelegatingPasswordEncoder(settingsService.getNonDecodablePasswordEncoder(), ENCODERS) {
             @Override
             public boolean upgradeEncoding(String prefixEncodedPassword) {
                 PasswordEncoder encoder = ENCODERS.get(StringUtils.substringBetween(prefixEncodedPassword, "{", "}"));
@@ -149,6 +149,20 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
                 return false;
             }
         };
+
+        pEncoder.setDefaultPasswordEncoderForMatches(new PasswordEncoder() {
+            @Override
+            public boolean matches(CharSequence rawPassword, String encodedPassword) {
+                return false;
+            }
+
+            @Override
+            public String encode(CharSequence rawPassword) {
+                return null;
+            }
+        });
+
+        return pEncoder;
     }
 
     @EventListener
