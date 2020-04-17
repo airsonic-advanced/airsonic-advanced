@@ -3,6 +3,7 @@ package org.airsonic.player.spring;
 import org.airsonic.player.util.Util;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -32,7 +33,7 @@ public class DebugConfig {
         System.out.println(Util.debugObject(dataSourceProperties));
         System.out.println("DATASOURCE");
         System.out.println(Util.debugObject(dataSource.getIfAvailable()));
-        return null;
+        return new LiquibaseAutoConfiguration.LiquibaseConfiguration(properties).liquibase(dataSourceProperties,
+                dataSource, liquibaseDataSource);
     }
-
 }
