@@ -29,12 +29,7 @@ public class DebugConfig {
         System.out.println("LIQUIBASEPROPS");
         System.out.println(Util.debugObject(properties));
         System.out.println("DATAPROPS");
-        System.out.println("url:" + Util.debugObject(dataSourceProperties.getUrl()));
-        System.out.println("user:" + Util.debugObject(dataSourceProperties.getUsername()));
-        System.out.println("data:" + Util.debugObject(dataSourceProperties.getData()));
-        System.out.println("durl:" + Util.debugObject(dataSourceProperties.determineUrl()));
-        System.out.println("name:" + Util.debugObject(dataSourceProperties.getName()));
-
+        System.out.println(Util.debugObject(dataSourceProperties));
         return new LiquibaseAutoConfiguration.LiquibaseConfiguration(properties).liquibase(dataSourceProperties,
                 dataSource, liquibaseDataSource);
     }
