@@ -1,6 +1,5 @@
 package org.airsonic.player.spring;
 
-import liquibase.integration.spring.SpringLiquibase;
 import org.airsonic.player.util.Util;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
@@ -12,6 +11,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
+
+import liquibase.integration.spring.SpringLiquibase;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties({ DataSourceProperties.class, LiquibaseProperties.class })
