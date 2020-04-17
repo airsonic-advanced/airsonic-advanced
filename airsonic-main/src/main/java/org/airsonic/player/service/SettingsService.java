@@ -265,15 +265,12 @@ public class SettingsService {
             "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
             "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",
             "UrlRedirectFrom", "UrlRedirectionEnabled", "UrlRedirectType", "Port", "HttpsPort",
-            "MediaLibraryStatistics", "LastScanned"
+            "MediaLibraryStatistics", "LastScanned", "database.config.type", "DatabaseConfigType"
             );
 
     public static Map<String, String> getMigratedPropertyKeys() {
         Map<String, String> res = new LinkedHashMap<>();
         OBSOLETE_KEYS.forEach(x -> res.put(x, null));
-
-        res.put("database.config.type", "DatabaseConfigType");
-        res.put("DatabaseConfigType", null);
 
         Map<String, String> keyMaps = new LinkedHashMap<>();
         keyMaps.put("database.config.embed.driver", "DatabaseConfigEmbedDriver");
