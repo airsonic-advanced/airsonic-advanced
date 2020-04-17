@@ -51,8 +51,8 @@ public class CustomPropertySourceConfigurer implements
         SettingsService.migratePropFileKeys(migratedProps, ConfigurationPropertiesService.getInstance());
         ctx.getEnvironment().getPropertySources().addLast(new ConfigurationPropertySource("airsonic-properties", ConfigurationPropertiesService.getInstance().getConfiguration()));
 
-        // Set default constants
+        // Set default constants - only set if vars are blank so their PS need to be set first (or blank vars will get picked up first on look up)
         SettingsService.setDefaultConstants(ctx.getEnvironment(), DEFAULT_CONSTANTS);
-        ctx.getEnvironment().getPropertySources().addLast(new MapPropertySource("default-constants", DEFAULT_CONSTANTS));
+        ctx.getEnvironment().getPropertySources().addFirst(new MapPropertySource("default-constants", DEFAULT_CONSTANTS));
     }
 }
