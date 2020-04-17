@@ -38,8 +38,8 @@
         }
 
         function downloadSelected() {
-            location.href = "podcastReceiverAdmin.view?channelId=${model.channel.id}" +
-                    "&downloadEpisode=" + getSelectedEpisodes();
+            location.href = "podcastReceiverAdmin.view?channelId=${model.channel.id}&" +
+                    getSelectedEpisodes().map(i => "downloadEpisode=" + i).join("&");
         }
 
         function deleteChannel() {
@@ -47,8 +47,8 @@
         }
 
         function deleteSelected() {
-            location.href = "podcastReceiverAdmin.view?channelId=${model.channel.id}" +
-                    "&deleteEpisode=" + getSelectedEpisodes();
+            location.href = "podcastReceiverAdmin.view?channelId=${model.channel.id}&" +
+                    getSelectedEpisodes().map(i => "deleteEpisode=" + i).join("&");
         }
 
         function refreshChannels() {
@@ -60,11 +60,11 @@
         }
 
         function getSelectedEpisodes() {
-            var result = "";
+            var result = [];
             for (var i = 0; i < ${fn:length(model.episodes)}; i++) {
                 var checkbox = $("#episode" + i);
                 if (checkbox.is(":checked")) {
-                    result += (checkbox.val() + " ");
+                    result.push(checkbox.val());
                 }
             }
             return result;
