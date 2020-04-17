@@ -298,12 +298,6 @@
 		</dependency>
 
         <dependency>
-            <groupId>stax</groupId>
-            <artifactId>stax-api</artifactId>
-            <version>1.0.1</version>
-        </dependency>
-
-        <dependency>
             <groupId>jakarta.mail</groupId>
             <artifactId>jakarta.mail-api</artifactId>
         </dependency>
@@ -457,6 +451,14 @@
                 <exclusion>
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
+                </exclusion>
+                <exclusion>
+                 <groupId>javax.xml.stream</groupId>
+                 <artifactId>stax-api</artifactId>
+                </exclusion>
+                <exclusion>
+                 <groupId>stax</groupId>
+                 <artifactId>stax-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
