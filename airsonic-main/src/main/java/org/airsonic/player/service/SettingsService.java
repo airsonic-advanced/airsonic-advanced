@@ -332,7 +332,7 @@ public class SettingsService {
                         LOG.info("Migrating property [{}] to [{}] in {}", e.getKey(), e.getValue(), src.getName());
                         migrated.put(e.getValue(), val);
                     }
-        });
+                });
     }
 
     public static void migratePropFileKeys(Map<String, String> keyMaps, ConfigurationPropertiesService cps) {
