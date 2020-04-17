@@ -30,8 +30,6 @@ public class DebugConfig {
         System.out.println(Util.debugObject(properties));
         System.out.println("DATAPROPS");
         System.out.println(Util.debugObject(dataSourceProperties));
-        System.out.println("DATASOURCE");
-        System.out.println(Util.debugObject(dataSource.getIfAvailable()));
         return new LiquibaseAutoConfiguration.LiquibaseConfiguration(properties).liquibase(dataSourceProperties,
                 dataSource, liquibaseDataSource);
     }
