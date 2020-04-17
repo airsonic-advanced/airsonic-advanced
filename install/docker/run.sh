@@ -5,7 +5,7 @@ set -e
 mkdir -p $AIRSONIC_DIR/airsonic/transcode
 ln -fs /usr/bin/ffmpeg $AIRSONIC_DIR/airsonic/transcode/ffmpeg
 ln -fs /usr/bin/lame $AIRSONIC_DIR/airsonic/transcode/lame
-
+printenv
 if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
 
     java_opts_array=()
