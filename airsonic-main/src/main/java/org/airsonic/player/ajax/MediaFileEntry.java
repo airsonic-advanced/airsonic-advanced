@@ -185,7 +185,7 @@ public class MediaFileEntry {
             return null;
         }
         if (mediaFile.isVariableBitRate()) {
-            return mediaFile.getBitRate() + " Kbps vbr";
+            return "vbr " + mediaFile.getBitRate() + " Kbps";
         }
         return mediaFile.getBitRate() + " Kbps";
     }
