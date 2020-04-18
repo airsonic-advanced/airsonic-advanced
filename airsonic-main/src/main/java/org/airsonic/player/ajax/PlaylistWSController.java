@@ -223,7 +223,7 @@ public class PlaylistWSController {
                         f.getTitle(),
                         f.getArtist(),
                         f.getAlbumName(),
-                        f.getDurationString(),
+                        f.getDuration(),
                         mediaFileService.getMediaFileStarredDate(f.getId(), p.getName()) != null,
                         f.isPresent() && securityService.isFolderAccessAllowed(f, p.getName())))
                 .collect(Collectors.toList());
@@ -322,17 +322,17 @@ public class PlaylistWSController {
         private final String title;
         private final String artist;
         private final String album;
-        private final String durationAsString;
+        private final Double duration;
         private final boolean starred;
         private final boolean present;
 
-        public PlaylistEntry(int id, String title, String artist, String album, String durationAsString,
-                boolean starred, boolean present) {
+        public PlaylistEntry(int id, String title, String artist, String album,
+                Double duration, boolean starred, boolean present) {
             this.id = id;
             this.title = title;
             this.artist = artist;
             this.album = album;
-            this.durationAsString = durationAsString;
+            this.duration = duration;
             this.starred = starred;
             this.present = present;
         }
@@ -353,8 +353,8 @@ public class PlaylistWSController {
             return album;
         }
 
-        public String getDurationAsString() {
-            return durationAsString;
+        public Double getDuration() {
+            return duration;
         }
 
         public boolean getStarred() {

@@ -29,15 +29,15 @@ public class TopSong {
     private final String title;
     private final String artist;
     private final String album;
-    private final String durationAsString;
+    private final Double duration;
     private final boolean starred;
 
-    public TopSong(int id, String title, String artist, String album, String durationAsString, boolean starred) {
+    public TopSong(int id, String title, String artist, String album, Double duration, boolean starred) {
         this.id = id;
         this.title = title;
         this.artist = artist;
         this.album = album;
-        this.durationAsString = durationAsString;
+        this.duration = duration;
         this.starred = starred;
     }
 
@@ -57,8 +57,8 @@ public class TopSong {
         return album;
     }
 
-    public String getDurationAsString() {
-        return durationAsString;
+    public Double getDuration() {
+        return duration;
     }
 
     public boolean isStarred() {

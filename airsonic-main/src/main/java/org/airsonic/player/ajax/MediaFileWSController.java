@@ -231,7 +231,7 @@ public class MediaFileWSController {
 
         public MediaFileDirectoryEntry(MediaFileEntry mfe) {
             super(mfe.getId(), mfe.getTrackNumber(), mfe.getTitle(), mfe.getArtist(), mfe.getAlbum(), mfe.getGenre(),
-                    mfe.getYear(), mfe.getBitRate(), mfe.getDimensions(), mfe.getDuration(), mfe.getDurationAsString(),
+                    mfe.getYear(), mfe.getBitRate(), mfe.getDimensions(), mfe.getDuration(),
                     mfe.getFormat(), mfe.getContentType(), mfe.getEntryType(), mfe.getFileSize(), mfe.getStarred(),
                     mfe.getAlbumUrl(), mfe.getStreamUrl(), mfe.getRemoteStreamUrl(), mfe.getCoverArtUrl(), mfe.getRemoteCoverArtUrl());
         }

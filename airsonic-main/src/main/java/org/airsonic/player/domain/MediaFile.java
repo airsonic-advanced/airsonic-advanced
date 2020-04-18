@@ -19,7 +19,6 @@
  */
 package org.airsonic.player.domain;
 
-import org.airsonic.player.util.StringUtil;
 import org.apache.commons.io.FilenameUtils;
 
 import java.nio.file.Files;
@@ -276,14 +275,6 @@ public class MediaFile {
 
     public void setDuration(Double duration) {
         this.duration = duration;
-    }
-
-    public String getDurationString() {
-        if (duration == null) {
-            return null;
-        }
-        // Return in M:SS or H:MM:SS
-        return StringUtil.formatDuration((long) (duration * 1000));
     }
 
     public Long getFileSize() {

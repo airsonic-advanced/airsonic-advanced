@@ -16,7 +16,6 @@ public class MediaFileEntry {
     private final String bitRate;
     private final String dimensions;
     private final Double duration;
-    private final String durationAsString;
     private final String format;
     private String contentType;
     private final String entryType;
@@ -39,7 +38,6 @@ public class MediaFileEntry {
             String bitRate,
             String dimensions,
             Double duration,
-            String durationAsString,
             String format,
             String contentType,
             String entryType,
@@ -61,7 +59,6 @@ public class MediaFileEntry {
         this.bitRate = bitRate;
         this.dimensions = dimensions;
         this.duration = duration;
-        this.durationAsString = durationAsString;
         this.format = format;
         this.contentType = contentType;
         this.entryType = entryType;
@@ -112,10 +109,6 @@ public class MediaFileEntry {
 
     public String getEntryType() {
         return entryType;
-    }
-
-    public String getDurationAsString() {
-        return durationAsString;
     }
 
     public Double getDuration() {
@@ -174,8 +167,7 @@ public class MediaFileEntry {
         return new MediaFileEntry(file.getId(), file.getTrackNumber(), file.getName(), file.getArtist(),
                 file.getAlbumName(), file.getGenre(), file.getYear(), formatBitRate(file),
                 (file.getWidth() != null && file.getHeight() != null) ? file.getWidth() + "x" + file.getHeight() : null,
-                file.getDuration(), file.getDurationString(), file.getFormat(),
-                StringUtil.getMimeType(file.getFormat()), file.getMediaType().toString(),
+                file.getDuration(), file.getFormat(), StringUtil.getMimeType(file.getFormat()), file.getMediaType().toString(),
                 StringUtil.formatBytes(file.getFileSize(), locale == null ? Locale.ENGLISH : locale), starred,
                 "main.view?id=" + file.getId(), streamUrl, remoteStreamUrl, "coverArt.view?id=" + file.getId(),
                 remoteCoverArtUrl);

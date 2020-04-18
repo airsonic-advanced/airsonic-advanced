@@ -21,7 +21,6 @@ package org.airsonic.player.ajax;
 
 import org.airsonic.player.domain.PlayQueue.RepeatStatus;
 import org.airsonic.player.domain.PlayQueue.Status;
-import org.airsonic.player.util.StringUtil;
 
 import java.util.List;
 
@@ -52,10 +51,6 @@ public class PlayQueueInfo {
 
     public List<MediaFileEntry> getEntries() {
         return entries;
-    }
-
-    public String getDurationAsString() {
-        return StringUtil.formatDuration(Math.round(1000 * entries.parallelStream().filter(e -> e.getDuration() != null).mapToDouble(MediaFileEntry::getDuration).sum()), false);
     }
 
     public Status getPlayStatus() {

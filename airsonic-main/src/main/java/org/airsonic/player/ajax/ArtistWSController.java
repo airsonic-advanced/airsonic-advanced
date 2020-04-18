@@ -45,7 +45,7 @@ public class ArtistWSController {
         return lastFmService.getTopSongs(mediaFile, limit, musicFolders).parallelStream().map(file -> {
             mediaFileService.populateStarredDate(file, username);
             return new TopSong(file.getId(), file.getTitle(), file.getArtist(), file.getAlbumName(),
-                    file.getDurationString(), file.getStarredDate() != null);
+                    file.getDuration(), file.getStarredDate() != null);
         }).collect(Collectors.toList());
     }
 

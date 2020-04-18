@@ -19,8 +19,6 @@
  */
 package org.airsonic.player.domain;
 
-import org.airsonic.player.util.StringUtil;
-
 import java.time.Instant;
 
 /**
@@ -115,10 +113,6 @@ public class Playlist {
 
     public void setDuration(double duration) {
         this.duration = duration;
-    }
-
-    public String getDurationAsString() {
-        return StringUtil.formatDuration((long) (duration * 1000), false);
     }
 
     public Instant getCreated() {
