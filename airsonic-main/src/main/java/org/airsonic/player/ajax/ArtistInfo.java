@@ -31,9 +31,9 @@ public class ArtistInfo {
 
     private final List<SimilarArtist> similarArtists;
     private final ArtistBio artistBio;
-    private final List<TopSong> topSongs;
+    private final List<MediaFileEntry> topSongs;
 
-    public ArtistInfo(List<SimilarArtist> similarArtists, ArtistBio artistBio, List<TopSong> topSongs) {
+    public ArtistInfo(List<SimilarArtist> similarArtists, ArtistBio artistBio, List<MediaFileEntry> topSongs) {
         this.similarArtists = similarArtists;
         this.artistBio = artistBio;
         this.topSongs = topSongs;
@@ -47,7 +47,7 @@ public class ArtistInfo {
         return artistBio;
     }
 
-    public List<TopSong> getTopSongs() {
+    public List<MediaFileEntry> getTopSongs() {
         return topSongs;
     }
 }
