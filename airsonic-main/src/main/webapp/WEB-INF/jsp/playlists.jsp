@@ -4,7 +4,6 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 </head><body class="mainframe bgcolor1">
 
 <h1 style="padding-bottom: 1em">
