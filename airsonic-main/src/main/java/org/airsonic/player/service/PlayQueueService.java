@@ -545,7 +545,7 @@ public class PlayQueueService {
                 .addJWTToken(player.getUsername(), url + "ext/stream?player=" + player.getId() + "&id=" + file.getId());
         Function<MediaFile, String> remoteCoverArtUrlGenerator = file -> jwtSecurityService
                 .addJWTToken(player.getUsername(), url + "ext/coverArt.view?id=" + file.getId());
-        return mediaFileService.toMediaFileEntryList(player.getPlayQueue().getFiles(), true, player.getUsername(),
+        return mediaFileService.toMediaFileEntryList(player.getPlayQueue().getFiles(), player.getUsername(), true, true,
                 streamUrlGenerator, remoteStreamUrlGenerator, remoteCoverArtUrlGenerator);
     }
 
@@ -573,12 +573,12 @@ public class PlayQueueService {
                     "", // Bit rate
                     null, // Dimensions
                     0.0, // Duration
-                    "", // Duration (as string)
                     "", // Format
                     "", // Content Type
                     "", // Entry Type
                     "", // File size
                     false, // Starred
+                    true, // Present
                     radioHomepageUrl, // Album URL (use radio home page URL)
                     streamUrl, // Stream URL
                     streamUrl, // Remote stream URL

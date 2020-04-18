@@ -667,7 +667,7 @@ public class MediaFileService {
         }
     }
 
-    public List<MediaFileEntry> toMediaFileEntryList(List<MediaFile> files, boolean calculateStarred, String username,
+    public List<MediaFileEntry> toMediaFileEntryList(List<MediaFile> files, String username, boolean calculateStarred, boolean calculateFolderAccess,
             Function<MediaFile, String> streamUrlGenerator, Function<MediaFile, String> remoteStreamUrlGenerator,
             Function<MediaFile, String> remoteCoverArtUrlGenerator) {
         Locale locale = Optional.ofNullable(username).map(localeResolver::resolveLocale).orElse(null);
@@ -677,8 +677,9 @@ public class MediaFileService {
             String remoteStreamUrl = Optional.ofNullable(remoteStreamUrlGenerator).map(g -> g.apply(file)).orElse(null);
             String remoteCoverArtUrl = Optional.ofNullable(remoteCoverArtUrlGenerator).map(g -> g.apply(file)).orElse(null);
 
-            boolean starred = calculateStarred && getMediaFileStarredDate(file.getId(), username) != null;
-            entries.add(MediaFileEntry.fromMediaFile(file, locale, starred, streamUrl, remoteStreamUrl, remoteCoverArtUrl));
+            boolean starred = calculateStarred && username != null && getMediaFileStarredDate(file.getId(), username) != null;
+            boolean folderAccess = !calculateFolderAccess || username == null || securityService.isFolderAccessAllowed(file, username);
+            entries.add(MediaFileEntry.fromMediaFile(file, locale, starred, folderAccess, streamUrl, remoteStreamUrl, remoteCoverArtUrl));
         }
 
         return entries;

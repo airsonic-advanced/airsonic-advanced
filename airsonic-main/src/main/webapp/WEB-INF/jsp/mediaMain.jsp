@@ -380,7 +380,16 @@
                 { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
                 { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
                 { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
-                { data: "durationAsString", className: "detail fit rightalign", visible: ${model.visibility.durationVisible} },
+                { data: "duration",
+                  className: "detail fit rightalign",
+                  visible: ${model.visibility.durationVisible},
+                  render: function(data, type, row) {
+                      if (type == "display" && data != null) {
+                          return formatDuration(Math.round(data));
+                      }
+                      return data;
+                  }
+                },
                 { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible} },
                 { data: "entryType",
                   className: "detail fit rightalign truncate",
@@ -581,7 +590,15 @@
                       return artist;
                   }
                 },
-                { data: "durationAsString", className: "detail fit rightalign" }
+                { data: "duration",
+                  className: "detail fit rightalign",
+                  render: function(data, type, row) {
+                      if (type == "display" && data != null) {
+                          return formatDuration(Math.round(data));
+                      }
+                      return data;
+                  }
+                }
             ]
         } );
 

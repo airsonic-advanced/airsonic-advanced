@@ -40,3 +40,37 @@ function updateQueryStringParameter(uri, key, value) {
         return uri + separator + key + "=" + value;
     }
 }
+
+function formatDuration(seconds) {
+    const value = Math.abs(seconds);
+    const days = Math.floor(value / 86400);
+    const hours = Math.floor((value - (days * 86400)) / 3600);
+    const min = Math.floor((value - (days * 86400) - (hours * 3600)) / 60);
+    const sec = value - (days * 86400) - (hours * 3600) - (min * 60);
+    var res = '';
+    if (days > 0) { res = days + 'd.'; }
+    if (hours >= 10) {
+        res = res + hours + ':';
+    } else {
+        if (hours == 0 && days == 0) {
+            // do nothing
+        } else {
+            res = res + '0' + hours + ':';
+        }
+    }
+
+    if (min >= 10) {
+        res = res + min + ':';
+    } else {
+        res = res + '0' + min + ':';
+    }
+
+    if (sec >= 10) {
+        res = res + sec;
+    } else {
+        res = res + '0' + sec;
+    }
+
+    if (seconds < 0) { res = '-' + res; }
+    return res;
+}

@@ -1,4 +1,4 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 <%--@elvariable id="model" type="java.util.Map"--%>
 
 <html><head>
@@ -18,7 +18,7 @@
 <c:forEach items="${model.playlists}" var="playlist" varStatus="loopStatus">
 
     <c:set var="caption2">
-        ${playlist.fileCount} <fmt:message key="playlist2.songs"/> &ndash; ${playlist.durationAsString}
+        ${playlist.fileCount} <fmt:message key="playlist2.songs"/> &ndash; ${playlist.duration}
     </c:set>
     <div class="albumThumb">
         <c:import url="coverArt.jsp">

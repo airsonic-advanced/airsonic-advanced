@@ -2,6 +2,7 @@
 <%@ include file="head.jsp" %>
 <%@ include file="jquery.jsp" %>
 <%@ include file="table.jsp" %>
+<script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
 <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
 <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
@@ -234,7 +235,16 @@
                     { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
                     { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
                     { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
-                    { data: "durationAsString", className: "detail fit rightalign", visible: ${model.visibility.durationVisible} },
+                    { data: "duration",
+                      className: "detail fit rightalign",
+                      visible: ${model.visibility.durationVisible},
+                      render: function(data, type, row) {
+                          if (type == "display" && data != null) {
+                              return formatDuration(Math.round(data));
+                          }
+                          return data;
+                      }
+                    },
                     { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible} }
                 ]
             } );
@@ -933,7 +943,8 @@
             if (this.songs.length == 0) {
                 $("#playQueueInfo").text("");
             } else {
-                $("#playQueueInfo").html("&nbsp;|&nbsp;" + this.songs.length + " <fmt:message key='playlist2.songs'/> &nbsp;|&nbsp;" + playQueue.durationAsString);
+                var totDuration = this.songs.map(s => s.duration).filter(d => d != null).reduce((a,b) => a + b, 0);
+                $("#playQueueInfo").html("&nbsp;|&nbsp;" + this.songs.length + " <fmt:message key='playlist2.songs'/> &nbsp;|&nbsp;" + formatDuration(Math.round(totDuration)));
             }
 
             if (this.internetRadioEnabled) {
