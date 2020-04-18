@@ -42,7 +42,7 @@ public class ArtistWSController {
     private List<MediaFileEntry> getTopSongs(String username, MediaFile mediaFile, int limit) {
         List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(username);
 
-        return mediaFileService.toMediaFileEntryList(lastFmService.getTopSongs(mediaFile, limit, musicFolders), true, username, null, null, null);
+        return mediaFileService.toMediaFileEntryList(lastFmService.getTopSongs(mediaFile, limit, musicFolders), username, true, true, null, null, null);
     }
 
     private List<SimilarArtist> getSimilarArtists(String username, int mediaFileId, int limit) {

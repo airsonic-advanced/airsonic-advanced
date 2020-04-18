@@ -21,6 +21,7 @@ public class MediaFileEntry {
     private final String entryType;
     private final String fileSize;
     private final boolean starred;
+    private final boolean present;
     private final String albumUrl;
     private final String streamUrl;
     private final String remoteStreamUrl;
@@ -43,6 +44,7 @@ public class MediaFileEntry {
             String entryType,
             String fileSize,
             boolean starred,
+            boolean present,
             String albumUrl,
             String streamUrl,
             String remoteStreamUrl,
@@ -64,6 +66,7 @@ public class MediaFileEntry {
         this.entryType = entryType;
         this.fileSize = fileSize;
         this.starred = starred;
+        this.present = present;
         this.albumUrl = albumUrl;
         this.streamUrl = streamUrl;
         this.remoteStreamUrl = remoteStreamUrl;
@@ -131,6 +134,10 @@ public class MediaFileEntry {
         return starred;
     }
 
+    public boolean getPresent() {
+        return present;
+    }
+
     public String getAlbumUrl() {
         return albumUrl;
     }
@@ -163,12 +170,12 @@ public class MediaFileEntry {
         this.contentType = contentType;
     }
 
-    public static MediaFileEntry fromMediaFile(MediaFile file, Locale locale, boolean starred, String streamUrl, String remoteStreamUrl, String remoteCoverArtUrl) {
+    public static MediaFileEntry fromMediaFile(MediaFile file, Locale locale, boolean starred, boolean folderAccess, String streamUrl, String remoteStreamUrl, String remoteCoverArtUrl) {
         return new MediaFileEntry(file.getId(), file.getTrackNumber(), file.getName(), file.getArtist(),
                 file.getAlbumName(), file.getGenre(), file.getYear(), formatBitRate(file),
                 (file.getWidth() != null && file.getHeight() != null) ? file.getWidth() + "x" + file.getHeight() : null,
                 file.getDuration(), file.getFormat(), StringUtil.getMimeType(file.getFormat()), file.getMediaType().toString(),
-                StringUtil.formatBytes(file.getFileSize(), locale == null ? Locale.ENGLISH : locale), starred,
+                StringUtil.formatBytes(file.getFileSize(), locale == null ? Locale.ENGLISH : locale), starred, file.isPresent() && folderAccess,
                 "main.view?id=" + file.getId(), streamUrl, remoteStreamUrl, "coverArt.view?id=" + file.getId(),
                 remoteCoverArtUrl);
     }
