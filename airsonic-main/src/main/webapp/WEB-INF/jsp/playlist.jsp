@@ -4,6 +4,7 @@
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
     <%@ include file="table.jsp" %>
+    <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" language="javascript">
         var playlistId = ${model.playlist.id};
         var songs = [];
@@ -139,7 +140,15 @@
                           return artist;
                       }
                     },
-                    { data: "durationAsString", className: "detail fit rightalign" },
+                    { data: "duration",
+                      className: "detail fit rightalign",
+                      render: function(data, type, row) {
+                          if (type == "display" && data != null) {
+                              return formatDuration(Math.round(data));
+                          }
+                          return data;
+                      }
+                    },
                     { data: null,
                       searchable: false,
                       name: "remove",
@@ -241,7 +250,7 @@
 
                 $("#name").text(playlist.name);
                 $("#songCount").text(playlist.fileCount);
-                $("#duration").text(playlist.durationAsString);
+                $("#duration").text(formatDuration(Math.round(playlist.duration)));
                 $("#comment").text(playlist.comment);
                 $("#lastupdated").text('<fmt:message key="playlist2.lastupdated"/> ' + new Date(playlist.changed));
 

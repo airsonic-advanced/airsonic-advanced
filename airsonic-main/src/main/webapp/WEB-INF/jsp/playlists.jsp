@@ -1,9 +1,10 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 <%--@elvariable id="model" type="java.util.Map"--%>
 
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
+    <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 </head><body class="mainframe bgcolor1">
 
 <h1 style="padding-bottom: 1em">
@@ -18,7 +19,7 @@
 <c:forEach items="${model.playlists}" var="playlist" varStatus="loopStatus">
 
     <c:set var="caption2">
-        ${playlist.fileCount} <fmt:message key="playlist2.songs"/> &ndash; ${playlist.durationAsString}
+        ${playlist.fileCount} <fmt:message key="playlist2.songs"/> &ndash; ${playlist.duration}
     </c:set>
     <div class="albumThumb">
         <c:import url="coverArt.jsp">
