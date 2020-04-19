@@ -1,7 +1,6 @@
 package org.airsonic.player.service;
 
 import com.google.common.collect.ImmutableMap;
-
 import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.ajax.PlayQueueInfo;
 import org.airsonic.player.dao.InternetRadioDao;

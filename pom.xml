@@ -75,7 +75,7 @@
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm</artifactId>
-                <version>7.2</version>
+                <version>8.0.1</version>
             </dependency>
             <dependency>
                 <groupId>commons-io</groupId>
@@ -86,12 +86,6 @@
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>28.1-jre</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jdt</groupId>
-                <artifactId>ecj</artifactId>
-                <version>3.19.0</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.apache.ant</groupId>
@@ -115,11 +109,6 @@
     <build>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.2.0</version>
-                </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>buildnumber-maven-plugin</artifactId>
@@ -154,7 +143,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.1.1</version>
                     <executions>
                         <execution>
                             <id>validate</id>
@@ -173,16 +162,16 @@
                     </executions>
                     <dependencies>
                         <dependency>
-                            <groupId>org.airsonic</groupId>
+                            <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>1.0-RELEASE</version>
+                            <version>8.31</version>
                         </dependency>
                     </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-pmd-plugin</artifactId>
-                    <version>3.12.0</version>
+                    <version>3.13.0</version>
                     <executions>
                         <execution>
                             <id>validate</id>
@@ -199,9 +188,10 @@
                 <plugin>
                     <groupId>org.owasp</groupId>
                     <artifactId>dependency-check-maven</artifactId>
-                    <version>5.2.4</version>
+                    <version>5.3.2</version>
                     <inherited>true</inherited>
                     <configuration>
+                        <cveValidForHours>24</cveValidForHours>
                         <failBuildOnAnyVulnerability>true</failBuildOnAnyVulnerability>
                         <suppressionFiles>
                             <suppressionFile>${project.basedir}/cve-suppressed.xml</suppressionFile>

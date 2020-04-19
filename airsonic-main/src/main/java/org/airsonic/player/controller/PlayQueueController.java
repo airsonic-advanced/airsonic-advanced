@@ -20,7 +20,6 @@
 package org.airsonic.player.controller;
 
 import com.google.common.collect.ImmutableMap;
-
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserSettings;

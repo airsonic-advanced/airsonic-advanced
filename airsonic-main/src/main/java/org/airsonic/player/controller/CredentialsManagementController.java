@@ -1,7 +1,6 @@
 package org.airsonic.player.controller;
 
 import com.google.common.collect.ImmutableMap;
-
 import org.airsonic.player.command.CredentialsManagementCommand;
 import org.airsonic.player.command.CredentialsManagementCommand.AdminControls;
 import org.airsonic.player.command.CredentialsManagementCommand.AppCredSettings;
