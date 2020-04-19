@@ -1,7 +1,6 @@
 package org.airsonic.player.service;
 
 import com.google.common.io.MoreFiles;
-
 import org.apache.commons.configuration2.*;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;

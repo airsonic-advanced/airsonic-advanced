@@ -20,7 +20,6 @@
 package org.airsonic.player.service;
 
 import com.google.common.util.concurrent.RateLimiter;
-
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MusicFolderDao;

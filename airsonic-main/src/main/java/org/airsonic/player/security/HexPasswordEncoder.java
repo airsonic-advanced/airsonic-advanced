@@ -1,7 +1,6 @@
 package org.airsonic.player.security;
 
 import com.google.common.io.BaseEncoding;
-
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 

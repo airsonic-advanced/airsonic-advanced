@@ -20,7 +20,6 @@
 package org.airsonic.player.controller;
 
 import com.google.common.primitives.Ints;
-
 import org.airsonic.player.ajax.LyricsInfo;
 import org.airsonic.player.ajax.LyricsWSController;
 import org.airsonic.player.command.UserSettingsCommand;

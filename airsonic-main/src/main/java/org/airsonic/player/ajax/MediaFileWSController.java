@@ -1,7 +1,6 @@
 package org.airsonic.player.ajax;
 
 import com.google.common.collect.ImmutableMap;
-
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MediaFileComparator;
 import org.airsonic.player.service.MediaFileService;

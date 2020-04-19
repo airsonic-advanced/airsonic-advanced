@@ -20,7 +20,6 @@
 package org.airsonic.player.service;
 
 import com.google.common.io.MoreFiles;
-
 import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;

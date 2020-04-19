@@ -21,7 +21,6 @@ package org.airsonic.player.service.metadata;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.MoreFiles;
-
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
 import org.apache.commons.lang.StringUtils;

@@ -20,7 +20,6 @@
 package org.airsonic.player.controller;
 
 import com.google.common.net.MediaType;
-
 import org.airsonic.player.controller.SubsonicRESTController.APIException;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang3.tuple.Pair;

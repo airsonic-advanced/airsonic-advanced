@@ -143,7 +143,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.1.1</version>
                     <executions>
                         <execution>
                             <id>validate</id>
@@ -162,9 +162,9 @@
                     </executions>
                     <dependencies>
                         <dependency>
-                            <groupId>org.airsonic</groupId>
+                            <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>1.0-RELEASE</version>
+                            <version>8.31</version>
                         </dependency>
                     </dependencies>
                 </plugin>

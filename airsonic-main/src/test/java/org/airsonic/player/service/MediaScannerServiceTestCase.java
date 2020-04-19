@@ -4,7 +4,6 @@ import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.io.Resources;
-
 import org.airsonic.player.api.ScanningTestUtils;
 import org.airsonic.player.dao.*;
 import org.airsonic.player.domain.Album;

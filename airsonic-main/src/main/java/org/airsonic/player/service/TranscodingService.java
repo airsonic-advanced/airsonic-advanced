@@ -20,7 +20,6 @@
 package org.airsonic.player.service;
 
 import com.google.common.io.MoreFiles;
-
 import org.airsonic.player.controller.VideoPlayerController;
 import org.airsonic.player.dao.TranscodingDao;
 import org.airsonic.player.domain.*;

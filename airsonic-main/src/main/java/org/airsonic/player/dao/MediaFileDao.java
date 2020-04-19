@@ -20,7 +20,6 @@
 package org.airsonic.player.dao;
 
 import com.google.common.collect.ImmutableMap;
-
 import org.airsonic.player.domain.Genre;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
