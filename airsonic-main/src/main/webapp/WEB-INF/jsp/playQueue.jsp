@@ -265,9 +265,11 @@
                 pq.onSkip(pq.musicTable.row( $(this).parents('tr') ).index());
             } );
             pq.musicTable.on( "row-reordered", function (e, diff, edit) {
-                pq.musicTable.one( "draw", function () {
-                    pq.onRearrange(pq.musicTable.rows().indexes().toArray());
-                });
+                if (diff.length > 0) {
+                    pq.musicTable.one( "draw", function () {
+                        pq.onRearrange(pq.musicTable.rows().indexes().toArray());
+                    });
+                }
             });
 
             $("#playQueueHeading").html("<h2><fmt:message key='playlist.more.playlist'/></h2>");
