@@ -26,7 +26,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
       - run: mkdir -p ${DEFAULT_MUSIC_FOLDER}
       - name: Build with Maven
-        run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
+        run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test -X -e
       - name: Calculate tags
         if: success()
         id: tagcalc
