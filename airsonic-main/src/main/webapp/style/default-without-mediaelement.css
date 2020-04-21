@@ -332,7 +332,7 @@ table.indent {
 }
 
 table.music {
-    line-height: 190%;
+    line-height: 100%;
     border-collapse:collapse;
     white-space:nowrap;
     width: 100%;
