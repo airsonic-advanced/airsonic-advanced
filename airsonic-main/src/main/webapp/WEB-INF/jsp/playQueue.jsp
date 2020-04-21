@@ -1,5 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
-<%@ include file="head.jsp" %>
+<%@ include file="include.jsp" %>
 <%@ include file="jquery.jsp" %>
 <%@ include file="table.jsp" %>
 <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
