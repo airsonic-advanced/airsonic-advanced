@@ -296,7 +296,7 @@
             } else {
                 top.StompClient.send("/app/rate/mediafile/unstar", songs[index].id);
             }
-            playlistMusicTable.cell(index, "starred:name").invalidate().draw();
+            playlistMusicTable.cell(index, "starred:name").invalidate();
         }
         <c:if test="${model.editAllowed}">
         function onRemove(index) {

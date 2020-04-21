@@ -802,7 +802,7 @@
             } else {
                 top.StompClient.send("/app/rate/mediafile/unstar", this.songs[index].id);
             }
-            this.musicTable.cell(index, "starred:name").invalidate().draw();
+            this.musicTable.cell(index, "starred:name").invalidate();
         },
         onStarCurrent() {
             this.onStar(this.currentSongIndex);
