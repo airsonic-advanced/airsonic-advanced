@@ -44,6 +44,7 @@
                 stripeClasses: ["bgcolor2", "bgcolor1"],
                 columnDefs: [{ targets: "_all", orderable: false }],
                 columns: [
+                    { data: "seq", className: "detail fit", visible: true },
                     { data: "starred",
                       name: "starred",
                       className: "fit not-draggable",
@@ -99,7 +100,6 @@
                           return present ? "available" : "missing";
                       }
                     },
-                    { data: "seq", className: "detail fit", visible: true },
                     { data: "present",
                       className: "detail fit",
                       render: function(present, type, row) {
