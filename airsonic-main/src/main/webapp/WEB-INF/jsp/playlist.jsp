@@ -199,9 +199,11 @@
                 onRemove(playlistMusicTable.row( $(this).parents('tr') ).index());
             } );
             playlistMusicTable.on( "row-reordered", function (e, diff, edit) {
-                playlistMusicTable.one( "draw", function () {
-                    onRearrange(playlistMusicTable.rows().indexes().toArray());
-                });
+                if (diff.length > 0) {
+                    playlistMusicTable.one( "draw", function () {
+                        onRearrange(playlistMusicTable.rows().indexes().toArray());
+                    });
+                }
             });
 
             $("#dialog-edit").dialog({resizable: true, width:400, autoOpen: false,
