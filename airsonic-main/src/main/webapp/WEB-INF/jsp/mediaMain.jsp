@@ -737,7 +737,7 @@
         } else {
             top.StompClient.send("/app/rate/mediafile/unstar", data.id);
         }
-        table.cell(row, "starred:name").invalidate().draw();
+        table.cell(row, "starred:name").invalidate();
     }
     function onPlay(row) {
         var data = row.data();
