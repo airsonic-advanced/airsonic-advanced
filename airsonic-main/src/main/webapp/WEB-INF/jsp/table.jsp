@@ -8,6 +8,7 @@
         display: none;
     }
 </style>
+<c:set var="styleSheet"><spring:theme code="styleSheet"/></c:set>
 <link rel="stylesheet" href="<c:url value='/${styleSheet}'/>" type="text/css">
 <script type="text/javascript" src="<c:url value='/script/DataTables/datatables.min.js'/>"></script>
 <script type="text/javascript" src="<c:url value='/script/DataTables/row.show.js'/>"></script>
