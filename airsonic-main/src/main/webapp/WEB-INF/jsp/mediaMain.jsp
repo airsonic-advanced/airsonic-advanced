@@ -17,7 +17,7 @@
             border-width: thin;
             padding: 0.25em 1em 0.25em 1em;
         }
-        .headerNotSelected {
+        .headerNotSelected, .starSong, .playSong, .addSongNext, .addSongLast {
             cursor: pointer;
         }
         #subDirsTable_wrapper {
