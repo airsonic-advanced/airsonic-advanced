@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.dao;
 
+import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.domain.Genre;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
@@ -37,6 +38,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Provides database services for media files.
@@ -669,9 +671,14 @@ public class MediaFileDao extends AbstractDao {
 
     public boolean markPresent(Collection<String> paths, Instant lastScanned) {
         if (!paths.isEmpty()) {
-            return batchedUpdate("update media_file set present=true, last_scanned = ? where path = ?",
-                    paths.parallelStream().map(p -> new Object[] { lastScanned, p }).collect(Collectors.toList()))
-                == paths.size();
+            int batches = (paths.size() - 1) / 30000;
+            List<String> pList = new ArrayList<>(paths);
+            return IntStream.rangeClosed(0, batches).parallel().map(b -> {
+                List<String> batch = pList.subList(b * 30000, Math.min(paths.size(), b * 30000 + 30000));
+                return namedUpdate(
+                        "update media_file set present=true, last_scanned = :lastScanned where path in (:paths)",
+                        ImmutableMap.of("lastScanned", lastScanned, "paths", batch));
+            }).sum() == paths.size();
         }
 
         return true;
