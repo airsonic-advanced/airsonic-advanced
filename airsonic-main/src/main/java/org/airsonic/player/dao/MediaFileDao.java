@@ -19,7 +19,6 @@
  */
 package org.airsonic.player.dao;
 
-import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.domain.Genre;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
@@ -37,6 +36,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Provides database services for media files.
@@ -207,12 +207,13 @@ public class MediaFileDao extends AbstractDao {
     }
 
     public void deleteMediaFile(String path) {
-        update("update media_file set present=false, children_last_updated=? where path=?", Instant.ofEpochMilli(1), path);
+        deleteMediaFiles(Collections.singletonList(path));
     }
 
     public void deleteMediaFiles(Collection<String> paths) {
         if (!paths.isEmpty()) {
-            namedUpdate("update media_file set present=false, children_last_updated=:updatedate where path in (:paths)", ImmutableMap.of("updatedate", Instant.ofEpochMilli(1), "paths", paths));
+            batchedUpdate("update media_file set present=false, children_last_updated=? where path=?",
+                    paths.parallelStream().map(p -> new Object[] { Instant.ofEpochMilli(1), p }).collect(Collectors.toList()));
         }
     }
 
@@ -221,12 +222,17 @@ public class MediaFileDao extends AbstractDao {
         return query("select " + GENRE_COLUMNS + " from genre order by " + orderBy + " desc", genreRowMapper);
     }
 
-    public void updateGenres(List<Genre> genres) {
+    public boolean updateGenres(List<Genre> genres) {
         update("delete from genre");
-        for (Genre genre : genres) {
-            update("insert into genre(" + GENRE_COLUMNS + ") values(?, ?, ?)",
-                   genre.getName(), genre.getSongCount(), genre.getAlbumCount());
+        if (!genres.isEmpty()) {
+            return batchedUpdate("insert into genre(" + GENRE_COLUMNS + ") values(?, ?, ?)",
+                    genres.parallelStream()
+                            .map(genre -> new Object[] { genre.getName(), genre.getSongCount(), genre.getAlbumCount() })
+                            .collect(Collectors.toList()))
+                == genres.size();
         }
+
+        return true;
     }
 
     /**
@@ -657,14 +663,18 @@ public class MediaFileDao extends AbstractDao {
         return queryForInstant("select created from starred_media_file where media_file_id=? and username=?", null, id, username);
     }
 
-    public void markPresent(String path, Instant lastScanned) {
-        update("update media_file set present=?, last_scanned = ? where path=?", true, lastScanned, path);
+    public boolean markPresent(String path, Instant lastScanned) {
+        return markPresent(Collections.singletonList(path), lastScanned);
     }
 
-    public void markPresent(Collection<String> paths, Instant lastScanned) {
+    public boolean markPresent(Collection<String> paths, Instant lastScanned) {
         if (!paths.isEmpty()) {
-            namedUpdate("update media_file set present=true, last_scanned = :lastScanned where path in (:paths)", ImmutableMap.of("lastScanned", lastScanned, "paths", paths));
+            return batchedUpdate("update media_file set present=true, last_scanned = ? where path = ?",
+                    paths.parallelStream().map(p -> new Object[] { lastScanned, p }).collect(Collectors.toList()))
+                == paths.size();
         }
+
+        return true;
     }
 
     public void markNonPresent(Instant lastScanned) {
