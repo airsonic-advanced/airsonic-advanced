@@ -181,25 +181,34 @@
         </td>
 
         <td style="padding-left:15pt;padding-right:5pt;vertical-align: middle;width: 100%;text-align: center">
-            <c:if test="${model.user.settingsRole}"><a href="personalSettings.view" target="main"></c:if>
+            <div>
+            <c:if test="${model.user.settingsRole}">
+              <a href="personalSettings.view" target="main">
+            </c:if>
             <c:choose>
-                <c:when test="${model.showAvatar}">
-                    <sub:url value="avatar.view" var="avatarUrl">
-                        <sub:param name="username" value="${model.user.username}"/>
-                    </sub:url>
-                    <div style="padding-bottom: 4px">
-                        <img src="${avatarUrl}" alt="User" width="30" height="30">
-                    </div>
-                </c:when>
-                <c:otherwise>
-                    <img src="<spring:theme code='userImage'/>" alt="User" height="24">
-                </c:otherwise>
+              <c:when test="${model.showAvatar}">
+                <sub:url value="avatar.view" var="avatarUrl">
+                  <sub:param name="username" value="${model.user.username}"/>
+                </sub:url>
+                <img src="${avatarUrl}" alt="User" width="30" height="30">
+              </c:when>
+              <c:otherwise>
+                <img src="<spring:theme code='userImage'/>" alt="User" height="24">
+              </c:otherwise>
             </c:choose>
-
-            <div class="detail">
-                <c:out value="${model.user.username}" escapeXml="true"/>
+            <c:if test="${model.user.settingsRole}">
+              </a>
+            </c:if>
+              <div class="topHeader">
+                <c:if test="${model.user.settingsRole}">
+                  <a href="personalSettings.view" target="main">
+                </c:if>
+                  <c:out value="${model.user.username}" escapeXml="true"/>
+                <c:if test="${model.user.settingsRole}">
+                  </a>
+                </c:if>
+              </div>
             </div>
-            <c:if test="${model.user.settingsRole}"></a></c:if>
         </td>
 
         <td style="padding-left:15pt;padding-right:5pt;vertical-align: right;width: 100%;text-align: center">
