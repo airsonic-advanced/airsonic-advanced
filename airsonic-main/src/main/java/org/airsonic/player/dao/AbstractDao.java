@@ -109,13 +109,13 @@ public class AbstractDao {
         int batchSize = 30000 / batchArgs.stream().findAny().map(x -> x.length).orElse(1);
         LOG.trace("Executing query: [{}]", sql);
         int[][] result = getJdbcTemplate().batchUpdate(sql,
-                batchArgs.parallelStream().map(AbstractDao::convertToDBTypes).collect(Collectors.toList()),
-                batchSize,
-                (ps, args) -> {
-                    for (int i = 0; i < args.length; i++) {
-                        ps.setObject(i + 1, args[i]);
-                    }
-                });
+            batchArgs.parallelStream().map(AbstractDao::convertToDBTypes).collect(Collectors.toList()),
+            batchSize,
+            (ps, args) -> {
+                for (int i = 0; i < args.length; i++) {
+                    ps.setObject(i + 1, args[i]);
+                }
+            });
         int tally = Arrays.stream(result).flatMapToInt(Arrays::stream).sum();
         LOG.trace("Updated {} rows", tally);
         log(sql, t);
