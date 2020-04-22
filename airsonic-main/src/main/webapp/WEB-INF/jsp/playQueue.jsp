@@ -135,6 +135,13 @@
                       action: function (e, dt, node, config) {
                           if (pq.currentSongIndex != -1) {
                               dt.row(pq.currentSongIndex).show().draw(false);
+                              var container = $('#playQueueMusic_wrapper .dataTables_scrollBody');
+                              var target = $('.currently-playing');
+                              container.animate({
+                                scrollTop: Math.floor(target.offset().top - container.offset().top + container.scrollTop())
+                              }, 150, function() {
+                                target.fadeOut(100, function() {target.fadeIn(100);});
+                              });
                           }
                       }
                     }
