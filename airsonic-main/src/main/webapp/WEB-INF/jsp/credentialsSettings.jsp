@@ -1,4 +1,4 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" isErrorPage="true" %>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8" isErrorPage="true" %>
 
 <html><head>
     <%@ include file="head.jsp" %>
@@ -296,7 +296,7 @@
 <c:if test="${adminRole}">
 <div>
   <h3><fmt:message key='credentialsettings.admincontrols'/></h3>
-  <form:form method="post" action="credentialsSettings/admin" modelAttribute="adminControls">
+  <form:form method="post" action="${pageContext.request.contextPath}/credentialsSettings/admin" modelAttribute="adminControls">
 
     <table style="white-space:nowrap" class="indent">
       <tr><th colspan=4 style="text-align:left"><fmt:message key='credentialsettings.systemchecks'/></th></tr>
