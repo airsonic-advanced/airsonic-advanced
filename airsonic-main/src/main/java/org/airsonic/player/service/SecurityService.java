@@ -27,6 +27,7 @@ import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.security.GlobalSecurityConfig;
 import org.airsonic.player.security.PasswordDecoder;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -504,7 +505,9 @@ public class SecurityService implements UserDetailsService {
         public UserDetail(String username, List<UserCredential> creds, boolean enabled, boolean accountNonExpired,
                 boolean credentialsNonExpired, boolean accountNonLocked,
                 Collection<? extends GrantedAuthority> authorities) {
-            super(username, "", enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
+            super(username,
+                    DigestUtils.md5Hex(creds.stream().map(x -> x.getEncoder() + "/" + x.getCredential() + "/" + x.getExpiration()).collect(Collectors.joining())),
+                    enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
 
             this.creds = creds;
         }
