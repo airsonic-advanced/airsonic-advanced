@@ -113,7 +113,7 @@ public class MediaFileService {
         }
 
         // Not found in database, must read from disk.
-        result = createMediaFile(file);
+        result = createMediaFile(file, null);
 
         // Put in database.
         updateMediaFile(result);
@@ -161,7 +161,7 @@ public class MediaFileService {
             return mediaFile;
         }
         LOG.debug("Updating database file from disk (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
-        mediaFile = createMediaFile(mediaFile.getFile());
+        mediaFile = createMediaFile(mediaFile.getFile(), mediaFile);
         updateMediaFile(mediaFile);
         return mediaFile;
     }
@@ -382,7 +382,7 @@ public class MediaFileService {
                     .map(x -> {
                         MediaFile media = storedChildrenMap.remove(x.toString());
                         if (media == null) {
-                            media = createMediaFile(x);
+                            media = createMediaFile(x, null);
                             // Add children that are not already stored.
                             updateMediaFile(media);
                         } else {
@@ -447,8 +447,14 @@ public class MediaFileService {
         return (name.startsWith(".") && !name.startsWith("..")) || name.startsWith("@eaDir") || "Thumbs.db".equals(name);
     }
 
-    private MediaFile createMediaFile(Path file) {
-        MediaFile existingFile = mediaFileDao.getMediaFile(file.toString());
+    private MediaFile createMediaFile(Path file, MediaFile existingFile) {
+        if (!Files.exists(file)) {
+            if (existingFile != null) {
+                existingFile.setPresent(false);
+                existingFile.setChildrenLastUpdated(Instant.ofEpochMilli(1));
+            }
+            return existingFile;
+        }
 
         MediaFile mediaFile = new MediaFile();
         Instant lastModified = FileUtil.lastModified(file);
@@ -552,7 +558,7 @@ public class MediaFileService {
     }
 
     public void refreshMediaFile(MediaFile mediaFile) {
-        mediaFile = createMediaFile(mediaFile.getFile());
+        mediaFile = createMediaFile(mediaFile.getFile(), mediaFile);
         updateMediaFile(mediaFile);
     }
 
