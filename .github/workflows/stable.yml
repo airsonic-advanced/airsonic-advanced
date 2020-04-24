@@ -1,7 +1,6 @@
 name: 'Stable Deploy CI (Maven)'
 
 on:
-  create:
   push:
     branches: [ stable/** ]
 
