@@ -515,6 +515,7 @@ public class SecurityService implements UserDetailsService {
 
         @Override
         public void eraseCredentials() {
+            super.eraseCredentials();
             creds = null;
         }
     }
