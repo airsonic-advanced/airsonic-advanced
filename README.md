@@ -132,17 +132,20 @@ The release signature may be verified using the [public key](https://github.com/
 
 Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced).
 
-Please note that for Docker images, the volume mounting points have changed and are different from Airsonic. Airsonic mount points are at /airsonic/* inside the container. Airsonic-Advanced tries to use the same volume locations as the default war image at /var/* in order to remain consistent if people want to switch between the containers and non-containers.
+Please note that for Docker images, the volume mounting points have changed and are different from Airsonic. Airsonic mount points are at `/airsonic/*` inside the container. Airsonic-Advanced tries to use the same volume locations as the default war image at `/var/*` in order to remain consistent if people want to switch between the containers and non-containers.
   - `Music:/airsonic/music` -> `Music:/var/music`
   - `Podcasts:/airsonic/podcast` -> `Podcasts:/var/podcast`
   - `Playlists:/airsonic/playlists` -> `Playlists:/var/playlists`
   - `/airsonic/data` -> `/var/airsonic`
 
-Airsonic can be downloaded from
+Airsonic-Advanced v10.6.x series (and its snapshots) are intercompatible with vanilla Airsonic 10.6.x series. This may not necessarily be the case with 11.x versions.
+
+Also note that Airsonic-Advanced 11.x (and its snapshots) are *breaking* non-backwards-compatible version changes. You will not be able to revert back to 10.6.x after upgrading (the system _does_ create a backup of the DB in case such revert is necessary, but it must be manually restored).
+
+Vanilla Airsonic can be downloaded from
 [GitHub](https://github.com/airsonic/airsonic/releases).
 
-Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic.
-
+Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Advanced shares similar running instructions unless stated otherwise.
 
 Community
 ---------
