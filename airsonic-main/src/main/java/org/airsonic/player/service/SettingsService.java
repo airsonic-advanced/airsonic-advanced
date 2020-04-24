@@ -278,6 +278,7 @@ public class SettingsService {
         keyMaps.put("database.config.embed.password", KEY_DATABASE_CONFIG_EMBED_PASSWORD);
         keyMaps.put("database.config.jndi.name", KEY_DATABASE_CONFIG_JNDI_NAME);
         keyMaps.put("database.usertable.quote", KEY_DATABASE_USERTABLE_QUOTE);
+        keyMaps.put("airsonic.rememberMeKey", KEY_REMEMBER_ME_KEY);
         migrateKeys(keyMaps);
     }
 
@@ -848,10 +849,7 @@ public class SettingsService {
      * @return The 'remember me' key.
      */
     public String getRememberMeKey() {
-        String key = null;
-        if (StringUtils.isBlank(key)) key = getString(KEY_REMEMBER_ME_KEY, null);
-        if (StringUtils.isBlank(key)) key = System.getProperty("airsonic.rememberMeKey");
-        return key;
+        return getString(KEY_REMEMBER_ME_KEY, null);
     }
 
     /**
