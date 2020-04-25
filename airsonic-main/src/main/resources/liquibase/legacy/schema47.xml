@@ -219,29 +219,8 @@
     <changeSet id="schema47_005" author="muff1nman">
         <preConditions onFail="MARK_RAN">
             <not>
-                <dbms type="hsqldb" />
-                <customPrecondition className="org.airsonic.player.spring.DbmsVersionPrecondition" >
-                    <param name="major" value="1" />
-                </customPrecondition>
-            </not>
-            <not>
                 <indexExists indexName="idx_album_name" />
             </not>
-        </preConditions>
-        <createIndex tableName="album" indexName="idx_album_name">
-            <column name="name"/>
-        </createIndex>
-    </changeSet>
-    <changeSet id="schema47_005_2" author="muff1nman">
-        <preConditions onFail="MARK_RAN">
-            <dbms type="hsqldb" />
-            <customPrecondition className="org.airsonic.player.spring.DbmsVersionPrecondition" >
-                <param name="major" value="1" />
-            </customPrecondition>
-            <sqlCheck expectedResult="0">
-                select count(*) from INFORMATION_SCHEMA.SYSTEM_INDEXINFO where
-                lower(TABLE_NAME) = 'album' and lower(INDEX_NAME) = 'idx_album_name';
-            </sqlCheck>
         </preConditions>
         <createIndex tableName="album" indexName="idx_album_name">
             <column name="name"/>

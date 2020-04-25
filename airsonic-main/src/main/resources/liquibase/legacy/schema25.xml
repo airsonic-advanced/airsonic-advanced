@@ -2,15 +2,6 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
-    <changeSet id="schema25_001" author="muff1nman" dbms="hsqldb">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <tableExists tableName="version" />
-            </not>
-        </preConditions>
-        <sql>set property &quot;hsqldb.cache_file_scale&quot; 8</sql>
-        <rollback/>
-    </changeSet>
     <changeSet id="schema25_002" author="muff1nman">
         <preConditions onFail="MARK_RAN">
             <not>

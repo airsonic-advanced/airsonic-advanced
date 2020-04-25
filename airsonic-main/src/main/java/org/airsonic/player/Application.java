@@ -1,6 +1,7 @@
 package org.airsonic.player;
 
 import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.util.LegacyHsqlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.WebApplicationType;
@@ -32,6 +33,8 @@ public class Application extends SpringBootServletInitializer implements WebServ
         application.application().addListeners((ApplicationListener<ApplicationContextInitializedEvent>) event -> {
             // Migrate keys to the latest
             SettingsService.migrateKeys();
+            // Handle HSQLDB database upgrades for builtin legacy db from 1.8 to 2.x before any beans are started.
+            LegacyHsqlUtil.upgradeFileHsqlDbIfNeeded(event.getApplicationContext().getEnvironment());
         });
 
         // Customize the application or call application.sources(...) to add sources

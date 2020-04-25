@@ -138,9 +138,9 @@ public class SettingsService {
     // Database Settings
     private static final String KEY_DATABASE_CONFIG_TYPE = "DatabaseConfigType";
     private static final String KEY_DATABASE_CONFIG_EMBED_DRIVER = "DatabaseConfigEmbedDriver";
-    private static final String KEY_DATABASE_CONFIG_EMBED_URL = "DatabaseConfigEmbedUrl";
-    private static final String KEY_DATABASE_CONFIG_EMBED_USERNAME = "DatabaseConfigEmbedUsername";
-    private static final String KEY_DATABASE_CONFIG_EMBED_PASSWORD = "DatabaseConfigEmbedPassword";
+    public static final String KEY_DATABASE_CONFIG_EMBED_URL = "DatabaseConfigEmbedUrl";
+    public static final String KEY_DATABASE_CONFIG_EMBED_USERNAME = "DatabaseConfigEmbedUsername";
+    public static final String KEY_DATABASE_CONFIG_EMBED_PASSWORD = "DatabaseConfigEmbedPassword";
     private static final String KEY_DATABASE_CONFIG_JNDI_NAME = "DatabaseConfigJNDIName";
     private static final String KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH = "DatabaseMysqlMaxlength";
     private static final String KEY_DATABASE_USERTABLE_QUOTE = "DatabaseUsertableQuote";
@@ -326,7 +326,15 @@ public class SettingsService {
     }
 
     public static String getDefaultJDBCUrl() {
-        return "jdbc:hsqldb:file:" + getAirsonicHome().toString() + "/db/" + getFileSystemAppName();
+        return "jdbc:hsqldb:file:" + getAirsonicHome().resolve("db").resolve(getFileSystemAppName()).toString() + ";hsqldb.tx=mvcc;sql.enforce_size=false;sql.char_literal=false;sql.nulls_first=false;hsqldb.defrag_limit=50;shutdown=true";
+    }
+
+    public static String getDefaultJDBCUsername() {
+        return "sa";
+    }
+
+    public static String getDefaultJDBCPassword() {
+        return "";
     }
 
     public int getUPnpPort() {
