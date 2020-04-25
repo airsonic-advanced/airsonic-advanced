@@ -20,7 +20,6 @@
 package org.airsonic.player.service;
 
 import com.google.common.collect.ImmutableMap;
-
 import org.airsonic.player.TestCaseUtils;
 import org.airsonic.player.util.HomeRule;
 import org.apache.commons.configuration2.spring.ConfigurationPropertySource;
@@ -285,8 +284,10 @@ public class SettingsServiceTestCase {
 
         Map<String, Object> migrated = new LinkedHashMap<>();
         // higher precedence starts earlier in the chain order
-        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla", "1")), migrated);
-        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla3", "3")), migrated);
+        SettingsService.migratePropertySourceKeys(keyMaps,
+                new MapPropertySource("migrated-properties", ImmutableMap.of("bla", "1")), migrated);
+        SettingsService.migratePropertySourceKeys(keyMaps,
+                new MapPropertySource("migrated-properties", ImmutableMap.of("bla3", "3")), migrated);
 
         assertThat(migrated).containsOnly(entry("bla2", "1"), entry("bla3", "1"), entry("bla4", "1"));
     }
@@ -300,8 +301,10 @@ public class SettingsServiceTestCase {
 
         Map<String, Object> migrated = new LinkedHashMap<>();
         // higher precedence starts later in the chain order
-        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla3", "1")), migrated);
-        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla", "3")), migrated);
+        SettingsService.migratePropertySourceKeys(keyMaps,
+                new MapPropertySource("migrated-properties", ImmutableMap.of("bla3", "1")), migrated);
+        SettingsService.migratePropertySourceKeys(keyMaps,
+                new MapPropertySource("migrated-properties", ImmutableMap.of("bla", "3")), migrated);
 
         assertThat(migrated).containsOnly(entry("bla2", "3"), entry("bla3", "3"), entry("bla4", "1"));
     }
@@ -315,8 +318,10 @@ public class SettingsServiceTestCase {
 
         Map<String, Object> migrated = new LinkedHashMap<>();
         // higher precedence starts later in the chain order
-        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla3", "1")), migrated);
-        SettingsService.migratePropertySourceKeys(keyMaps, new MapPropertySource("migrated-properties", ImmutableMap.of("bla", "3")), migrated);
+        SettingsService.migratePropertySourceKeys(keyMaps,
+                new MapPropertySource("migrated-properties", ImmutableMap.of("bla3", "1")), migrated);
+        SettingsService.migratePropertySourceKeys(keyMaps,
+                new MapPropertySource("migrated-properties", ImmutableMap.of("bla", "3")), migrated);
 
         assertThat(migrated).containsOnly(entry("bla2", "3"), entry("bla3", "3"));
     }
