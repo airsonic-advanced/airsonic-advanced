@@ -2,7 +2,6 @@ package org.airsonic.player.io;
 
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.RateLimiter;
-
 import org.airsonic.player.domain.TransferStatus;
 import org.airsonic.player.io.PipeStreams.MonitoredInputStream;
 import org.airsonic.player.io.PipeStreams.MonitoredResource;

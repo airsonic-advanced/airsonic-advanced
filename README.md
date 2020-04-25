@@ -68,6 +68,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Uses JSR 310 (Java time) instead of older Java packages for time/duration tracking
   - Uses Java's NIO for handling files instead of the older IO packages
   - More precise song duration calculation
+  - Ability to pass properties via environment or system variables. You do not need to modify airsonic.properties for everything.
   - Ability to use Repeat-One in play queues in web-clients
   - Ability to upload multiple files simultaneously
   - Ability to upload and extract more archive formats:
@@ -90,12 +91,38 @@ The complete list of PRs that were used to enhance Airsonic can be seen on the P
 
 Airsonic-Advanced will occasionally backport features introduced in the base Airsonic fork, but is generally much more modern and bleeding edge than Airsonic.
 
+Usage
+-----
+Airsonic-Advanced can be downloaded from
+[GitHub](https://github.com/airsonic-advanced/airsonic-advanced/releases).
+
+The release signature may be verified using the [public key](https://github.com/airsonic-advanced/airsonic-advanced/blob/master/releases_public_key.asc).
+
+You need a _minimum_ Java Runtime Environment (JRE) of 1.8 for 10.6.x series and 11 for 11.x onwards (including snapshots). It is run similarly to (and in lieu of) vanilla Airsonic.
+
+Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced).
+
+Please note that for Docker images, the volume mounting points have changed and are different from Airsonic. Airsonic mount points are at `/airsonic/*` inside the container. Airsonic-Advanced tries to use the same volume locations as the default war image at `/var/*` in order to remain consistent if people want to switch between the containers and non-containers.
+  - `Music:/airsonic/music` -> `Music:/var/music`
+  - `Podcasts:/airsonic/podcast` -> `Podcasts:/var/podcast`
+  - `Playlists:/airsonic/playlists` -> `Playlists:/var/playlists`
+  - `/airsonic/data` -> `/var/airsonic`
+
+Airsonic-Advanced v10.6.x series (and its snapshots) are intercompatible with vanilla Airsonic 10.6.x series. This may not necessarily be the case with 11.x versions.
+
+Also note that Airsonic-Advanced 11.x (and its snapshots) are *breaking* non-backwards-compatible version changes. You will not be able to revert back to 10.6.x after upgrading (the system _does_ create a backup of the DB in case such revert is necessary, but it must be manually restored).
+
+Vanilla Airsonic can be downloaded from
+[GitHub](https://github.com/airsonic/airsonic/releases).
+
+Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Advanced shares similar running instructions unless stated otherwise.
+
 History
 -----
 
 The original [Subsonic](http://www.subsonic.org/) is developed by [Sindre Mehus](mailto:sindre@activeobjects.no). Subsonic was open source through version 6.0-beta1, and closed-source from then onwards.
 
-Libresonic was created and maintained by [Eugene E. Kashpureff Jr](mailto:eugene@kashpureff.org). It originated as an unofficial("Kang") of Subsonic which did not contain the Licensing code checks present in the official builds. With the announcement of Subsonic's closed-source future, a decision was made to make a full fork and rebrand to Libresonic.
+Libresonic was created and maintained by [Eugene E. Kashpureff Jr](mailto:eugene@kashpureff.org). It originated as an unofficial ("Kang") of Subsonic which did not contain the Licensing code checks present in the official builds. With the announcement of Subsonic's closed-source future, a decision was made to make a full fork and rebrand to Libresonic.
 
 Around July 2017, it was discovered that Eugene had different intentions/goals
 for the project than some contributors had.  Although the developers were
@@ -123,30 +150,11 @@ released under [MIT License](http://www.opensource.org/licenses/mit-license.php)
 The icons are from the amazing [feather](https://feathericons.com/) project,
 and are licensed under [MIT license](https://github.com/feathericons/feather/blob/master/LICENSE).
 
-Usage
------
-Airsonic-Advanced can be downloaded from
-[GitHub](https://github.com/airsonic-advanced/airsonic-advanced/releases).
-
-The release signature may be verified using the [public key](https://github.com/airsonic-advanced/airsonic-advanced/blob/master/releases_public_key.asc).
-
-Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced).
-
-Please note that for Docker images, the volume mounting points have changed and are different from Airsonic. Airsonic mount points are at /airsonic/* inside the container. Airsonic-Advanced tries to use the same volume locations as the default war image at /var/* in order to remain consistent if people want to switch between the containers and non-containers.
-  - `Music:/airsonic/music` -> `Music:/var/music`
-  - `Podcasts:/airsonic/podcast` -> `Podcasts:/var/podcast`
-  - `Playlists:/airsonic/playlists` -> `Playlists:/var/playlists`
-  - `/airsonic/data` -> `/var/airsonic`
-
-Airsonic can be downloaded from
-[GitHub](https://github.com/airsonic/airsonic/releases).
-
-Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic.
-
-
 Community
 ---------
-Airsonic itself has several places outside of github for community discussion, questions, etc:
+Bugs/feature requests/discussions pertaining to Airsonic-Advanced may be raised as issues within GitHub on the Airsonic-Advanced project page.
+
+Vanilla Airsonic itself has several places outside of GitHub for community discussion, questions, etc:
 
 - [#airsonic:matrix.org on Matrix](https://matrix.to/#/#airsonic:matrix.org)
 - [#airsonic on IRC](http://webchat.freenode.net?channels=%23airsonic)

@@ -16,12 +16,12 @@ public class MediaFileEntry {
     private final String bitRate;
     private final String dimensions;
     private final Double duration;
-    private final String durationAsString;
     private final String format;
     private String contentType;
     private final String entryType;
     private final String fileSize;
     private final boolean starred;
+    private final boolean present;
     private final String albumUrl;
     private final String streamUrl;
     private final String remoteStreamUrl;
@@ -39,12 +39,12 @@ public class MediaFileEntry {
             String bitRate,
             String dimensions,
             Double duration,
-            String durationAsString,
             String format,
             String contentType,
             String entryType,
             String fileSize,
             boolean starred,
+            boolean present,
             String albumUrl,
             String streamUrl,
             String remoteStreamUrl,
@@ -61,12 +61,12 @@ public class MediaFileEntry {
         this.bitRate = bitRate;
         this.dimensions = dimensions;
         this.duration = duration;
-        this.durationAsString = durationAsString;
         this.format = format;
         this.contentType = contentType;
         this.entryType = entryType;
         this.fileSize = fileSize;
         this.starred = starred;
+        this.present = present;
         this.albumUrl = albumUrl;
         this.streamUrl = streamUrl;
         this.remoteStreamUrl = remoteStreamUrl;
@@ -114,10 +114,6 @@ public class MediaFileEntry {
         return entryType;
     }
 
-    public String getDurationAsString() {
-        return durationAsString;
-    }
-
     public Double getDuration() {
         return duration;
     }
@@ -136,6 +132,10 @@ public class MediaFileEntry {
 
     public boolean getStarred() {
         return starred;
+    }
+
+    public boolean getPresent() {
+        return present;
     }
 
     public String getAlbumUrl() {
@@ -170,13 +170,12 @@ public class MediaFileEntry {
         this.contentType = contentType;
     }
 
-    public static MediaFileEntry fromMediaFile(MediaFile file, Locale locale, boolean starred, String streamUrl, String remoteStreamUrl, String remoteCoverArtUrl) {
+    public static MediaFileEntry fromMediaFile(MediaFile file, Locale locale, boolean starred, boolean folderAccess, String streamUrl, String remoteStreamUrl, String remoteCoverArtUrl) {
         return new MediaFileEntry(file.getId(), file.getTrackNumber(), file.getName(), file.getArtist(),
                 file.getAlbumName(), file.getGenre(), file.getYear(), formatBitRate(file),
                 (file.getWidth() != null && file.getHeight() != null) ? file.getWidth() + "x" + file.getHeight() : null,
-                file.getDuration(), file.getDurationString(), file.getFormat(),
-                StringUtil.getMimeType(file.getFormat()), file.getMediaType().toString(),
-                StringUtil.formatBytes(file.getFileSize(), locale == null ? Locale.ENGLISH : locale), starred,
+                file.getDuration(), file.getFormat(), StringUtil.getMimeType(file.getFormat()), file.getMediaType().toString(),
+                StringUtil.formatBytes(file.getFileSize(), locale == null ? Locale.ENGLISH : locale), starred, file.isPresent() && folderAccess,
                 "main.view?id=" + file.getId(), streamUrl, remoteStreamUrl, "coverArt.view?id=" + file.getId(),
                 remoteCoverArtUrl);
     }
@@ -186,7 +185,7 @@ public class MediaFileEntry {
             return null;
         }
         if (mediaFile.isVariableBitRate()) {
-            return mediaFile.getBitRate() + " Kbps vbr";
+            return "vbr " + mediaFile.getBitRate() + " Kbps";
         }
         return mediaFile.getBitRate() + " Kbps";
     }

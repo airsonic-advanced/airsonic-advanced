@@ -1,7 +1,6 @@
 name: 'Stable Deploy CI (Maven)'
 
 on:
-  create:
   push:
     branches: [ stable/** ]
 
@@ -52,6 +51,8 @@ jobs:
           name: Stable Release ${{ steps.tagcalc.outputs.tag }}
           draft: false
           prerelease: false
+          body: |
+            List of issues addressed: https://github.com/airsonic-advanced/airsonic-advanced/issues?q=milestone%3A${{ steps.tagcalc.outputs.tag }}
           files: |
             airsonic-main/target/airsonic.war
             airsonic-main/target/artifacts-checksums.sha.asc

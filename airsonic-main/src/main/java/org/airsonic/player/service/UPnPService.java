@@ -36,6 +36,13 @@ import org.fourthline.cling.support.connectionmanager.ConnectionManagerService;
 import org.fourthline.cling.support.model.ProtocolInfos;
 import org.fourthline.cling.support.model.dlna.DLNAProfiles;
 import org.fourthline.cling.support.model.dlna.DLNAProtocolInfo;
+import org.fourthline.cling.transport.impl.apache.StreamClientConfigurationImpl;
+import org.fourthline.cling.transport.impl.apache.StreamClientImpl;
+import org.fourthline.cling.transport.impl.apache.StreamServerConfigurationImpl;
+import org.fourthline.cling.transport.impl.apache.StreamServerImpl;
+import org.fourthline.cling.transport.spi.NetworkAddressFactory;
+import org.fourthline.cling.transport.spi.StreamClient;
+import org.fourthline.cling.transport.spi.StreamServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -122,7 +129,7 @@ public class UPnPService {
     }
 
     private synchronized void createService() {
-        upnpService = new UpnpServiceImpl(new DefaultUpnpServiceConfiguration(settingsService.getUPnpPort()));
+        upnpService = new UpnpServiceImpl(new ApacheUpnpServiceConfiguration(settingsService.getUPnpPort()));
 
         // Asynch search for other devices (most importantly UPnP-enabled routers for port-mapping)
         upnpService.getControlPoint().search();
@@ -219,5 +226,25 @@ public class UPnPService {
 
     public void setCustomContentDirectory(CustomContentDirectory customContentDirectory) {
         this.dispatchingContentDirectory = customContentDirectory;
+    }
+
+    /**
+     * Note the different packages on similarly named classes from the parent
+     *
+     */
+    public static class ApacheUpnpServiceConfiguration extends DefaultUpnpServiceConfiguration {
+        public ApacheUpnpServiceConfiguration(int streamListenPort) {
+            super(streamListenPort);
+        }
+
+        @Override
+        public StreamClient<?> createStreamClient() {
+            return new StreamClientImpl(new StreamClientConfigurationImpl(getSyncProtocolExecutorService()));
+        }
+
+        @Override
+        public StreamServer<?> createStreamServer(NetworkAddressFactory networkAddressFactory) {
+            return new StreamServerImpl(new StreamServerConfigurationImpl(networkAddressFactory.getStreamListenPort()));
+        }
     }
 }

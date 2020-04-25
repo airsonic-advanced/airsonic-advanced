@@ -118,12 +118,12 @@ public class PodcastService {
                 .flatMap(List::parallelStream)
                 .filter(e -> e.getStatus() == PodcastStatus.DOWNLOADING)
                 .forEach(e -> {
-                    deleteEpisode(e.getId(), false);
-                    LOG.info("Deleted Podcast episode '" + e.getTitle() + "' since download was interrupted.");
+                    deleteEpisode(e, false);
+                    LOG.info("Deleted Podcast episode '{}' since download was interrupted.", e.getTitle());
                 });
             schedule();
         } catch (Throwable x) {
-            LOG.error("Failed to initialize PodcastService: " + x, x);
+            LOG.error("Failed to initialize PodcastService", x);
         }
     }
 
@@ -611,8 +611,8 @@ public class PodcastService {
         int episodesToDelete = Math.max(0, numEpisodes - episodeCount);
         // Delete in reverse to get chronological order (oldest episodes first).
         for (int i = 0; i < episodesToDelete; i++) {
-            deleteEpisode(episodes.get(numEpisodes - 1 - i).getId(), true);
-            LOG.info("Deleted old Podcast episode " + episodes.get(numEpisodes - 1 - i).getUrl());
+            deleteEpisode(episodes.get(numEpisodes - 1 - i), true);
+            LOG.info("Deleted old Podcast episode {}", episodes.get(numEpisodes - 1 - i).getUrl());
         }
     }
 
@@ -672,7 +672,7 @@ public class PodcastService {
      */
     public void deleteChannel(int channelId) {
         // Delete all associated episodes (in case they have files that need to be deleted).
-        getEpisodes(channelId).parallelStream().map(PodcastEpisode::getId).forEach(id -> deleteEpisode(id, false));
+        getEpisodes(channelId).parallelStream().forEach(ep -> deleteEpisode(ep, false));
 
         podcastDao.deleteChannel(channelId);
     }
@@ -685,7 +685,10 @@ public class PodcastService {
      *                      episode status to {@link PodcastStatus#DELETED}.
      */
     public void deleteEpisode(int episodeId, boolean logicalDelete) {
-        PodcastEpisode episode = podcastDao.getEpisode(episodeId);
+        deleteEpisode(podcastDao.getEpisode(episodeId), logicalDelete);
+    }
+
+    public void deleteEpisode(PodcastEpisode episode, boolean logicalDelete) {
         if (episode == null) {
             return;
         }
@@ -700,7 +703,7 @@ public class PodcastService {
             episode.setErrorMessage(null);
             podcastDao.updateEpisode(episode);
         } else {
-            podcastDao.deleteEpisode(episodeId);
+            podcastDao.deleteEpisode(episode.getId());
         }
     }
 

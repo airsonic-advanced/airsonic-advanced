@@ -17,7 +17,7 @@
             border-width: thin;
             padding: 0.25em 1em 0.25em 1em;
         }
-        .headerNotSelected {
+        .headerNotSelected, .starSong, .playSong, .addSongNext, .addSongLast {
             cursor: pointer;
         }
         #subDirsTable_wrapper {
@@ -380,7 +380,16 @@
                 { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
                 { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
                 { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
-                { data: "durationAsString", className: "detail fit rightalign", visible: ${model.visibility.durationVisible} },
+                { data: "duration",
+                  className: "detail fit rightalign",
+                  visible: ${model.visibility.durationVisible},
+                  render: function(data, type, row) {
+                      if (type == "display" && data != null) {
+                          return formatDuration(Math.round(data));
+                      }
+                      return data;
+                  }
+                },
                 { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible} },
                 { data: "entryType",
                   className: "detail fit rightalign truncate",
@@ -581,7 +590,15 @@
                       return artist;
                   }
                 },
-                { data: "durationAsString", className: "detail fit rightalign" }
+                { data: "duration",
+                  className: "detail fit rightalign",
+                  render: function(data, type, row) {
+                      if (type == "display" && data != null) {
+                          return formatDuration(Math.round(data));
+                      }
+                      return data;
+                  }
+                }
             ]
         } );
 
@@ -720,7 +737,7 @@
         } else {
             top.StompClient.send("/app/rate/mediafile/unstar", data.id);
         }
-        table.cell(row, "starred:name").invalidate().draw();
+        table.cell(row, "starred:name").invalidate();
     }
     function onPlay(row) {
         var data = row.data();
@@ -794,11 +811,18 @@
             filesTable.rows().deselect();
         }
     }
+    // need to keep track if a request was sent because plaQueue may also send a request
+    var awaitingAppendPlaylistRequest = false;
     function onAppendPlaylist() {
+        awaitingAppendPlaylistRequest = true;
         // retrieve writable lists so we can open dialog to ask user which playlist to append to
         top.StompClient.send("/app/playlists/writable", "");
     }
     function playlistSelectionCallback(playlists) {
+        if (!awaitingAppendPlaylistRequest) {
+            return;
+        }
+        awaitingAppendPlaylistRequest = false;
         $("#dialog-select-playlist-list").empty();
         for (var i = 0; i < playlists.length; i++) {
             var playlist = playlists[i];

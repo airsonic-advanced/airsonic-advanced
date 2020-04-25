@@ -2,7 +2,6 @@ package org.airsonic.player;
 
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
-
 import org.airsonic.player.controller.JAXBWriter;
 import org.airsonic.player.dao.AbstractDao;
 import org.airsonic.player.service.MediaScannerService;

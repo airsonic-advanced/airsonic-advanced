@@ -25,7 +25,6 @@ import com.github.junrar.rarfile.FileHeader;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.RateLimiter;
-
 import org.airsonic.player.ajax.UploadInfo;
 import org.airsonic.player.domain.TransferStatus;
 import org.airsonic.player.domain.User;

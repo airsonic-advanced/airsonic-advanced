@@ -268,9 +268,9 @@ public class MediaScannerService {
             CompletableFuture<Void> genrePersistence = CompletableFuture
                     .runAsync(() -> {
                         LOG.info("Updating genres");
-                        mediaFileDao.updateGenres(genres.getGenres());
-                    }, pool)
-                    .thenRunAsync(() -> LOG.info("Genre persistence complete"), pool);
+                        boolean genresSuccessful = mediaFileDao.updateGenres(genres.getGenres());
+                        LOG.info("Genre persistence successfully complete: {}", genresSuccessful);
+                    }, pool);
 
             CompletableFuture.allOf(albumPersistence, artistPersistence, mediaFilePersistence, genrePersistence).join();
 

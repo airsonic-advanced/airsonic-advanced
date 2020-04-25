@@ -34,19 +34,15 @@ public class ArtistWSController {
         MediaFile mediaFile = mediaFileService.getMediaFile(req.getMediaFileId());
         List<SimilarArtist> similarArtists = getSimilarArtists(principal.getName(), req.getMediaFileId(), req.getMaxSimilarArtists());
         ArtistBio artistBio = lastFmService.getArtistBio(mediaFile, localeResolver.resolveLocale(principal.getName()));
-        List<TopSong> topSongs = getTopSongs(principal.getName(), mediaFile, req.getMaxTopSongs());
+        List<MediaFileEntry> topSongs = getTopSongs(principal.getName(), mediaFile, req.getMaxTopSongs());
 
         return new ArtistInfo(similarArtists, artistBio, topSongs);
     }
 
-    private List<TopSong> getTopSongs(String username, MediaFile mediaFile, int limit) {
+    private List<MediaFileEntry> getTopSongs(String username, MediaFile mediaFile, int limit) {
         List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(username);
 
-        return lastFmService.getTopSongs(mediaFile, limit, musicFolders).parallelStream().map(file -> {
-            mediaFileService.populateStarredDate(file, username);
-            return new TopSong(file.getId(), file.getTitle(), file.getArtist(), file.getAlbumName(),
-                    file.getDurationString(), file.getStarredDate() != null);
-        }).collect(Collectors.toList());
+        return mediaFileService.toMediaFileEntryList(lastFmService.getTopSongs(mediaFile, limit, musicFolders), username, true, true, null, null, null);
     }
 
     private List<SimilarArtist> getSimilarArtists(String username, int mediaFileId, int limit) {

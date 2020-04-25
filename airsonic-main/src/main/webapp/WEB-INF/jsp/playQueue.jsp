@@ -1,7 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
-<%@ include file="head.jsp" %>
+<%@ include file="include.jsp" %>
 <%@ include file="jquery.jsp" %>
 <%@ include file="table.jsp" %>
+<script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
 <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
 <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
@@ -134,6 +135,13 @@
                       action: function (e, dt, node, config) {
                           if (pq.currentSongIndex != -1) {
                               dt.row(pq.currentSongIndex).show().draw(false);
+                              var container = $('#playQueueMusic_wrapper .dataTables_scrollBody');
+                              var target = $('.currently-playing');
+                              container.animate({
+                                scrollTop: Math.floor(target.offset().top - container.offset().top + container.scrollTop())
+                              }, 150, function() {
+                                target.fadeOut(100, function() {target.fadeIn(100);});
+                              });
                           }
                       }
                     }
@@ -234,7 +242,16 @@
                     { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
                     { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
                     { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
-                    { data: "durationAsString", className: "detail fit rightalign", visible: ${model.visibility.durationVisible} },
+                    { data: "duration",
+                      className: "detail fit rightalign",
+                      visible: ${model.visibility.durationVisible},
+                      render: function(data, type, row) {
+                          if (type == "display" && data != null) {
+                              return formatDuration(Math.round(data));
+                          }
+                          return data;
+                      }
+                    },
                     { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible} }
                 ]
             } );
@@ -255,9 +272,11 @@
                 pq.onSkip(pq.musicTable.row( $(this).parents('tr') ).index());
             } );
             pq.musicTable.on( "row-reordered", function (e, diff, edit) {
-                pq.musicTable.one( "draw", function () {
-                    pq.onRearrange(pq.musicTable.rows().indexes().toArray());
-                });
+                if (diff.length > 0) {
+                    pq.musicTable.one( "draw", function () {
+                        pq.onRearrange(pq.musicTable.rows().indexes().toArray());
+                    });
+                }
             });
 
             $("#playQueueHeading").html("<h2><fmt:message key='playlist.more.playlist'/></h2>");
@@ -792,7 +811,7 @@
             } else {
                 top.StompClient.send("/app/rate/mediafile/unstar", this.songs[index].id);
             }
-            this.musicTable.cell(index, "starred:name").invalidate().draw();
+            this.musicTable.cell(index, "starred:name").invalidate();
         },
         onStarCurrent() {
             this.onStar(this.currentSongIndex);
@@ -835,11 +854,18 @@
         onSavePlaylist() {
             top.StompClient.send("/app/playlists/create/playqueue", this.player.id);
         },
+        // need to keep track if a request was sent because mediaMain may also send a request
+        awaitingAppendPlaylistRequest: false,
         onAppendPlaylist() {
+            this.awaitingAppendPlaylistRequest = true;
             // retrieve writable lists so we can open dialog to ask user which playlist to append to
             top.StompClient.send("/app/playlists/writable", "");
         },
         playlistSelectionCallback(playlists) {
+            if (!this.awaitingAppendPlaylistRequest) {
+                return;
+            }
+            this.awaitingAppendPlaylistRequest = false;
             $("#dialog-select-playlist-list").empty();
             var pq = this;
             for (var i = 0; i < playlists.length; i++) {
@@ -926,7 +952,8 @@
             if (this.songs.length == 0) {
                 $("#playQueueInfo").text("");
             } else {
-                $("#playQueueInfo").html("&nbsp;|&nbsp;" + this.songs.length + " <fmt:message key='playlist2.songs'/> &nbsp;|&nbsp;" + playQueue.durationAsString);
+                var totDuration = this.songs.map(s => s.duration).filter(d => d != null).reduce((a,b) => a + b, 0);
+                $("#playQueueInfo").html("&nbsp;|&nbsp;" + this.songs.length + " <fmt:message key='playlist2.songs'/> &nbsp;|&nbsp;" + formatDuration(Math.round(totDuration)));
             }
 
             if (this.internetRadioEnabled) {

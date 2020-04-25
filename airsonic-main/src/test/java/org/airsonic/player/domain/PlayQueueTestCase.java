@@ -20,7 +20,6 @@
 package org.airsonic.player.domain;
 
 import junit.framework.TestCase;
-
 import org.airsonic.player.domain.PlayQueue.RepeatStatus;
 
 import java.nio.file.Path;

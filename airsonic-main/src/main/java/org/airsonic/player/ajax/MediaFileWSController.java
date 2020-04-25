@@ -1,7 +1,6 @@
 package org.airsonic.player.ajax;
 
 import com.google.common.collect.ImmutableMap;
-
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MediaFileComparator;
 import org.airsonic.player.service.MediaFileService;
@@ -72,16 +71,16 @@ public class MediaFileWSController {
                 subDirs.add(child);
             }
         }
-        MediaFileDirectoryEntry entry = new MediaFileDirectoryEntry(mediaFileService.toMediaFileEntryList(Collections.singletonList(dir), true, user.getName(), null, null, null).get(0));
-        entry.setFiles(mediaFileService.toMediaFileEntryList(files, true, user.getName(), null, null, null));
-        entry.setSubDirs(mediaFileService.toMediaFileEntryList(subDirs, false, user.getName(), null, null, null));
-        entry.setAncestors(mediaFileService.toMediaFileEntryList(getAncestors(dir), false, user.getName(), null, null, null));
+        MediaFileDirectoryEntry entry = new MediaFileDirectoryEntry(mediaFileService.toMediaFileEntryList(Collections.singletonList(dir), user.getName(), true, true, null, null, null).get(0));
+        entry.setFiles(mediaFileService.toMediaFileEntryList(files, user.getName(), true, false, null, null, null));
+        entry.setSubDirs(mediaFileService.toMediaFileEntryList(subDirs, user.getName(), false, false, null, null, null));
+        entry.setAncestors(mediaFileService.toMediaFileEntryList(getAncestors(dir), user.getName(), false, false, null, null, null));
         entry.setLastPlayed(dir.getLastPlayed());
         entry.setPlayCount(dir.getPlayCount());
         entry.setComment(dir.getComment());
         if (dir.isAlbum()) {
             List<MediaFile> siblingAlbums = getSiblingAlbums(dir);
-            entry.setSiblingAlbums(mediaFileService.toMediaFileEntryList(siblingAlbums, false, user.getName(), null, null, null));
+            entry.setSiblingAlbums(mediaFileService.toMediaFileEntryList(siblingAlbums, user.getName(), false, false, null, null, null));
             entry.setAlbum(guessAlbum(children));
             entry.setArtist(guessArtist(children));
             entry.setMusicBrainzReleaseId(guessMusicBrainzReleaseId(children));
@@ -231,8 +230,8 @@ public class MediaFileWSController {
 
         public MediaFileDirectoryEntry(MediaFileEntry mfe) {
             super(mfe.getId(), mfe.getTrackNumber(), mfe.getTitle(), mfe.getArtist(), mfe.getAlbum(), mfe.getGenre(),
-                    mfe.getYear(), mfe.getBitRate(), mfe.getDimensions(), mfe.getDuration(), mfe.getDurationAsString(),
-                    mfe.getFormat(), mfe.getContentType(), mfe.getEntryType(), mfe.getFileSize(), mfe.getStarred(),
+                    mfe.getYear(), mfe.getBitRate(), mfe.getDimensions(), mfe.getDuration(),
+                    mfe.getFormat(), mfe.getContentType(), mfe.getEntryType(), mfe.getFileSize(), mfe.getStarred(), mfe.getPresent(),
                     mfe.getAlbumUrl(), mfe.getStreamUrl(), mfe.getRemoteStreamUrl(), mfe.getCoverArtUrl(), mfe.getRemoteCoverArtUrl());
         }
 

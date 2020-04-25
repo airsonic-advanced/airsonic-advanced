@@ -20,7 +20,6 @@
 package org.airsonic.player.service;
 
 import com.google.common.util.concurrent.RateLimiter;
-
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MusicFolderDao;
@@ -292,6 +291,8 @@ public class SettingsService {
 
         keyMaps.put("database.usertable.quote", "DatabaseUsertableQuote");
         keyMaps.put("DatabaseUsertableQuote", KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
+
+        keyMaps.put("airsonic.rememberMeKey", KEY_REMEMBER_ME_KEY);
 
         return keyMaps;
     }
@@ -923,10 +924,7 @@ public class SettingsService {
      * @return The 'remember me' key.
      */
     public String getRememberMeKey() {
-        String key = null;
-        if (StringUtils.isBlank(key)) key = getString(KEY_REMEMBER_ME_KEY, null);
-        if (StringUtils.isBlank(key)) key = System.getProperty("airsonic.rememberMeKey");
-        return key;
+        return getString(KEY_REMEMBER_ME_KEY, null);
     }
 
     /**

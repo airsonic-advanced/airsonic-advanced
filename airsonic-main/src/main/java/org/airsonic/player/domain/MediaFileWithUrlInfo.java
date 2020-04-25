@@ -183,10 +183,6 @@ public class MediaFileWithUrlInfo {
         file.setDuration(duration);
     }
 
-    public String getDurationString() {
-        return file.getDurationString();
-    }
-
     public Long getFileSize() {
         return file.getFileSize();
     }

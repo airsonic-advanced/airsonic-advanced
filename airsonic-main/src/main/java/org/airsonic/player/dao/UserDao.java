@@ -20,7 +20,6 @@
 package org.airsonic.player.dao;
 
 import com.google.common.collect.ImmutableMap;
-
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.util.StringUtil;

@@ -9,7 +9,6 @@ import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.PlaylistService;
-import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -37,8 +36,6 @@ import java.util.stream.Stream;
 public class PlaylistWSController {
     @Autowired
     private MediaFileService mediaFileService;
-    @Autowired
-    private SecurityService securityService;
     @Autowired
     private PlaylistService playlistService;
     @Autowired
@@ -216,25 +213,12 @@ public class PlaylistWSController {
 
     @MessageMapping("/files/{id}")
     @SendToUser(broadcast = false)
-    public List<PlaylistEntry> getPlaylistEntries(Principal p, @DestinationVariable int id) {
-        return playlistService.getFilesInPlaylist(id, true).stream()
-                .map(f -> new PlaylistEntry(
-                        f.getId(),
-                        f.getTitle(),
-                        f.getArtist(),
-                        f.getAlbumName(),
-                        f.getDurationString(),
-                        mediaFileService.getMediaFileStarredDate(f.getId(), p.getName()) != null,
-                        f.isPresent() && securityService.isFolderAccessAllowed(f, p.getName())))
-                .collect(Collectors.toList());
+    public List<MediaFileEntry> getPlaylistEntries(Principal p, @DestinationVariable int id) {
+        return mediaFileService.toMediaFileEntryList(playlistService.getFilesInPlaylist(id, true), p.getName(), true, true, null, null, null);
     }
 
     public void setPlaylistService(PlaylistService playlistService) {
         this.playlistService = playlistService;
-    }
-
-    public void setSecurityService(SecurityService securityService) {
-        this.securityService = securityService;
     }
 
     public void setMediaFileService(MediaFileService mediaFileService) {
@@ -314,55 +298,6 @@ public class PlaylistWSController {
 
         public void setShared(boolean shared) {
             this.shared = shared;
-        }
-    }
-
-    public static class PlaylistEntry {
-        private final int id;
-        private final String title;
-        private final String artist;
-        private final String album;
-        private final String durationAsString;
-        private final boolean starred;
-        private final boolean present;
-
-        public PlaylistEntry(int id, String title, String artist, String album, String durationAsString,
-                boolean starred, boolean present) {
-            this.id = id;
-            this.title = title;
-            this.artist = artist;
-            this.album = album;
-            this.durationAsString = durationAsString;
-            this.starred = starred;
-            this.present = present;
-        }
-
-        public int getId() {
-            return id;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public String getArtist() {
-            return artist;
-        }
-
-        public String getAlbum() {
-            return album;
-        }
-
-        public String getDurationAsString() {
-            return durationAsString;
-        }
-
-        public boolean getStarred() {
-            return starred;
-        }
-
-        public boolean getPresent() {
-            return present;
         }
     }
 }

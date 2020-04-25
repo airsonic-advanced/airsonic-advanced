@@ -1,7 +1,6 @@
 package org.airsonic.player.controller;
 
 import com.google.common.collect.ImmutableMap;
-
 import org.airsonic.player.command.CredentialsManagementCommand;
 import org.airsonic.player.command.CredentialsManagementCommand.AdminControls;
 import org.airsonic.player.command.CredentialsManagementCommand.AppCredSettings;
@@ -113,7 +112,7 @@ public class CredentialsManagementController {
         map.addAttribute("adminRole", userInDb.isAdminRole());
 
         // admin restricted, installation-wide settings
-        if (userInDb.isAdminRole()) {
+        if (userInDb.isAdminRole() && !map.containsAttribute("adminControls")) {
             map.addAttribute("adminControls",
                     new AdminControls(
                             securityService.checkCredentialsStoredInLegacyTables(),
@@ -197,11 +196,13 @@ public class CredentialsManagementController {
     protected String adminControls(Authentication user, @Validated @ModelAttribute("adminControls") AdminControls ac,
             BindingResult br, RedirectAttributes redirectAttributes, ModelMap map) {
         if (br.hasErrors()) {
-            return "/credentialsSettings";
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.adminControls", br);
+            redirectAttributes.addFlashAttribute("adminControls", ac);
+            return "redirect:/credentialsSettings.view";
         }
 
         if (map.getAttribute("adminRole") == null || !((boolean) map.getAttribute("adminRole"))) {
-            return "/credentialsSettings";
+            return "redirect:/credentialsSettings.view";
         }
 
         boolean success = true;

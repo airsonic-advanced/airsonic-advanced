@@ -4,6 +4,7 @@
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
     <%@ include file="table.jsp" %>
+    <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" language="javascript">
         var playlistId = ${model.playlist.id};
         var songs = [];
@@ -43,6 +44,7 @@
                 stripeClasses: ["bgcolor2", "bgcolor1"],
                 columnDefs: [{ targets: "_all", orderable: false }],
                 columns: [
+                    { data: "seq", className: "detail fit", visible: true },
                     { data: "starred",
                       name: "starred",
                       className: "fit not-draggable",
@@ -98,7 +100,6 @@
                           return present ? "available" : "missing";
                       }
                     },
-                    { data: "seq", className: "detail fit", visible: true },
                     { data: "present",
                       className: "detail fit",
                       render: function(present, type, row) {
@@ -139,7 +140,15 @@
                           return artist;
                       }
                     },
-                    { data: "durationAsString", className: "detail fit rightalign" },
+                    { data: "duration",
+                      className: "detail fit rightalign",
+                      render: function(data, type, row) {
+                          if (type == "display" && data != null) {
+                              return formatDuration(Math.round(data));
+                          }
+                          return data;
+                      }
+                    },
                     { data: null,
                       searchable: false,
                       name: "remove",
@@ -190,9 +199,11 @@
                 onRemove(playlistMusicTable.row( $(this).parents('tr') ).index());
             } );
             playlistMusicTable.on( "row-reordered", function (e, diff, edit) {
-                playlistMusicTable.one( "draw", function () {
-                    onRearrange(playlistMusicTable.rows().indexes().toArray());
-                });
+                if (diff.length > 0) {
+                    playlistMusicTable.one( "draw", function () {
+                        onRearrange(playlistMusicTable.rows().indexes().toArray());
+                    });
+                }
             });
 
             $("#dialog-edit").dialog({resizable: true, width:400, autoOpen: false,
@@ -241,7 +252,7 @@
 
                 $("#name").text(playlist.name);
                 $("#songCount").text(playlist.fileCount);
-                $("#duration").text(playlist.durationAsString);
+                $("#duration").text(formatDuration(Math.round(playlist.duration)));
                 $("#comment").text(playlist.comment);
                 $("#lastupdated").text('<fmt:message key="playlist2.lastupdated"/> ' + new Date(playlist.changed));
 
@@ -287,7 +298,7 @@
             } else {
                 top.StompClient.send("/app/rate/mediafile/unstar", songs[index].id);
             }
-            playlistMusicTable.cell(index, "starred:name").invalidate().draw();
+            playlistMusicTable.cell(index, "starred:name").invalidate();
         }
         <c:if test="${model.editAllowed}">
         function onRemove(index) {
