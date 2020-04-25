@@ -653,10 +653,10 @@
                 <artifactId>aspectj-maven-plugin</artifactId>
                 <version>1.11.1</version>
                 <configuration>
-                    <source>${java.compiler.version}</source>
-                    <target>${java.compiler.version}</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                     <proc>none</proc>
-                    <complianceLevel>${java.compiler.version}</complianceLevel>
+                    <complianceLevel>${java.version}</complianceLevel>
                     <showWeaveInfo>true</showWeaveInfo>
                      <aspectLibraries>
                          <aspectLibrary>

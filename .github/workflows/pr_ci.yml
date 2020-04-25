@@ -35,12 +35,6 @@ jobs:
       fail-fast: false
       matrix:
         cfg:
-          - jdk: 1.8
-            services: {}
-            env: {}
-          - jdk: 9
-            services: {}
-            env: {}
           - jdk: 11
             services: {}
             env: {}
