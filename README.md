@@ -123,18 +123,24 @@ Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for in
 
 Compatibility Notes:
 ------
-Certain property names have been changed from 10.6 to recent snapshots of 11.0 and will be automigrated. When changing properties, use the modern name.
+The following properties are new in Airsonic-Advanced:
+  - `MediaScannerParallelism`: (default: number of available processors + 1) The parallelism to use when scanning media
 
-`DatabaseConfigEmbedDriver` -> `spring.datasource.driver-class-name`
-`DatabaseConfigEmbedUrl` -> `spring.datasource.url`
-`DatabaseConfigEmbedUsername` -> `spring.datasource.username`
-`DatabaseConfigEmbedPassword` -> `spring.datasource.password`
-`DatabaseConfigJNDIName` -> `spring.datasource.jndi-name`
-`DatabaseMysqlMaxlength` -> `spring.liquibase.parameters.mysqlVarcharLimit`
-`DatabaseUsertableQuote` -> `spring.liquibase.parameters.userTableQuote`
+The following property names are different between Airsonic and Airsonic-Advanced:
+  - `UPNP_PORT` -> `UPnpPort`
+
+### 11.x series
+Certain property names have been changed from 10.6 to recent snapshots of 11.0 and will be automigrated. When changing properties, use the modern name.
+  - `DatabaseConfigEmbedDriver` -> `spring.datasource.driver-class-name`
+  - `DatabaseConfigEmbedUrl` -> `spring.datasource.url`
+  - `DatabaseConfigEmbedUsername` -> `spring.datasource.username`
+  - `DatabaseConfigEmbedPassword` -> `spring.datasource.password`
+  - `DatabaseConfigJNDIName` -> `spring.datasource.jndi-name`
+  - `DatabaseMysqlMaxlength` -> `spring.liquibase.parameters.mysqlVarcharLimit`
+  - `DatabaseUsertableQuote` -> `spring.liquibase.parameters.userTableQuote`
 
 Other properties are obsolete and have been removed:
-`DatabaseConfigType`
+  - `DatabaseConfigType`
 
 First migration to 11.x will create a backup DB next to the DB folder. It will be marked as `db.backup.<timestamp>`. Use this folder as the DB if a revert to an older major version is needed (11.0 -> 10.6.0).
 
