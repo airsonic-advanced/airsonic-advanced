@@ -20,8 +20,9 @@
 package org.airsonic.player.controller;
 
 import org.airsonic.player.command.DatabaseSettingsCommand;
+import org.airsonic.player.command.DatabaseSettingsCommand.DataSourceConfigType;
 import org.airsonic.player.service.SettingsService;
-import org.airsonic.player.spring.DataSourceConfigType;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -48,14 +49,23 @@ public class DatabaseSettingsController {
     @ModelAttribute
     protected void formBackingObject(Model model) {
         DatabaseSettingsCommand command = new DatabaseSettingsCommand();
-        command.setConfigType(settingsService.getDatabaseConfigType());
-        command.setEmbedDriver(settingsService.getDatabaseConfigEmbedDriver());
-        command.setEmbedPassword(settingsService.getDatabaseConfigEmbedPassword());
-        command.setEmbedUrl(settingsService.getDatabaseConfigEmbedUrl());
-        command.setEmbedUsername(settingsService.getDatabaseConfigEmbedUsername());
-        command.setJNDIName(settingsService.getDatabaseConfigJNDIName());
+        command.setUrl(settingsService.getDatabaseUrl());
+        command.setDriver(settingsService.getDatabaseDriver());
+        command.setPassword(settingsService.getDatabasePassword());
+        command.setUsername(settingsService.getDatabaseUsername());
+        command.setJNDIName(settingsService.getDatabaseJNDIName());
         command.setMysqlVarcharMaxlength(settingsService.getDatabaseMysqlVarcharMaxlength());
         command.setUsertableQuote(settingsService.getDatabaseUsertableQuote());
+
+        if (StringUtils.isNotBlank(command.getJNDIName())) {
+            command.setConfigType(DataSourceConfigType.JNDI);
+        } else if (StringUtils.equals(command.getUrl(), SettingsService.getDefaultJDBCUrl())
+                && StringUtils.equals(command.getUsername(), SettingsService.getDefaultJDBCUsername())
+                && StringUtils.equals(command.getPassword(), SettingsService.getDefaultJDBCPassword())) {
+            command.setConfigType(DataSourceConfigType.BUILTIN);
+        } else {
+            command.setConfigType(DataSourceConfigType.EXTERNAL);
+        }
         model.addAttribute("command", command);
     }
 
@@ -65,22 +75,21 @@ public class DatabaseSettingsController {
                               RedirectAttributes redirectAttributes) {
         if (!bindingResult.hasErrors()) {
             settingsService.resetDatabaseToDefault();
-            settingsService.setDatabaseConfigType(command.getConfigType());
             switch (command.getConfigType()) {
-                case EMBED:
-                    settingsService.setDatabaseConfigEmbedDriver(command.getEmbedDriver());
-                    settingsService.setDatabaseConfigEmbedPassword(command.getEmbedPassword());
-                    settingsService.setDatabaseConfigEmbedUrl(command.getEmbedUrl());
-                    settingsService.setDatabaseConfigEmbedUsername(command.getEmbedUsername());
+                case EXTERNAL:
+                    settingsService.setDatabaseDriver(command.getDriver());
+                    settingsService.setDatabasePassword(command.getPassword());
+                    settingsService.setDatabaseUrl(command.getUrl());
+                    settingsService.setDatabaseUsername(command.getUsername());
                     break;
                 case JNDI:
-                    settingsService.setDatabaseConfigJNDIName(command.getJNDIName());
+                    settingsService.setDatabaseJNDIName(command.getJNDIName());
                     break;
-                case LEGACY:
+                case BUILTIN:
                 default:
                     break;
             }
-            if (command.getConfigType() != DataSourceConfigType.LEGACY) {
+            if (command.getConfigType() != DataSourceConfigType.BUILTIN) {
                 settingsService.setDatabaseMysqlVarcharMaxlength(command.getMysqlVarcharMaxlength());
                 settingsService.setDatabaseUsertableQuote(command.getUsertableQuote());
             }

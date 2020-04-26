@@ -3,9 +3,11 @@ package org.airsonic.player;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import org.airsonic.player.controller.JAXBWriter;
+import org.airsonic.player.dao.AbstractDao;
 import org.airsonic.player.service.MediaScannerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.test.context.TestConfiguration;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,19 +55,30 @@ public class TestCaseUtils {
         MoreFiles.deleteDirectoryContents(airsonicHomeDir, RecursiveDeleteOption.ALLOW_INSECURE);
     }
 
-    /**
-     * Scans the music library   * @param mediaScannerService
-     */
-    public static void execScan(MediaScannerService mediaScannerService) {
-        // TODO create a synchronous scan
-        mediaScannerService.scanLibrary();
-
+    public static void waitForScanFinish(MediaScannerService mediaScannerService) {
         while (mediaScannerService.isScanning()) {
             try {
-                Thread.sleep(200);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
     }
+
+    /**
+     * Scans the music library
+     * @param mediaScannerService
+     */
+    public static void execScan(MediaScannerService mediaScannerService) {
+        // TODO create a synchronous scan
+        mediaScannerService.scanLibrary();
+
+        waitForScanFinish(mediaScannerService);
+    }
+
+    @TestConfiguration
+    public static class TestDao extends AbstractDao {
+
+    }
+
 }

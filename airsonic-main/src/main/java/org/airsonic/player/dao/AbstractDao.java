@@ -49,14 +49,17 @@ public class AbstractDao {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDao.class);
 
     @Autowired
-    private DaoHelper daoHelper;
+    JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     public JdbcTemplate getJdbcTemplate() {
-        return daoHelper.getJdbcTemplate();
+        return jdbcTemplate;
     }
 
     public NamedParameterJdbcTemplate getNamedParameterJdbcTemplate() {
-        return daoHelper.getNamedParameterJdbcTemplate();
+        return namedParameterJdbcTemplate;
     }
 
     protected static String questionMarks(String columns) {
@@ -159,7 +162,7 @@ public class AbstractDao {
         return result;
     }
 
-    protected List<String> queryForStrings(String sql, Object... args) {
+    public List<String> queryForStrings(String sql, Object... args) {
         return queryForTypes(sql, String.class, args);
     }
 
@@ -171,7 +174,7 @@ public class AbstractDao {
         return namedQueryForTypes(sql, String.class, args);
     }
 
-    protected Integer queryForInt(String sql, Integer defaultValue, Object... args) {
+    public Integer queryForInt(String sql, Integer defaultValue, Object... args) {
         return queryForTypes(sql, Integer.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }
 
@@ -200,13 +203,4 @@ public class AbstractDao {
         List<T> list = namedQuery(sql, rowMapper, args);
         return list.isEmpty() ? null : list.get(0);
     }
-
-    public void setDaoHelper(DaoHelper daoHelper) {
-        this.daoHelper = daoHelper;
-    }
-
-    public void checkpoint() {
-        daoHelper.checkpoint();
-    }
-
 }

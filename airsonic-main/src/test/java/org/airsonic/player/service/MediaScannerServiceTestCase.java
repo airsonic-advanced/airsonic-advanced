@@ -4,6 +4,7 @@ import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.io.Resources;
+import org.airsonic.player.TestCaseUtils;
 import org.airsonic.player.api.ScanningTestUtils;
 import org.airsonic.player.dao.*;
 import org.airsonic.player.domain.Album;
@@ -88,11 +89,7 @@ public class MediaScannerServiceTestCase {
 
     @Before
     public void setup() {
-        while (mediaScannerService.isScanning()) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {}
-        }
+        TestCaseUtils.waitForScanFinish(mediaScannerService);
     }
 
     @After

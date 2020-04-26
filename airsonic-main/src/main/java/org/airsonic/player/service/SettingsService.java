@@ -25,7 +25,6 @@ import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.*;
-import org.airsonic.player.spring.DataSourceConfigType;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
@@ -35,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.PropertySource;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -136,14 +136,15 @@ public class SettingsService {
     private static final String KEY_RECAPTCHA_SECRET_KEY = "ReCaptchaSecretKey";
 
     // Database Settings
-    private static final String KEY_DATABASE_CONFIG_TYPE = "DatabaseConfigType";
-    private static final String KEY_DATABASE_CONFIG_EMBED_DRIVER = "DatabaseConfigEmbedDriver";
-    public static final String KEY_DATABASE_CONFIG_EMBED_URL = "DatabaseConfigEmbedUrl";
-    public static final String KEY_DATABASE_CONFIG_EMBED_USERNAME = "DatabaseConfigEmbedUsername";
-    public static final String KEY_DATABASE_CONFIG_EMBED_PASSWORD = "DatabaseConfigEmbedPassword";
-    private static final String KEY_DATABASE_CONFIG_JNDI_NAME = "DatabaseConfigJNDIName";
-    private static final String KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH = "DatabaseMysqlMaxlength";
-    private static final String KEY_DATABASE_USERTABLE_QUOTE = "DatabaseUsertableQuote";
+    private static final String KEY_DATABASE_DRIVER = "spring.datasource.driver-class-name";
+    public static final String KEY_DATABASE_URL = "spring.datasource.url";
+    public static final String KEY_DATABASE_USERNAME = "spring.datasource.username";
+    public static final String KEY_DATABASE_PASSWORD = "spring.datasource.password";
+    public static final String KEY_DATABASE_JNDI_NAME = "spring.datasource.jndi-name";
+    private static final String KEY_DATABASE_MIGRATION_ROLLBACK_FILE = "spring.liquibase.rollback-file";
+    private static final String KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH = "spring.liquibase.parameters.mysqlVarcharLimit";
+    public static final String KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE = "spring.liquibase.parameters.userTableQuote";
+    private static final String KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER = "spring.liquibase.parameters.defaultMusicFolder";
 
     public static final String KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS = "PropertiesFileRetainObsoleteKeys";
 
@@ -221,14 +222,13 @@ public class SettingsService {
     private static final String DEFAULT_RECAPTCHA_SITE_KEY = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
     private static final String DEFAULT_RECAPTCHA_SECRET_KEY = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe";
 
-    private static final DataSourceConfigType DEFAULT_DATABASE_CONFIG_TYPE = DataSourceConfigType.LEGACY;
-    private static final String DEFAULT_DATABASE_CONFIG_EMBED_DRIVER = null;
-    private static final String DEFAULT_DATABASE_CONFIG_EMBED_URL = null;
-    private static final String DEFAULT_DATABASE_CONFIG_EMBED_USERNAME = null;
-    private static final String DEFAULT_DATABASE_CONFIG_EMBED_PASSWORD = null;
-    private static final String DEFAULT_DATABASE_CONFIG_JNDI_NAME = null;
-    private static final Integer DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH = 384;
-    private static final String DEFAULT_DATABASE_USERTABLE_QUOTE = null;
+    private static final String DEFAULT_DATABASE_DRIVER = null;
+    private static final String DEFAULT_DATABASE_URL = null;
+    private static final String DEFAULT_DATABASE_USERNAME = null;
+    private static final String DEFAULT_DATABASE_PASSWORD = null;
+    private static final String DEFAULT_DATABASE_JNDI_NAME = null;
+    private static final Integer DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH = 384;
+    private static final String DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE = "";
 
     private static final String LOCALES_FILE = "/org/airsonic/player/i18n/locales.txt";
     private static final String THEMES_FILE = "/org/airsonic/player/theme/themes.txt";
@@ -257,50 +257,117 @@ public class SettingsService {
     private RateLimiter uploadRateLimiter;
     private Pattern excludePattern;
 
-    // Array of obsolete keys.  Used to clean property file.
+    // Array of obsolete properties. Used to clean property file.
     private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
             "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "AutoCoverBatch", "MusicMask",
             "VideoMask", "CoverArtMask", "HlsCommand", "HlsCommand2", "JukeboxCommand",
             "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
             "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",
             "UrlRedirectFrom", "UrlRedirectionEnabled", "UrlRedirectType", "Port", "HttpsPort",
-            "MediaLibraryStatistics", "LastScanned"
+            "MediaLibraryStatistics", "LastScanned", "database.config.type", "DatabaseConfigType"
             );
 
-    public static void migrateKeys() {
+    public static Map<String, String> getMigratedPropertyKeys() {
         Map<String, String> keyMaps = new LinkedHashMap<>();
         OBSOLETE_KEYS.forEach(x -> keyMaps.put(x, null));
-        keyMaps.put("database.varchar.maxlength", KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH);
-        keyMaps.put("database.config.type", KEY_DATABASE_CONFIG_TYPE);
-        keyMaps.put("database.config.embed.driver", KEY_DATABASE_CONFIG_EMBED_DRIVER);
-        keyMaps.put("database.config.embed.url", KEY_DATABASE_CONFIG_EMBED_URL);
-        keyMaps.put("database.config.embed.username", KEY_DATABASE_CONFIG_EMBED_USERNAME);
-        keyMaps.put("database.config.embed.password", KEY_DATABASE_CONFIG_EMBED_PASSWORD);
-        keyMaps.put("database.config.jndi.name", KEY_DATABASE_CONFIG_JNDI_NAME);
-        keyMaps.put("database.usertable.quote", KEY_DATABASE_USERTABLE_QUOTE);
+
+        keyMaps.put("database.config.embed.driver", "DatabaseConfigEmbedDriver");
+        keyMaps.put("DatabaseConfigEmbedDriver", KEY_DATABASE_DRIVER);
+
+        keyMaps.put("database.config.embed.url", "DatabaseConfigEmbedUrl");
+        keyMaps.put("DatabaseConfigEmbedUrl", KEY_DATABASE_URL);
+
+        keyMaps.put("database.config.embed.username", "DatabaseConfigEmbedUsername");
+        keyMaps.put("DatabaseConfigEmbedUsername", KEY_DATABASE_USERNAME);
+
+        keyMaps.put("database.config.embed.password", "DatabaseConfigEmbedPassword");
+        keyMaps.put("DatabaseConfigEmbedPassword", KEY_DATABASE_PASSWORD);
+
+        keyMaps.put("database.config.jndi.name", "DatabaseConfigJNDIName");
+        keyMaps.put("DatabaseConfigJNDIName", KEY_DATABASE_JNDI_NAME);
+
+        keyMaps.put("database.varchar.maxlength", "DatabaseMysqlMaxlength");
+        keyMaps.put("DatabaseMysqlMaxlength", KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH);
+
+        keyMaps.put("database.usertable.quote", "DatabaseUsertableQuote");
+        keyMaps.put("DatabaseUsertableQuote", KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
+
         keyMaps.put("airsonic.rememberMeKey", KEY_REMEMBER_ME_KEY);
-        migrateKeys(keyMaps);
+
+        return keyMaps;
     }
 
-    public static void migrateKeys(Map<String, String> keyMaps) {
-        ConfigurationPropertiesService cps = ConfigurationPropertiesService.getInstance();
+    public static void migratePropertySourceKeys(Map<String, String> keyMaps, PropertySource<?> src, Map<String, Object> migrated) {
+        Map<String, Object> temp = new HashMap<>();
+        // needs to be processed serially
+        keyMaps.entrySet().stream()
+                // ps has the property we're trying to migrate (either directly or migrated earlier within the chain)
+                .filter(e -> StringUtils.isNotBlank(Optional.ofNullable(src.getProperty(e.getKey())).map(Object::toString).orElse(temp.getOrDefault(e.getKey(), "").toString())))
+                // we're not migrating to null, i.e. trying to delete the property
+                .filter(e -> e.getValue() != null)
+                // we're not migrating to a property that is already occupied
+                .filter(e -> StringUtils.isBlank(Optional.ofNullable(src.getProperty(e.getValue())).map(Object::toString).orElse(temp.getOrDefault(e.getValue(), "").toString())))
+                .forEach(e -> {
+                    Object val = Optional.ofNullable(src.getProperty(e.getKey())).orElse(temp.get(e.getKey()));
+                    temp.put(e.getValue(), val);
+                    if (migrated.containsKey(e.getValue())) {
+                        LOG.info("Skipping migrating property [{}] to [{}] in {} (already migrated)", e.getKey(), e.getValue(), src.getName());
+                    } else {
+                        LOG.info("Migrating property [{}] to [{}] in {}", e.getKey(), e.getValue(), src.getName());
+                        migrated.put(e.getValue(), val);
+                    }
+                });
+    }
+
+    public static void migratePropFileKeys(Map<String, String> keyMaps, ConfigurationPropertiesService cps) {
         Boolean retainObsoleteKeys = Optional.ofNullable(cps.getProperty(KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS)).map(x -> Boolean.valueOf((String) x)).orElse(true);
 
         // needs to be processed serially
         keyMaps.entrySet().stream().filter(e -> cps.containsKey(e.getKey())).forEach(e -> {
             if (e.getValue() != null && !cps.containsKey(e.getValue())) {
-                LOG.info("Migrating obsolete property [{}] to [{}]", e.getKey(), e.getValue());
+                LOG.info("Migrating property [{}] to [{}] in properties file", e.getKey(), e.getValue());
                 cps.setProperty(e.getValue(), cps.getProperty(e.getKey()));
             }
 
             // delete old property
             if (!retainObsoleteKeys) {
-                LOG.info("Removing obsolete property [{}]", e.getKey());
+                LOG.info("Removing obsolete property [{}] in properties file", e.getKey());
                 cps.clearProperty(e.getKey());
             }
         });
 
         cps.save();
+    }
+
+    public static void setDefaultConstants(Environment env, Map<String, Object> defaultConstants) {
+        // if jndi is set, everything datasource-related is ignored
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_URL))) {
+            defaultConstants.put(KEY_DATABASE_URL, getDefaultJDBCUrl());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_USERNAME))) {
+            defaultConstants.put(KEY_DATABASE_USERNAME, getDefaultJDBCUsername());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_PASSWORD))) {
+            defaultConstants.put(KEY_DATABASE_PASSWORD, getDefaultJDBCPassword());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_ROLLBACK_FILE))) {
+            defaultConstants.put(
+                    KEY_DATABASE_MIGRATION_ROLLBACK_FILE,
+                    getAirsonicHome().toAbsolutePath().resolve("rollback.sql").toString());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH))) {
+            defaultConstants.put(
+                    KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH,
+                    DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH.toString());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE))) {
+            defaultConstants.put(
+                    KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE,
+                    DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER))) {
+            defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER, Util.getDefaultMusicFolder());
+        }
     }
 
     public static Path getAirsonicHome() {
@@ -1395,69 +1462,60 @@ public class SettingsService {
         setString(KEY_RECAPTCHA_SECRET_KEY, recaptchaSecretKey);
     }
 
-    public DataSourceConfigType getDatabaseConfigType() {
-        String raw = getString(KEY_DATABASE_CONFIG_TYPE, DEFAULT_DATABASE_CONFIG_TYPE.name());
-        return DataSourceConfigType.valueOf(StringUtils.upperCase(raw));
+    public String getDatabaseDriver() {
+        return getString(KEY_DATABASE_DRIVER, DEFAULT_DATABASE_DRIVER);
     }
 
-    public void setDatabaseConfigType(DataSourceConfigType databaseConfigType) {
-        setString(KEY_DATABASE_CONFIG_TYPE, databaseConfigType.name());
+    public void setDatabaseDriver(String driver) {
+        setString(KEY_DATABASE_DRIVER, driver);
     }
 
-    public String getDatabaseConfigEmbedDriver() {
-        return getString(KEY_DATABASE_CONFIG_EMBED_DRIVER, DEFAULT_DATABASE_CONFIG_EMBED_DRIVER);
+    public String getDatabaseUrl() {
+        return getString(KEY_DATABASE_URL, DEFAULT_DATABASE_URL);
     }
 
-    public void setDatabaseConfigEmbedDriver(String embedDriver) {
-        setString(KEY_DATABASE_CONFIG_EMBED_DRIVER, embedDriver);
+    public void setDatabaseUrl(String url) {
+        setString(KEY_DATABASE_URL, url);
     }
 
-    public String getDatabaseConfigEmbedUrl() {
-        return getString(KEY_DATABASE_CONFIG_EMBED_URL, DEFAULT_DATABASE_CONFIG_EMBED_URL);
+    public String getDatabaseUsername() {
+        return getString(KEY_DATABASE_USERNAME, DEFAULT_DATABASE_USERNAME);
     }
 
-    public void setDatabaseConfigEmbedUrl(String url) {
-        setString(KEY_DATABASE_CONFIG_EMBED_URL, url);
+    public void setDatabaseUsername(String username) {
+        setString(KEY_DATABASE_USERNAME, username);
     }
 
-    public String getDatabaseConfigEmbedUsername() {
-        return getString(KEY_DATABASE_CONFIG_EMBED_USERNAME, DEFAULT_DATABASE_CONFIG_EMBED_USERNAME);
+    public String getDatabasePassword() {
+        return getString(KEY_DATABASE_PASSWORD, DEFAULT_DATABASE_PASSWORD);
     }
 
-    public void setDatabaseConfigEmbedUsername(String username) {
-        setString(KEY_DATABASE_CONFIG_EMBED_USERNAME, username);
+    public void setDatabasePassword(String password) {
+        setString(KEY_DATABASE_PASSWORD, password);
     }
 
-    public String getDatabaseConfigEmbedPassword() {
-        return getString(KEY_DATABASE_CONFIG_EMBED_PASSWORD, DEFAULT_DATABASE_CONFIG_EMBED_PASSWORD);
+    public String getDatabaseJNDIName() {
+        return getString(KEY_DATABASE_JNDI_NAME, DEFAULT_DATABASE_JNDI_NAME);
     }
 
-    public void setDatabaseConfigEmbedPassword(String password) {
-        setString(KEY_DATABASE_CONFIG_EMBED_PASSWORD, password);
-    }
-
-    public String getDatabaseConfigJNDIName() {
-        return getString(KEY_DATABASE_CONFIG_JNDI_NAME, DEFAULT_DATABASE_CONFIG_JNDI_NAME);
-    }
-
-    public void setDatabaseConfigJNDIName(String jndiName) {
-        setString(KEY_DATABASE_CONFIG_JNDI_NAME, jndiName);
+    public void setDatabaseJNDIName(String jndiName) {
+        setString(KEY_DATABASE_JNDI_NAME, jndiName);
     }
 
     public Integer getDatabaseMysqlVarcharMaxlength() {
-        return getInt(KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH, DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH);
+        return getInt(KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH, DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH);
     }
 
     public void setDatabaseMysqlVarcharMaxlength(int maxlength) {
-        setInt(KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH, maxlength);
+        setInt(KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH, maxlength);
     }
 
     public String getDatabaseUsertableQuote() {
-        return getString(KEY_DATABASE_USERTABLE_QUOTE, DEFAULT_DATABASE_USERTABLE_QUOTE);
+        return getString(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE, DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
     }
 
     public void setDatabaseUsertableQuote(String usertableQuote) {
-        setString(KEY_DATABASE_USERTABLE_QUOTE, usertableQuote);
+        setString(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE, usertableQuote);
     }
 
     public String getJWTKey() {
@@ -1513,14 +1571,13 @@ public class SettingsService {
     }
 
     public void resetDatabaseToDefault() {
-        setDatabaseConfigEmbedDriver(DEFAULT_DATABASE_CONFIG_EMBED_DRIVER);
-        setDatabaseConfigEmbedPassword(DEFAULT_DATABASE_CONFIG_EMBED_PASSWORD);
-        setDatabaseConfigEmbedUrl(DEFAULT_DATABASE_CONFIG_EMBED_URL);
-        setDatabaseConfigEmbedUsername(DEFAULT_DATABASE_CONFIG_EMBED_USERNAME);
-        setDatabaseConfigJNDIName(DEFAULT_DATABASE_CONFIG_JNDI_NAME);
-        setDatabaseMysqlVarcharMaxlength(DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH);
-        setDatabaseUsertableQuote(DEFAULT_DATABASE_USERTABLE_QUOTE);
-        setDatabaseConfigType(DEFAULT_DATABASE_CONFIG_TYPE);
+        setDatabaseDriver(DEFAULT_DATABASE_DRIVER);
+        setDatabasePassword(DEFAULT_DATABASE_PASSWORD);
+        setDatabaseUrl(DEFAULT_DATABASE_URL);
+        setDatabaseUsername(DEFAULT_DATABASE_USERNAME);
+        setDatabaseJNDIName(DEFAULT_DATABASE_JNDI_NAME);
+        setDatabaseMysqlVarcharMaxlength(DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH);
+        setDatabaseUsertableQuote(DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
     }
 
     String getPlaylistExportFormat() {

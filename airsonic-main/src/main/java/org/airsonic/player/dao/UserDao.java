@@ -42,6 +42,8 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.airsonic.player.service.SettingsService.KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE;
+
 /**
  * Provides user-related database services.
  *
@@ -84,7 +86,7 @@ public class UserDao extends AbstractDao {
     private final String userTable;
 
     @Autowired
-    public UserDao(@Value("${DatabaseUsertableQuote:}") String userTableQuote) {
+    public UserDao(@Value("${" + KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE + ":}") String userTableQuote) {
         this.userTable = userTableQuote + "user" + userTableQuote;
     }
 

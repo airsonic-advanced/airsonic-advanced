@@ -1,6 +1,7 @@
 package org.airsonic.player.api.jukebox;
 
 import org.airsonic.player.TestCaseUtils;
+import org.airsonic.player.TestCaseUtils.TestDao;
 import org.airsonic.player.api.ScanningTestUtils;
 import org.airsonic.player.controller.SubsonicRESTController;
 import org.airsonic.player.dao.*;
@@ -39,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = AbstractAirsonicRestApiJukeboxIntTest.Config.class)
+@SpringBootTest(classes = {AbstractAirsonicRestApiJukeboxIntTest.Config.class, TestDao.class})
 @AutoConfigureMockMvc
 public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
@@ -73,7 +74,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     private static String AIRSONIC_API_VERSION = TestCaseUtils.restApiVersion();
 
     private static boolean dataBasePopulated;
-    private static DaoHelper staticDaoHelper;
+    private static TestDao staticTestDao;
     private static SettingsService staticSettingsService;
     private static UUID cleanupId = null;
 
@@ -90,7 +91,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     @Autowired
     private MediaFileDao mediaFileDao;
     @Autowired
-    private DaoHelper daoHelper;
+    private TestDao testDao;
     @Autowired
     private AlbumDao albumDao;
     @Autowired
@@ -105,11 +106,11 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     @AfterClass
     public static void cleanDataBase() {
-        staticDaoHelper.getJdbcTemplate().execute("delete from player");
+        staticTestDao.getJdbcTemplate().execute("delete from player");
         ScanningTestUtils.after(cleanupId, staticSettingsService);
         cleanupId = null;
         staticSettingsService = null;
-        staticDaoHelper = null;
+        staticTestDao = null;
         dataBasePopulated = false;
     }
 
@@ -124,7 +125,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
      */
     private void populateDatabase() {
         if (!dataBasePopulated) {
-            staticDaoHelper = daoHelper;
+            staticTestDao = testDao;
             staticSettingsService = settingsService;
 
             cleanupId = ScanningTestUtils.before(MusicFolderTestData.getTestMusicFolders(), settingsService,mediaScannerService);

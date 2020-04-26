@@ -1,5 +1,6 @@
 org.springframework.context.ApplicationListener=\
-  org.airsonic.player.spring.LoggingFileOverrideListener
+  org.airsonic.player.spring.LoggingFileOverrideListener,\
+  org.airsonic.player.spring.StartupEventListener
 
 org.springframework.context.ApplicationContextInitializer=\
   org.airsonic.player.spring.CustomPropertySourceConfigurer

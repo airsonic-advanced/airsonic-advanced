@@ -1,7 +1,6 @@
 package org.airsonic.player.service.search;
 
 import org.airsonic.player.api.ScanningTestUtils;
-import org.airsonic.player.dao.DaoHelper;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.MediaScannerService;
@@ -41,9 +40,6 @@ public abstract class AbstractAirsonicHomeTest {
 
     // Above.
     private static AtomicBoolean dataBaseReady = new AtomicBoolean();
-
-    @Autowired
-    protected DaoHelper daoHelper;
 
     @Autowired
     protected MediaScannerService mediaScannerService;
