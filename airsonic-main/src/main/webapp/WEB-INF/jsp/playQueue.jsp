@@ -688,9 +688,9 @@
             }
 
             this.updateWindowTitle(song);
+            this.showMediaSessionMetadata(song);
 
           <c:if test="${model.notify}">
-            this.showMediaSessionMetadata(song);
             this.showNotification(song);
           </c:if>
         },
