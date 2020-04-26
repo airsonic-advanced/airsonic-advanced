@@ -690,6 +690,7 @@
             this.updateWindowTitle(song);
 
           <c:if test="${model.notify}">
+            this.showMediaSessionMetadata(song);
             this.showNotification(song);
           </c:if>
         },
@@ -977,6 +978,26 @@
             top.document.title = song.title + " - " + song.artist + " - Airsonic";
         },
 
+        showMediaSessionMetadata(song) {
+            if ('mediaSession' in navigator) {
+                var metadata = new MediaMetadata({
+                    title: song.title,
+                    artist: song.artist,
+                    album: song.album,
+                    artwork: [
+                        { src: "coverArt.view?id=" + song.id + "&size=96", sizes: '96x96', type: 'image/jpeg' },
+                        { src: "coverArt.view?id=" + song.id + "&size=128", sizes: '128x128', type: 'image/jpeg' },
+                        { src: "coverArt.view?id=" + song.id + "&size=256", sizes: '256x256', type: 'image/jpeg' },
+                        { src: "coverArt.view?id=" + song.id + "&size=512", sizes: '512x512', type: 'image/jpeg' }
+                    ]
+                });
+                navigator.mediaSession.metadata = metadata;
+                navigator.mediaSession.setActionHandler('play', () => this.onStart());
+                navigator.mediaSession.setActionHandler('pause', () => this.onStop());
+                navigator.mediaSession.setActionHandler('previoustrack', () => this.onPrevious());
+                navigator.mediaSession.setActionHandler('nexttrack', () => this.onNext('OFF'));
+            }
+        },
         showNotification(song) {
             if (!("Notification" in window)) {
                 return;
