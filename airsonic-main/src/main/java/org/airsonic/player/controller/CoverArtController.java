@@ -20,7 +20,6 @@
 package org.airsonic.player.controller;
 
 import com.google.common.io.MoreFiles;
-
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.ArtistDao;
 import org.airsonic.player.domain.*;
@@ -96,9 +95,12 @@ public class CoverArtController implements LastModified {
         semaphore = new Semaphore(settingsService.getCoverArtConcurrency());
     }
 
+    @Override
     public long getLastModified(HttpServletRequest request) {
         CoverArtRequest coverArtRequest = createCoverArtRequest(request);
-        //        LOG.info("getLastModified - " + coverArtRequest + ": " + new Date(result));
+        if (coverArtRequest == null) {
+            return -1L;
+        }
         return coverArtRequest.lastModified().toEpochMilli();
     }
 

@@ -1,19 +1,211 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/playlistService.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/starService.js'/>"></script>
+    <%@ include file="table.jsp" %>
+    <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" language="javascript">
-
-        var playlist;
-        var songs;
+        var playlistId = ${model.playlist.id};
+        var songs = [];
 
         function init() {
-            dwr.engine.setErrorHandler(null);
+            var ratingOnImage = "<spring:theme code='ratingOnImage'/>";
+            var ratingOffImage = "<spring:theme code='ratingOffImage'/>";
+
+            playlistMusicTable = $("#playlistMusic").DataTable( {
+                deferRender: true,
+                ordering: true,
+                order: [],
+                orderFixed: [ 4, 'asc' ],
+                orderMulti: false,
+                pageLength: ${model.initialPaginationSize},
+              <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSize)) ? '' : ', '.concat(model.initialPaginationSize)}" />
+                lengthMenu: [[10, 20, 50, 100, -1 ${paginationaddition}], [10, 20, 50, 100, "All" ${paginationaddition}]],
+                processing: true,
+                autoWidth: true,
+                scrollCollapse: true,
+                scrollY: "60vh",
+              <c:if test="${model.editAllowed}">
+                rowReorder: {
+                    dataSrc: "seq",
+                    selector: "td:not(.not-draggable)"
+                },
+              </c:if>
+                language: {
+                    emptyTable: "<fmt:message key='playlist2.empty'/>"
+                },
+                ajax: function(ajaxData, callback) {
+                    for ( var i=0, len=songs.length ; i<len ; i++ ) {
+                      songs[i].seq = i;
+                    }
+                    callback({data: songs});
+                },
+                stripeClasses: ["bgcolor2", "bgcolor1"],
+                columnDefs: [{ targets: "_all", orderable: false }],
+                columns: [
+                    { data: "seq", className: "detail fit", visible: true },
+                    { data: "starred",
+                      name: "starred",
+                      className: "fit not-draggable",
+                      render: function(starred, type) {
+                          if (type == "display") {
+                              return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
+                          }
+                          return starred ? "onlystarred" : "unstarred";
+                      }
+                    },
+                    { data: "present",
+                      searchable: false,
+                      name: "play",
+                      className: "fit not-draggable",
+                      render: function(present, type, row) {
+                          if (type == "display") {
+                              if (present) {
+                                  return "<img class='playSong' src=\"<spring:theme code='playImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.play'/>\" title=\"<fmt:message key='common.play'/>\">";
+                              } else {
+                                  return "";
+                              }
+                          }
+                          return present ? "available" : "missing";
+                      }
+                    },
+                    { data: "present",
+                      searchable: false,
+                      name: "addLast",
+                      className: "fit not-draggable",
+                      render: function(present, type, row) {
+                          if (type == "display") {
+                              if (present) {
+                                  return "<img class='addSongLast' src=\"<spring:theme code='addImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.add'/>\" title=\"<fmt:message key='common.add'/>\">";
+                              } else {
+                                  return "";
+                              }
+                          }
+                          return present ? "available" : "missing";
+                      }
+                    },
+                    { data: "present",
+                      searchable: false,
+                      name: "addNext",
+                      className: "fit not-draggable",
+                      render: function(present, type, row) {
+                          if (type == "display") {
+                              if (present) {
+                                  return "<img class='addSongNext' src=\"<spring:theme code='addNextImage'/>\" style='height:18px;' alt=\"<fmt:message key='main.addnext'/>\" title=\"<fmt:message key='main.addnext'/>\">";
+                              } else {
+                                  return "";
+                              }
+                          }
+                          return present ? "available" : "missing";
+                      }
+                    },
+                    { data: "present",
+                      className: "detail fit",
+                      render: function(present, type, row) {
+                          if (type == "display") {
+                              if (present) {
+                                  return "";
+                              } else {
+                                  return "<span class='playlist-missing'><fmt:message key='playlist.missing'/></span>";
+                              }
+                          }
+                          return present ? "available" : "missing";
+                      }
+                    },
+                    { data: "title",
+                      className: "detail songTitle truncate",
+                      render: function(title, type, row) {
+                          if (type == "display" && title != null) {
+                              return $("<span>").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
+                          }
+                          return title;
+                      }
+                    },
+                    { data: "album",
+                      className: "detail truncate",
+                      render: function(album, type, row) {
+                          if (type == "display" && album != null) {
+                              return $("<a>").attr("href", "main.view?id=" + row.id).attr("target", "main").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
+                          }
+                          return album;
+                      }
+                    },
+                    { data: "artist",
+                      className: "detail truncate",
+                      render: function(artist, type, row) {
+                          if (type == "display" && artist != null) {
+                              return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
+                          }
+                          return artist;
+                      }
+                    },
+                    { data: "duration",
+                      className: "detail fit rightalign",
+                      render: function(data, type, row) {
+                          if (type == "display" && data != null) {
+                              return formatDuration(Math.round(data));
+                          }
+                          return data;
+                      }
+                    },
+                    { data: null,
+                      searchable: false,
+                      name: "remove",
+                      visible: ${model.editAllowed},
+                      className: "fit not-draggable",
+                      defaultContent: "<img class='removeSong' src=\"<spring:theme code='removeImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist.remove'/>\" title=\"<fmt:message key='playlist.remove'/>\">"
+                    }
+                ]
+            } );
+
+            $("#playlistMusic tbody").on( "click", ".starSong", function () {
+                onStar(playlistMusicTable.row( $(this).parents('tr') ).index());
+            } );
+            $("#playlistMusic tbody").on( "click", ".playSong", function () {
+                onPlay(playlistMusicTable.row( $(this).parents('tr') ).index());
+            } );
+            $("#playlistMusic tbody").on( "click", ".addSongLast", function () {
+                onAdd(playlistMusicTable.row( $(this).parents('tr') ).index());
+            } );
+            $("#playlistMusic tbody").on( "click", ".addSongNext", function () {
+                onAddNext(playlistMusicTable.row( $(this).parents('tr') ).index());
+            } );
+
+            top.StompClient.subscribe("playlist.jsp", {
+                '/user/queue/playlists/deleted': function(msg) {
+                    deletedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/topic/playlists/deleted': function(msg) {
+                    deletedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/user/queue/playlists/updated': function(msg) {
+                    updatedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/topic/playlists/updated': function(msg) {
+                    updatedPlaylistCallback(JSON.parse(msg.body));
+                },
+                '/user/queue/playlists/files/${model.playlist.id}': function(msg) {
+                    updatedPlaylistEntriesCallback(JSON.parse(msg.body));
+                },
+                //one-time population only
+                '/app/playlists/${model.playlist.id}': function(msg) {
+                    updatedPlaylistCallback(JSON.parse(msg.body));
+                }
+            });
+
+            <c:if test="${model.editAllowed}">
+            $("#playlistMusic tbody").on( "click", ".removeSong", function () {
+                onRemove(playlistMusicTable.row( $(this).parents('tr') ).index());
+            } );
+            playlistMusicTable.on( "row-reordered", function (e, diff, edit) {
+                if (diff.length > 0) {
+                    playlistMusicTable.one( "draw", function () {
+                        onRearrange(playlistMusicTable.rows().indexes().toArray());
+                    });
+                }
+            });
+
             $("#dialog-edit").dialog({resizable: true, width:400, autoOpen: false,
                 buttons: {
                     "<fmt:message key="common.save"/>": function() {
@@ -21,9 +213,7 @@
                         var name = $("#newName").val();
                         var comment = $("#newComment").val();
                         var shared = $("#newShared").is(":checked");
-                        $("#name").text(name);
-                        $("#comment").text(comment);
-                        playlistService.updatePlaylist(playlist.id, name, comment, shared, function (playlistInfo){playlistCallback(playlistInfo); top.left.updatePlaylists()});
+                        top.StompClient.send("/app/playlists/update", JSON.stringify({id: playlistId, name: name, comment: comment, shared: shared}));
                     },
                     "<fmt:message key="common.cancel"/>": function() {
                         $(this).dialog("close");
@@ -34,105 +224,63 @@
                 buttons: {
                     "<fmt:message key="common.delete"/>": function() {
                         $(this).dialog("close");
-                        playlistService.deletePlaylist(playlist.id, function (){top.left.updatePlaylists(); location = "playlists.view";});
+                        top.StompClient.send("/app/playlists/delete", playlistId);
                     },
                     "<fmt:message key="common.cancel"/>": function() {
                         $(this).dialog("close");
                     } 
                 }});
+            </c:if>
+        }
 
-            $("#playlistBody").sortable({
-                stop: function(event, ui) {
-                    var indexes = [];
-                    $("#playlistBody").children().each(function() {
-                        var id = $(this).attr("id").replace("pattern", "");
-                        if (id.length > 0) {
-                            indexes.push(parseInt(id) - 1);
-                        }
-                    });
-                    onRearrange(indexes);
-                },
-                cursor: "move",
-                axis: "y",
-                containment: "parent",
-                helper: function(e, tr) {
-                    var originals = tr.children();
-                    var trclone = tr.clone();
-                    trclone.children().each(function(index) {
-                        // Set cloned cell sizes to match the original sizes
-                        $(this).width(originals.eq(index).width());
-                        $(this).css("maxWidth", originals.eq(index).width());
-                        $(this).css("border-top", "1px solid black");
-                        $(this).css("border-bottom", "1px solid black");
-                    });
-                    return trclone;
+        function updatePlaylistEntries() {
+            top.StompClient.send("/app/playlists/files/" + playlistId, "");
+        }
+
+        function deletedPlaylistCallback(id) {
+            $().toastmessage('showSuccessToast', '<fmt:message key="playlist.toast.deletedplaylist"/> ' + id);
+            if (playlistId == id) {
+                location = "playlists.view";
+            }
+        }
+
+        function updatedPlaylistCallback(playlist) {
+            if (playlistId == playlist.id) {
+                if (playlist.filesChanged) {
+                    updatePlaylistEntries();
                 }
-            });
 
-            getPlaylist();
-        }
+                $("#name").text(playlist.name);
+                $("#songCount").text(playlist.fileCount);
+                $("#duration").text(formatDuration(Math.round(playlist.duration)));
+                $("#comment").text(playlist.comment);
+                $("#lastupdated").text('<fmt:message key="playlist2.lastupdated"/> ' + new Date(playlist.changed));
 
-        function getPlaylist() {
-            playlistService.getPlaylist(${model.playlist.id}, playlistCallback);
-        }
-
-        function playlistCallback(playlistInfo) {
-            this.playlist = playlistInfo.playlist;
-            this.songs = playlistInfo.entries;
-
-            if (songs.length == 0) {
-                $("#empty").show();
-            } else {
-                $("#empty").hide();
-            }
-
-            $("#songCount").text(playlist.fileCount);
-            $("#duration").text(playlist.durationAsString);
-
-            if (playlist.shared) {
-                $("#shared").html("<fmt:message key="playlist2.shared"/>");
-            } else {
-                $("#shared").html("<fmt:message key="playlist2.notshared"/>");
-            }
-
-            // Delete all the rows except for the "pattern" row
-            dwr.util.removeAllRows("playlistBody", { filter:function(tr) {
-                return (tr.id != "pattern");
-            }});
-
-            // Create a new set cloned from the pattern row
-            for (var i = 0; i < songs.length; i++) {
-                var song  = songs[i];
-                var id = i + 1;
-                dwr.util.cloneNode("pattern", { idSuffix:id });
-                if (song.starred) {
-                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOnImage'/>");
+                if (playlist.shared) {
+                    $("#shared").html("<fmt:message key="playlist2.shared"/>");
                 } else {
-                    $("#starSong" + id).attr("src", "<spring:theme code='ratingOffImage'/>");
+                    $("#shared").html("<fmt:message key="playlist2.notshared"/>");
                 }
-                if (!song.present) {
-                    $("#missing" + id).show();
-                }
-                $("#index" + id).text(id);
-                $("#title" + id).text(song.title);
-                $("#title" + id).attr("title", song.title);
-                $("#album" + id).text(song.album);
-                $("#album" + id).attr("title", song.album);
-                $("#albumUrl" + id).attr("href", "main.view?id=" + song.id);
-                $("#artist" + id).text(song.artist);
-                $("#artist" + id).attr("title", song.artist);
-                $("#songDuration" + id).text(song.durationAsString);
 
-                // Note: show() method causes page to scroll to top.
-                $("#pattern" + id).css("display", "table-row");
+                $("#newName").val(playlist.name);
+                $("#newComment").val(playlist.comment);
+                $("#newShared").prop("checked", playlist.shared);
             }
+        }
+
+        function updatedPlaylistEntriesCallback(entries) {
+            this.songs = entries
+            playlistMusicTable.ajax.reload().columns.adjust();
         }
 
         function onPlay(index) {
-            top.playQueue.onPlayPlaylist(playlist.id, index);
+            top.playQueue.onPlayPlaylist(playlistId, index);
         }
         function onPlayAll() {
-            top.playQueue.onPlayPlaylist(playlist.id);
+            top.playQueue.onPlayPlaylist(playlistId);
+        }
+        function onAddAll() {
+            top.playQueue.onAddPlaylist(playlistId);
         }
         function onAdd(index) {
             top.playQueue.onAdd(songs[index].id);
@@ -143,13 +291,21 @@
             $().toastmessage('showSuccessToast', '<fmt:message key="main.addnext.toast"/>')
         }
         function onStar(index) {
-            playlistService.toggleStar(playlist.id, index, playlistCallback);
+            songs[index].starred = !songs[index].starred;
+
+            if (songs[index].starred) {
+                top.StompClient.send("/app/rate/mediafile/star", songs[index].id);
+            } else {
+                top.StompClient.send("/app/rate/mediafile/unstar", songs[index].id);
+            }
+            playlistMusicTable.cell(index, "starred:name").invalidate();
         }
+        <c:if test="${model.editAllowed}">
         function onRemove(index) {
-            playlistService.remove(playlist.id, index, function (playlistInfo){playlistCallback(playlistInfo); top.left.updatePlaylists()});
+            top.StompClient.send("/app/playlists/files/remove", JSON.stringify({id: playlistId, modifierIds: [index]}));
         }
         function onRearrange(indexes) {
-            playlistService.rearrange(playlist.id, indexes, playlistCallback);
+            top.StompClient.send("/app/playlists/files/rearrange", JSON.stringify({id: playlistId, modifierIds: indexes}));
         }
         function onEditPlaylist() {
             $("#dialog-edit").dialog("open");
@@ -157,6 +313,7 @@
         function onDeletePlaylist() {
             $("#dialog-delete").dialog("open");
         }
+        </c:if>
 
     </script>
 
@@ -164,8 +321,6 @@
         .playlist-missing {
             color: red;
             border: 1px solid red;
-            display: none;
-            font-size: 90%;
             padding-left: 5px;
             padding-right: 5px;
             margin-right: 5px;
@@ -182,10 +337,10 @@
 </c:import>
 </div>
 
-<h1><a href="playlists.view"><fmt:message key="left.playlists"/></a> &raquo; <span id="name">${fn:escapeXml(model.playlist.name)}</span></h1>
+<h1><a href="playlists.view"><fmt:message key="left.playlists"/></a> &raquo; <span id="name"></span></h1>
 <h2>
     <span class="header"><a href="javascript:void(0)" onclick="onPlayAll();"><fmt:message key="common.play"/></a></span>
-
+        | <span class="header"><a href="javascript:void(0)" onclick="onAddAll();"><fmt:message key="main.addall"/></a></span>
     <c:if test="${model.user.downloadRole}">
         <c:url value="download.view" var="downloadUrl"><c:param name="playlist" value="${model.playlist.id}"/></c:url>
         | <span class="header"><a href="${downloadUrl}"><fmt:message key="common.download"/></a></span>
@@ -203,7 +358,7 @@
 
 </h2>
 
-<div id="comment" class="detail" style="padding-top:0.2em">${fn:escapeXml(model.playlist.comment)}</div>
+<div id="comment" class="detail" style="padding-top:0.2em"></div>
 
 <div class="detail" style="padding-top:0.2em">
     <span id="songCount"></span> <fmt:message key="playlist2.songs"/> &ndash; <span id="duration"></span>
@@ -216,45 +371,18 @@
     ${fn:escapeXml(created)}.
 </div>
 <div class="detail" style="padding-top:0.2em">
+    <span id="lastupdated"></span>.
+</div>
+<div class="detail" style="padding-top:0.2em">
     <span id="shared"></span>.
 </div>
 
 <div style="height:0.7em;clear:both"></div>
 
-<p id="empty" style="display: none;"><em><fmt:message key="playlist2.empty"/></em></p>
-
-<table class="music" style="cursor:pointer">
-    <tbody id="playlistBody">
-    <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
-        <td class="fit">
-            <img id="starSong" onclick="onStar(this.id.substring(8) - 1)" src="<spring:theme code='ratingOffImage'/>"
-                 style="cursor:pointer;height:18px;" alt="" title=""></td>
-        <td class="fit">
-            <img id="play" src="<spring:theme code='playImage'/>" alt="<fmt:message key='common.play'/>" title="<fmt:message key='common.play'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onPlay(this.id.substring(4) - 1)"></td>
-        <td class="fit">
-            <img id="add" src="<spring:theme code='addImage'/>" alt="<fmt:message key='common.add'/>" title="<fmt:message key='common.add'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAdd(this.id.substring(3) - 1)"></td>
-        <td class="fit" style="padding-right:30px">
-            <img id="addNext" src="<spring:theme code='addNextImage'/>" alt="<fmt:message key='main.addnext'/>" title="<fmt:message key='main.addnext'/>"
-                 style="padding-right:0.1em;cursor:pointer;height:18px;" onclick="onAddNext(this.id.substring(7) - 1)"></td>
-
-        <td class="fit rightalign"><span id="index">1</span></td>
-        <td class="fit"><span id="missing" class="playlist-missing"><fmt:message key="playlist.missing"/></span></td>
-        <td class="truncate"><span id="title" class="songTitle">Title</span></td>
-        <td class="truncate"><a id="albumUrl" target="main"><span id="album" class="detail">Album</span></a></td>
-        <td class="truncate"><span id="artist" class="detail">Artist</span></td>
-        <td class="fit rightalign"><span id="songDuration" class="detail">Duration</span></td>
-
-        <c:if test="${model.editAllowed}">
-            <td class="fit">
-                <img id="removeSong" onclick="onRemove(this.id.substring(10) - 1)" src="<spring:theme code='removeImage'/>"
-                     style="cursor:pointer;height:18px;" alt="<fmt:message key='playlist.remove'/>" title="<fmt:message key='playlist.remove'/>"></td>
-        </c:if>
-    </tr>
-    </tbody>
+<table class="music indent hover nowrap stripe compact hide-table-header" id="playlistMusic" style="cursor: pointer; width: 100%;">
 </table>
 
+<c:if test="${model.editAllowed}">
 <div id="dialog-delete" title="<fmt:message key='common.confirm'/>" style="display: none;">
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>
         <fmt:message key="playlist2.confirmdelete"/></p>
@@ -263,14 +391,15 @@
 <div id="dialog-edit" title="<fmt:message key='common.edit'/>" style="display: none;">
     <form>
         <label for="newName" style="display:block;"><fmt:message key="playlist2.name"/></label>
-        <input type="text" name="newName" id="newName" value="${fn:escapeXml(model.playlist.name)}" class="ui-widget-content"
+        <input type="text" name="newName" id="newName" value="" class="ui-widget-content"
                style="display:block;width:95%;"/>
         <label for="newComment" style="display:block;margin-top:1em"><fmt:message key="playlist2.comment"/></label>
-        <input type="text" name="newComment" id="newComment" value="${fn:escapeXml(model.playlist.comment)}" class="ui-widget-content"
+        <input type="text" name="newComment" id="newComment" value="" class="ui-widget-content"
                style="display:block;width:95%;"/>
-        <input type="checkbox" name="newShared" id="newShared" ${model.playlist.shared ? "checked='checked'" : ""} style="margin-top:1.5em" class="ui-widget-content"/>
+        <input type="checkbox" name="newShared" id="newShared" style="margin-top:1.5em" class="ui-widget-content"/>
         <label for="newShared"><fmt:message key="playlist2.public"/></label>
     </form>
 </div>
+</c:if>
 
 </body></html>

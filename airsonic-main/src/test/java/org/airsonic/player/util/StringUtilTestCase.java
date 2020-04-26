@@ -22,7 +22,6 @@ package org.airsonic.player.util;
 import junit.framework.TestCase;
 import org.apache.commons.lang.StringEscapeUtils;
 
-import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -51,23 +50,23 @@ public class StringUtilTestCase extends TestCase {
 
     public void testFormatBytes() {
         Locale locale = Locale.ENGLISH;
-        assertEquals("Error in formatBytes().", "918 B", StringUtil.formatBytes(918, locale));
-        assertEquals("Error in formatBytes().", "1023 B", StringUtil.formatBytes(1023, locale));
-        assertEquals("Error in formatBytes().", "1 KB", StringUtil.formatBytes(1024, locale));
-        assertEquals("Error in formatBytes().", "96 KB", StringUtil.formatBytes(98765, locale));
-        assertEquals("Error in formatBytes().", "1024 KB", StringUtil.formatBytes(1048575, locale));
-        assertEquals("Error in formatBytes().", "1.2 MB", StringUtil.formatBytes(1238476, locale));
+        assertEquals("Error in formatBytes().", "918 B", StringUtil.formatBytes(918L, locale));
+        assertEquals("Error in formatBytes().", "1023 B", StringUtil.formatBytes(1023L, locale));
+        assertEquals("Error in formatBytes().", "1 KB", StringUtil.formatBytes(1024L, locale));
+        assertEquals("Error in formatBytes().", "96 KB", StringUtil.formatBytes(98765L, locale));
+        assertEquals("Error in formatBytes().", "1024 KB", StringUtil.formatBytes(1048575L, locale));
+        assertEquals("Error in formatBytes().", "1.2 MB", StringUtil.formatBytes(1238476L, locale));
         assertEquals("Error in formatBytes().", "3.50 GB", StringUtil.formatBytes(3758096384L, locale));
         assertEquals("Error in formatBytes().", "410.00 TB", StringUtil.formatBytes(450799767388160L, locale));
         assertEquals("Error in formatBytes().", "4413.43 TB", StringUtil.formatBytes(4852617603375432L, locale));
 
         locale = new Locale("no", "", "");
-        assertEquals("Error in formatBytes().", "918 B", StringUtil.formatBytes(918, locale));
-        assertEquals("Error in formatBytes().", "1023 B", StringUtil.formatBytes(1023, locale));
-        assertEquals("Error in formatBytes().", "1 KB", StringUtil.formatBytes(1024, locale));
-        assertEquals("Error in formatBytes().", "96 KB", StringUtil.formatBytes(98765, locale));
-        assertEquals("Error in formatBytes().", "1024 KB", StringUtil.formatBytes(1048575, locale));
-        assertEquals("Error in formatBytes().", "1,2 MB", StringUtil.formatBytes(1238476, locale));
+        assertEquals("Error in formatBytes().", "918 B", StringUtil.formatBytes(918L, locale));
+        assertEquals("Error in formatBytes().", "1023 B", StringUtil.formatBytes(1023L, locale));
+        assertEquals("Error in formatBytes().", "1 KB", StringUtil.formatBytes(1024L, locale));
+        assertEquals("Error in formatBytes().", "96 KB", StringUtil.formatBytes(98765L, locale));
+        assertEquals("Error in formatBytes().", "1024 KB", StringUtil.formatBytes(1048575L, locale));
+        assertEquals("Error in formatBytes().", "1,2 MB", StringUtil.formatBytes(1238476L, locale));
         assertEquals("Error in formatBytes().", "3,50 GB", StringUtil.formatBytes(3758096384L, locale));
         assertEquals("Error in formatBytes().", "410,00 TB", StringUtil.formatBytes(450799767388160L, locale));
         assertEquals("Error in formatBytes().", "4413,43 TB", StringUtil.formatBytes(4852617603375432L, locale));
@@ -113,21 +112,6 @@ public class StringUtilTestCase extends TestCase {
         for (int i = 0; i < expected.length; i++) {
             assertEquals("Wrong criteria.", expected[i], actual[i]);
         }
-    }
-
-    public void testParseInts() {
-        doTestParseInts("123", 123);
-        doTestParseInts("1 2 3", 1, 2, 3);
-        doTestParseInts("10  20 \t\n 30", 10, 20, 30);
-
-        assertTrue("Error in parseInts().", StringUtil.parseInts(null).length == 0);
-        assertTrue("Error in parseInts().", StringUtil.parseInts("").length == 0);
-        assertTrue("Error in parseInts().", StringUtil.parseInts(" ").length == 0);
-        assertTrue("Error in parseInts().", StringUtil.parseInts("  ").length == 0);
-    }
-
-    private void doTestParseInts(String s, int... expected) {
-        assertEquals("Error in parseInts().", Arrays.toString(expected), Arrays.toString(StringUtil.parseInts(s)));
     }
 
     public void testParseLocale() {

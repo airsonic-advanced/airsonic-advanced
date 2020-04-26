@@ -31,6 +31,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,14 +49,17 @@ public class AbstractDao {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDao.class);
 
     @Autowired
-    private DaoHelper daoHelper;
+    JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     public JdbcTemplate getJdbcTemplate() {
-        return daoHelper.getJdbcTemplate();
+        return jdbcTemplate;
     }
 
     public NamedParameterJdbcTemplate getNamedParameterJdbcTemplate() {
-        return daoHelper.getNamedParameterJdbcTemplate();
+        return namedParameterJdbcTemplate;
     }
 
     protected static String questionMarks(String columns) {
@@ -71,7 +75,7 @@ public class AbstractDao {
 
     protected static Object[] convertToDBTypes(Object[] args) {
         return args == null ? null : Stream.of(args)
-                .map(x -> (Object) ((x instanceof Instant) ? Timestamp.from((Instant) x) : x))
+                .map(x -> ((x instanceof Instant) ? Timestamp.from((Instant) x) : x))
                 .collect(Collectors.toList())
                 .toArray();
     }
@@ -100,6 +104,25 @@ public class AbstractDao {
         LOG.trace("Updated {} rows", result);
         log(sql, t);
         return result;
+    }
+
+    protected int batchedUpdate(String sql, Collection<Object[]> batchArgs) {
+        long t = System.nanoTime();
+        // used to get around postgres's wire limit when sending a large number of params
+        int batchSize = 30000 / batchArgs.stream().findAny().map(x -> x.length).orElse(1);
+        LOG.trace("Executing query: [{}]", sql);
+        int[][] result = getJdbcTemplate().batchUpdate(sql,
+            batchArgs.parallelStream().map(AbstractDao::convertToDBTypes).collect(Collectors.toList()),
+            batchSize,
+            (ps, args) -> {
+                for (int i = 0; i < args.length; i++) {
+                    ps.setObject(i + 1, args[i]);
+                }
+            });
+        int tally = Arrays.stream(result).flatMapToInt(Arrays::stream).sum();
+        LOG.trace("Updated {} rows", tally);
+        log(sql, t);
+        return tally;
     }
 
     private void log(String sql, long startTimeNano) {
@@ -139,7 +162,7 @@ public class AbstractDao {
         return result;
     }
 
-    protected List<String> queryForStrings(String sql, Object... args) {
+    public List<String> queryForStrings(String sql, Object... args) {
         return queryForTypes(sql, String.class, args);
     }
 
@@ -151,7 +174,7 @@ public class AbstractDao {
         return namedQueryForTypes(sql, String.class, args);
     }
 
-    protected Integer queryForInt(String sql, Integer defaultValue, Object... args) {
+    public Integer queryForInt(String sql, Integer defaultValue, Object... args) {
         return queryForTypes(sql, Integer.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }
 
@@ -180,13 +203,4 @@ public class AbstractDao {
         List<T> list = namedQuery(sql, rowMapper, args);
         return list.isEmpty() ? null : list.get(0);
     }
-
-    public void setDaoHelper(DaoHelper daoHelper) {
-        this.daoHelper = daoHelper;
-    }
-
-    public void checkpoint() {
-        daoHelper.checkpoint();
-    }
-
 }

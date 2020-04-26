@@ -47,9 +47,6 @@ public class UserSettings {
     private Visibility playlistVisibility = new Visibility();
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
-    private String lastFmUsername;
-    private String lastFmPassword;
-    private String listenBrainzToken;
     private TranscodeScheme transcodeScheme = TranscodeScheme.OFF;
     private int selectedMusicFolderId = -1;
     private boolean partyModeEnabled;
@@ -157,30 +154,6 @@ public class UserSettings {
 
     public void setListenBrainzEnabled(boolean listenBrainzEnabled) {
         this.listenBrainzEnabled = listenBrainzEnabled;
-    }
-
-    public String getLastFmUsername() {
-        return lastFmUsername;
-    }
-
-    public void setLastFmUsername(String lastFmUsername) {
-        this.lastFmUsername = lastFmUsername;
-    }
-
-    public String getLastFmPassword() {
-        return lastFmPassword;
-    }
-
-    public void setLastFmPassword(String lastFmPassword) {
-        this.lastFmPassword = lastFmPassword;
-    }
-
-    public String getListenBrainzToken() {
-        return listenBrainzToken;
-    }
-
-    public void setListenBrainzToken(String listenBrainzToken) {
-        this.listenBrainzToken = listenBrainzToken;
     }
 
     public TranscodeScheme getTranscodeScheme() {

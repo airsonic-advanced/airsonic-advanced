@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.airsonic.player</groupId>
     <artifactId>airsonic</artifactId>
-    <version>10.6.0-SNAPSHOT</version>
+    <version>11.0.0-SNAPSHOT</version>
     <name>Airsonic</name>
     <packaging>pom</packaging>
     <organization>
@@ -13,11 +13,21 @@
     </organization>
     <inceptionYear>2016</inceptionYear>
 
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.2.6.RELEASE</version>
+        <relativePath />
+    </parent>
+
     <properties>
         <failOnDependencyWarning>true</failOnDependencyWarning>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cxf.version>3.3.4</cxf.version>
-        <spring.boot.version>2.2.2.RELEASE</spring.boot.version>
+        <java.version>11</java.version>
+        <cxf.version>3.3.6</cxf.version>
+        <!-- Temporarily here because Spring Boot had a Postgres driver with a breaking change, remove once spring boot updates or we move to a breaking change -->
+        <postgresql.version>42.2.12</postgresql.version>
+        <docker.container.repo>airsonicadvanced/airsonic-advanced</docker.container.repo>
     </properties>
 
     <repositories>
@@ -48,29 +58,10 @@
     </pluginRepositories>
 
     <scm>
-        <connection>scm:git:git://github.com/airsonic/airsonic.git</connection>
-        <developerConnection>scm:git:git@github.com:airsonic/airsonic.git</developerConnection>
-        <url>https://github.com/airsonic/airsonic.git</url>
+        <connection>scm:git:git://github.com/airsonic-advanced/airsonic-advanced.git</connection>
+        <developerConnection>scm:git:git@github.com:airsonic-advanced/airsonic-advanced.git</developerConnection>
+        <url>https://github.com/airsonic-advanced/airsonic-advanced.git</url>
     </scm>
-
-<!--    <ciManagement>
-        <system>continuum</system>
-        <notifiers>
-            <notifier>
-                <type>mail</type>
-                <configuration>
-                    <address>sindre@activeobjects.no</address>
-                </configuration>
-            </notifier>
-        </notifiers>
-    </ciManagement> -->
-
-    <developers>
-        <developer>
-            <name>Eugene E. Kashpureff Jr</name>
-            <email>eugene@kashpureff.org</email>
-        </developer>
-    </developers>
 
     <modules>
         <module>subsonic-rest-api</module>
@@ -80,20 +71,11 @@
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <!-- Import dependency management from Spring Boot -->
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring.boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
             <!-- Fix convergence issues -->
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm</artifactId>
-                <version>7.2</version>
+                <version>8.0.1</version>
             </dependency>
             <dependency>
                 <groupId>commons-io</groupId>
@@ -106,47 +88,15 @@
                 <version>28.1-jre</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.jdt</groupId>
-                <artifactId>ecj</artifactId>
-                <version>3.19.0</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.ant</groupId>
                 <artifactId>ant</artifactId>
                 <version>1.10.5</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>
-                <groupId>jakarta.annotation</groupId>
-                <artifactId>jakarta.annotation-api</artifactId>
-                <version>1.3.5</version>
-            </dependency>
-            <dependency>
                 <groupId>org.jvnet.staxex</groupId>
                 <artifactId>stax-ex</artifactId>
                 <version>1.8.2</version>
-            </dependency>
-
-            <dependency>
-                <groupId>jakarta.xml.bind</groupId>
-                <artifactId>jakarta.xml.bind-api</artifactId>
-                <version>2.3.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish.jaxb</groupId>
-                <artifactId>jaxb-runtime</artifactId>
-                <version>2.3.2</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.xml.ws</groupId>
-                <artifactId>jakarta.xml.ws-api</artifactId>
-                <version>2.3.2</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.xml.soap</groupId>
-                <artifactId>jakarta.xml.soap-api</artifactId>
-                <version>1.4.1</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.jws</groupId>
@@ -159,36 +109,6 @@
     <build>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.1</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.1.0</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.1.0</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.2.0</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-antrun-plugin</artifactId>
-                    <version>1.8</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.1.1</version>
-                </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>buildnumber-maven-plugin</artifactId>
@@ -205,8 +125,12 @@
                     <version>0.14.0</version>
                 </plugin>
                 <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <version>0.33.0</version>
+                </plugin>
+                <plugin>
                     <artifactId>maven-war-plugin</artifactId>
-                    <version>3.2.3</version>
                     <configuration>
                         <failOnMissingWebXml>false</failOnMissingWebXml>
                         <archive>
@@ -219,7 +143,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.1.1</version>
                     <executions>
                         <execution>
                             <id>validate</id>
@@ -238,16 +162,16 @@
                     </executions>
                     <dependencies>
                         <dependency>
-                            <groupId>org.airsonic</groupId>
+                            <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>1.0-RELEASE</version>
+                            <version>8.31</version>
                         </dependency>
                     </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-pmd-plugin</artifactId>
-                    <version>3.12.0</version>
+                    <version>3.13.0</version>
                     <executions>
                         <execution>
                             <id>validate</id>
@@ -264,9 +188,10 @@
                 <plugin>
                     <groupId>org.owasp</groupId>
                     <artifactId>dependency-check-maven</artifactId>
-                    <version>5.2.4</version>
+                    <version>5.3.2</version>
                     <inherited>true</inherited>
                     <configuration>
+                        <cveValidForHours>24</cveValidForHours>
                         <failBuildOnAnyVulnerability>true</failBuildOnAnyVulnerability>
                         <suppressionFiles>
                             <suppressionFile>${project.basedir}/cve-suppressed.xml</suppressionFile>
@@ -287,7 +212,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.22.2</version>
                         <configuration>
                             <!-- #1186 Temporarily skip a test. -->
                             <excludes>
@@ -323,11 +247,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
                     <encoding>UTF-8</encoding>
                     <verbose>false</verbose>
-                    <compilerVersion>1.8</compilerVersion>
                     <showWarnings>true</showWarnings>
                 </configuration>
             </plugin>
@@ -354,17 +275,23 @@
                                 <ignoredUsedUndeclaredDependency>*javax*:*</ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>org.hamcrest:*</ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>com.fasterxml.jackson.*:jackson-*</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>org.apache.commons:commons-text*</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>org.aspectj:aspectjweaver</ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                             <ignoredUnusedDeclaredDependencies>
+                                <ignoredUnusedDeclaredDependency>com.google.code.findbugs:jsr305:*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>com.fasterxml.jackson.module:jackson-module-jaxb-annotations</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>com.sun.mail:jakarta.mail*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.seamless:seamless-http*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>taglibs:string:jar*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.seamless:seamless-http*</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.tukaani:xz:*</ignoredUnusedDeclaredDependency>
                                 <!-- Needed for airsonic-booter to load Airsonic correctly -->
                                 <ignoredUnusedDeclaredDependency>org.springframework.security:*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.springframework.boot:spring-boot*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>jakarta.xml.ws:jakarta.xml.ws-api</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.liquibase:liquibase-core</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>jakarta.xml.bind:jakarta.xml.bind-api*</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>
@@ -373,7 +300,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0-M3</version>
                 <inherited>true</inherited>
                 <executions>
                     <execution>

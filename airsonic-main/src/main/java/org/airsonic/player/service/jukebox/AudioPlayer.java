@@ -42,7 +42,7 @@ import static org.airsonic.player.service.jukebox.AudioPlayer.State.*;
  * @author Sindre Mehus
  * @version $Id$
  */
-public class AudioPlayer {
+public class AudioPlayer implements AutoCloseable {
 
     public static final float DEFAULT_GAIN = 0.75f;
     private static final Logger LOG = LoggerFactory.getLogger(AudioPlayer.class);
@@ -96,6 +96,7 @@ public class AudioPlayer {
      * Closes the player, releasing all resources. After this the player state is
      * {@link State#CLOSED} (unless the current state is {@link State#EOM}).
      */
+    @Override
     public synchronized void close() {
         if (state.get() != CLOSED && state.get() != EOM) {
             setState(CLOSED);
@@ -164,6 +165,7 @@ public class AudioPlayer {
             new Thread(this).start();
         }
 
+        @Override
         public void run() {
             try {
                 byte[] buffer = new byte[line.getBufferSize()];

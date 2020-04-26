@@ -30,23 +30,30 @@ import org.airsonic.player.domain.Playlist;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.service.playlist.PlaylistExportHandler;
 import org.airsonic.player.service.playlist.PlaylistImportHandler;
-import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 /**
  * Provides services for loading and saving playlists to and from persistent storage.
@@ -70,6 +77,8 @@ public class PlaylistService {
     private List<PlaylistExportHandler> exportHandlers;
     @Autowired
     private List<PlaylistImportHandler> importHandlers;
+    @Autowired
+    private SimpMessagingTemplate brokerTemplate;
 
     public PlaylistService(
             MediaFileDao mediaFileDao,
@@ -94,11 +103,11 @@ public class PlaylistService {
     }
 
     public List<Playlist> getAllPlaylists() {
-        return sort(playlistDao.getAllPlaylists());
+        return playlistDao.getAllPlaylists();
     }
 
     public List<Playlist> getReadablePlaylistsForUser(String username) {
-        return sort(playlistDao.getReadablePlaylistsForUser(username));
+        return playlistDao.getReadablePlaylistsForUser(username);
     }
 
     public List<Playlist> getWritablePlaylistsForUser(String username) {
@@ -108,18 +117,15 @@ public class PlaylistService {
             return getReadablePlaylistsForUser(username);
         }
 
-        return sort(playlistDao.getWritablePlaylistsForUser(username));
+        return playlistDao.getWritablePlaylistsForUser(username);
     }
 
-    private List<Playlist> sort(List<Playlist> playlists) {
-        Collections.sort(playlists, new PlaylistComparator());
-        return playlists;
-    }
-
+    @Cacheable(cacheNames = "playlistCache", unless = "#result == null")
     public Playlist getPlaylist(int id) {
         return playlistDao.getPlaylist(id);
     }
 
+    @Cacheable(cacheNames = "playlistUsersCache", unless = "#result == null")
     public List<String> getPlaylistUsers(int playlistId) {
         return playlistDao.getPlaylistUsers(playlistId);
     }
@@ -134,18 +140,35 @@ public class PlaylistService {
 
     public void setFilesInPlaylist(int id, List<MediaFile> files) {
         playlistDao.setFilesInPlaylist(id, files);
+        Playlist playlist = new Playlist(getPlaylist(id));
+        double duration = files.parallelStream().filter(f -> f.getDuration() != null).mapToDouble(f -> f.getDuration()).sum();
+        playlist.setFileCount(files.size());
+        playlist.setDuration(duration);
+        updatePlaylist(playlist, true);
     }
 
     public void createPlaylist(Playlist playlist) {
         playlistDao.createPlaylist(playlist);
+        if (playlist.isShared()) {
+            runAsync(() -> brokerTemplate.convertAndSend("/topic/playlists/updated", playlist));
+        } else {
+            runAsync(() -> brokerTemplate.convertAndSendToUser(playlist.getUsername(), "/queue/playlists/updated", playlist));
+        }
     }
 
-    public void addPlaylistUser(int playlistId, String username) {
-        playlistDao.addPlaylistUser(playlistId, username);
+    @CacheEvict(cacheNames = "playlistUsersCache", key = "#playlist.id")
+    public void addPlaylistUser(Playlist playlist, String username) {
+        playlistDao.addPlaylistUser(playlist.getId(), username);
+        // this might cause dual notifications on the client if the playlist is already public
+        runAsync(() -> brokerTemplate.convertAndSendToUser(username, "/queue/playlists/updated", playlist));
     }
 
-    public void deletePlaylistUser(int playlistId, String username) {
-        playlistDao.deletePlaylistUser(playlistId, username);
+    @CacheEvict(cacheNames = "playlistUsersCache", key = "#playlist.id")
+    public void deletePlaylistUser(Playlist playlist, String username) {
+        playlistDao.deletePlaylistUser(playlist.getId(), username);
+        if (!playlist.isShared()) {
+            runAsync(() -> brokerTemplate.convertAndSendToUser(username, "/queue/playlists/deleted", playlist.getId()));
+        }
     }
 
     public boolean isReadAllowed(Playlist playlist, String username) {
@@ -162,17 +185,53 @@ public class PlaylistService {
         return username != null && username.equals(playlist.getUsername());
     }
 
+    @CacheEvict(cacheNames = "playlistCache")
     public void deletePlaylist(int id) {
         playlistDao.deletePlaylist(id);
+        runAsync(() -> brokerTemplate.convertAndSend("/topic/playlists/deleted", id));
     }
 
     public void updatePlaylist(Playlist playlist) {
-        playlistDao.updatePlaylist(playlist);
+        updatePlaylist(playlist, false);
     }
 
-    public Playlist importPlaylist(
-            String username, String playlistName, String fileName, InputStream inputStream, Playlist existingPlaylist
-    ) throws Exception {
+    /**
+     * DO NOT pass in the mutated cache value. This method relies on the existing
+     * cached value to check the differences
+     */
+    @CacheEvict(cacheNames = "playlistCache", key = "#playlist.id")
+    public void updatePlaylist(Playlist playlist, boolean filesChangedBroadcastContext) {
+        Playlist oldPlaylist = getPlaylist(playlist.getId());
+        playlistDao.updatePlaylist(playlist);
+        runAsync(() -> {
+            BroadcastedPlaylist bp = new BroadcastedPlaylist(playlist, filesChangedBroadcastContext);
+            if (playlist.isShared()) {
+                brokerTemplate.convertAndSend("/topic/playlists/updated", bp);
+            } else {
+                if (oldPlaylist.isShared()) {
+                    brokerTemplate.convertAndSend("/topic/playlists/deleted", playlist.getId());
+                }
+                Stream.concat(Stream.of(playlist.getUsername()), getPlaylistUsers(playlist.getId()).stream())
+                        .forEach(u -> brokerTemplate.convertAndSendToUser(u, "/queue/playlists/updated", bp));
+            }
+        });
+    }
+
+    public static class BroadcastedPlaylist extends Playlist {
+        private final boolean filesChanged;
+
+        public BroadcastedPlaylist(Playlist p, boolean filesChanged) {
+            super(p);
+            this.filesChanged = filesChanged;
+        }
+
+        public boolean getFilesChanged() {
+            return filesChanged;
+        }
+    }
+
+    public Playlist importPlaylist(String username, String playlistName, String fileName, InputStream inputStream,
+            Playlist existingPlaylist) throws Exception {
 
         // TODO: handle other encodings
         final SpecificPlaylist inputSpecificPlaylist = SpecificPlaylistFactory.getInstance().readFrom(inputStream, "UTF-8");
@@ -258,47 +317,40 @@ public class PlaylistService {
         if (playlistFolderPath == null) {
             return;
         }
-        File playlistFolder = new File(playlistFolderPath);
-        if (!playlistFolder.exists()) {
+        Path playlistFolder = Paths.get(playlistFolderPath);
+        if (!Files.exists(playlistFolder)) {
             return;
         }
 
         List<Playlist> allPlaylists = playlistDao.getAllPlaylists();
-        for (File file : playlistFolder.listFiles()) {
-            try {
-                importPlaylistIfUpdated(file, allPlaylists);
-            } catch (Exception x) {
-                LOG.warn("Failed to auto-import playlist " + file + ". " + x.getMessage());
-            }
+        try (Stream<Path> children = Files.walk(playlistFolder)) {
+            children.filter(f -> Files.isDirectory(f) && Files.isReadable(f)).forEach(f -> {
+                try {
+                    importPlaylistIfUpdated(f, allPlaylists);
+                } catch (Exception x) {
+                    LOG.warn("Failed to auto-import playlist {}", f, x);
+                }
+            });
+        } catch (IOException ex) {
+            LOG.warn("Error while reading directory {} when importing playlists", playlistFolder, ex);
         }
     }
 
-    private void importPlaylistIfUpdated(File file, List<Playlist> allPlaylists) throws Exception {
-
-        String fileName = file.getName();
+    private void importPlaylistIfUpdated(Path file, List<Playlist> allPlaylists) throws Exception {
+        String fileName = file.getFileName().toString();
         Playlist existingPlaylist = null;
         for (Playlist playlist : allPlaylists) {
             if (fileName.equals(playlist.getImportedFrom())) {
                 existingPlaylist = playlist;
-                if (file.lastModified() <= playlist.getChanged().toEpochMilli()) {
+                if (Files.getLastModifiedTime(file).toMillis() <= playlist.getChanged().toEpochMilli()) {
                     // Already imported and not changed since.
                     return;
                 }
             }
         }
-        InputStream in = new FileInputStream(file);
-        try {
+        try (InputStream in = Files.newInputStream(file)) {
             importPlaylist(User.USERNAME_ADMIN, FilenameUtils.getBaseName(fileName), fileName, in, existingPlaylist);
             LOG.info("Auto-imported playlist " + file);
-        } finally {
-            FileUtil.closeQuietly(in);
-        }
-    }
-
-    private static class PlaylistComparator implements Comparator<Playlist> {
-        @Override
-        public int compare(Playlist p1, Playlist p2) {
-            return p1.getName().compareTo(p2.getName());
         }
     }
 }

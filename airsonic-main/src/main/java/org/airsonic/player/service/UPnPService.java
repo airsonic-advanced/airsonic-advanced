@@ -19,10 +19,10 @@
  */
 package org.airsonic.player.service;
 
-import org.airsonic.player.service.upnp.ApacheUpnpServiceConfiguration;
 import org.airsonic.player.service.upnp.CustomContentDirectory;
 import org.airsonic.player.service.upnp.MSMediaReceiverRegistrarService;
 import org.airsonic.player.util.FileUtil;
+import org.fourthline.cling.DefaultUpnpServiceConfiguration;
 import org.fourthline.cling.UpnpService;
 import org.fourthline.cling.UpnpServiceImpl;
 import org.fourthline.cling.binding.annotations.AnnotationLocalServiceBinder;
@@ -36,6 +36,13 @@ import org.fourthline.cling.support.connectionmanager.ConnectionManagerService;
 import org.fourthline.cling.support.model.ProtocolInfos;
 import org.fourthline.cling.support.model.dlna.DLNAProfiles;
 import org.fourthline.cling.support.model.dlna.DLNAProtocolInfo;
+import org.fourthline.cling.transport.impl.apache.StreamClientConfigurationImpl;
+import org.fourthline.cling.transport.impl.apache.StreamClientImpl;
+import org.fourthline.cling.transport.impl.apache.StreamServerConfigurationImpl;
+import org.fourthline.cling.transport.impl.apache.StreamServerImpl;
+import org.fourthline.cling.transport.spi.NetworkAddressFactory;
+import org.fourthline.cling.transport.spi.StreamClient;
+import org.fourthline.cling.transport.spi.StreamServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,10 +68,13 @@ public class UPnPService {
 
     @Autowired
     private SettingsService settingsService;
+
     private UpnpService upnpService;
+
     @Autowired
     @Qualifier("dispatchingContentDirectory")
     private CustomContentDirectory dispatchingContentDirectory;
+
     private AtomicReference<Boolean> running = new AtomicReference<>(false);
 
     @PostConstruct
@@ -112,14 +122,14 @@ public class UPnPService {
         try {
             LOG.info("Starting UPnP service...");
             createService();
-            LOG.info("Starting UPnP service - Done!");
+            LOG.info("Successfully started UPnP service on port {}!", settingsService.getUPnpPort());
         } catch (Throwable x) {
             LOG.error("Failed to start UPnP service: " + x, x);
         }
     }
 
     private synchronized void createService() {
-        upnpService = new UpnpServiceImpl(new ApacheUpnpServiceConfiguration());
+        upnpService = new UpnpServiceImpl(new ApacheUpnpServiceConfiguration(settingsService.getUPnpPort()));
 
         // Asynch search for other devices (most importantly UPnP-enabled routers for port-mapping)
         upnpService.getControlPoint().search();
@@ -216,5 +226,25 @@ public class UPnPService {
 
     public void setCustomContentDirectory(CustomContentDirectory customContentDirectory) {
         this.dispatchingContentDirectory = customContentDirectory;
+    }
+
+    /**
+     * Note the different packages on similarly named classes from the parent
+     *
+     */
+    public static class ApacheUpnpServiceConfiguration extends DefaultUpnpServiceConfiguration {
+        public ApacheUpnpServiceConfiguration(int streamListenPort) {
+            super(streamListenPort);
+        }
+
+        @Override
+        public StreamClient<?> createStreamClient() {
+            return new StreamClientImpl(new StreamClientConfigurationImpl(getSyncProtocolExecutorService()));
+        }
+
+        @Override
+        public StreamServer<?> createStreamServer(NetworkAddressFactory networkAddressFactory) {
+            return new StreamServerImpl(new StreamServerConfigurationImpl(networkAddressFactory.getStreamListenPort()));
+        }
     }
 }

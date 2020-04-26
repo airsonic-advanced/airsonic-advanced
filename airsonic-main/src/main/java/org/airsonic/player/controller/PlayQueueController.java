@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.controller;
 
+import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserSettings;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
@@ -58,16 +60,22 @@ public class PlayQueueController {
 
         User user = securityService.getCurrentUser(request);
         UserSettings userSettings = settingsService.getUserSettings(user.getUsername());
-        Player player = playerService.getPlayer(request, response);
 
         Map<String, Object> map = new HashMap<>();
         map.put("user", user);
-        map.put("player", player);
         map.put("players", playerService.getPlayersForUserAndClientId(user.getUsername(), null));
         map.put("visibility", userSettings.getPlaylistVisibility());
         map.put("partyMode", userSettings.isPartyModeEnabled());
         map.put("notify", userSettings.isSongNotificationEnabled());
         map.put("autoHide", userSettings.isAutoHidePlayQueue());
-        return new ModelAndView("playQueue","model",map);
+        map.put("initialPaginationSize", userSettings.getPaginationSize());
+        return new ModelAndView("playQueue", "model", map);
+    }
+
+    @GetMapping("/player")
+    @ResponseBody
+    public Map<String, Object> getPlayer(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        Player player = playerService.getPlayer(request, response);
+        return ImmutableMap.of("id", player.getId(), "description", player.getShortDescription(), "tech", player.getTechnology());
     }
 }

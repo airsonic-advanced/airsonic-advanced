@@ -15,11 +15,8 @@
 <link type="text/css" rel="stylesheet" href="<c:url value='/script/mediaelement/mediaelementplayer.min.css'/>">
 <link rel="stylesheet" href="<c:url value='/${styleSheet}'/>" type="text/css">
 <title>Airsonic</title>
-
-<script id="preferencesConfig" type="application/x-configuration">
-  {
-    "keyboardShortcutsEnabled": ${model.keyboardShortcutsEnabled ? 'true' : 'false'}
-  }
+<script type="text/javascript">
+  ${model.keyboardShortcutsEnabled == null ? '//' : ''} var keyboardShortcutsEnabled = ${model.keyboardShortcutsEnabled};
 </script>
 <script defer type="text/javascript" src="<c:url value='/script/mousetrap-1.6.0.js'/>"></script>
 <script defer type="text/javascript" src="<c:url value='/script/keyboard_shortcuts.js'/>"></script>

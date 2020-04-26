@@ -29,7 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.subsonic.restapi.ScanStatus;
 
 import javax.annotation.PostConstruct;
 
@@ -80,6 +82,8 @@ public class MediaScannerService {
     private ArtistDao artistDao;
     @Autowired
     private AlbumDao albumDao;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     @Value("${MediaScannerParallelism:#{T(java.lang.Runtime).getRuntime().availableProcessors() + 1}}")
@@ -144,6 +148,20 @@ public class MediaScannerService {
         return scanning;
     }
 
+    private void setScanning(boolean scanning) {
+        this.scanning = scanning;
+        broadcastScanStatus();
+    }
+
+    private void broadcastScanStatus() {
+        CompletableFuture.runAsync(() -> {
+            ScanStatus status = new ScanStatus();
+            status.setCount(scanCount.longValue());
+            status.setScanning(scanning);
+            messagingTemplate.convertAndSend("/topic/scanStatus", status);
+        });
+    }
+
     /**
      * Returns the number of files scanned so far.
      */
@@ -169,15 +187,14 @@ public class MediaScannerService {
         if (isScanning()) {
             return;
         }
-        scanning = true;
+        setScanning(true);
 
         ForkJoinPool pool = new ForkJoinPool(scannerParallelism, mediaScannerThreadFactory, null, true);
 
         CompletableFuture.runAsync(() -> doScanLibrary(pool), pool)
                 .thenRunAsync(() -> playlistService.importPlaylists(), pool)
-                .thenRunAsync(() -> mediaFileDao.checkpoint(), pool)
                 .thenRun(() -> pool.shutdown())
-                .thenRun(() -> scanning = false);
+                .thenRun(() -> setScanning(false));
     }
 
     private void doScanLibrary(ForkJoinPool pool) {
@@ -251,9 +268,9 @@ public class MediaScannerService {
             CompletableFuture<Void> genrePersistence = CompletableFuture
                     .runAsync(() -> {
                         LOG.info("Updating genres");
-                        mediaFileDao.updateGenres(genres.getGenres());
-                    }, pool)
-                    .thenRunAsync(() -> LOG.info("Genre persistence complete"), pool);
+                        boolean genresSuccessful = mediaFileDao.updateGenres(genres.getGenres());
+                        LOG.info("Genre persistence successfully complete: {}", genresSuccessful);
+                    }, pool);
 
             CompletableFuture.allOf(albumPersistence, artistPersistence, mediaFilePersistence, genrePersistence).join();
 
@@ -271,6 +288,7 @@ public class MediaScannerService {
     private void scanFile(MediaFile file, MusicFolder musicFolder, MediaLibraryStatistics statistics,
                           Map<String, AtomicInteger> albumCount, Map<String, Artist> artists, Map<String, Album> albums, Genres genres, Map<String, Boolean> encountered, boolean isPodcast) {
         if (scanCount.incrementAndGet() % 250 == 0) {
+            broadcastScanStatus();
             LOG.info("Scanned media library with {} entries.", scanCount.get());
         }
 
@@ -402,7 +420,7 @@ public class MediaScannerService {
                 a.setName(k);
             }
 
-            Integer n = Math.max(Optional.ofNullable(albumCount.get(a.getName())).map(x -> x.get()).orElse(0), Optional.ofNullable(a.getAlbumCount()).orElse(0));
+            int n = Math.max(Optional.ofNullable(albumCount.get(a.getName())).map(x -> x.get()).orElse(0), Optional.ofNullable(a.getAlbumCount()).orElse(0));
             a.setAlbumCount(n);
 
             firstEncounter.set(!lastScanned.equals(a.getLastScanned()));
@@ -448,5 +466,9 @@ public class MediaScannerService {
 
     public void setPlaylistService(PlaylistService playlistService) {
         this.playlistService = playlistService;
+    }
+
+    public void setMessagingTemplate(SimpMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
     }
 }

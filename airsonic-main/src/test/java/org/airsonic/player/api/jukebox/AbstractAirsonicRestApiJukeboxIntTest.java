@@ -1,6 +1,8 @@
 package org.airsonic.player.api.jukebox;
 
 import org.airsonic.player.TestCaseUtils;
+import org.airsonic.player.TestCaseUtils.TestDao;
+import org.airsonic.player.api.ScanningTestUtils;
 import org.airsonic.player.controller.SubsonicRESTController;
 import org.airsonic.player.dao.*;
 import org.airsonic.player.domain.*;
@@ -28,6 +30,7 @@ import org.springframework.test.web.servlet.ResultMatcher;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -37,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = AbstractAirsonicRestApiJukeboxIntTest.Config.class)
+@SpringBootTest(classes = {AbstractAirsonicRestApiJukeboxIntTest.Config.class, TestDao.class})
 @AutoConfigureMockMvc
 public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
@@ -68,17 +71,17 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     static final String CLIENT_NAME = "airsonic";
     static final String JUKEBOX_PLAYER_NAME = CLIENT_NAME + "-jukebox";
     private static final String EXPECTED_FORMAT = "json";
-    private static String AIRSONIC_API_VERSION;
+    private static String AIRSONIC_API_VERSION = TestCaseUtils.restApiVersion();
 
     private static boolean dataBasePopulated;
-    private static DaoHelper staticDaoHelper;
+    private static TestDao staticTestDao;
+    private static SettingsService staticSettingsService;
+    private static UUID cleanupId = null;
 
-    @Autowired
-    protected PlayerService playerService;
     @Autowired
     private MockMvc mvc;
     @Autowired
-    private MusicFolderDao musicFolderDao;
+    protected PlayerService playerService;
     @Autowired
     private SettingsService settingsService;
     @Autowired
@@ -88,7 +91,7 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
     @Autowired
     private MediaFileDao mediaFileDao;
     @Autowired
-    private DaoHelper daoHelper;
+    private TestDao testDao;
     @Autowired
     private AlbumDao albumDao;
     @Autowired
@@ -98,14 +101,16 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     @BeforeClass
     public static void setupClass() {
-        AIRSONIC_API_VERSION = TestCaseUtils.restApiVersion();
         dataBasePopulated = false;
     }
 
     @AfterClass
     public static void cleanDataBase() {
-        staticDaoHelper.getJdbcTemplate().execute("DROP SCHEMA PUBLIC CASCADE");
-        staticDaoHelper = null;
+        staticTestDao.getJdbcTemplate().execute("delete from player");
+        ScanningTestUtils.after(cleanupId, staticSettingsService);
+        cleanupId = null;
+        staticSettingsService = null;
+        staticTestDao = null;
         dataBasePopulated = false;
     }
 
@@ -120,13 +125,10 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
      */
     private void populateDatabase() {
         if (!dataBasePopulated) {
-            staticDaoHelper = daoHelper;
+            staticTestDao = testDao;
+            staticSettingsService = settingsService;
 
-            assertThat(musicFolderDao.getAllMusicFolders().size()).isEqualTo(1);
-            MusicFolderTestData.getTestMusicFolders().forEach(musicFolderDao::createMusicFolder);
-            settingsService.clearMusicFolderCache();
-
-            TestCaseUtils.execScan(mediaScannerService);
+            cleanupId = ScanningTestUtils.before(MusicFolderTestData.getTestMusicFolders(), settingsService,mediaScannerService);
 
             assertThat(playerDao.getAllPlayers().size()).isEqualTo(0);
             createTestPlayer();

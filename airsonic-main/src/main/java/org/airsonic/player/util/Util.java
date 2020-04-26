@@ -24,7 +24,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +61,7 @@ public final class Util {
     }
 
     public static String getDefaultPodcastFolder() {
-        String def = isWindows() ? "c:\\music\\Podcast" : "/var/music/Podcast";
+        String def = isWindows() ? "c:\\podcast" : "/var/podcast";
         return System.getProperty("airsonic.defaultPodcastFolder", def);
     }
 
@@ -181,6 +180,14 @@ public final class Util {
             return Class.forName(className).isInstance(o);
         } catch (ClassNotFoundException e) {
             return false;
+        }
+    }
+
+    public static String toJson(Object object) {
+        try {
+            return objectMapper.writeValueAsString(object);
+        } catch (Exception e) {
+            return null;
         }
     }
 

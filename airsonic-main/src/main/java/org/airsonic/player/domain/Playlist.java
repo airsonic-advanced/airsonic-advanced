@@ -19,8 +19,6 @@
  */
 package org.airsonic.player.domain;
 
-import org.airsonic.player.util.StringUtil;
-
 import java.time.Instant;
 
 /**
@@ -54,6 +52,11 @@ public class Playlist {
         this.created = created;
         this.changed = changed;
         this.importedFrom = importedFrom;
+    }
+
+    public Playlist(Playlist p) {
+        this(p.getId(), p.getUsername(), p.isShared(), p.getName(), p.getComment(), p.getFileCount(), p.getDuration(),
+                p.getCreated(), p.getChanged(), p.getImportedFrom());
     }
 
     public int getId() {
@@ -110,10 +113,6 @@ public class Playlist {
 
     public void setDuration(double duration) {
         this.duration = duration;
-    }
-
-    public String getDurationAsString() {
-        return StringUtil.formatDuration((long) (duration * 1000), false);
     }
 
     public Instant getCreated() {

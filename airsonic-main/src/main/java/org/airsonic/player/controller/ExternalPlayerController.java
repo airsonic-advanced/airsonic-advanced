@@ -131,6 +131,7 @@ public class ExternalPlayerController {
     public MediaFileWithUrlInfo addUrlInfo(HttpServletRequest request, Player player, MediaFile mediaFile, Instant expires) {
         String prefix = "ext";
         String streamUrl = jwtSecurityService.addJWTToken(
+                JWTSecurityService.USERNAME_ANONYMOUS,
                 UriComponentsBuilder
                         .fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/stream")
                         .queryParam("id", mediaFile.getId())
@@ -141,6 +142,7 @@ public class ExternalPlayerController {
                 .toUriString();
 
         String coverArtUrl = jwtSecurityService.addJWTToken(
+                JWTSecurityService.USERNAME_ANONYMOUS,
                 UriComponentsBuilder
                         .fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/coverArt.view")
                         .queryParam("id", mediaFile.getId())

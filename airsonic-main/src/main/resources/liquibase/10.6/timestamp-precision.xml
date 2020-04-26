@@ -1,0 +1,49 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="timestamp-precision" author="anon" dbms="mysql,mariadb">
+        <sql dbms="mysql,mariadb" >
+        alter table user_credentials modify created datetime(6) default now(6);
+        alter table user_credentials modify updated datetime(6) default now(6);
+        alter table user_credentials modify expiration datetime(6);
+
+        alter table music_file_info modify last_played datetime(6);
+        alter table player modify last_seen datetime(6);
+
+        alter table podcast_episode modify publish_date datetime(6);
+
+        alter table system_avatar modify created_date datetime(6) default now(6);
+        alter table custom_avatar modify created_date datetime(6) default now(6);
+
+        alter table music_folder modify changed datetime(6) default now(6);
+        alter table internet_radio modify changed datetime(6) default now(6);
+        alter table user_settings modify changed datetime(6) default now(6);
+
+        alter table share modify created datetime(6);
+        alter table share modify expires datetime(6);
+        alter table share modify last_visited datetime(6);
+
+        alter table media_file modify last_played datetime(6);
+        alter table media_file modify created datetime(6);
+        alter table media_file modify changed datetime(6);
+        alter table media_file modify last_scanned datetime(6);
+        alter table media_file modify children_last_updated datetime(6);
+        alter table artist modify last_scanned datetime(6);
+        alter table album modify last_played datetime(6);
+        alter table album modify created datetime(6);
+        alter table album modify last_scanned datetime(6);
+        alter table starred_media_file modify created datetime(6);
+        alter table starred_album modify created datetime(6);
+        alter table starred_artist modify created datetime(6);
+        alter table playlist modify created datetime(6);
+        alter table playlist modify changed datetime(6);
+        alter table bookmark modify created datetime(6);
+        alter table bookmark modify changed datetime(6);
+ 
+        alter table play_queue modify changed datetime(6);
+        </sql>
+        <rollback>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

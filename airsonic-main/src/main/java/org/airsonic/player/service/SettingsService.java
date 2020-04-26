@@ -19,19 +19,22 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.util.concurrent.RateLimiter;
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.*;
-import org.airsonic.player.spring.DataSourceConfigType;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.PropertySource;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -106,11 +109,17 @@ public class SettingsService {
     private static final String KEY_DLNA_ENABLED = "DlnaEnabled";
     private static final String KEY_DLNA_SERVER_NAME = "DlnaServerName";
     private static final String KEY_DLNA_BASE_LAN_URL = "DlnaBaseLANURL";
+    private static final String KEY_UPNP_PORT = "UPnpPort";
     private static final String KEY_SONOS_ENABLED = "SonosEnabled";
     private static final String KEY_SONOS_SERVICE_NAME = "SonosServiceName";
     private static final String KEY_SONOS_SERVICE_ID = "SonosServiceId";
     private static final String KEY_JWT_KEY = "JWTKey";
     private static final String KEY_REMEMBER_ME_KEY = "RememberMeKey";
+    private static final String KEY_ENCRYPTION_PASSWORD = "EncryptionKeyPassword";
+    private static final String KEY_ENCRYPTION_SALT = "EncryptionKeySalt";
+    private static final String KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER = "DecodablePasswordEncoder";
+    private static final String KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER = "NonDecodablePasswordEncoder";
+    private static final String KEY_PREFER_NONDECODABLE_PASSWORDS = "PreferNonDecodablePasswords";
 
     private static final String KEY_SMTP_SERVER = "SmtpServer";
     private static final String KEY_SMTP_ENCRYPTION = "SmtpEncryption";
@@ -127,16 +136,17 @@ public class SettingsService {
     private static final String KEY_RECAPTCHA_SECRET_KEY = "ReCaptchaSecretKey";
 
     // Database Settings
-    private static final String KEY_DATABASE_CONFIG_TYPE = "DatabaseConfigType";
-    private static final String KEY_DATABASE_CONFIG_EMBED_DRIVER = "DatabaseConfigEmbedDriver";
-    private static final String KEY_DATABASE_CONFIG_EMBED_URL = "DatabaseConfigEmbedUrl";
-    private static final String KEY_DATABASE_CONFIG_EMBED_USERNAME = "DatabaseConfigEmbedUsername";
-    private static final String KEY_DATABASE_CONFIG_EMBED_PASSWORD = "DatabaseConfigEmbedPassword";
-    private static final String KEY_DATABASE_CONFIG_JNDI_NAME = "DatabaseConfigJNDIName";
-    private static final String KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH = "DatabaseMysqlMaxlength";
-    private static final String KEY_DATABASE_USERTABLE_QUOTE = "DatabaseUsertableQuote";
+    private static final String KEY_DATABASE_DRIVER = "spring.datasource.driver-class-name";
+    public static final String KEY_DATABASE_URL = "spring.datasource.url";
+    public static final String KEY_DATABASE_USERNAME = "spring.datasource.username";
+    public static final String KEY_DATABASE_PASSWORD = "spring.datasource.password";
+    public static final String KEY_DATABASE_JNDI_NAME = "spring.datasource.jndi-name";
+    private static final String KEY_DATABASE_MIGRATION_ROLLBACK_FILE = "spring.liquibase.rollback-file";
+    private static final String KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH = "spring.liquibase.parameters.mysqlVarcharLimit";
+    public static final String KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE = "spring.liquibase.parameters.userTableQuote";
+    private static final String KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER = "spring.liquibase.parameters.defaultMusicFolder";
 
-    public static final String KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY = "PropertiesFileUpgradeRetainCompatibility";
+    public static final String KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS = "PropertiesFileRetainObsoleteKeys";
 
     // Default values.
     private static final String DEFAULT_JWT_KEY = null;
@@ -157,7 +167,7 @@ public class SettingsService {
             "Use it to share your music with friends, or to listen to your own music while at work. You can stream to multiple " +
             "players simultaneously, for instance to one player in your kitchen and another in your living room.\n" +
             "\\\\ \\\\\n" +
-            "To change or remove this message, log in with administrator rights and go to {link:Settings > General|generalSettings.view}.";
+            "To change or remove this message, log in with administrator rights and go to <a href='settings.view'>Settings</a> > <a href='generalSettings.view'>General</a>.";
     private static final String DEFAULT_LOGIN_MESSAGE = null;
     private static final String DEFAULT_LOCALE_LANGUAGE = "en";
     private static final String DEFAULT_LOCALE_COUNTRY = "";
@@ -190,12 +200,16 @@ public class SettingsService {
     private static final boolean DEFAULT_DLNA_ENABLED = false;
     private static final String DEFAULT_DLNA_SERVER_NAME = "Airsonic";
     private static final String DEFAULT_DLNA_BASE_LAN_URL = null;
+    private static final int DEFAULT_UPNP_PORT = 4041;
     private static final boolean DEFAULT_SONOS_ENABLED = false;
     private static final String DEFAULT_SONOS_SERVICE_NAME = "Airsonic";
     private static final int DEFAULT_SONOS_SERVICE_ID = 242;
     private static final String DEFAULT_EXPORT_PLAYLIST_FORMAT = "m3u";
     private static final boolean DEFAULT_IGNORE_SYMLINKS = false;
     private static final String DEFAULT_EXCLUDE_PATTERN_STRING = null;
+    private static final String DEFAULT_PREFERRED_NONDECODABLE_PASSWORD_ENCODER = "bcrypt";
+    private static final String DEFAULT_PREFERRED_DECODABLE_PASSWORD_ENCODER = "encrypted-AES-GCM";
+    private static final boolean DEFAULT_PREFER_NONDECODABLE_PASSWORDS = true;
 
     private static final String DEFAULT_SMTP_SERVER = null;
     private static final String DEFAULT_SMTP_ENCRYPTION = "None";
@@ -208,14 +222,13 @@ public class SettingsService {
     private static final String DEFAULT_RECAPTCHA_SITE_KEY = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
     private static final String DEFAULT_RECAPTCHA_SECRET_KEY = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe";
 
-    private static final DataSourceConfigType DEFAULT_DATABASE_CONFIG_TYPE = DataSourceConfigType.LEGACY;
-    private static final String DEFAULT_DATABASE_CONFIG_EMBED_DRIVER = null;
-    private static final String DEFAULT_DATABASE_CONFIG_EMBED_URL = null;
-    private static final String DEFAULT_DATABASE_CONFIG_EMBED_USERNAME = null;
-    private static final String DEFAULT_DATABASE_CONFIG_EMBED_PASSWORD = null;
-    private static final String DEFAULT_DATABASE_CONFIG_JNDI_NAME = null;
-    private static final Integer DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH = 512;
-    private static final String DEFAULT_DATABASE_USERTABLE_QUOTE = null;
+    private static final String DEFAULT_DATABASE_DRIVER = null;
+    private static final String DEFAULT_DATABASE_URL = null;
+    private static final String DEFAULT_DATABASE_USERNAME = null;
+    private static final String DEFAULT_DATABASE_PASSWORD = null;
+    private static final String DEFAULT_DATABASE_JNDI_NAME = null;
+    private static final Integer DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH = 384;
+    private static final String DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE = "";
 
     private static final String LOCALES_FILE = "/org/airsonic/player/i18n/locales.txt";
     private static final String THEMES_FILE = "/org/airsonic/player/theme/themes.txt";
@@ -240,54 +253,121 @@ public class SettingsService {
     private Set<String> cachedVideoFileTypes;
     private List<MusicFolder> cachedMusicFolders;
     private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
-
+    private RateLimiter downloadRateLimiter;
+    private RateLimiter uploadRateLimiter;
     private Pattern excludePattern;
 
-    // Array of obsolete keys.  Used to clean property file.
+    // Array of obsolete properties. Used to clean property file.
     private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
             "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "AutoCoverBatch", "MusicMask",
             "VideoMask", "CoverArtMask", "HlsCommand", "HlsCommand2", "JukeboxCommand",
             "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
             "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",
             "UrlRedirectFrom", "UrlRedirectionEnabled", "UrlRedirectType", "Port", "HttpsPort",
-            "MediaLibraryStatistics", "LastScanned"
+            "MediaLibraryStatistics", "LastScanned", "database.config.type", "DatabaseConfigType"
             );
 
-    public static void migrateKeys() {
+    public static Map<String, String> getMigratedPropertyKeys() {
         Map<String, String> keyMaps = new LinkedHashMap<>();
         OBSOLETE_KEYS.forEach(x -> keyMaps.put(x, null));
-        keyMaps.put("database.varchar.maxlength", KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH);
-        keyMaps.put("database.config.type", KEY_DATABASE_CONFIG_TYPE);
-        keyMaps.put("database.config.embed.driver", KEY_DATABASE_CONFIG_EMBED_DRIVER);
-        keyMaps.put("database.config.embed.url", KEY_DATABASE_CONFIG_EMBED_URL);
-        keyMaps.put("database.config.embed.username", KEY_DATABASE_CONFIG_EMBED_USERNAME);
-        keyMaps.put("database.config.embed.password", KEY_DATABASE_CONFIG_EMBED_PASSWORD);
-        keyMaps.put("database.config.jndi.name", KEY_DATABASE_CONFIG_JNDI_NAME);
-        keyMaps.put("database.usertable.quote", KEY_DATABASE_USERTABLE_QUOTE);
-        migrateKeys(keyMaps);
+
+        keyMaps.put("database.config.embed.driver", "DatabaseConfigEmbedDriver");
+        keyMaps.put("DatabaseConfigEmbedDriver", KEY_DATABASE_DRIVER);
+
+        keyMaps.put("database.config.embed.url", "DatabaseConfigEmbedUrl");
+        keyMaps.put("DatabaseConfigEmbedUrl", KEY_DATABASE_URL);
+
+        keyMaps.put("database.config.embed.username", "DatabaseConfigEmbedUsername");
+        keyMaps.put("DatabaseConfigEmbedUsername", KEY_DATABASE_USERNAME);
+
+        keyMaps.put("database.config.embed.password", "DatabaseConfigEmbedPassword");
+        keyMaps.put("DatabaseConfigEmbedPassword", KEY_DATABASE_PASSWORD);
+
+        keyMaps.put("database.config.jndi.name", "DatabaseConfigJNDIName");
+        keyMaps.put("DatabaseConfigJNDIName", KEY_DATABASE_JNDI_NAME);
+
+        keyMaps.put("database.varchar.maxlength", "DatabaseMysqlMaxlength");
+        keyMaps.put("DatabaseMysqlMaxlength", KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH);
+
+        keyMaps.put("database.usertable.quote", "DatabaseUsertableQuote");
+        keyMaps.put("DatabaseUsertableQuote", KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
+
+        keyMaps.put("airsonic.rememberMeKey", KEY_REMEMBER_ME_KEY);
+
+        return keyMaps;
     }
 
-    public static void migrateKeys(Map<String, String> keyMaps) {
-        ConfigurationPropertiesService cps = ConfigurationPropertiesService.getInstance();
-        Boolean backwardsCompatible = Optional.ofNullable(cps.getProperty(KEY_PROPERTIES_FILE_UPGRADE_RETAIN_COMPATIBILITY)).map(x -> Boolean.valueOf((String) x)).orElse(true);
+    public static void migratePropertySourceKeys(Map<String, String> keyMaps, PropertySource<?> src, Map<String, Object> migrated) {
+        Map<String, Object> temp = new HashMap<>();
+        // needs to be processed serially
+        keyMaps.entrySet().stream()
+                // ps has the property we're trying to migrate (either directly or migrated earlier within the chain)
+                .filter(e -> StringUtils.isNotBlank(Optional.ofNullable(src.getProperty(e.getKey())).map(Object::toString).orElse(temp.getOrDefault(e.getKey(), "").toString())))
+                // we're not migrating to null, i.e. trying to delete the property
+                .filter(e -> e.getValue() != null)
+                // we're not migrating to a property that is already occupied
+                .filter(e -> StringUtils.isBlank(Optional.ofNullable(src.getProperty(e.getValue())).map(Object::toString).orElse(temp.getOrDefault(e.getValue(), "").toString())))
+                .forEach(e -> {
+                    Object val = Optional.ofNullable(src.getProperty(e.getKey())).orElse(temp.get(e.getKey()));
+                    temp.put(e.getValue(), val);
+                    if (migrated.containsKey(e.getValue())) {
+                        LOG.info("Skipping migrating property [{}] to [{}] in {} (already migrated)", e.getKey(), e.getValue(), src.getName());
+                    } else {
+                        LOG.info("Migrating property [{}] to [{}] in {}", e.getKey(), e.getValue(), src.getName());
+                        migrated.put(e.getValue(), val);
+                    }
+                });
+    }
 
-        keyMaps.entrySet().forEach(e -> {
-            if (e.getValue() == null) {
-                // this is non backwards-compatible
-                LOG.info("Removing obsolete property [{}]", e.getKey());
-                cps.clearProperty(e.getKey());
-            } else if (cps.containsKey(e.getKey()) && !cps.containsKey(e.getValue())) {
-                LOG.info("Migrating obsolete property [{}] to [{}]", e.getKey(), e.getValue());
+    public static void migratePropFileKeys(Map<String, String> keyMaps, ConfigurationPropertiesService cps) {
+        Boolean retainObsoleteKeys = Optional.ofNullable(cps.getProperty(KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS)).map(x -> Boolean.valueOf((String) x)).orElse(true);
+
+        // needs to be processed serially
+        keyMaps.entrySet().stream().filter(e -> cps.containsKey(e.getKey())).forEach(e -> {
+            if (e.getValue() != null && !cps.containsKey(e.getValue())) {
+                LOG.info("Migrating property [{}] to [{}] in properties file", e.getKey(), e.getValue());
                 cps.setProperty(e.getValue(), cps.getProperty(e.getKey()));
             }
 
-            //clean house if not backwards-compatible, otherwise don't delete old proprety
-            if (!backwardsCompatible) {
+            // delete old property
+            if (!retainObsoleteKeys) {
+                LOG.info("Removing obsolete property [{}] in properties file", e.getKey());
                 cps.clearProperty(e.getKey());
             }
         });
 
         cps.save();
+    }
+
+    public static void setDefaultConstants(Environment env, Map<String, Object> defaultConstants) {
+        // if jndi is set, everything datasource-related is ignored
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_URL))) {
+            defaultConstants.put(KEY_DATABASE_URL, getDefaultJDBCUrl());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_USERNAME))) {
+            defaultConstants.put(KEY_DATABASE_USERNAME, getDefaultJDBCUsername());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_PASSWORD))) {
+            defaultConstants.put(KEY_DATABASE_PASSWORD, getDefaultJDBCPassword());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_ROLLBACK_FILE))) {
+            defaultConstants.put(
+                    KEY_DATABASE_MIGRATION_ROLLBACK_FILE,
+                    getAirsonicHome().toAbsolutePath().resolve("rollback.sql").toString());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH))) {
+            defaultConstants.put(
+                    KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH,
+                    DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH.toString());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE))) {
+            defaultConstants.put(
+                    KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE,
+                    DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER))) {
+            defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER, Util.getDefaultMusicFolder());
+        }
     }
 
     public static Path getAirsonicHome() {
@@ -313,7 +393,19 @@ public class SettingsService {
     }
 
     public static String getDefaultJDBCUrl() {
-        return "jdbc:hsqldb:file:" + getAirsonicHome().toString() + "/db/" + getFileSystemAppName();
+        return "jdbc:hsqldb:file:" + getAirsonicHome().resolve("db").resolve(getFileSystemAppName()).toString() + ";hsqldb.tx=mvcc;sql.enforce_size=false;sql.char_literal=false;sql.nulls_first=false;hsqldb.defrag_limit=50;shutdown=true";
+    }
+
+    public static String getDefaultJDBCUsername() {
+        return "sa";
+    }
+
+    public static String getDefaultJDBCPassword() {
+        return "";
+    }
+
+    public int getUPnpPort() {
+        return getInt(KEY_UPNP_PORT, DEFAULT_UPNP_PORT);
     }
 
     public static Path getLogFile() {
@@ -623,14 +715,34 @@ public class SettingsService {
      * @return The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public long getDownloadBitrateLimit() {
-        return Long.parseLong(getProperty(KEY_DOWNLOAD_BITRATE_LIMIT, "" + DEFAULT_DOWNLOAD_BITRATE_LIMIT));
+        return getLong(KEY_DOWNLOAD_BITRATE_LIMIT, DEFAULT_DOWNLOAD_BITRATE_LIMIT);
+    }
+
+    public RateLimiter getDownloadBitrateLimiter() {
+        if (downloadRateLimiter == null) {
+            downloadRateLimiter = RateLimiter.create(adjustBitrateLimit(getDownloadBitrateLimit()));
+        }
+        return downloadRateLimiter;
+    }
+
+    /**
+     * Convert rate given in KB to bytes and accounts for 0 (meaning no bitrate)
+     */
+    private static Double adjustBitrateLimit(double rate) {
+        double rateLimitInBytes = rate * 1024.0;
+        if (rate == 0) {
+            rateLimitInBytes = Double.POSITIVE_INFINITY;
+        }
+
+        return rateLimitInBytes;
     }
 
     /**
      * @param limit The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setDownloadBitrateLimit(long limit) {
-        setProperty(KEY_DOWNLOAD_BITRATE_LIMIT, String.valueOf(limit));
+        setLong(KEY_DOWNLOAD_BITRATE_LIMIT, limit);
+        getDownloadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
     /**
@@ -640,11 +752,19 @@ public class SettingsService {
         return getLong(KEY_UPLOAD_BITRATE_LIMIT, DEFAULT_UPLOAD_BITRATE_LIMIT);
     }
 
+    public RateLimiter getUploadBitrateLimiter() {
+        if (uploadRateLimiter == null) {
+            uploadRateLimiter = RateLimiter.create(adjustBitrateLimit(getUploadBitrateLimit()));
+        }
+        return uploadRateLimiter;
+    }
+
     /**
      * @param limit The upload bitrate limit in Kbit/s. Zero if unlimited.
      */
     public void setUploadBitrateLimit(long limit) {
         setLong(KEY_UPLOAD_BITRATE_LIMIT, limit);
+        getUploadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
     public String getDownsamplingCommand() {
@@ -804,10 +924,7 @@ public class SettingsService {
      * @return The 'remember me' key.
      */
     public String getRememberMeKey() {
-        String key = null;
-        if (StringUtils.isBlank(key)) key = getString(KEY_REMEMBER_ME_KEY, null);
-        if (StringUtils.isBlank(key)) key = System.getProperty("airsonic.rememberMeKey");
-        return key;
+        return getString(KEY_REMEMBER_ME_KEY, null);
     }
 
     /**
@@ -1098,6 +1215,7 @@ public class SettingsService {
      * @param username The username.
      * @return User-specific settings. Never <code>null</code>.
      */
+    @Cacheable(cacheNames = "userSettingsCache")
     public UserSettings getUserSettings(String username) {
         UserSettings settings = userDao.getUserSettings(username);
         return settings == null ? createDefaultUserSettings(username) : settings;
@@ -1120,11 +1238,8 @@ public class SettingsService {
         settings.setDefaultAlbumList(AlbumListType.RANDOM);
         settings.setLastFmEnabled(false);
         settings.setListenBrainzEnabled(false);
-        settings.setLastFmUsername(null);
-        settings.setLastFmPassword(null);
-        settings.setListenBrainzToken(null);
         settings.setChanged(Instant.now());
-        settings.setPaginationSize(40);
+        settings.setPaginationSize(10);
 
         UserSettings.Visibility playlist = settings.getPlaylistVisibility();
         playlist.setArtistVisible(true);
@@ -1148,6 +1263,7 @@ public class SettingsService {
      *
      * @param settings The user-specific settings.
      */
+    @CacheEvict(cacheNames = "userSettingsCache", key = "#settings.username")
     public void updateUserSettings(UserSettings settings) {
         userDao.updateUserSettings(settings);
     }
@@ -1346,69 +1462,60 @@ public class SettingsService {
         setString(KEY_RECAPTCHA_SECRET_KEY, recaptchaSecretKey);
     }
 
-    public DataSourceConfigType getDatabaseConfigType() {
-        String raw = getString(KEY_DATABASE_CONFIG_TYPE, DEFAULT_DATABASE_CONFIG_TYPE.name());
-        return DataSourceConfigType.valueOf(StringUtils.upperCase(raw));
+    public String getDatabaseDriver() {
+        return getString(KEY_DATABASE_DRIVER, DEFAULT_DATABASE_DRIVER);
     }
 
-    public void setDatabaseConfigType(DataSourceConfigType databaseConfigType) {
-        setString(KEY_DATABASE_CONFIG_TYPE, databaseConfigType.name());
+    public void setDatabaseDriver(String driver) {
+        setString(KEY_DATABASE_DRIVER, driver);
     }
 
-    public String getDatabaseConfigEmbedDriver() {
-        return getString(KEY_DATABASE_CONFIG_EMBED_DRIVER, DEFAULT_DATABASE_CONFIG_EMBED_DRIVER);
+    public String getDatabaseUrl() {
+        return getString(KEY_DATABASE_URL, DEFAULT_DATABASE_URL);
     }
 
-    public void setDatabaseConfigEmbedDriver(String embedDriver) {
-        setString(KEY_DATABASE_CONFIG_EMBED_DRIVER, embedDriver);
+    public void setDatabaseUrl(String url) {
+        setString(KEY_DATABASE_URL, url);
     }
 
-    public String getDatabaseConfigEmbedUrl() {
-        return getString(KEY_DATABASE_CONFIG_EMBED_URL, DEFAULT_DATABASE_CONFIG_EMBED_URL);
+    public String getDatabaseUsername() {
+        return getString(KEY_DATABASE_USERNAME, DEFAULT_DATABASE_USERNAME);
     }
 
-    public void setDatabaseConfigEmbedUrl(String url) {
-        setString(KEY_DATABASE_CONFIG_EMBED_URL, url);
+    public void setDatabaseUsername(String username) {
+        setString(KEY_DATABASE_USERNAME, username);
     }
 
-    public String getDatabaseConfigEmbedUsername() {
-        return getString(KEY_DATABASE_CONFIG_EMBED_USERNAME, DEFAULT_DATABASE_CONFIG_EMBED_USERNAME);
+    public String getDatabasePassword() {
+        return getString(KEY_DATABASE_PASSWORD, DEFAULT_DATABASE_PASSWORD);
     }
 
-    public void setDatabaseConfigEmbedUsername(String username) {
-        setString(KEY_DATABASE_CONFIG_EMBED_USERNAME, username);
+    public void setDatabasePassword(String password) {
+        setString(KEY_DATABASE_PASSWORD, password);
     }
 
-    public String getDatabaseConfigEmbedPassword() {
-        return getString(KEY_DATABASE_CONFIG_EMBED_PASSWORD, DEFAULT_DATABASE_CONFIG_EMBED_PASSWORD);
+    public String getDatabaseJNDIName() {
+        return getString(KEY_DATABASE_JNDI_NAME, DEFAULT_DATABASE_JNDI_NAME);
     }
 
-    public void setDatabaseConfigEmbedPassword(String password) {
-        setString(KEY_DATABASE_CONFIG_EMBED_PASSWORD, password);
-    }
-
-    public String getDatabaseConfigJNDIName() {
-        return getString(KEY_DATABASE_CONFIG_JNDI_NAME, DEFAULT_DATABASE_CONFIG_JNDI_NAME);
-    }
-
-    public void setDatabaseConfigJNDIName(String jndiName) {
-        setString(KEY_DATABASE_CONFIG_JNDI_NAME, jndiName);
+    public void setDatabaseJNDIName(String jndiName) {
+        setString(KEY_DATABASE_JNDI_NAME, jndiName);
     }
 
     public Integer getDatabaseMysqlVarcharMaxlength() {
-        return getInt(KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH, DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH);
+        return getInt(KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH, DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH);
     }
 
     public void setDatabaseMysqlVarcharMaxlength(int maxlength) {
-        setInt(KEY_DATABASE_MYSQL_VARCHAR_MAXLENGTH, maxlength);
+        setInt(KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH, maxlength);
     }
 
     public String getDatabaseUsertableQuote() {
-        return getString(KEY_DATABASE_USERTABLE_QUOTE, DEFAULT_DATABASE_USERTABLE_QUOTE);
+        return getString(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE, DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
     }
 
     public void setDatabaseUsertableQuote(String usertableQuote) {
-        setString(KEY_DATABASE_USERTABLE_QUOTE, usertableQuote);
+        setString(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE, usertableQuote);
     }
 
     public String getJWTKey() {
@@ -1419,19 +1526,58 @@ public class SettingsService {
         setString(KEY_JWT_KEY, jwtKey);
     }
 
+    public String getEncryptionPassword() {
+        return getString(KEY_ENCRYPTION_PASSWORD, null);
+    }
+
+    public void setEncryptionPassword(String key) {
+        setString(KEY_ENCRYPTION_PASSWORD, key);
+    }
+
+    public String getEncryptionSalt() {
+        return getString(KEY_ENCRYPTION_SALT, null);
+    }
+
+    public void setEncryptionSalt(String salt) {
+        setString(KEY_ENCRYPTION_SALT, salt);
+    }
+
+    public String getDecodablePasswordEncoder() {
+        return getString(KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER, DEFAULT_PREFERRED_DECODABLE_PASSWORD_ENCODER);
+    }
+
+    public void setDecodablePasswordEncoder(String encoder) {
+        setString(KEY_PREFERRED_DECODABLE_PASSWORD_ENCODER, encoder);
+    }
+
+    public String getNonDecodablePasswordEncoder() {
+        return getString(KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER, DEFAULT_PREFERRED_NONDECODABLE_PASSWORD_ENCODER);
+    }
+
+    public void setNonDecodablePasswordEncoder(String encoder) {
+        setString(KEY_PREFERRED_NONDECODABLE_PASSWORD_ENCODER, encoder);
+    }
+
+    public boolean getPreferNonDecodablePasswords() {
+        return getBoolean(KEY_PREFER_NONDECODABLE_PASSWORDS, DEFAULT_PREFER_NONDECODABLE_PASSWORDS);
+    }
+
+    public void setPreferNonDecodablePasswords(boolean preference) {
+        setBoolean(KEY_PREFER_NONDECODABLE_PASSWORDS, preference);
+    }
+
     public void setEnvironment(Environment env) {
         this.env = env;
     }
 
     public void resetDatabaseToDefault() {
-        setDatabaseConfigEmbedDriver(DEFAULT_DATABASE_CONFIG_EMBED_DRIVER);
-        setDatabaseConfigEmbedPassword(DEFAULT_DATABASE_CONFIG_EMBED_PASSWORD);
-        setDatabaseConfigEmbedUrl(DEFAULT_DATABASE_CONFIG_EMBED_URL);
-        setDatabaseConfigEmbedUsername(DEFAULT_DATABASE_CONFIG_EMBED_USERNAME);
-        setDatabaseConfigJNDIName(DEFAULT_DATABASE_CONFIG_JNDI_NAME);
-        setDatabaseMysqlVarcharMaxlength(DEFAULT_DATABASE_MYSQL_VARCHAR_MAXLENGTH);
-        setDatabaseUsertableQuote(DEFAULT_DATABASE_USERTABLE_QUOTE);
-        setDatabaseConfigType(DEFAULT_DATABASE_CONFIG_TYPE);
+        setDatabaseDriver(DEFAULT_DATABASE_DRIVER);
+        setDatabasePassword(DEFAULT_DATABASE_PASSWORD);
+        setDatabaseUrl(DEFAULT_DATABASE_URL);
+        setDatabaseUsername(DEFAULT_DATABASE_USERNAME);
+        setDatabaseJNDIName(DEFAULT_DATABASE_JNDI_NAME);
+        setDatabaseMysqlVarcharMaxlength(DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH);
+        setDatabaseUsertableQuote(DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
     }
 
     String getPlaylistExportFormat() {

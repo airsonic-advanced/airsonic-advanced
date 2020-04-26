@@ -18,12 +18,6 @@
     <changeSet id="schema53_002" author="muff1nman">
         <preConditions onFail="MARK_RAN">
             <not>
-                <dbms type="hsqldb" />
-                <customPrecondition className="org.airsonic.player.spring.DbmsVersionPrecondition" >
-                    <param name="major" value="1" />
-                </customPrecondition>
-            </not>
-            <not>
                 <indexExists indexName="idx_podcast_episode_url" />
             </not>
         </preConditions>
@@ -31,23 +25,8 @@
             <column name="url"/>
         </createIndex>
     </changeSet>
-    <changeSet id="schema53_002_1" author="muff1nman">
-        <preConditions onFail="MARK_RAN">
-            <dbms type="hsqldb" />
-            <customPrecondition className="org.airsonic.player.spring.DbmsVersionPrecondition" >
-                <param name="major" value="1" />
-            </customPrecondition>
-            <sqlCheck expectedResult="0">
-                select count(*) from INFORMATION_SCHEMA.SYSTEM_INDEXINFO where
-                lower(TABLE_NAME) = 'podcast_episode' and lower(INDEX_NAME) = 'idx_podcast_episode_url';
-            </sqlCheck>
-        </preConditions>
-        <createIndex tableName="podcast_episode" indexName="idx_podcast_episode_url">
-            <column name="url"/>
-        </createIndex>
-    </changeSet>
     <changeSet id="schema53_003" author="muff1nman">
-        <validCheckSum>8:354ba24098a5afe59761b39a36060298</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <not>
                 <columnExists tableName="user_settings" columnName="default_album_list" />
@@ -72,7 +51,7 @@
         </addColumn>
     </changeSet>
     <changeSet id="schema53_005" author="muff1nman">
-        <validCheckSum>8:a7e207e75eb9fbe25c2f911e89a26f21</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <not>
                 <columnExists tableName="podcast_channel" columnName="image_url" />

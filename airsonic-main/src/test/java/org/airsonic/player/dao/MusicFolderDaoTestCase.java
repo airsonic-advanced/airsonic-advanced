@@ -18,16 +18,17 @@
  Based upon Subsonic, Copyright 2009 (C) Sindre Mehus
  */
 package org.airsonic.player.dao;
-import org.airsonic.player.domain.MusicFolder;
 
+import org.airsonic.player.domain.MusicFolder;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit test of {@link MusicFolderDao}.
@@ -49,8 +50,11 @@ public class MusicFolderDaoTestCase extends DaoTestCaseBean2 {
         MusicFolder musicFolder = new MusicFolder(Paths.get("path"), "name", true, Instant.now());
         musicFolderDao.createMusicFolder(musicFolder);
 
-        MusicFolder newMusicFolder = musicFolderDao.getAllMusicFolders().get(0);
-        assertMusicFolderEquals(musicFolder, newMusicFolder);
+        // no duplicates
+        musicFolderDao.createMusicFolder(new MusicFolder(Paths.get("path"), "name", true, Instant.now()));
+
+        assertThat(musicFolderDao.getAllMusicFolders()).usingElementComparatorIgnoringFields("id")
+                .containsExactly(musicFolder);
     }
 
     @Test
@@ -65,33 +69,19 @@ public class MusicFolderDaoTestCase extends DaoTestCaseBean2 {
         musicFolder.setChanged(Instant.ofEpochMilli(234234L));
         musicFolderDao.updateMusicFolder(musicFolder);
 
-        MusicFolder newMusicFolder = musicFolderDao.getAllMusicFolders().get(0);
-        assertMusicFolderEquals(musicFolder, newMusicFolder);
+        assertThat(musicFolderDao.getAllMusicFolders()).element(0).isEqualToComparingFieldByField(musicFolder);
     }
 
     @Test
     public void testDeleteMusicFolder() {
-        assertEquals("Wrong number of music folders.", 0, musicFolderDao.getAllMusicFolders().size());
+        assertThat(musicFolderDao.getAllMusicFolders()).hasSize(0);
 
         musicFolderDao.createMusicFolder(new MusicFolder(Paths.get("path"), "name", true, Instant.now()));
-        assertEquals("Wrong number of music folders.", 1, musicFolderDao.getAllMusicFolders().size());
 
-        musicFolderDao.createMusicFolder(new MusicFolder(Paths.get("path"), "name", true, Instant.now()));
-        assertEquals("Wrong number of music folders.", 2, musicFolderDao.getAllMusicFolders().size());
+        List<MusicFolder> musicFolders = musicFolderDao.getAllMusicFolders();
+        assertThat(musicFolders).hasSize(1);
 
-        musicFolderDao.deleteMusicFolder(musicFolderDao.getAllMusicFolders().get(0).getId());
-        assertEquals("Wrong number of music folders.", 1, musicFolderDao.getAllMusicFolders().size());
-
-        musicFolderDao.deleteMusicFolder(musicFolderDao.getAllMusicFolders().get(0).getId());
-        assertEquals("Wrong number of music folders.", 0, musicFolderDao.getAllMusicFolders().size());
+        musicFolderDao.deleteMusicFolder(musicFolders.get(0).getId());
+        assertThat(musicFolderDao.getAllMusicFolders()).hasSize(0);
     }
-
-    private void assertMusicFolderEquals(MusicFolder expected, MusicFolder actual) {
-        assertEquals("Wrong name.", expected.getName(), actual.getName());
-        assertEquals("Wrong path.", expected.getPath(), actual.getPath());
-        assertEquals("Wrong enabled state.", expected.isEnabled(), actual.isEnabled());
-        assertEquals("Wrong changed date.", expected.getChanged(), actual.getChanged());
-    }
-
-
 }

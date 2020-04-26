@@ -20,7 +20,7 @@
 package org.airsonic.player.controller;
 
 import org.airsonic.player.domain.*;
-import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.PlayQueueService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
@@ -53,11 +53,11 @@ public class RandomPlayQueueController {
     @Autowired
     private PlayerService playerService;
     @Autowired
-    private MediaFileService mediaFileService;
-    @Autowired
     private SecurityService securityService;
     @Autowired
     private SettingsService settingsService;
+    @Autowired
+    private PlayQueueService playQueueService;
 
     @PostMapping
     protected String handleRandomPlayQueue(
@@ -214,8 +214,8 @@ public class RandomPlayQueueController {
         // Handle the music folder filter
         List<MusicFolder> musicFolders = getMusicFolders(request);
 
-        // Do we add to the current playlist or do we replace it?
-        boolean shouldAddToPlayList = request.getParameter("addToPlaylist") != null;
+        // Do we add to the current playqueue or do we replace it?
+        boolean shouldAddToPlaylist = request.getParameter("addToPlaylist") != null;
 
         // Search the database using these criteria
         RandomSearchCriteria criteria = new RandomSearchCriteria(
@@ -234,24 +234,10 @@ public class RandomPlayQueueController {
                 doesShowUnstarredSongs,
                 format
         );
-        User user = securityService.getCurrentUser(request);
         Player player = playerService.getPlayer(request, response);
-        PlayQueue playQueue = player.getPlayQueue();
-        playQueue.addFiles(shouldAddToPlayList, mediaFileService.getRandomSongs(criteria, user.getUsername()));
+        playQueueService.addRandomCriteria(player, shouldAddToPlaylist, criteria, autoRandom != null);
 
-        if (autoRandom != null) {
-            playQueue.setRandomSearchCriteria(criteria);
-            playQueue.setInternetRadio(null);
-        }
-
-        // Render the 'reload' view to reload the play queue and the main page
-        List<ReloadFrame> reloadFrames = new ArrayList<>();
-        reloadFrames.add(new ReloadFrame("playQueue", "playQueue.view?"));
-        reloadFrames.add(new ReloadFrame("main", "more.view"));
-        Map<String, Object> map = new HashMap<>();
-        map.put("reloadFrames", reloadFrames);
-        model.addAttribute("model", map);
-        return "reload";
+        return "redirect:more.view";
     }
 
     private List<MusicFolder> getMusicFolders(HttpServletRequest request) throws ServletRequestBindingException {

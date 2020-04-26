@@ -4,7 +4,9 @@
  * Author: Jeebs (Fisher Evans)
  */
 
-@import "default.css";
+@import "default-without-mediaelement.css";
+@import "mediaelement-dark.css";
+@import "dark-theme.css";
 
 table {
 	color: #0e0e0e;
@@ -49,6 +51,48 @@ h2, b, tr {
     color: #ccd5dc;
 }
 
+/* regular foreground color */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: #ccd5dc;
+}
+
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button, button.dt-button, div.dt-button, a.dt-button {
+    color: #8a9aa7 !important;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover, button.dt-button:hover:not(.disabled), div.dt-button:hover:not(.disabled), a.dt-button:hover:not(.disabled) {
+    color: #d2d9df !important;
+    border-color: #67778c;
+}
+
+/* regular color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: #ccd5dc !important;
+    border-color: #67778c;
+}
+
+table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+    background-color: #333333;
+}
+
+table.dataTable tbody>tr.selected, table.dataTable tbody>tr>.selected {
+    background-color: #666666;
+}
+
+table.dataTable.hover tbody>tr.selected:hover, table.dataTable.hover tbody>tr>.selected:hover, table.dataTable.display tbody>tr.selected:hover, table.dataTable.display tbody>tr>.selected:hover {
+    background-color: #595959;
+}
+
+table.music.dataTable tbody tr.currently-playing {
+    background-color: #4D4D4D;
+}
+
+table.music.dataTable tbody tr.currently-playing:hover {
+    background-color: #404040;
+}
+
 /* Link color */
 a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
     color: #8a9aa7
@@ -56,7 +100,6 @@ a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
 
 /* Link hover color */
 a:hover, a:hover * {
-    text-decoration: underline;
     color: #d2d9df;
 }
 

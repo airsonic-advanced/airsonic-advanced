@@ -20,13 +20,11 @@
 package org.airsonic.player.service;
 
 import com.google.common.io.MoreFiles;
-
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
-
+import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.metadata.JaudiotaggerParser;
 import org.airsonic.player.service.metadata.MetaData;
 import org.airsonic.player.service.metadata.MetaDataParser;
@@ -37,6 +35,9 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -45,6 +46,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -54,12 +56,11 @@ import java.util.stream.Stream;
  * @author Sindre Mehus
  */
 @Service
+@CacheConfig(cacheNames = "mediaFileMemoryCache")
 public class MediaFileService {
 
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileService.class);
 
-    @Autowired
-    private Ehcache mediaFileMemoryCache;
     @Autowired
     private SecurityService securityService;
     @Autowired
@@ -72,6 +73,8 @@ public class MediaFileService {
     private JaudiotaggerParser parser;
     @Autowired
     private MetaDataParserFactory metaDataParserFactory;
+    @Autowired
+    private LocaleResolver localeResolver;
     private boolean memoryCacheEnabled = true;
 
     /**
@@ -92,35 +95,28 @@ public class MediaFileService {
      * @return A media file instance, or null if not found.
      * @throws SecurityException If access is denied to the given file.
      */
+    @Cacheable(key = "#file", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
     public MediaFile getMediaFile(Path file, boolean useFastCache) {
-
-        // Look in fast memory cache first.
-        MediaFile result = getFromMemoryCache(file);
-        if (result != null) {
-            return result;
-        }
-
         if (!securityService.isReadAllowed(file)) {
             throw new SecurityException("Access denied to file " + file);
         }
 
-        // Secondly, look in database.
-        result = mediaFileDao.getMediaFile(file.toString());
+        // Look in database.
+        MediaFile result = mediaFileDao.getMediaFile(file.toString());
         if (result != null) {
             result = checkLastModified(result, useFastCache);
-            putInMemoryCache(file, result);
             return result;
         }
 
         if (!Files.exists(file)) {
             return null;
         }
-        // Not found in database, must read from disk.
-        result = createMediaFile(file);
 
-        // Put in cache and database.
-        putInMemoryCache(file, result);
-        mediaFileDao.createOrUpdateMediaFile(result);
+        // Not found in database, must read from disk.
+        result = createMediaFile(file, null);
+
+        // Put in database.
+        updateMediaFile(result);
 
         return result;
     }
@@ -165,8 +161,8 @@ public class MediaFileService {
             return mediaFile;
         }
         LOG.debug("Updating database file from disk (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
-        mediaFile = createMediaFile(mediaFile.getFile());
-        mediaFileDao.createOrUpdateMediaFile(mediaFile);
+        mediaFile = createMediaFile(mediaFile.getFile(), mediaFile);
+        updateMediaFile(mediaFile);
         return mediaFile;
     }
 
@@ -386,9 +382,9 @@ public class MediaFileService {
                     .map(x -> {
                         MediaFile media = storedChildrenMap.remove(x.toString());
                         if (media == null) {
-                            media = createMediaFile(x);
+                            media = createMediaFile(x, null);
                             // Add children that are not already stored.
-                            mediaFileDao.createOrUpdateMediaFile(media);
+                            updateMediaFile(media);
                         } else {
                             media = checkLastModified(media, false); //has to be false, only time it's called
                         }
@@ -403,7 +399,7 @@ public class MediaFileService {
             // Update timestamp in parent.
             parent.setChildrenLastUpdated(parent.getChanged());
             parent.setPresent(true);
-            mediaFileDao.createOrUpdateMediaFile(parent);
+            updateMediaFile(parent);
 
             return result;
         } catch (IOException e) {
@@ -451,8 +447,14 @@ public class MediaFileService {
         return (name.startsWith(".") && !name.startsWith("..")) || name.startsWith("@eaDir") || "Thumbs.db".equals(name);
     }
 
-    private MediaFile createMediaFile(Path file) {
-        MediaFile existingFile = mediaFileDao.getMediaFile(file.toString());
+    private MediaFile createMediaFile(Path file, MediaFile existingFile) {
+        if (!Files.exists(file)) {
+            if (existingFile != null) {
+                existingFile.setPresent(false);
+                existingFile.setChildrenLastUpdated(Instant.ofEpochMilli(1));
+            }
+            return existingFile;
+        }
 
         MediaFile mediaFile = new MediaFile();
         Instant lastModified = FileUtil.lastModified(file);
@@ -556,30 +558,17 @@ public class MediaFileService {
     }
 
     public void refreshMediaFile(MediaFile mediaFile) {
-        mediaFile = createMediaFile(mediaFile.getFile());
-        mediaFileDao.createOrUpdateMediaFile(mediaFile);
-        mediaFileMemoryCache.remove(mediaFile.getFile());
+        mediaFile = createMediaFile(mediaFile.getFile(), mediaFile);
+        updateMediaFile(mediaFile);
     }
 
-    private void putInMemoryCache(Path file, MediaFile mediaFile) {
-        if (memoryCacheEnabled) {
-            mediaFileMemoryCache.put(new Element(file, mediaFile));
-        }
-    }
-
-    private MediaFile getFromMemoryCache(Path file) {
-        if (!memoryCacheEnabled) {
-            return null;
-        }
-        Element element = mediaFileMemoryCache.get(file);
-        return element == null ? null : (MediaFile) element.getObjectValue();
-    }
-
+    @CacheEvict(allEntries = true)
     public void setMemoryCacheEnabled(boolean memoryCacheEnabled) {
         this.memoryCacheEnabled = memoryCacheEnabled;
-        if (!memoryCacheEnabled) {
-            mediaFileMemoryCache.removeAll();
-        }
+    }
+
+    public boolean getMemoryCacheEnabled() {
+        return memoryCacheEnabled;
     }
 
     /**
@@ -620,10 +609,6 @@ public class MediaFileService {
         this.settingsService = settingsService;
     }
 
-    public void setMediaFileMemoryCache(Ehcache mediaFileMemoryCache) {
-        this.mediaFileMemoryCache = mediaFileMemoryCache;
-    }
-
     public void setMediaFileDao(MediaFileDao mediaFileDao) {
         this.mediaFileDao = mediaFileDao;
     }
@@ -657,6 +642,7 @@ public class MediaFileService {
         this.metaDataParserFactory = metaDataParserFactory;
     }
 
+    @CacheEvict(key = "#mediaFile.file")
     public void updateMediaFile(MediaFile mediaFile) {
         mediaFileDao.createOrUpdateMediaFile(mediaFile);
     }
@@ -686,6 +672,24 @@ public class MediaFileService {
         }
     }
 
+    public List<MediaFileEntry> toMediaFileEntryList(List<MediaFile> files, String username, boolean calculateStarred, boolean calculateFolderAccess,
+            Function<MediaFile, String> streamUrlGenerator, Function<MediaFile, String> remoteStreamUrlGenerator,
+            Function<MediaFile, String> remoteCoverArtUrlGenerator) {
+        Locale locale = Optional.ofNullable(username).map(localeResolver::resolveLocale).orElse(null);
+        List<MediaFileEntry> entries = new ArrayList<>(files.size());
+        for (MediaFile file : files) {
+            String streamUrl = Optional.ofNullable(streamUrlGenerator).map(g -> g.apply(file)).orElse(null);
+            String remoteStreamUrl = Optional.ofNullable(remoteStreamUrlGenerator).map(g -> g.apply(file)).orElse(null);
+            String remoteCoverArtUrl = Optional.ofNullable(remoteCoverArtUrlGenerator).map(g -> g.apply(file)).orElse(null);
+
+            boolean starred = calculateStarred && username != null && getMediaFileStarredDate(file.getId(), username) != null;
+            boolean folderAccess = !calculateFolderAccess || username == null || securityService.isFolderAccessAllowed(file, username);
+            entries.add(MediaFileEntry.fromMediaFile(file, locale, starred, folderAccess, streamUrl, remoteStreamUrl, remoteCoverArtUrl));
+        }
+
+        return entries;
+    }
+
     public int getAlbumCount(List<MusicFolder> musicFolders) {
         return mediaFileDao.getAlbumCount(musicFolders);
     }
@@ -696,10 +700,6 @@ public class MediaFileService {
 
     public int getStarredAlbumCount(String username, List<MusicFolder> musicFolders) {
         return mediaFileDao.getStarredAlbumCount(username, musicFolders);
-    }
-
-    public void clearMemoryCache() {
-        mediaFileMemoryCache.removeAll();
     }
 
     public void setAlbumDao(AlbumDao albumDao) {

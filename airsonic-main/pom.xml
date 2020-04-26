@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.airsonic.player</groupId>
         <artifactId>airsonic</artifactId>
-        <version>10.6.0-SNAPSHOT</version>
+        <version>11.0.0-SNAPSHOT</version>
     </parent>
 
     <properties>
@@ -68,12 +68,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>jakarta.servlet.jsp</groupId>
@@ -88,6 +82,26 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.cache</groupId>
+            <artifactId>cache-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.ehcache</groupId>
+            <artifactId>ehcache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aspects</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -106,7 +120,7 @@
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>3.8.3</version>
+            <version>3.10.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.ldap</groupId>
@@ -135,12 +149,12 @@
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-            <version>8.2.0</version>
+            <version>8.4.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
-            <version>8.2.0</version>
+            <version>8.4.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.ant</groupId>
@@ -182,6 +196,22 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.20</version>
+        </dependency>
+        <dependency>
+            <groupId>org.tukaani</groupId>
+            <artifactId>xz</artifactId>
+            <version>1.8</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.junrar</groupId>
+            <artifactId>junrar</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
             <version>3.0.2</version>
@@ -209,33 +239,10 @@
         </dependency>
 
         <dependency>
-            <groupId>hsqldb</groupId>
+            <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-            <version>1.8.0.7</version>
+            <version>2.5.0</version>
             <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.directwebremoting</groupId>
-            <artifactId>dwr</artifactId>
-            <version>3.0.rc1</version>
-        </dependency>
-
-        <!--Needed by dwr-->
-        <dependency>
-            <groupId>com.yahoo.platform.yui</groupId>
-            <artifactId>yuicompressor</artifactId>
-            <version>2.4.8</version>
-            <scope>runtime</scope>
-            <!-- Necessary to avoid StringIndexOutOfBoundsException when running as a JAR -->
-            <!-- See: https://github.com/yui/yuicompressor/issues/161 -->
-            <!-- See also: https://stackoverflow.com/questions/8429095 -->
-            <exclusions>
-              <exclusion>
-                <artifactId>js</artifactId>
-                <groupId>rhino</groupId>
-              </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -267,12 +274,6 @@
         </dependency>
 
         <dependency>
-            <groupId>net.sf.ehcache</groupId>
-            <artifactId>ehcache-core</artifactId>
-            <version>2.6.11</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.eclipse.persistence</groupId>
             <artifactId>org.eclipse.persistence.moxy</artifactId>
             <version>2.7.5</version>
@@ -295,12 +296,6 @@
 		    <artifactId>java-time-jsptags</artifactId>
 		    <version>1.1.4</version>
 		</dependency>
-
-        <dependency>
-            <groupId>stax</groupId>
-            <artifactId>stax-api</artifactId>
-            <version>1.0.1</version>
-        </dependency>
 
         <dependency>
             <groupId>jakarta.mail</groupId>
@@ -340,12 +335,16 @@
         <dependency>
             <groupId>org.fourthline.cling</groupId>
             <artifactId>cling-core</artifactId>
+            <!-- Cling removed the org.fourthline.cling.transport.impl.apache package in 2.1, which is needed to make Cling work with Tomcat. -->
+            <!-- Don't upgrade this unless you can test UPnP/DLNA support properly! -->
             <version>2.0.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.fourthline.cling</groupId>
             <artifactId>cling-support</artifactId>
+            <!-- Cling removed the org.fourthline.cling.transport.impl.apache package in 2.1, which is needed to make Cling work with Tomcat. -->
+            <!-- Don't upgrade this unless you can test UPnP/DLNA support properly! -->
             <version>2.0.1</version>
         </dependency>
 
@@ -408,7 +407,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-configuration2</artifactId>
-            <version>2.4</version>
+            <version>2.7</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -456,6 +455,14 @@
                 <exclusion>
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
+                </exclusion>
+                <exclusion>
+                 <groupId>javax.xml.stream</groupId>
+                 <artifactId>stax-api</artifactId>
+                </exclusion>
+                <exclusion>
+                 <groupId>stax</groupId>
+                 <artifactId>stax-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -583,18 +590,10 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring.boot.version}</version>
                 <configuration>
                     <mainClass>org.airsonic.player.Application</mainClass>
                     <layout>WAR</layout>
                 </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -640,18 +639,52 @@
                 <addOutputDirectoryToResources>true</addOutputDirectoryToResources>
               </configuration>
             </plugin>
-            <plugin>
+            <!-- <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-            </plugin>
+            </plugin>  -->
             <plugin>
                 <groupId>net.nicoulaj.maven.plugins</groupId>
                 <artifactId>checksum-maven-plugin</artifactId>
             </plugin>
             <plugin>
+                <!-- Change to non-snapshot version once it is released (change groupId) -->
+                <groupId>com.github.m50d</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.11.1</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <proc>none</proc>
+                    <complianceLevel>${java.version}</complianceLevel>
+                    <showWeaveInfo>true</showWeaveInfo>
+                     <aspectLibraries>
+                         <aspectLibrary>
+                             <groupId>org.springframework</groupId>
+                             <artifactId>spring-aspects</artifactId>
+                         </aspectLibrary>
+                     </aspectLibraries>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>test-compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjtools</artifactId>
+                        <version>1.9.5</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-jspc-maven-plugin</artifactId>
-                <version>9.4.21.v20190926</version>
+                <version>9.4.28.v20200408</version>
                 <executions>
                     <execution>
                         <id>jspc</id>

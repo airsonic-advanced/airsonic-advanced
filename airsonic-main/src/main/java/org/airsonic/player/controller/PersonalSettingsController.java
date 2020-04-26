@@ -21,9 +21,9 @@ package org.airsonic.player.controller;
 
 import org.airsonic.player.command.PersonalSettingsCommand;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,6 +37,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.time.Instant;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Controller for the page used to administrate per-user settings.
@@ -80,10 +81,7 @@ public class PersonalSettingsController {
         command.setAutoHidePlayQueue(userSettings.isAutoHidePlayQueue());
         command.setKeyboardShortcutsEnabled(userSettings.isKeyboardShortcutsEnabled());
         command.setLastFmEnabled(userSettings.isLastFmEnabled());
-        command.setLastFmUsername(userSettings.getLastFmUsername());
-        command.setLastFmPassword(userSettings.getLastFmPassword());
         command.setListenBrainzEnabled(userSettings.isListenBrainzEnabled());
-        command.setListenBrainzToken(userSettings.getListenBrainzToken());
         command.setPaginationSize(userSettings.getPaginationSize());
 
         Locale currentLocale = userSettings.getLocale();
@@ -107,7 +105,12 @@ public class PersonalSettingsController {
             }
         }
 
-        model.addAttribute("command",command);
+        model.addAttribute("command", command);
+
+        Map<App, UserCredential> thirdPartyCreds = securityService.getDecodableCredsForApps(user.getUsername(), App.LASTFM, App.LISTENBRAINZ);
+
+        model.addAttribute("lastfmCredsAbsent", thirdPartyCreds.get(App.LASTFM) == null);
+        model.addAttribute("listenBrainzCredsAbsent", thirdPartyCreds.get(App.LISTENBRAINZ) == null);
     }
 
     @GetMapping
@@ -149,16 +152,10 @@ public class PersonalSettingsController {
         settings.setAutoHidePlayQueue(command.isAutoHidePlayQueue());
         settings.setKeyboardShortcutsEnabled(command.isKeyboardShortcutsEnabled());
         settings.setLastFmEnabled(command.isLastFmEnabled());
-        settings.setLastFmUsername(command.getLastFmUsername());
         settings.setListenBrainzEnabled(command.isListenBrainzEnabled());
-        settings.setListenBrainzToken(command.getListenBrainzToken());
         settings.setSystemAvatarId(getSystemAvatarId(command));
         settings.setAvatarScheme(getAvatarScheme(command));
         settings.setPaginationSize(command.getPaginationSize());
-
-        if (StringUtils.isNotBlank(command.getLastFmPassword())) {
-            settings.setLastFmPassword(command.getLastFmPassword());
-        }
 
         settings.setChanged(Instant.now());
         settingsService.updateUserSettings(settings);

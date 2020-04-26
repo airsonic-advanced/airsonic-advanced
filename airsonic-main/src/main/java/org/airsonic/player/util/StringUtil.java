@@ -34,7 +34,6 @@ import java.text.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * Miscellaneous string utility methods.
@@ -83,6 +82,8 @@ public final class StringUtil {
             {"jpeg", "image/jpeg"},
             {"png", "image/png"},
             {"bmp", "image/bmp"},
+
+            {"zip", "application/zip"},
     };
 
     private static final String[] FILE_SYSTEM_UNSAFE = {"/", "\\", "..", ":", "\"", "?", "*", "|"};
@@ -139,7 +140,11 @@ public final class StringUtil {
      * @param locale    The locale used for formatting.
      * @return The formatted string.
      */
-    public static synchronized String formatBytes(long byteCount, Locale locale) {
+    public static synchronized String formatBytes(Long byteCount, Locale locale) {
+
+        if (byteCount == null) {
+            return null;
+        }
 
         // More than 1 TB?
         if (byteCount >= 1024L * 1024 * 1024 * 1024) {
@@ -237,23 +242,6 @@ public final class StringUtil {
         } finally {
             FileUtil.closeQuietly(in);
         }
-    }
-
-    /**
-     * Converts the given string of whitespace-separated integers to an <code>int</code> array.
-     *
-     * @param s String consisting of integers separated by whitespace.
-     * @return The corresponding array of ints.
-     * @throws NumberFormatException If string contains non-parseable text.
-     */
-    public static int[] parseInts(String s) {
-        if (s == null) {
-            return new int[0];
-        }
-
-        return Stream.of(StringUtils.split(s))
-                .mapToInt(Integer::parseInt)
-                .toArray();
     }
 
     /**

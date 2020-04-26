@@ -36,7 +36,7 @@ import java.util.Optional;
 @Repository
 public class PlayQueueDao extends AbstractDao {
 
-    private static final String INSERT_COLUMNS = "username, current, position_millis, changed, changed_by";
+    private static final String INSERT_COLUMNS = "username, \"CURRENT\", position_millis, changed, changed_by";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private final PlayQueueMapper rowMapper = new PlayQueueMapper();
 

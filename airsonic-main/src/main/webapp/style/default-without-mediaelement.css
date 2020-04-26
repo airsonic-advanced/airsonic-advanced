@@ -46,6 +46,88 @@ h1, h2, .detail, .albumComment {
     color: #696969;
 }
 
+/* regular foreground color */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: #696969;
+}
+
+/* .disabled color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled, .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover, .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:active {
+    color: #999 !important;
+}
+
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: #006699 !important;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color: #DD6900 !important;
+    background: none;
+    border-color: black;
+}
+
+/* regular color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: #696969 !important;
+    background: none;
+    border-color: black;
+}
+
+div.dt-buttons {
+    padding-top: 0.25em;
+    float: right;
+}
+
+/* a:link color */
+button.dt-button, div.dt-button, a.dt-button {
+    color: #006699;
+    background: none;
+    margin: unset;
+    font-size: unset;
+    box-shadow: unset;
+    border: none;
+    line-height: unset;
+}
+
+/* a:hover color + .border1 border-color */
+button.dt-button:hover:not(.disabled), div.dt-button:hover:not(.disabled), a.dt-button:hover:not(.disabled) {
+    color: #DD6900;
+    background: none;
+    border: 1px solid black;
+}
+
+button.dt-button:focus:not(.disabled),
+button.dt-button:active:not(.disabled),
+button.dt-button:active:not(.disabled):hover:not(.disabled),
+div.dt-button:focus:not(.disabled),
+div.dt-button:active:not(.disabled),
+div.dt-button:active:not(.disabled):hover:not(.disabled),
+a.dt-button:focus:not(.disabled),
+a.dt-button:active:not(.disabled),
+a.dt-button:active:not(.disabled):hover:not(.disabled) {
+    background: none;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+.dataTables_wrapper .dataTables_processing {
+    background: none;
+}
+
+table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+    background-color: #D9D9D9;
+}
+
+table.music.dataTable tbody tr.currently-playing {
+    background-color: #98aacd;
+}
+
+table.music.dataTable tbody tr.currently-playing:hover {
+    background-color: #879bc5;
+}
+
 /* Foreground color used for bold and tr. */
 b, tr {
     color: #333333;
@@ -66,7 +148,7 @@ a:hover, a:hover * {
 a.disabled, a.disabled span, span.disabled {
     cursor: default;
     text-decoration: none;
-    color: #bbb;
+    color: #999;
 }
 
 /* Player controls */
@@ -94,7 +176,6 @@ body {
     scrollbar-track-color: #EFEFEF;
     scrollbar-darkshadow-color: #98AAB1;
 }
-
 
 /* Login page */
 
@@ -172,6 +253,11 @@ p {
     line-height: 1.5em
 }
 
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 h1 {
     white-space: nowrap;
     font-size: 150%;
@@ -194,7 +280,7 @@ form {
     margin: 0;
 }
 
-input, textarea, select {
+input, textarea, select, button {
     font-size: 90%;
     padding: 3px;
     border-radius: 3px;
@@ -202,18 +288,19 @@ input, textarea, select {
     vertical-align: middle;
 }
 
-input[type=submit], input[type=button] {
+input[type=submit], input[type=button], button {
     background: white;
     padding-left: 1em;
     padding-right: 1em;
     color: black;
+    font-family: Verdana, Tahoma, Geneva, arial, sans-serif;
 }
 
-input[type=submit]:hover, input[type=button]:hover {
+input[type=submit]:hover, input[type=button]:hover, button:hover {
     text-decoration: none;
 }
 
-input[type=submit]:active, input[type=button]:active {
+input[type=submit]:active, input[type=button]:active, button:active {
     background: #e9e9e9;
 }
 
@@ -245,7 +332,7 @@ table.indent {
 }
 
 table.music {
-    line-height: 190%;
+    line-height: 100%;
     border-collapse:collapse;
     white-space:nowrap;
     width: 100%;
@@ -253,8 +340,8 @@ table.music {
 
 td.fit {
     width:1px;
-    padding-left:4px;
-    padding-right:4px;
+    padding-left:4px !important;
+    padding-right:4px !important;
 }
 
 td.truncate {
@@ -443,6 +530,16 @@ img {
     color: black;
 }
 
+.playqueue-controlbar {
+    width: 100%;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    z-index: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
 /*
  * Styles related to java jukebox controls
  */
@@ -458,6 +555,12 @@ img {
 #javaJukeboxSongPositionSlider {
     width : 200px;
     height : 4px;
+}
+
+/* Blur effect */
+.blur {
+  color: transparent;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.7);
 }
 
 /* Javascript-zoom related styles */

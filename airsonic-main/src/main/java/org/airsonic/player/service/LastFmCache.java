@@ -22,6 +22,7 @@ package org.airsonic.player.service;
 import de.umass.lastfm.cache.Cache;
 import de.umass.lastfm.cache.FileSystemCache;
 import org.airsonic.player.util.FileUtil;
+import org.airsonic.player.util.LambdaUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
@@ -123,7 +124,7 @@ public class LastFmCache extends Cache {
     public void clear() {
         try (Stream<Path> walk = Files.list(cacheDir)) {
             walk.filter(Files::isRegularFile)
-                .forEach(FileUtil.uncheck(Files::deleteIfExists));
+                .forEach(LambdaUtils.uncheckConsumer(Files::deleteIfExists));
         } catch (Exception ignore) {}
     }
 

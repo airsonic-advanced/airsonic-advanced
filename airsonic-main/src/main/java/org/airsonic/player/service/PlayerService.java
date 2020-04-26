@@ -19,16 +19,17 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.dao.PlayerDao;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.Transcoding;
-import org.airsonic.player.domain.TransferStatus;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.ServletRequestUtils;
 
@@ -62,19 +63,22 @@ public class PlayerService {
     private SecurityService securityService;
     @Autowired
     private TranscodingService transcodingService;
+    @Autowired
+    private SimpMessagingTemplate brokerTemplate;
 
     @PostConstruct
     public void init() {
         playerDao.deleteOldPlayers(60);
     }
 
-    /**
-     * Equivalent to <code>getPlayer(request, response, true)</code> .
-     */
     public Player getPlayer(HttpServletRequest request, HttpServletResponse response) throws Exception {
         return getPlayer(request, response, true, false);
     }
 
+    public Player getPlayer(HttpServletRequest request, HttpServletResponse response, boolean remoteControlEnabled,
+            boolean isStreamRequest) throws Exception {
+        return getPlayer(request, response, null, remoteControlEnabled, isStreamRequest);
+    }
     /**
      * Returns the player associated with the given HTTP request.  If no such player exists, a new
      * one is created.
@@ -86,14 +90,18 @@ public class PlayerService {
      * @return The player associated with the given HTTP request.
      */
     public synchronized Player getPlayer(HttpServletRequest request, HttpServletResponse response,
-                                         boolean remoteControlEnabled, boolean isStreamRequest) throws Exception {
+            Integer playerId, boolean remoteControlEnabled, boolean isStreamRequest) throws Exception {
+
+        Player player = getPlayerById(playerId);
 
         // Find by 'player' request parameter.
-        Player player = getPlayerById(ServletRequestUtils.getIntParameter(request, "player"));
+        if (player == null) {
+            player = getPlayerById(ServletRequestUtils.getIntParameter(request, "player"));
+        }
 
         // Find in session context.
         if (player == null && remoteControlEnabled) {
-            Integer playerId = (Integer) request.getSession().getAttribute("player");
+            playerId = (Integer) request.getSession().getAttribute("player");
             if (playerId != null) {
                 player = getPlayerById(playerId);
             }
@@ -118,31 +126,10 @@ public class PlayerService {
         // If no player was found, create it.
         if (player == null) {
             player = new Player();
-            createPlayer(player);
-//            LOG.debug("Created player " + player.getId() + " (remoteControlEnabled: " + remoteControlEnabled +
-//                      ", isStreamRequest: " + isStreamRequest + ", username: " + username +
-//                      ", ip: " + request.getRemoteAddr() + ").");
-        }
-
-        // Update player data.
-        boolean isUpdate = false;
-        if (username != null && player.getUsername() == null) {
-            player.setUsername(username);
-            isUpdate = true;
-        }
-        if (player.getIpAddress() == null || isStreamRequest ||
-            (!isPlayerConnected(player) && player.isDynamicIp() && !request.getRemoteAddr().equals(player.getIpAddress()))) {
-            player.setIpAddress(request.getRemoteAddr());
-            isUpdate = true;
-        }
-        String userAgent = request.getHeader("user-agent");
-        if (isStreamRequest) {
-            player.setType(userAgent);
             player.setLastSeen(Instant.now());
-            isUpdate = true;
-        }
-
-        if (isUpdate) {
+            populatePlayer(player, username, request, isStreamRequest);
+            createPlayer(player);
+        } else if (populatePlayer(player, username, request, isStreamRequest)) {
             updatePlayer(player);
         }
 
@@ -161,11 +148,33 @@ public class PlayerService {
         }
 
         // Save player in session context.
-        if (remoteControlEnabled) {
+        if (remoteControlEnabled && request.getSession() != null) {
             request.getSession().setAttribute("player", player.getId());
         }
 
         return player;
+    }
+
+    private boolean populatePlayer(Player player, String username, HttpServletRequest request, boolean isStreamRequest) {
+        // Update player data.
+        boolean isUpdate = false;
+        if (username != null && player.getUsername() == null) {
+            player.setUsername(username);
+            isUpdate = true;
+        }
+        if (!StringUtils.equals(request.getRemoteAddr(), player.getIpAddress()) &&
+                (player.getIpAddress() == null || isStreamRequest || (!isPlayerConnected(player) && player.isDynamicIp()))) {
+            player.setIpAddress(request.getRemoteAddr());
+            isUpdate = true;
+        }
+        String userAgent = request.getHeader("user-agent");
+        if (isStreamRequest) {
+            player.setType(userAgent);
+            player.setLastSeen(Instant.now());
+            isUpdate = true;
+        }
+
+        return isUpdate;
     }
 
     /**
@@ -175,6 +184,10 @@ public class PlayerService {
      */
     public void updatePlayer(Player player) {
         playerDao.updatePlayer(player);
+        if (player.getUsername() != null) {
+            brokerTemplate.convertAndSendToUser(player.getUsername(), "/queue/players/updated",
+                    ImmutableMap.of("id", player.getId(), "description", player.getShortDescription(), "tech", player.getTechnology()));
+        }
     }
 
     /**
@@ -198,12 +211,7 @@ public class PlayerService {
      * @return Whether the player is connected.
      */
     private boolean isPlayerConnected(Player player) {
-        for (TransferStatus status : statusService.getStreamStatusesForPlayer(player)) {
-            if (status.isActive()) {
-                return true;
-            }
-        }
-        return false;
+        return !statusService.getStreamStatusesForPlayer(player).isEmpty();
     }
 
     /**
@@ -282,6 +290,7 @@ public class PlayerService {
      */
     public synchronized void removePlayerById(int id) {
         playerDao.deletePlayer(id);
+        brokerTemplate.convertAndSend("/topic/players/deleted", id);
     }
 
     /**
@@ -309,7 +318,7 @@ public class PlayerService {
         playerDao.createPlayer(player);
 
         List<Transcoding> transcodings = transcodingService.getAllTranscodings();
-        List<Transcoding> defaultActiveTranscodings = new ArrayList<Transcoding>();
+        List<Transcoding> defaultActiveTranscodings = new ArrayList<>(transcodings.size());
         for (Transcoding transcoding : transcodings) {
             if (transcoding.isDefaultActive()) {
                 defaultActiveTranscodings.add(transcoding);
@@ -317,6 +326,10 @@ public class PlayerService {
         }
         if (player != null) {
             transcodingService.setTranscodingsForPlayer(player, defaultActiveTranscodings);
+            if (player.getUsername() != null) {
+                brokerTemplate.convertAndSendToUser(player.getUsername(), "/queue/players/created",
+                        ImmutableMap.of("id", player.getId(), "description", player.getShortDescription(), "tech", player.getTechnology()));
+            }
         }
     }
 
@@ -328,9 +341,10 @@ public class PlayerService {
         // Create guest user if necessary.
         User user = securityService.getUserByName(User.USERNAME_GUEST);
         if (user == null) {
-            user = new User(User.USERNAME_GUEST, RandomStringUtils.randomAlphanumeric(30), null);
+            user = new User(User.USERNAME_GUEST, null);
             user.setStreamRole(true);
-            securityService.createUser(user);
+            securityService.createUser(user, RandomStringUtils.randomAlphanumeric(30),
+                    "Autogenerated for " + User.USERNAME_GUEST + " user");
         }
 
         // Look for existing player.

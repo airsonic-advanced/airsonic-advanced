@@ -1,11 +1,12 @@
 package org.airsonic.player.service.search;
 
-import org.airsonic.player.TestCaseUtils;
-import org.airsonic.player.dao.DaoHelper;
+import org.airsonic.player.api.ScanningTestUtils;
 import org.airsonic.player.dao.MusicFolderDao;
+import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.MediaScannerService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.HomeRule;
+import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -15,7 +16,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.Map;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @RunWith(SpringRunner.class)
@@ -24,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /*
  * Abstract class for scanning MusicFolder.
  */
-public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
+public abstract class AbstractAirsonicHomeTest {
 
     @ClassRule
     public static final HomeRule airsonicRule = new HomeRule();
@@ -40,9 +42,6 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
     private static AtomicBoolean dataBaseReady = new AtomicBoolean();
 
     @Autowired
-    protected DaoHelper daoHelper;
-
-    @Autowired
     protected MediaScannerService mediaScannerService;
 
     @Autowired
@@ -54,49 +53,36 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-    @Override
     public AtomicBoolean dataBasePopulated() {
         return dataBasePopulated;
     }
 
-    @Override
     public AtomicBoolean dataBaseReady() {
         return dataBaseReady;
     }
 
-    @Override
-    public final void populateDatabaseOnlyOnce() {
+    public List<MusicFolder> getMusicFolders() {
+        return MusicFolderTestData.getTestMusicFolders();
+    }
+
+    public static SettingsService cleanupSettingsService;
+
+    public final UUID populateDatabaseOnlyOnce() {
+        UUID id = null;
         if (!dataBasePopulated().get()) {
             dataBasePopulated().set(true);
-            getMusicFolders().forEach(musicFolderDao::createMusicFolder);
-            settingsService.clearMusicFolderCache();
-            try {
-                // Await time to avoid scan failure.
-                for (int i = 0; i < 10; i++) {
-                    Thread.sleep(100);
+            cleanupSettingsService = settingsService;
+            // wait for previous startup scan to finish
+            while (mediaScannerService.isScanning()) {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
-            TestCaseUtils.execScan(mediaScannerService);
-            System.out.println("--- Report of records count per table ---");
-            Map<String, Integer> records = TestCaseUtils.recordsInAllTables(daoHelper);
-            records.keySet().stream().filter(s ->
-                    s.equals("MEDIA_FILE")
-                    | s.equals("ARTIST")
-                    | s.equals("MUSIC_FOLDER")
-                    | s.equals("ALBUM"))
-                    .forEach(tableName ->
-                        System.out.println("\t" + tableName + " : " + records.get(tableName).toString()));
-            System.out.println("--- *********************** ---");
-            try {
-                // Await for Lucene to finish writing(asynchronous).
-                for (int i = 0; i < 5; i++) {
-                    Thread.sleep(100);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+
+            id = ScanningTestUtils.before(getMusicFolders(), settingsService, mediaScannerService);
+
             dataBaseReady().set(true);
         } else {
             while (!dataBaseReady().get()) {
@@ -110,6 +96,13 @@ public abstract class AbstractAirsonicHomeTest implements AirsonicHomeTest {
                 }
             }
         }
+
+        return id;
     }
 
+    public static void cleanup(UUID id) {
+        if (id != null) {
+            ScanningTestUtils.after(id, cleanupSettingsService);
+        }
+    }
 }

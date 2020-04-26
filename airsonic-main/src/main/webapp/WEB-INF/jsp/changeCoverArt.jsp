@@ -1,18 +1,25 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 
 <html><head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/dwr/interface/coverArtService.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/engine.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/dwr/util.js'/>"></script>
 
     <script type="text/javascript" language="javascript">
-        dwr.engine.setErrorHandler(function() {
-            $("#wait").hide();
-            dwr.util.setValue("errorDetails", "Sorry, an error occurred while searching for cover art.");
-            $("#errorDetails").show();
-        });
+        function cloneNodeBySelector(selector, idToAppend) {
+            var cloned = $(selector).clone();
+            cloned.each(function() {
+                if (this.id) {
+                    this.id = this.id + idToAppend;
+                }
+            });
+            cloned.find("*").each(function() {
+                if (this.id) {
+                    this.id = this.id + idToAppend;
+                }
+            });
+
+            return cloned;
+        }
 
         function setImage(imageUrl) {
             $("#wait").show();
@@ -21,15 +28,14 @@
             $("#error").hide();
             $("#errorDetails").hide();
             $("#noImagesFound").hide();
-            coverArtService.setCoverArtImage(${model.id}, imageUrl, setImageComplete);
+            top.StompClient.send("/app/coverart/set", JSON.stringify({albumId: ${model.id}, url: imageUrl}));
         }
 
         function setImageComplete(errorDetails) {
             $("#wait").hide();
-            if (errorDetails != null) {
-                dwr.util.setValue("errorDetails", errorDetails, { escapeHtml:false });
+            if (errorDetails != "OK") {
+                $("#errorDetails").text(errorDetails).show();
                 $("#error").show();
-                $("#errorDetails").show();
             } else {
                 $("#success").show();
             }
@@ -44,7 +50,8 @@
 
                 for (var i = 0; i < searchResults.length; i++) {
                     var result = searchResults[i];
-                    var node = $("#template").clone();
+                    var node = cloneNodeBySelector("#template", i);
+                    node.appendTo(images);
 
                     node.find(".search-result-link").attr("href", "javascript:setImage('" + result.imageUrl + "');");
                     node.find(".search-result-image").attr("src", result.imageUrl);
@@ -52,7 +59,6 @@
                     node.find(".search-result-album").text(result.album);
 
                     node.show();
-                    node.appendTo(images);
                 }
 
                 $("#result").show();
@@ -69,13 +75,24 @@
             $("#errorDetails").hide();
             $("#noImagesFound").hide();
 
-            var artist = dwr.util.getValue("artist");
-            var album = dwr.util.getValue("album");
-            coverArtService.searchCoverArt(artist, album, searchComplete);
+            var artist = $("#artist").val();
+            var album = $("#album").val();
+            top.StompClient.send("/app/coverart/search", JSON.stringify({artist: artist, album: album}));
+        }
+
+        function init() {
+            top.StompClient.subscribe("changeCoverArt.jsp", {
+                "/user/queue/coverart/search": function(msg) {
+                    searchComplete(JSON.parse(msg.body));
+                },
+                "/user/queue/coverart/set": function(msg) {
+                    setImageComplete(msg.body);
+                }
+            }, search);
         }
     </script>
 </head>
-<body class="mainframe bgcolor1" onload="search()">
+<body class="mainframe bgcolor1" onload="init()">
 <h1><fmt:message key="changecoverart.title"/></h1>
 <form action="javascript:search()">
     <sec:csrfInput />
@@ -86,7 +103,7 @@
     </tr></table>
 </form>
 
-<form action="javascript:setImage(dwr.util.getValue('url'))">
+<form action="javascript:setImage($('input[name=\'url\']').val())">
     <sec:csrfInput />
     <table><tr>
         <td><label for="url"><fmt:message key="changecoverart.address"/></label></td>

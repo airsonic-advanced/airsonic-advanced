@@ -1,0 +1,54 @@
+
+/* The primary foreground colour. */
+body {
+    color: white;
+}
+
+/* The secondary foreground colour used for h1, details etc. */
+h1, .detail, .albumComment {
+    color: white;
+}
+
+/* Foreground colour used for h2, bold and tr. */
+h2, b, tr {
+    color: white;
+}
+
+/* Link color */
+a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
+    color: white
+}
+
+/* Link hover colour */
+a:hover, a:hover * {
+    color: white;
+}
+
+/* regular foreground color */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: white;
+}
+
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button, button.dt-button, div.dt-button, a.dt-button {
+    color: white !important;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover, button.dt-button:hover:not(.disabled), div.dt-button:hover:not(.disabled), a.dt-button:hover:not(.disabled) {
+    color: white !important;
+    border-color: white;
+}
+
+/* regular color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: white !important;
+    border-color: white;
+}
+
+/* Simple border. */
+.border1, .ruleTableHeader, .ruleTableCell, .log {
+    border: 1px solid white;
+}
+
+
