@@ -281,6 +281,6 @@ public class AbstractDao {
                 //can't use Collectors.toMap or Collectors.toConcurrentMap due to possible null value mappings
                 .collect(HashMap::new, (m, v) -> m.put(v.getKey(), v.getValue()), HashMap::putAll);
         var keyHolder = insertTemplates.get(table).executeAndReturnKeyHolder(args);
-        return (Integer) keyHolder.getKey();
+        return keyHolder.getKey().intValue();
     }
 }
