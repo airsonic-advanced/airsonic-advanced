@@ -25,13 +25,17 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Provides database services for shared media.
@@ -47,18 +51,18 @@ public class ShareDao extends AbstractDao {
     private ShareRowMapper shareRowMapper = new ShareRowMapper();
     private ShareFileRowMapper shareFileRowMapper = new ShareFileRowMapper();
 
+    @PostConstruct
+    public void register() throws Exception {
+        registerInserts("share", "id", Arrays.asList(INSERT_COLUMNS.split(", ")), Share.class);
+    }
+
     /**
      * Creates a new share.
      *
      * @param share The share to create.  The ID of the share will be set by this method.
      */
-    @Transactional
     public void createShare(Share share) {
-        String sql = "insert into share (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")";
-        update(sql, share.getName(), share.getDescription(), share.getUsername(), share.getCreated(),
-                share.getExpires(), share.getLastVisited(), share.getVisitCount());
-
-        int id = queryForInt("select max(id) from share", 0);
+        Integer id = insert("share", share);
         share.setId(id);
     }
 
@@ -99,11 +103,13 @@ public class ShareDao extends AbstractDao {
      * @param shareId The share ID.
      * @param paths   Paths of the files to share.
      */
+    @Transactional
     public void createSharedFiles(int shareId, String... paths) {
-        String sql = "insert into share_file (share_id, path) values (?, ?)";
-        for (String path : paths) {
-            update(sql, shareId, path);
+        if (paths == null || paths.length == 0) {
+            return;
         }
+        String sql = "insert into share_file (share_id, path) values (?, ?)";
+        batchedUpdate(sql, Arrays.asList(paths).stream().map(x -> new Object[] { shareId, x }).collect(Collectors.toList()));
     }
 
     /**
@@ -134,6 +140,7 @@ public class ShareDao extends AbstractDao {
     }
 
     private static class ShareRowMapper implements RowMapper<Share> {
+        @Override
         public Share mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Share(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), Optional.ofNullable(rs.getTimestamp(5)).map(x -> x.toInstant()).orElse(null),
                     Optional.ofNullable(rs.getTimestamp(6)).map(x -> x.toInstant()).orElse(null), Optional.ofNullable(rs.getTimestamp(7)).map(x -> x.toInstant()).orElse(null), rs.getInt(8));
@@ -141,6 +148,7 @@ public class ShareDao extends AbstractDao {
     }
 
     private static class ShareFileRowMapper implements RowMapper<String> {
+        @Override
         public String mapRow(ResultSet rs, int rowNum) throws SQLException {
             return rs.getString(1);
         }
