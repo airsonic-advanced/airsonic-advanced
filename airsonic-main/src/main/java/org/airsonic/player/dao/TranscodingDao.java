@@ -95,7 +95,7 @@ public class TranscodingDao extends AbstractDao {
      * @param transcoding The transcoding to create.
      */
     public void createTranscoding(Transcoding transcoding) {
-        Integer id = (Integer) insert("transcoding2", transcoding).get("id");
+        Integer id = insert("transcoding2", transcoding);
         transcoding.setId(id);
         LOG.info("Created transcoding {}", transcoding.getName());
     }
