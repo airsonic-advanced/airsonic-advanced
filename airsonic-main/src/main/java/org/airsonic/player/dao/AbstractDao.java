@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.dao;
 
+import com.google.common.base.CaseFormat;
+import org.airsonic.player.util.LambdaUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -27,16 +29,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,7 +83,7 @@ public class AbstractDao {
 
     protected static Object[] convertToDBTypes(Object[] args) {
         return args == null ? null : Stream.of(args)
-                .map(x -> ((x instanceof Instant) ? Timestamp.from((Instant) x) : x))
+                .map(AbstractDao::convertToDBType)
                 .collect(Collectors.toList())
                 .toArray();
     }
@@ -83,9 +91,13 @@ public class AbstractDao {
     protected static Map<String, Object> convertToDBTypes(Map<String, Object> args) {
         return args == null ? null : args.entrySet()
                 .stream()
-                .map(x -> (x.getValue() instanceof Instant) ? Pair.of(x.getKey(), Timestamp.from((Instant) x.getValue())) : x)
-                //can't use Collectors.toMap due to possible null value mappings
+                .map(x -> Pair.of(x.getKey(), convertToDBType(x.getValue())))
+                //can't use Collectors.toMap or Collectors.toConcurrentMap due to possible null value mappings
                 .collect(HashMap::new, (m, v) -> m.put(v.getKey(), v.getValue()), HashMap::putAll);
+    }
+
+    protected static Object convertToDBType(Object x) {
+        return ((x instanceof Instant) ? Timestamp.from((Instant) x) : x);
     }
 
     protected int update(String sql, Object... args) {
@@ -202,5 +214,57 @@ public class AbstractDao {
     protected <T> T namedQueryOne(String sql, RowMapper<T> rowMapper, Map<String, Object> args) {
         List<T> list = namedQuery(sql, rowMapper, args);
         return list.isEmpty() ? null : list.get(0);
+    }
+
+    private static Map<String, SimpleJdbcInsert> insertTemplates = new HashMap<>();
+    private static Map<String, Map<String, MethodHandle>> methods = new HashMap<>();
+    private static MethodHandles.Lookup lookup = MethodHandles.lookup();
+    private static List<Function<String, String>> colNameTransforms = Arrays.asList(Function.identity(),
+        c -> CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, c),
+        c -> CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, c).toLowerCase());
+
+    protected void registerInserts(String table, String generatedKey, List<String> columns, Class<?> klazz) throws Exception {
+        var insert = new SimpleJdbcInsert(jdbcTemplate).withTableName(table);
+        if (generatedKey != null) {
+            insert.usingGeneratedKeyColumns(generatedKey);
+        }
+        insertTemplates.put(table, insert);
+
+        MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(klazz, lookup);
+        methods.put(table, columns.parallelStream().map(LambdaUtils.uncheckFunction(c -> {
+            var alreadyLooked = new HashSet<String>();
+            Field f = null;
+            for (Function<String, String> colNameTransform : colNameTransforms) {
+                String lookup = colNameTransform.apply(c);
+                if (alreadyLooked.add(lookup)) {
+                    try {
+                        f = klazz.getDeclaredField(lookup);
+                    } catch (NoSuchFieldException e) {
+                        LOG.debug("Could not find field {} (looking for {}) in class {}", lookup, c, klazz.getName());
+                    }
+
+                    if (f != null) {
+                        break;
+                    }
+                }
+            }
+            return Pair.of(c, privateLookup.unreflectGetter(f));
+        })).collect(Collectors.toConcurrentMap(Pair::getLeft, Pair::getRight)));
+    }
+
+    protected Map<String, Object> insert(String table, Object obj) {
+        Map<String, Object> args = methods.get(table).entrySet()
+                .stream()
+                .map(e -> {
+                    try {
+                        return Pair.of(e.getKey(), convertToDBType(e.getValue().invoke(obj)));
+                    } catch (Throwable x) {
+                        throw new RuntimeException(x);
+                    }
+                })
+                //can't use Collectors.toMap or Collectors.toConcurrentMap due to possible null value mappings
+                .collect(HashMap::new, (m, v) -> m.put(v.getKey(), v.getValue()), HashMap::putAll);
+        var keyHolder = insertTemplates.get(table).executeAndReturnKeyHolder(args);
+        return keyHolder.getKeys();
     }
 }
