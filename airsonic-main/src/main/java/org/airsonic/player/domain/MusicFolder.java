@@ -39,7 +39,7 @@ public class MusicFolder implements Serializable {
     private Integer id;
     private Path path;
     private String name;
-    private boolean isEnabled;
+    private boolean enabled;
     private Instant changed;
 
     /**
@@ -55,7 +55,7 @@ public class MusicFolder implements Serializable {
         this.id = id;
         this.path = path;
         this.name = name;
-        isEnabled = enabled;
+        this.enabled = enabled;
         this.changed = changed;
     }
 
@@ -126,7 +126,7 @@ public class MusicFolder implements Serializable {
      * @return Whether the folder is enabled.
      */
     public boolean isEnabled() {
-        return isEnabled;
+        return enabled;
     }
 
     /**
@@ -135,7 +135,7 @@ public class MusicFolder implements Serializable {
      * @param enabled Whether the folder is enabled.
      */
     public void setEnabled(boolean enabled) {
-        isEnabled = enabled;
+        this.enabled = enabled;
     }
 
     /**

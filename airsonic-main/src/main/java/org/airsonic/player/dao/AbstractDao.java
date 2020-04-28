@@ -261,11 +261,14 @@ public class AbstractDao {
                     }
                 }
             }
+            if (f == null) {
+                LOG.error("Could not locate a suitable field in class {} for table {} column {}", klazz.getName(), table, c);
+            }
             return Pair.of(c, privateLookup.unreflectGetter(f));
         })).collect(Collectors.toConcurrentMap(Pair::getLeft, Pair::getRight)));
     }
 
-    protected Map<String, Object> insert(String table, Object obj) {
+    protected static Integer insert(String table, Object obj) {
         Map<String, Object> args = methods.get(table).entrySet()
                 .stream()
                 .map(e -> {
@@ -278,6 +281,6 @@ public class AbstractDao {
                 //can't use Collectors.toMap or Collectors.toConcurrentMap due to possible null value mappings
                 .collect(HashMap::new, (m, v) -> m.put(v.getKey(), v.getValue()), HashMap::putAll);
         var keyHolder = insertTemplates.get(table).executeAndReturnKeyHolder(args);
-        return keyHolder.getKeys();
+        return keyHolder.getKey().intValue();
     }
 }

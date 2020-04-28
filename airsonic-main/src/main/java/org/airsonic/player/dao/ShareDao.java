@@ -62,7 +62,7 @@ public class ShareDao extends AbstractDao {
      * @param share The share to create.  The ID of the share will be set by this method.
      */
     public void createShare(Share share) {
-        Integer id = (Integer) insert("share", share).get("id");
+        Integer id = insert("share", share);
         share.setId(id);
     }
 
