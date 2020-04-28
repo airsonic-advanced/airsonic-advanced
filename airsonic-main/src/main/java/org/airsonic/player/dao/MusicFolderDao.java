@@ -25,10 +25,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.annotation.PostConstruct;
 
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,6 +51,11 @@ public class MusicFolderDao extends AbstractDao {
 
     @Autowired
     private UserDao userDao;
+
+    @PostConstruct
+    public void register() throws Exception {
+        registerInserts("music_folder", "id", Arrays.asList(INSERT_COLUMNS.split(", ")), MusicFolder.class);
+    }
 
     /**
      * Returns all music folders.
@@ -73,12 +82,10 @@ public class MusicFolderDao extends AbstractDao {
      *
      * @param musicFolder The music folder to create.
      */
+    @Transactional
     public void createMusicFolder(MusicFolder musicFolder) {
         if (getMusicFolderForPath(musicFolder.getPath().toString()) == null) {
-            String sql = "insert into music_folder (" + INSERT_COLUMNS + ") values (?, ?, ?, ?)";
-            update(sql, musicFolder.getPath().toString(), musicFolder.getName(), musicFolder.isEnabled(), musicFolder.getChanged());
-
-            Integer id = queryForInt("select max(id) from music_folder", 0);
+            Integer id = (Integer) insert("music_folder", musicFolder).get("id");
 
             update("insert into music_folder_user (music_folder_id, username) select ?, username from " + userDao.getUserTable(), id);
             musicFolder.setId(id);
