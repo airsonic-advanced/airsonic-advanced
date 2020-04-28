@@ -23,10 +23,14 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Provides database services for play queues
@@ -36,9 +40,14 @@ import java.util.Optional;
 @Repository
 public class PlayQueueDao extends AbstractDao {
 
-    private static final String INSERT_COLUMNS = "username, \"CURRENT\", position_millis, changed, changed_by";
+    private static final String INSERT_COLUMNS = "username, current_media_file_id, position_millis, changed, changed_by";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private final PlayQueueMapper rowMapper = new PlayQueueMapper();
+
+    @PostConstruct
+    public void register() throws Exception {
+        registerInserts("play_queue", "id", Arrays.asList(INSERT_COLUMNS.split(", ")), SavedPlayQueue.class);
+    }
 
     @Transactional
     public SavedPlayQueue getPlayQueue(String username) {
@@ -54,18 +63,15 @@ public class PlayQueueDao extends AbstractDao {
     @Transactional
     public void savePlayQueue(SavedPlayQueue playQueue) {
         update("delete from play_queue where username=?", playQueue.getUsername());
-        update("insert into play_queue(" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")",
-               playQueue.getUsername(), playQueue.getCurrentMediaFileId(), playQueue.getPositionMillis(),
-               playQueue.getChanged(), playQueue.getChangedBy());
-        int id = queryForInt("select max(id) from play_queue", 0);
+        Integer id = (Integer) insert("play_queue", playQueue).get("id");
         playQueue.setId(id);
 
-        for (Integer mediaFileId : playQueue.getMediaFileIds()) {
-            update("insert into play_queue_file(play_queue_id, media_file_id) values (?, ?)", id, mediaFileId);
-        }
+        batchedUpdate("insert into play_queue_file(play_queue_id, media_file_id) values (?, ?)",
+                playQueue.getMediaFileIds().stream().map(x -> new Object[] { id, x }).collect(Collectors.toList()));
     }
 
     private static class PlayQueueMapper implements RowMapper<SavedPlayQueue> {
+        @Override
         public SavedPlayQueue mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new SavedPlayQueue(rs.getInt(1),
                                       rs.getString(2),
