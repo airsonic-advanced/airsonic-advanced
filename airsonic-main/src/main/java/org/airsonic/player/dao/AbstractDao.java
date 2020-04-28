@@ -97,7 +97,15 @@ public class AbstractDao {
     }
 
     protected static Object convertToDBType(Object x) {
-        return ((x instanceof Instant) ? Timestamp.from((Instant) x) : x);
+        if (x instanceof Instant) {
+            return Timestamp.from((Instant) x);
+        }
+
+        if (x instanceof Enum) {
+            return ((Enum<?>) x).name();
+        }
+
+        return x;
     }
 
     protected int update(String sql, Object... args) {
