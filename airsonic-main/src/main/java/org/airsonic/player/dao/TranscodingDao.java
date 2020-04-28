@@ -26,8 +26,11 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -42,6 +45,11 @@ public class TranscodingDao extends AbstractDao {
     private static final String INSERT_COLUMNS = "name, source_formats, target_format, step1, step2, step3, default_active";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private TranscodingRowMapper rowMapper = new TranscodingRowMapper();
+
+    @PostConstruct
+    public void register() throws Exception {
+        registerInserts("transcoding", "id", Arrays.asList(INSERT_COLUMNS.split(", ")), Transcoding.class);
+    }
 
     /**
      * Returns all transcodings.
@@ -72,6 +80,7 @@ public class TranscodingDao extends AbstractDao {
      * @param playerId       The player ID.
      * @param transcodingIds ID's of the active transcodings.
      */
+    @Transactional
     public void setTranscodingsForPlayer(Integer playerId, int[] transcodingIds) {
         update("delete from player_transcoding where player_id = ?", playerId);
         String sql = "insert into player_transcoding(player_id, transcoding_id) values (?, ?)";
@@ -85,14 +94,9 @@ public class TranscodingDao extends AbstractDao {
      *
      * @param transcoding The transcoding to create.
      */
-    @Transactional
     public void createTranscoding(Transcoding transcoding) {
-        Integer existingMax = queryForInt("select max(id) from transcoding", 0);
-        transcoding.setId(existingMax + 1);
-        String sql = "insert into transcoding (" + QUERY_COLUMNS + ") values (" + questionMarks(QUERY_COLUMNS) + ")";
-        update(sql, transcoding.getId(), transcoding.getName(), transcoding.getSourceFormats(),
-                transcoding.getTargetFormat(), transcoding.getStep1(),
-                transcoding.getStep2(), transcoding.getStep3(), transcoding.isDefaultActive());
+        Integer id = (Integer) insert("transcoding", transcoding).get("id");
+        transcoding.setId(id);
         LOG.info("Created transcoding {}", transcoding.getName());
     }
 
@@ -121,6 +125,7 @@ public class TranscodingDao extends AbstractDao {
     }
 
     private static class TranscodingRowMapper implements RowMapper<Transcoding> {
+        @Override
         public Transcoding mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Transcoding(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5),
                     rs.getString(6), rs.getString(7), rs.getBoolean(8));
