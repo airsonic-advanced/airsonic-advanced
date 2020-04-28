@@ -108,7 +108,7 @@ public class TranscodingDao extends AbstractDao {
     public void deleteTranscoding(Integer id) {
         String sql = "delete from transcoding2 where id=?";
         update(sql, id);
-        LOG.info("Deleted transcoding with ID " + id);
+        LOG.info("Deleted transcoding with ID {}", id);
     }
 
     /**
