@@ -9,6 +9,6 @@
                 <columnExists tableName="play_queue" columnName="current_media_file_id" />
             </not>
         </preConditions>
-        <renameColumn tableName="play_queue" oldColumnName="current" newColumnName="current_media_file_id"/>
+        <renameColumn tableName="play_queue" oldColumnName="current" newColumnName="current_media_file_id" columnDataType="int"/>
     </changeSet>
 </databaseChangeLog>
