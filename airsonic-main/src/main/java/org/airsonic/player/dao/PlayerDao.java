@@ -103,7 +103,7 @@ public class PlayerDao extends AbstractDao {
      * @param player The player to create.
      */
     public void createPlayer(Player player) {
-        Integer id = (Integer) insert("player", player).get("id");
+        Integer id = insert("player", player);
         player.setId(id);
         addPlaylist(player);
 
