@@ -25,7 +25,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
+
+import javax.annotation.PostConstruct;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -51,6 +52,11 @@ public class PlayerDao extends AbstractDao {
 
     private PlayerRowMapper rowMapper = new PlayerRowMapper();
     private Map<Integer, PlayQueue> playlists = Collections.synchronizedMap(new HashMap<Integer, PlayQueue>());
+
+    @PostConstruct
+    public void register() throws Exception {
+        registerInserts("player", "id", Arrays.asList(INSERT_COLUMNS.split(", ")), Player.class);
+    }
 
     /**
      * Returns all players.
@@ -96,20 +102,12 @@ public class PlayerDao extends AbstractDao {
      *
      * @param player The player to create.
      */
-    @Transactional
     public void createPlayer(Player player) {
-        Integer existingMax = queryForInt("select max(id) from player", 0);
-        int id = existingMax + 1;
+        Integer id = (Integer) insert("player", player).get("id");
         player.setId(id);
-        String sql = "insert into player (" + QUERY_COLUMNS + ") values (" + questionMarks(QUERY_COLUMNS) + ")";
-        update(sql, player.getId(), player.getName(), player.getType(), player.getUsername(),
-               player.getIpAddress(), player.isAutoControlEnabled(), player.isM3uBomEnabled(),
-               player.getLastSeen(), CoverArtScheme.MEDIUM.name(),
-               player.getTranscodeScheme().name(), player.isDynamicIp(),
-               player.getTechnology().name(), player.getClientId(), player.getJavaJukeboxMixer());
         addPlaylist(player);
 
-        LOG.info("Created player " + id + '.');
+        LOG.info("Created player {}", id);
     }
 
     /**
@@ -175,6 +173,7 @@ public class PlayerDao extends AbstractDao {
     }
 
     private class PlayerRowMapper implements RowMapper<Player> {
+        @Override
         public Player mapRow(ResultSet rs, int rowNum) throws SQLException {
             Player player = new Player();
             int col = 1;
