@@ -64,7 +64,7 @@ public class PodcastDao extends AbstractDao {
      * @return The ID of the newly created channel.
      */
     public int createChannel(PodcastChannel channel) {
-        return (Integer) insert("podcast_channel", channel).get("id");
+        return insert("podcast_channel", channel);
     }
 
     /**
