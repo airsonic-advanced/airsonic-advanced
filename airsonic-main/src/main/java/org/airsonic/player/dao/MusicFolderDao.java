@@ -85,7 +85,7 @@ public class MusicFolderDao extends AbstractDao {
     @Transactional
     public void createMusicFolder(MusicFolder musicFolder) {
         if (getMusicFolderForPath(musicFolder.getPath().toString()) == null) {
-            Integer id = (Integer) insert("music_folder", musicFolder).get("id");
+            Integer id = insert("music_folder", musicFolder);
 
             update("insert into music_folder_user (music_folder_id, username) select ?, username from " + userDao.getUserTable(), id);
             musicFolder.setId(id);
