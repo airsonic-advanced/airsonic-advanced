@@ -44,7 +44,7 @@ public class PlayerDao extends AbstractDao {
 
     private static final Logger LOG = LoggerFactory.getLogger(PlayerDao.class);
     private static final String INSERT_COLUMNS = "name, type, username, ip_address, auto_control_enabled, m3u_bom_enabled, " +
-                                                 "last_seen, cover_art_scheme, transcode_scheme, dynamic_ip, technology, client_id, mixer";
+                                                 "last_seen, transcode_scheme, dynamic_ip, technology, client_id, mixer";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
 
     @Autowired
@@ -185,7 +185,6 @@ public class PlayerDao extends AbstractDao {
             player.setAutoControlEnabled(rs.getBoolean(col++));
             player.setM3uBomEnabled(rs.getBoolean(col++));
             player.setLastSeen(Optional.ofNullable(rs.getTimestamp(col++)).map(x -> x.toInstant()).orElse(null));
-            col++; // Ignore cover art scheme.
             player.setTranscodeScheme(TranscodeScheme.valueOf(rs.getString(col++)));
             player.setDynamicIp(rs.getBoolean(col++));
             player.setTechnology(PlayerTechnology.valueOf(rs.getString(col++)));
