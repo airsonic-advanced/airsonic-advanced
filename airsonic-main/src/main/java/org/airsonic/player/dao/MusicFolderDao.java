@@ -102,7 +102,7 @@ public class MusicFolderDao extends AbstractDao {
     public void deleteMusicFolder(Integer id) {
         String sql = "delete from music_folder where id=?";
         update(sql, id);
-        LOG.info("Deleted music folder with ID " + id);
+        LOG.info("Deleted music folder with ID {}", id);
     }
 
     /**

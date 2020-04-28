@@ -261,6 +261,9 @@ public class AbstractDao {
                     }
                 }
             }
+            if (f == null) {
+                LOG.error("Could not locate a suitable field in class {} for table {} column {}", klazz.getName(), table, c);
+            }
             return Pair.of(c, privateLookup.unreflectGetter(f));
         })).collect(Collectors.toConcurrentMap(Pair::getLeft, Pair::getRight)));
     }
