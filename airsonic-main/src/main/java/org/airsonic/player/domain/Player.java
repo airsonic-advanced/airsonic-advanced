@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.domain;
 
+import org.airsonic.player.dao.AbstractDao.Column;
 import org.apache.commons.lang.StringUtils;
 
 import java.time.Instant;
@@ -44,6 +45,7 @@ public class Player {
     private Instant lastSeen;
     private TranscodeScheme transcodeScheme = TranscodeScheme.OFF;
     private PlayQueue playQueue;
+    @Column("mixer")
     private String javaJukeboxMixer;
 
     /**
