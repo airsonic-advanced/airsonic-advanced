@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.time.Instant;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 
 /**
@@ -161,16 +162,6 @@ public class PlayerDaoTestCase extends DaoTestCaseBean2 {
     }
 
     private void assertPlayerEquals(Player expected, Player actual) {
-        assertEquals("Wrong ID.", expected.getId(), actual.getId());
-        assertEquals("Wrong name.", expected.getName(), actual.getName());
-        assertEquals("Wrong technology.", expected.getTechnology(), actual.getTechnology());
-        assertEquals("Wrong client ID.", expected.getClientId(), actual.getClientId());
-        assertEquals("Wrong type.", expected.getType(), actual.getType());
-        assertEquals("Wrong username.", expected.getUsername(), actual.getUsername());
-        assertEquals("Wrong IP address.", expected.getIpAddress(), actual.getIpAddress());
-        assertEquals("Wrong dynamic IP.", expected.getDynamicIp(), actual.getDynamicIp());
-        assertEquals("Wrong auto control enabled.", expected.getAutoControlEnabled(), actual.getAutoControlEnabled());
-        assertEquals("Wrong last seen.", expected.getLastSeen(), actual.getLastSeen());
-        assertEquals("Wrong transcode scheme.", expected.getTranscodeScheme(), actual.getTranscodeScheme());
+        assertThat(expected).isEqualToComparingFieldByField(actual);
     }
 }
