@@ -63,7 +63,7 @@ public class PlayQueueDao extends AbstractDao {
     @Transactional
     public void savePlayQueue(SavedPlayQueue playQueue) {
         update("delete from play_queue where username=?", playQueue.getUsername());
-        Integer id = (Integer) insert("play_queue", playQueue).get("id");
+        Integer id = insert("play_queue", playQueue);
         playQueue.setId(id);
 
         batchedUpdate("insert into play_queue_file(play_queue_id, media_file_id) values (?, ?)",
