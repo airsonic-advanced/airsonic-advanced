@@ -16,4 +16,18 @@
             </addColumn>
         </rollback>
     </changeSet>
+    <changeSet id="drop-player-client-side-playlist" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="player" columnName="client_side_playlist" />
+        </preConditions>
+        <dropColumn tableName="player" columnName="client_side_playlist"/>
+        <rollback changeSetId="schema33_002" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema33.xml" />
+    </changeSet>
+    <changeSet id="drop-player-jukebox" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="player" columnName="jukebox" />
+        </preConditions>
+        <dropColumn tableName="player" columnName="jukebox"/>
+        <rollback changeSetId="schema35_009" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema35.xml" />
+    </changeSet>
 </databaseChangeLog>
