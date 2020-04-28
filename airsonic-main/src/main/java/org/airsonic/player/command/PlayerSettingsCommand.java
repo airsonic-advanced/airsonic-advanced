@@ -39,9 +39,9 @@ public class PlayerSettingsCommand {
     private String description;
     private String type;
     private Instant lastSeen;
-    private boolean isDynamicIp;
-    private boolean isAutoControlEnabled;
-    private boolean isM3uBomEnabled;
+    private boolean dynamicIp;
+    private boolean autoControlEnabled;
+    private boolean m3uBomEnabled;
     private String technologyName;
     private String transcodeSchemeName;
     private boolean transcodingSupported;
@@ -95,28 +95,28 @@ public class PlayerSettingsCommand {
         this.lastSeen = lastSeen;
     }
 
-    public boolean isDynamicIp() {
-        return isDynamicIp;
+    public boolean getDynamicIp() {
+        return dynamicIp;
     }
 
     public void setDynamicIp(boolean dynamicIp) {
-        isDynamicIp = dynamicIp;
+        this.dynamicIp = dynamicIp;
     }
 
-    public boolean isAutoControlEnabled() {
-        return isAutoControlEnabled;
+    public boolean getAutoControlEnabled() {
+        return autoControlEnabled;
     }
 
     public void setAutoControlEnabled(boolean autoControlEnabled) {
-        isAutoControlEnabled = autoControlEnabled;
+        this.autoControlEnabled = autoControlEnabled;
     }
 
-    public boolean isM3uBomEnabled() {
-        return isM3uBomEnabled;
+    public boolean getM3uBomEnabled() {
+        return m3uBomEnabled;
     }
 
     public void setM3uBomEnabled(boolean m3uBomEnabled) {
-        isM3uBomEnabled = m3uBomEnabled;
+        this.m3uBomEnabled = m3uBomEnabled;
     }
 
     public String getTranscodeSchemeName() {

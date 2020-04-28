@@ -158,8 +158,8 @@ public class PlayerDao extends AbstractDao {
                      "mixer = ? " +
                      "where id = ?";
         update(sql, player.getName(), player.getType(), player.getUsername(),
-               player.getIpAddress(), player.isAutoControlEnabled(), player.isM3uBomEnabled(),
-               player.getLastSeen(), player.getTranscodeScheme().name(), player.isDynamicIp(),
+               player.getIpAddress(), player.getAutoControlEnabled(), player.getM3uBomEnabled(),
+               player.getLastSeen(), player.getTranscodeScheme().name(), player.getDynamicIp(),
                player.getTechnology().name(), player.getClientId(), player.getJavaJukeboxMixer(), player.getId());
     }
 

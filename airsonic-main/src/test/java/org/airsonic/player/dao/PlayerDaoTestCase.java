@@ -55,8 +55,8 @@ public class PlayerDaoTestCase extends DaoTestCaseBean2 {
         playerDao.createPlayer(new Player());
         Player player = playerDao.getAllPlayers().get(0);
 
-        assertTrue("Player should have dynamic IP by default.", player.isDynamicIp());
-        assertTrue("Player should be auto-controlled by default.", player.isAutoControlEnabled());
+        assertTrue("Player should have dynamic IP by default.", player.getDynamicIp());
+        assertTrue("Player should be auto-controlled by default.", player.getAutoControlEnabled());
         assertNull("Player client ID should be null by default.", player.getClientId());
     }
 
@@ -168,8 +168,8 @@ public class PlayerDaoTestCase extends DaoTestCaseBean2 {
         assertEquals("Wrong type.", expected.getType(), actual.getType());
         assertEquals("Wrong username.", expected.getUsername(), actual.getUsername());
         assertEquals("Wrong IP address.", expected.getIpAddress(), actual.getIpAddress());
-        assertEquals("Wrong dynamic IP.", expected.isDynamicIp(), actual.isDynamicIp());
-        assertEquals("Wrong auto control enabled.", expected.isAutoControlEnabled(), actual.isAutoControlEnabled());
+        assertEquals("Wrong dynamic IP.", expected.getDynamicIp(), actual.getDynamicIp());
+        assertEquals("Wrong auto control enabled.", expected.getAutoControlEnabled(), actual.getAutoControlEnabled());
         assertEquals("Wrong last seen.", expected.getLastSeen(), actual.getLastSeen());
         assertEquals("Wrong transcode scheme.", expected.getTranscodeScheme(), actual.getTranscodeScheme());
     }
