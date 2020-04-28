@@ -34,6 +34,7 @@ import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Arrays;
@@ -103,6 +104,10 @@ public class AbstractDao {
 
         if (x instanceof Enum) {
             return ((Enum<?>) x).name();
+        }
+
+        if (x instanceof Path) {
+            return ((Path) x).toString();
         }
 
         return x;
