@@ -26,6 +26,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -45,6 +47,11 @@ public class PlaylistDao extends AbstractDao {
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private final PlaylistMapper rowMapper = new PlaylistMapper();
     private final static Comparator<Playlist> sorter = Comparator.comparing(p -> p.getName());
+
+    @PostConstruct
+    public void register() throws Exception {
+        registerInserts("playlist", "id", Arrays.asList(INSERT_COLUMNS.split(", ")), Playlist.class);
+    }
 
     public List<Playlist> getReadablePlaylistsForUser(String username) {
 
@@ -81,22 +88,16 @@ public class PlaylistDao extends AbstractDao {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
     public void createPlaylist(Playlist playlist) {
-        update("insert into playlist(" + INSERT_COLUMNS + ") values(" + questionMarks(INSERT_COLUMNS) + ")",
-                playlist.getUsername(), playlist.isShared(), playlist.getName(), playlist.getComment(),
-                0, 0.0, playlist.getCreated(), playlist.getChanged(), playlist.getImportedFrom());
-
-        int id = queryForInt("select max(id) from playlist", 0);
+        Integer id = (Integer) insert("playlist", playlist).get("id");
         playlist.setId(id);
     }
 
     @Transactional
     public void setFilesInPlaylist(int id, List<MediaFile> files) {
         update("delete from playlist_file where playlist_id=?", id);
-        for (MediaFile file : files) {
-            update("insert into playlist_file (playlist_id, media_file_id) values (?, ?)", id, file.getId());
-        }
+        batchedUpdate("insert into playlist_file (playlist_id, media_file_id) values (?, ?)",
+                files.stream().map(x -> new Object[] { id, x.getId() }).collect(Collectors.toList()));
     }
 
     public List<String> getPlaylistUsers(int playlistId) {
@@ -113,7 +114,6 @@ public class PlaylistDao extends AbstractDao {
         update("delete from playlist_user where playlist_id=? and username=?", playlistId, username);
     }
 
-    @Transactional
     public void deletePlaylist(int id) {
         update("delete from playlist where id=?", id);
     }
