@@ -8,6 +8,7 @@ ln -fs /usr/bin/lame $AIRSONIC_DIR/airsonic/transcode/lame
 java --version
 /usr/bin/ffmpeg -version
 curl --version
+echo $PATH
 
 if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
 
