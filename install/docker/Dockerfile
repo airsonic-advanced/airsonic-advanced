@@ -12,9 +12,7 @@ RUN apt-get update && apt-get install -y \
     lame \
     bash \
     ttf-dejavu \
-    tini \
-    x264 \
-    x265
+    tini
 
 COPY run.sh /usr/local/bin/run.sh
 
