@@ -31,9 +31,12 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Arrays;
@@ -103,6 +106,10 @@ public class AbstractDao {
 
         if (x instanceof Enum) {
             return ((Enum<?>) x).name();
+        }
+
+        if (x instanceof Path) {
+            return ((Path) x).toString();
         }
 
         return x;
@@ -238,29 +245,40 @@ public class AbstractDao {
         }
         insertTemplates.put(table, insert);
 
+        // preprocess annotated fields
+        var fields = new HashMap<String, Field>();
+        for (Field cf : klazz.getDeclaredFields()) {
+            fields.putIfAbsent(cf.getName(), cf);
+            Column annotation = cf.getAnnotation(Column.class);
+            if (annotation != null) {
+                fields.putIfAbsent(annotation.value(), cf);
+            }
+        }
+
         MethodHandles.Lookup privateLookup = MethodHandles.privateLookupIn(klazz, lookup);
         methods.put(table, columns.parallelStream().map(LambdaUtils.uncheckFunction(c -> {
-            var alreadyLooked = new HashSet<String>();
             Field f = null;
+            var alreadyLooked = new HashSet<String>();
+
             for (Function<String, String> colNameTransform : colNameTransforms) {
                 String lookup = colNameTransform.apply(c);
                 if (alreadyLooked.add(lookup)) {
-                    try {
-                        f = klazz.getDeclaredField(lookup);
-                    } catch (NoSuchFieldException e) {
-                        LOG.debug("Could not find field {} (looking for {}) in class {}", lookup, c, klazz.getName());
-                    }
+                    f = fields.get(lookup);
 
                     if (f != null) {
+                        LOG.debug("Found suitable field {} (as {}) in class {} for table {} column {}", f.getName(), lookup, klazz.getName(), table, c);
                         break;
                     }
                 }
+            }
+            if (f == null) {
+                LOG.error("Could not locate a suitable field in class {} for table {} column {}", klazz.getName(), table, c);
             }
             return Pair.of(c, privateLookup.unreflectGetter(f));
         })).collect(Collectors.toConcurrentMap(Pair::getLeft, Pair::getRight)));
     }
 
-    protected Map<String, Object> insert(String table, Object obj) {
+    protected static Integer insert(String table, Object obj) {
         Map<String, Object> args = methods.get(table).entrySet()
                 .stream()
                 .map(e -> {
@@ -273,6 +291,11 @@ public class AbstractDao {
                 //can't use Collectors.toMap or Collectors.toConcurrentMap due to possible null value mappings
                 .collect(HashMap::new, (m, v) -> m.put(v.getKey(), v.getValue()), HashMap::putAll);
         var keyHolder = insertTemplates.get(table).executeAndReturnKeyHolder(args);
-        return keyHolder.getKeys();
+        return keyHolder.getKey().intValue();
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Column {
+        public String value();
     }
 }
