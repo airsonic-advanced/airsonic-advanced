@@ -89,7 +89,7 @@ public class PlaylistDao extends AbstractDao {
     }
 
     public void createPlaylist(Playlist playlist) {
-        Integer id = (Integer) insert("playlist", playlist).get("id");
+        Integer id = insert("playlist", playlist);
         playlist.setId(id);
     }
 
