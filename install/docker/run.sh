@@ -6,8 +6,8 @@ mkdir -p $AIRSONIC_DIR/airsonic/transcode
 ln -fs /usr/bin/ffmpeg $AIRSONIC_DIR/airsonic/transcode/ffmpeg
 ln -fs /usr/bin/lame $AIRSONIC_DIR/airsonic/transcode/lame
 /usr/bin/ffmpeg -version
-wget --version
 curl --version
+wget --version
 
 if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
 
