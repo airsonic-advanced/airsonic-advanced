@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.domain;
 
+import org.airsonic.player.dao.AbstractDao.Column;
+
 import java.time.Instant;
 
 /**
@@ -28,6 +30,7 @@ public class Playlist {
 
     private int id;
     private String username;
+    @Column("is_public")
     private boolean shared;
     private String name;
     private String comment;
