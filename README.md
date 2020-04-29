@@ -128,6 +128,7 @@ The following properties are new in Airsonic-Advanced:
 
 The following property names are different between Airsonic and Airsonic-Advanced:
   - `UPNP_PORT` -> `UPnpPort`
+  - `server.context-path` -> `server.servlet.context-path` (Airsonic will use the latter from 11.0 onwards)
 
 ### 11.x series
 Certain property names have been changed from 10.6 to recent snapshots of 11.0 and will be automigrated. When changing properties, use the modern name.
