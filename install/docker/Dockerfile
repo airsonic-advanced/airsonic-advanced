@@ -7,15 +7,14 @@ ENV AIRSONIC_PORT=4040 AIRSONIC_DIR=/var CONTEXT_PATH=/ UPNP_PORT=4041
 
 WORKDIR $AIRSONIC_DIR
 
-RUN apk --no-cache add \
+RUN apt-get update && apt-get install -y \
     ffmpeg \
     lame \
     bash \
-    libressl \
     fontconfig \
     ttf-dejavu \
     ca-certificates \
-    tini
+    tini && ffmpeg -version && lame
 
 COPY run.sh /usr/local/bin/run.sh
 
