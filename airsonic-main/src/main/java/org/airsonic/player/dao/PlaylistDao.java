@@ -120,7 +120,7 @@ public class PlaylistDao extends AbstractDao {
 
     public void updatePlaylist(Playlist playlist) {
         update("update playlist set username=?, is_public=?, name=?, comment=?, changed=?, imported_from=?, file_count=?, duration=? where id=?",
-                playlist.getUsername(), playlist.isShared(), playlist.getName(), playlist.getComment(),
+                playlist.getUsername(), playlist.getShared(), playlist.getName(), playlist.getComment(),
                 Instant.now(), playlist.getImportedFrom(), playlist.getFileCount(), playlist.getDuration(),
                 playlist.getId());
     }

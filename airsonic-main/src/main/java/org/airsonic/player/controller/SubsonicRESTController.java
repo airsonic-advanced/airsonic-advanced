@@ -560,7 +560,7 @@ public class SubsonicRESTController {
         jaxbPlaylist.setName(playlist.getName());
         jaxbPlaylist.setComment(playlist.getComment());
         jaxbPlaylist.setOwner(playlist.getUsername());
-        jaxbPlaylist.setPublic(playlist.isShared());
+        jaxbPlaylist.setPublic(playlist.getShared());
         jaxbPlaylist.setSongCount(playlist.getFileCount());
         jaxbPlaylist.setDuration((int) Math.round(playlist.getDuration()));
         jaxbPlaylist.setCreated(jaxbWriter.convertDate(playlist.getCreated()));

@@ -58,7 +58,7 @@ public class Playlist {
     }
 
     public Playlist(Playlist p) {
-        this(p.getId(), p.getUsername(), p.isShared(), p.getName(), p.getComment(), p.getFileCount(), p.getDuration(),
+        this(p.getId(), p.getUsername(), p.getShared(), p.getName(), p.getComment(), p.getFileCount(), p.getDuration(),
                 p.getCreated(), p.getChanged(), p.getImportedFrom());
     }
 
@@ -78,7 +78,7 @@ public class Playlist {
         this.username = username;
     }
 
-    public boolean isShared() {
+    public boolean getShared() {
         return shared;
     }
 
