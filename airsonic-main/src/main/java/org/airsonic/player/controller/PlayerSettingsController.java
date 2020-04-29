@@ -88,9 +88,9 @@ public class PlayerSettingsController {
             command.setDescription(player.toString());
             command.setType(player.getType());
             command.setLastSeen(player.getLastSeen());
-            command.setDynamicIp(player.isDynamicIp());
-            command.setAutoControlEnabled(player.isAutoControlEnabled());
-            command.setM3uBomEnabled(player.isM3uBomEnabled());
+            command.setDynamicIp(player.getDynamicIp());
+            command.setAutoControlEnabled(player.getAutoControlEnabled());
+            command.setM3uBomEnabled(player.getM3uBomEnabled());
             command.setTranscodeSchemeName(player.getTranscodeScheme().name());
             command.setTechnologyName(player.getTechnology().name());
             command.setAllTranscodings(transcodingService.getAllTranscodings());
@@ -122,16 +122,16 @@ public class PlayerSettingsController {
         if (player != null) {
             boolean update = false;
             boolean stopped = false;
-            if (player.isAutoControlEnabled() != command.isAutoControlEnabled()) {
-                player.setAutoControlEnabled(command.isAutoControlEnabled());
+            if (player.getAutoControlEnabled() != command.getAutoControlEnabled()) {
+                player.setAutoControlEnabled(command.getAutoControlEnabled());
                 update = true;
             }
-            if (player.isM3uBomEnabled() != command.isM3uBomEnabled()) {
-                player.setM3uBomEnabled(command.isM3uBomEnabled());
+            if (player.getM3uBomEnabled() != command.getM3uBomEnabled()) {
+                player.setM3uBomEnabled(command.getM3uBomEnabled());
                 update = true;
             }
-            if (player.isDynamicIp() != command.isDynamicIp()) {
-                player.setDynamicIp(command.isDynamicIp());
+            if (player.getDynamicIp() != command.getDynamicIp()) {
+                player.setDynamicIp(command.getDynamicIp());
                 update = true;
             }
             if (!StringUtils.equals(player.getName(), StringUtils.trimToNull(command.getName()))) {

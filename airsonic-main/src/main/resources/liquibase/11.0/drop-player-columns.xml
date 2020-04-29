@@ -1,0 +1,33 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="drop-player-cover-art-scheme" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="player" columnName="cover_art_scheme" />
+        </preConditions>
+        <dropColumn tableName="player" columnName="cover_art_scheme"/>
+        <rollback>
+            <addColumn tableName="player">
+                <!-- schema26_005 -->
+                <column name="cover_art_scheme" type="${varchar_type}">
+                    <constraints nullable="false" />
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-player-client-side-playlist" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="player" columnName="client_side_playlist" />
+        </preConditions>
+        <dropColumn tableName="player" columnName="client_side_playlist"/>
+        <rollback changeSetId="schema33_002" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema33.xml" />
+    </changeSet>
+    <changeSet id="drop-player-jukebox" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="player" columnName="jukebox" />
+        </preConditions>
+        <dropColumn tableName="player" columnName="jukebox"/>
+        <rollback changeSetId="schema35_009" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema35.xml" />
+    </changeSet>
+</databaseChangeLog>

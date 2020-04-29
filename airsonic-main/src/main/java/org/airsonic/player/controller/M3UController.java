@@ -74,7 +74,7 @@ public class M3UController {
     }
 
     private void createClientSidePlaylist(PrintWriter out, Player player, String url) {
-        if (player.isM3uBomEnabled()) {
+        if (player.getM3uBomEnabled()) {
             out.print("\ufeff");
         }
         out.println("#EXTM3U");
@@ -106,7 +106,7 @@ public class M3UController {
             url += "&suffix=." + suffix;
         }
 
-        if (player.isM3uBomEnabled()) {
+        if (player.getM3uBomEnabled()) {
             out.print("\ufeff");
         }
         out.println("#EXTM3U");
