@@ -7,7 +7,6 @@ ln -fs /usr/bin/ffmpeg $AIRSONIC_DIR/airsonic/transcode/ffmpeg
 ln -fs /usr/bin/lame $AIRSONIC_DIR/airsonic/transcode/lame
 java --version
 /usr/bin/ffmpeg -version
-/usr/bin/lame -version
 curl --version
 
 if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
