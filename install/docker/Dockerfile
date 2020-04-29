@@ -9,7 +9,7 @@ WORKDIR $AIRSONIC_DIR
 
 ADD https://github.com/krallin/tini/releases/download/v0.19.0/tini /tini
 RUN chmod +x /tini
-RUN apt install --reinstall -y software-properties-common
+RUN apt install -y software-properties-common
 RUN apt-add-repository ppa:jonathonf/ffmpeg-4
 RUN apt-get update
 RUN apt-get install -y ffmpeg
