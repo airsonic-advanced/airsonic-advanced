@@ -25,7 +25,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
+
+import javax.annotation.PostConstruct;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -43,7 +44,7 @@ public class PlayerDao extends AbstractDao {
 
     private static final Logger LOG = LoggerFactory.getLogger(PlayerDao.class);
     private static final String INSERT_COLUMNS = "name, type, username, ip_address, auto_control_enabled, m3u_bom_enabled, " +
-                                                 "last_seen, cover_art_scheme, transcode_scheme, dynamic_ip, technology, client_id, mixer";
+                                                 "last_seen, transcode_scheme, dynamic_ip, technology, client_id, mixer";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
 
     @Autowired
@@ -51,6 +52,11 @@ public class PlayerDao extends AbstractDao {
 
     private PlayerRowMapper rowMapper = new PlayerRowMapper();
     private Map<Integer, PlayQueue> playlists = Collections.synchronizedMap(new HashMap<Integer, PlayQueue>());
+
+    @PostConstruct
+    public void register() throws Exception {
+        registerInserts("player", "id", Arrays.asList(INSERT_COLUMNS.split(", ")), Player.class);
+    }
 
     /**
      * Returns all players.
@@ -96,20 +102,12 @@ public class PlayerDao extends AbstractDao {
      *
      * @param player The player to create.
      */
-    @Transactional
     public void createPlayer(Player player) {
-        Integer existingMax = queryForInt("select max(id) from player", 0);
-        int id = existingMax + 1;
+        Integer id = insert("player", player);
         player.setId(id);
-        String sql = "insert into player (" + QUERY_COLUMNS + ") values (" + questionMarks(QUERY_COLUMNS) + ")";
-        update(sql, player.getId(), player.getName(), player.getType(), player.getUsername(),
-               player.getIpAddress(), player.isAutoControlEnabled(), player.isM3uBomEnabled(),
-               player.getLastSeen(), CoverArtScheme.MEDIUM.name(),
-               player.getTranscodeScheme().name(), player.isDynamicIp(),
-               player.getTechnology().name(), player.getClientId(), player.getJavaJukeboxMixer());
         addPlaylist(player);
 
-        LOG.info("Created player " + id + '.');
+        LOG.info("Created player {}", id);
     }
 
     /**
@@ -160,8 +158,8 @@ public class PlayerDao extends AbstractDao {
                      "mixer = ? " +
                      "where id = ?";
         update(sql, player.getName(), player.getType(), player.getUsername(),
-               player.getIpAddress(), player.isAutoControlEnabled(), player.isM3uBomEnabled(),
-               player.getLastSeen(), player.getTranscodeScheme().name(), player.isDynamicIp(),
+               player.getIpAddress(), player.getAutoControlEnabled(), player.getM3uBomEnabled(),
+               player.getLastSeen(), player.getTranscodeScheme().name(), player.getDynamicIp(),
                player.getTechnology().name(), player.getClientId(), player.getJavaJukeboxMixer(), player.getId());
     }
 
@@ -175,6 +173,7 @@ public class PlayerDao extends AbstractDao {
     }
 
     private class PlayerRowMapper implements RowMapper<Player> {
+        @Override
         public Player mapRow(ResultSet rs, int rowNum) throws SQLException {
             Player player = new Player();
             int col = 1;
@@ -186,7 +185,6 @@ public class PlayerDao extends AbstractDao {
             player.setAutoControlEnabled(rs.getBoolean(col++));
             player.setM3uBomEnabled(rs.getBoolean(col++));
             player.setLastSeen(Optional.ofNullable(rs.getTimestamp(col++)).map(x -> x.toInstant()).orElse(null));
-            col++; // Ignore cover art scheme.
             player.setTranscodeScheme(TranscodeScheme.valueOf(rs.getString(col++)));
             player.setDynamicIp(rs.getBoolean(col++));
             player.setTechnology(PlayerTechnology.valueOf(rs.getString(col++)));
