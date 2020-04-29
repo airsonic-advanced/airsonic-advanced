@@ -1,4 +1,4 @@
-FROM adoptopenjdk/openjdk11:alpine-jre
+FROM adoptopenjdk:14-jre-hotspot
 
 LABEL description="Airsonic-Advanced is a free, web-based media streamer, providing ubiquitous access to your music." \
       url="https://github.com/airsonic-advanced/airsonic-advanced"
