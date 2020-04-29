@@ -8,16 +8,11 @@ ENV AIRSONIC_PORT=4040 AIRSONIC_DIR=/var CONTEXT_PATH=/ UPNP_PORT=4041
 WORKDIR $AIRSONIC_DIR
 
 RUN apt-get update 
-RUN apt-get install -y \
-    ffmpeg
-RUN apt-get install -y \
-    lame
-RUN apt-get install -y \
-    bash
-RUN apt-get install -y \
-    ttf-dejavu
-RUN apt-get install -y \
-    tini
+RUN apt-get install -y ffmpeg
+RUN apt-get install -y lame
+RUN apt-get install -y bash
+RUN apt-get install -y ttf-dejavu
+RUN apt-get install -y tini
 
 COPY run.sh /usr/local/bin/run.sh
 
