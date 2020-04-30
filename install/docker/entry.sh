@@ -13,17 +13,17 @@ if [ $ue != '0' ] || [ $ge != '0' ]; then
   run.sh "$@"
 else
   # No USER specified, guaranteed to be root
-  ge=$(getent group $PGID | cut -d":" -f1)
-  gn=${ge:-ag}
-  if [ $gn == 'ag' ]; then
+  gn=$(getent group $PGID | cut -d":" -f1)
+  if [ -z $gn ]; then
     # group doesn't exist, create it
-    groupadd -r -g $PGID ag
+    gn=ag
+    groupadd -r -g $PGID $gn
   fi
-  ue=$(getent passwd $PUID | cut -d":" -f1)
-  un=${ue:-au}
-  if [ $un == 'au' ]; then
+  un=$(getent passwd $PUID | cut -d":" -f1)
+  if [ -z $un ]; then
     # user doesn't exist, create it
-    useradd -r -u $PUID au
+    un=au
+    useradd -r -u $PUID $un
   fi
   # add user to group
   usermod -g $gn $un
