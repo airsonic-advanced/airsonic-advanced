@@ -3,5 +3,8 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
     <include file="hsqldb-timestamp-precision.xml" relativeToChangelogFile="true"/>
+    <include file="drop-player-columns.xml" relativeToChangelogFile="true"/>
+    <include file="rename-play-queue-current-id.xml" relativeToChangelogFile="true"/>
+    <include file="drop-rename-transcoding.xml" relativeToChangelogFile="true"/>
     <include file="drop-duration-seconds.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
