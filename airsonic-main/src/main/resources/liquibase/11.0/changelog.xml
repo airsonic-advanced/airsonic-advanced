@@ -5,4 +5,5 @@
     <include file="hsqldb-timestamp-precision.xml" relativeToChangelogFile="true"/>
     <include file="drop-player-columns.xml" relativeToChangelogFile="true"/>
     <include file="rename-play-queue-current-id.xml" relativeToChangelogFile="true"/>
+    <include file="drop-rename-transcoding.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

@@ -1,0 +1,37 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="drop-player-transcoding" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="player_transcoding"/>
+        </preConditions>
+        <dropTable tableName="player_transcoding"/>
+        <rollback changeSetId="schema28_004" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema28.xml"/>
+    </changeSet>
+    <changeSet id="rename-player-transcoding2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="player_transcoding2"/>
+            <not>
+                <tableExists tableName="player_transcoding"/>
+            </not>
+        </preConditions>
+        <renameTable newTableName="player_transcoding" oldTableName="player_transcoding2"/>
+    </changeSet>
+    <changeSet id="drop-transcoding" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="transcoding"/>
+        </preConditions>
+        <dropTable tableName="transcoding"/>
+        <rollback changeSetId="schema28_003" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema28.xml"/>
+    </changeSet>
+    <changeSet id="rename-transcoding2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="transcoding2"/>
+            <not>
+                <tableExists tableName="transcoding"/>
+            </not>
+        </preConditions>
+        <renameTable newTableName="transcoding" oldTableName="transcoding2"/>
+    </changeSet>
+</databaseChangeLog>
