@@ -2,13 +2,17 @@
 
 set -e
 
+echo "Process will run as:"
+echo "User: $(id -u)"
+echo "Group: $(id -g)"
 mkdir -p $AIRSONIC_DIR/airsonic/transcode
 ln -fs /usr/bin/ffmpeg $AIRSONIC_DIR/airsonic/transcode/ffmpeg
 ln -fs /usr/bin/lame $AIRSONIC_DIR/airsonic/transcode/lame
 java --version
+echo "JAVA_OPTS=$JAVA_OPTS"
 /usr/bin/ffmpeg -version
 curl --version
-echo "PATH:$PATH"
+echo "PATH=$PATH"
 
 if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
 

@@ -19,10 +19,13 @@ RUN apt-get update && \
                        x265 \
                        lame \
                        bash \
-                       ttf-dejavu
+                       ttf-dejavu \
+                       gosu
 
 COPY run.sh /usr/local/bin/run.sh
 RUN chmod +x /usr/local/bin/run.sh
+COPY entry.sh /usr/local/bin/entry.sh
+RUN chmod +x /usr/local/bin/entry.sh
 
 COPY target/dependency/airsonic-main.war airsonic.war
 
@@ -32,10 +35,10 @@ EXPOSE $AIRSONIC_PORT
 EXPOSE $UPNP_PORT
 EXPOSE 1900/udp
 
-USER $PUID:$PGID
+USER ${PUID}:${PGID}
 
 VOLUME $AIRSONIC_DIR/airsonic $AIRSONIC_DIR/music $AIRSONIC_DIR/playlists $AIRSONIC_DIR/podcasts
 
 HEALTHCHECK --interval=15s --timeout=3s CMD curl -f http://localhost:"$AIRSONIC_PORT""$CONTEXT_PATH"rest/ping || false
 
-ENTRYPOINT ["tini", "--", "run.sh"]
+ENTRYPOINT ["tini", "--", "entry.sh"]
