@@ -891,6 +891,7 @@
                 // change page
                 top.main.location.href = "playlist.view?id=" + playlistId;
             }
+            this.selectAll(false);
             $().toastmessage("showSuccessToast", toastMsg);
         },
 
@@ -1067,6 +1068,7 @@
                 this.onRemoveSelected();
             } else if (id == "download" && selectedIndexes != "") {
                 location.href = "download.view?player=" + this.player.id + "&" + selectedIndexes;
+                this.selectAll(false);
             } else if (id == "appendPlaylist" && selectedIndexes != "") {
                 this.onAppendPlaylist();
             }
