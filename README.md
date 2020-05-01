@@ -41,6 +41,8 @@ The following is an incomplete list of features that are enhanced from Airsonic:
 - Performance enhancements
   - A more efficient and compliant streaming engine, utilizing piping and threading
   - Removal of pessimistic locking throughout the software in favor of more modern concurrency techniques
+  - Upgraded internal database that uses connection pooling and uses MVCC control mode for dealing with concurrent updates
+    - Massive throughput boost (100K mrdia library scan times reduced from ~40 min to ~3 mins)
   - Much faster UI rendering for browsers, especially for massive playlists
   - Aggressively uses multi-threading and parallelization for most operations, including but not limited to:
     - Massively parallelized engine for media scanning (media scanning is done much much faster, ~8x)
@@ -68,7 +70,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Uses JSR 310 (Java time) instead of older Java packages for time/duration tracking
   - Uses Java's NIO for handling files instead of the older IO packages
   - More precise song duration calculation
-  - Ability to pass properties via environment or system variables. You do not need to modify airsonic.properties for everything.
+  - Ability to pass properties via environment or system variables. You can but do not need to modify `airsonic.properties` to change preferences
   - Ability to use Repeat-One in play queues in web-clients
   - Ability to upload multiple files simultaneously
   - Ability to upload and extract more archive formats:
@@ -83,7 +85,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
     - MariaDB
   - Uses failsafe for integration testing instead of cucumber
 - Build and deployment
-  - An updated Docker image with OpenJDK 11 base layer.
+  - An updated Docker image with JRE 14 base layer.
   - A more advanced build pipeline including automatic releases and deploys at merge
     - Allows people to grab the newest build without compiling from source as soon as features/enhancements are merged, instead of waiting for the next stable build (which may be months away)
 
@@ -116,6 +118,10 @@ Please note that for Docker images, the volume mounting points have changed and 
   - `Playlists:/airsonic/playlists` -> `Playlists:/var/playlists`
   - `/airsonic/data` -> `/var/airsonic`
 
+Also note that the Docker image will by default run as user root (0), group root (0), and so any files created in the external volume will be owned as such. You may change the user running the internal process in one of two ways:
+  - Specifying `--user` when invoking the `docker run` command, and providing it with one or both in the format `uid:gid`
+  - Specifying the `PUID` or `PGID` environment variables to the container image when invoking the `docker run` command (`-e PUID=uid -e PGID=gid`)
+
 Vanilla Airsonic can be downloaded from
 [GitHub](https://github.com/airsonic/airsonic/releases).
 
@@ -130,8 +136,10 @@ The following property names are different between Airsonic and Airsonic-Advance
   - `UPNP_PORT` -> `UPnpPort`
   - `server.context-path` -> `server.servlet.context-path` (Airsonic will use the latter from 11.0 onwards)
 
+Note that Airsonic-Advanced communicates with its Web UI via websockets. If you're behind a proxy, you need to enable websockets and allow UPGRADE http requests through the proxy. A sample configuration is posted here: [nginx sample](https://github.com/airsonic-advanced/airsonic-advanced/issues/145)
+
 ### 11.x series
-Certain property names have been changed from 10.6 to recent snapshots of 11.0 and will be automigrated. When changing properties, use the modern name.
+Certain property names have been changed from 10.6 to recent snapshots of 11.0 and will be _automigrated_. When modifying properties, use the modern name.
   - `DatabaseConfigEmbedDriver` -> `spring.datasource.driver-class-name`
   - `DatabaseConfigEmbedUrl` -> `spring.datasource.url`
   - `DatabaseConfigEmbedUsername` -> `spring.datasource.username`
