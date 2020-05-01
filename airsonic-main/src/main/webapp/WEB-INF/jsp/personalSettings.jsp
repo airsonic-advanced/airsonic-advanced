@@ -71,19 +71,6 @@
                 </form:select>
             </td>
         </tr>
-
-        <tr>
-            <td><fmt:message key="personalsettings.paginationsize"/></td>
-            <td>
-                <form:select path="paginationSize" cssStyle="width:15em">
-                    <form:option value="10">10</form:option>
-                    <form:option value="20">20</form:option>
-                    <form:option value="50">50</form:option>
-                    <form:option value="100">100</form:option>
-                    <form:option value="-1"><fmt:message key="common.all"/></form:option>
-                </form:select>
-            </td>
-        </tr>
     </table>
 
     <table class="indent">
@@ -199,6 +186,13 @@
         <tr>
             <td><form:checkbox path="keyboardShortcutsEnabled" id="keyboardShortcutsEnabled" cssClass="checkbox"/></td>
             <td><label for="keyboardShortcutsEnabled"><fmt:message key="personalsettings.keyboardshortcutsenabled"/></label></td>
+        </tr>
+    </table>
+
+    <table class="indent">
+        <tr>
+            <td><fmt:message key="personalsettings.paginationsize"/></td>
+            <td><form:input path="paginationSize" size="24"/></td>
         </tr>
     </table>
 
