@@ -353,7 +353,7 @@ public class SettingsService {
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_ROLLBACK_FILE))) {
             defaultConstants.put(
                     KEY_DATABASE_MIGRATION_ROLLBACK_FILE,
-                    getAirsonicHome().toAbsolutePath().resolve("rollback.sql").toString());
+                    getAirsonicHome().toAbsolutePath().resolve("rollback.sql").toFile());
         }
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH))) {
             defaultConstants.put(
