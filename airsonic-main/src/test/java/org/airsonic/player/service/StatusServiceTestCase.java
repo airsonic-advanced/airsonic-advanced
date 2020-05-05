@@ -71,7 +71,7 @@ public class StatusServiceTestCase {
     public void setUp() {
         doReturn(new MediaFile()).when(mediaFileService).getMediaFile(any(Path.class));
         doReturn(settings).when(settingsService).getUserSettings(any(String.class));
-        doReturn(true).when(settings).isNowPlayingAllowed();
+        doReturn(true).when(settings).getNowPlayingAllowed();
         service = new StatusService();
         service.setMessagingTemplate(messagingTemplate);
         service.setMediaFileService(mediaFileService);
@@ -144,7 +144,7 @@ public class StatusServiceTestCase {
         service.addRemotePlay(pStatus);
 
         // User settings
-        doReturn(false).when(settings).isNowPlayingAllowed();
+        doReturn(false).when(settings).getNowPlayingAllowed();
 
         pStatus = new PlayStatus(UUID.randomUUID(), new MediaFile(), player1, 0);
         service.addActiveLocalPlay(pStatus);

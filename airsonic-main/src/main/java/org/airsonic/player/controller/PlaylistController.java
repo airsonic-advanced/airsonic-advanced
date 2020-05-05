@@ -77,7 +77,7 @@ public class PlaylistController {
         map.put("user", user);
         map.put("player", player);
         map.put("editAllowed", username.equals(playlist.getUsername()) || securityService.isAdmin(username));
-        map.put("partyMode", userSettings.isPartyModeEnabled());
+        map.put("partyMode", userSettings.getPartyModeEnabled());
         map.put("initialPaginationSize", userSettings.getPaginationSize());
 
         return new ModelAndView("playlist","model",map);
