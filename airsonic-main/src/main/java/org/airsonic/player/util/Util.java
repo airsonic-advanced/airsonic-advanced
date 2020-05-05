@@ -191,6 +191,22 @@ public final class Util {
         }
     }
 
+    public static <T> T fromJson(String json, TypeReference<T> type) {
+        try {
+            return objectMapper.readValue(json, type);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static <T> T fromJson(String json, Class<T> type) {
+        try {
+            return objectMapper.readValue(json, type);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public static Map<String, String> objectToStringMap(Object object) {
         return objectMapper.convertValue(object, new TypeReference<Map<String, String>>() {});
     }
