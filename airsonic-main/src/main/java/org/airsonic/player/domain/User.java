@@ -19,6 +19,11 @@
  */
 package org.airsonic.player.domain;
 
+import org.airsonic.player.util.Util;
+
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * Represent a user.
  *
@@ -35,31 +40,21 @@ public class User {
     private long bytesStreamed;
     private long bytesDownloaded;
     private long bytesUploaded;
-
-    private boolean isAdminRole;
-    private boolean isSettingsRole;
-    private boolean isDownloadRole;
-    private boolean isUploadRole;
-    private boolean isPlaylistRole;
-    private boolean isCoverArtRole;
-    private boolean isCommentRole;
-    private boolean isPodcastRole;
-    private boolean isStreamRole;
-    private boolean isJukeboxRole;
-    private boolean isShareRole;
+    private Set<Role> roles;
 
     public User(String username, String email, boolean ldapAuthenticated,
-                long bytesStreamed, long bytesDownloaded, long bytesUploaded) {
+            long bytesStreamed, long bytesDownloaded, long bytesUploaded, Set<Role> roles) {
         this.username = username;
         this.email = email;
         this.ldapAuthenticated = ldapAuthenticated;
         this.bytesStreamed = bytesStreamed;
         this.bytesDownloaded = bytesDownloaded;
         this.bytesUploaded = bytesUploaded;
+        this.roles = roles;
     }
 
     public User(String username, String email) {
-        this(username, email, false, 0, 0, 0);
+        this(username, email, false, 0, 0, 0, Collections.emptySet());
     }
 
     public String getUsername() {
@@ -106,132 +101,64 @@ public class User {
         this.bytesUploaded = bytesUploaded;
     }
 
-    public boolean isAdminRole() {
-        return isAdminRole;
+    public Set<Role> getRoles() {
+        return roles;
     }
 
-    public void setAdminRole(boolean isAdminRole) {
-        this.isAdminRole = isAdminRole;
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
+    }
+
+    public boolean isAdminRole() {
+        return roles.contains(Role.ADMIN);
     }
 
     public boolean isSettingsRole() {
-        return isSettingsRole;
-    }
-
-    public void setSettingsRole(boolean isSettingsRole) {
-        this.isSettingsRole = isSettingsRole;
+        return roles.contains(Role.SETTINGS);
     }
 
     public boolean isCommentRole() {
-        return isCommentRole;
-    }
-
-    public void setCommentRole(boolean isCommentRole) {
-        this.isCommentRole = isCommentRole;
+        return roles.contains(Role.COMMENT);
     }
 
     public boolean isDownloadRole() {
-        return isDownloadRole;
-    }
-
-    public void setDownloadRole(boolean isDownloadRole) {
-        this.isDownloadRole = isDownloadRole;
+        return roles.contains(Role.DOWNLOAD);
     }
 
     public boolean isUploadRole() {
-        return isUploadRole;
-    }
-
-    public void setUploadRole(boolean isUploadRole) {
-        this.isUploadRole = isUploadRole;
+        return roles.contains(Role.UPLOAD);
     }
 
     public boolean isPlaylistRole() {
-        return isPlaylistRole;
-    }
-
-    public void setPlaylistRole(boolean isPlaylistRole) {
-        this.isPlaylistRole = isPlaylistRole;
+        return roles.contains(Role.PLAYLIST);
     }
 
     public boolean isCoverArtRole() {
-        return isCoverArtRole;
-    }
-
-    public void setCoverArtRole(boolean isCoverArtRole) {
-        this.isCoverArtRole = isCoverArtRole;
+        return roles.contains(Role.COVERART);
     }
 
     public boolean isPodcastRole() {
-        return isPodcastRole;
-    }
-
-    public void setPodcastRole(boolean isPodcastRole) {
-        this.isPodcastRole = isPodcastRole;
+        return roles.contains(Role.PODCAST);
     }
 
     public boolean isStreamRole() {
-        return isStreamRole;
-    }
-
-    public void setStreamRole(boolean streamRole) {
-        isStreamRole = streamRole;
+        return roles.contains(Role.STREAM);
     }
 
     public boolean isJukeboxRole() {
-        return isJukeboxRole;
-    }
-
-    public void setJukeboxRole(boolean jukeboxRole) {
-        isJukeboxRole = jukeboxRole;
+        return roles.contains(Role.JUKEBOX);
     }
 
     public boolean isShareRole() {
-        return isShareRole;
-    }
-
-    public void setShareRole(boolean shareRole) {
-        isShareRole = shareRole;
+        return roles.contains(Role.SHARE);
     }
 
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder(username);
+        return username + " " + Util.toJson(roles);
+    }
 
-        if (isAdminRole) {
-            result.append(" [admin]");
-        }
-        if (isSettingsRole) {
-            result.append(" [settings]");
-        }
-        if (isDownloadRole) {
-            result.append(" [download]");
-        }
-        if (isUploadRole) {
-            result.append(" [upload]");
-        }
-        if (isPlaylistRole) {
-            result.append(" [playlist]");
-        }
-        if (isCoverArtRole) {
-            result.append(" [coverart]");
-        }
-        if (isCommentRole) {
-            result.append(" [comment]");
-        }
-        if (isPodcastRole) {
-            result.append(" [podcast]");
-        }
-        if (isStreamRole) {
-            result.append(" [stream]");
-        }
-        if (isJukeboxRole) {
-            result.append(" [jukebox]");
-        }
-        if (isShareRole) {
-            result.append(" [share]");
-        }
-
-        return result.toString();
+    public enum Role {
+        ADMIN, SETTINGS, DOWNLOAD, UPLOAD, PLAYLIST, COVERART, COMMENT, PODCAST, STREAM, JUKEBOX, SHARE
     }
 }

@@ -97,7 +97,7 @@ public class SecurityService implements UserDetailsService {
             throw new UsernameNotFoundException("User \"" + username + "\" was not found.");
         }
 
-        List<GrantedAuthority> authorities = getGrantedAuthorities(username);
+        List<GrantedAuthority> authorities = getGrantedAuthorities(user);
 
         return new UserDetail(
                 username,
@@ -226,13 +226,12 @@ public class SecurityService implements UserDetailsService {
         }
     }
 
-    public List<GrantedAuthority> getGrantedAuthorities(String username) {
+    public List<GrantedAuthority> getGrantedAuthorities(User user) {
         return Stream.concat(
                 Stream.of(
                         new SimpleGrantedAuthority("IS_AUTHENTICATED_ANONYMOUSLY"),
                         new SimpleGrantedAuthority("ROLE_USER")),
-                userDao.getRolesForUser(username).stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())))
+                user.getRoles().stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.name())))
                 .collect(Collectors.toList());
     }
 

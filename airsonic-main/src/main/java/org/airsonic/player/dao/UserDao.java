@@ -19,12 +19,11 @@
  */
 package org.airsonic.player.dao;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.util.Util;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.RowMapper;
@@ -39,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -53,22 +53,9 @@ import static org.airsonic.player.service.SettingsService.KEY_DATABASE_MIGRATION
 @Transactional
 public class UserDao extends AbstractDao {
 
-    private static final Logger LOG = LoggerFactory.getLogger(UserDao.class);
-    private static final String USER_COLUMNS = "username, email, ldap_authenticated, bytes_streamed, bytes_downloaded, bytes_uploaded";
+    private static final String USER_COLUMNS = "username, email, ldap_authenticated, bytes_streamed, bytes_downloaded, bytes_uploaded, roles";
     private static final String USER_SETTINGS_COLUMNS = "username, settings";
     private static final String USER_CREDENTIALS_COLUMNS = "username, app_username, credential, encoder, app, created, updated, expiration, comment";
-
-    private static final Integer ROLE_ID_ADMIN = 1;
-    private static final Integer ROLE_ID_DOWNLOAD = 2;
-    private static final Integer ROLE_ID_UPLOAD = 3;
-    private static final Integer ROLE_ID_PLAYLIST = 4;
-    private static final Integer ROLE_ID_COVER_ART = 5;
-    private static final Integer ROLE_ID_COMMENT = 6;
-    private static final Integer ROLE_ID_PODCAST = 7;
-    private static final Integer ROLE_ID_STREAM = 8;
-    private static final Integer ROLE_ID_SETTINGS = 9;
-    private static final Integer ROLE_ID_JUKEBOX = 10;
-    private static final Integer ROLE_ID_SHARE = 11;
 
     private UserRowMapper userRowMapper = new UserRowMapper();
     private UserSettingsRowMapper userSettingsRowMapper = new UserSettingsRowMapper();
@@ -101,9 +88,6 @@ public class UserDao extends AbstractDao {
             user = users.iterator().next();
         } else if (users.size() > 1) {
             throw new RuntimeException("Too many matching users");
-        }
-        if (user != null) {
-            readRoles(user);
         }
         return user;
     }
@@ -205,9 +189,6 @@ public class UserDao extends AbstractDao {
     public User getUserByEmail(String email) {
         String sql = "select " + USER_COLUMNS + " from " + getUserTable() + " where email=?";
         User user = queryOne(sql, userRowMapper, email);
-        if (user != null) {
-            readRoles(user);
-        }
         return user;
     }
 
@@ -219,7 +200,6 @@ public class UserDao extends AbstractDao {
     public List<User> getAllUsers() {
         String sql = "select " + USER_COLUMNS + " from " + getUserTable();
         List<User> users = query(sql, userRowMapper);
-        users.forEach(this::readRoles);
         return users;
     }
 
@@ -231,9 +211,9 @@ public class UserDao extends AbstractDao {
     public void createUser(User user, UserCredential credential) {
         String sql = "insert into " + getUserTable() + " (" + USER_COLUMNS + ", password) values (" + questionMarks(USER_COLUMNS) + ", ?)";
         update(sql, user.getUsername(), user.getEmail(), user.isLdapAuthenticated(),
-                user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded(), "");
+                user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded(),
+                Util.toJson(user.getRoles()), "");
         createCredential(credential);
-        writeRoles(user);
     }
 
     /**
@@ -246,7 +226,6 @@ public class UserDao extends AbstractDao {
             throw new IllegalArgumentException("Can't delete admin user.");
         }
 
-        update("delete from user_role where username=?", username);
         update("delete from player where username=?", username);
         update("delete from user_credentials where username=?", username);
         update("delete from " + getUserTable() + " where username=?", username);
@@ -258,28 +237,16 @@ public class UserDao extends AbstractDao {
      * @param user The user to update.
      */
     public void updateUser(User user) {
-        String sql = "update " + getUserTable() + " set email=?, ldap_authenticated=?, bytes_streamed=?, bytes_downloaded=?, bytes_uploaded=? " + "where username=?";
+        String sql = "update " + getUserTable() + " set email=?, ldap_authenticated=?, bytes_streamed=?, bytes_downloaded=?, bytes_uploaded=?, roles=? where username=?";
         update(sql, user.getEmail(), user.isLdapAuthenticated(),
                 user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded(),
+                Util.toJson(user.getRoles()),
                 user.getUsername());
-        writeRoles(user);
     }
 
     public void updateUserByteCounts(String user, long bytesStreamedDelta, long bytesDownloadedDelta, long bytesUploadedDelta) {
         String sql = "update " + getUserTable() + " set bytes_streamed=bytes_streamed+?, bytes_downloaded=bytes_downloaded+?, bytes_uploaded=bytes_uploaded+? where username=?";
         update(sql, bytesStreamedDelta, bytesDownloadedDelta, bytesUploadedDelta, user);
-    }
-
-    /**
-     * Returns the name of the roles for the given user.
-     *
-     * @param username The user name.
-     * @return Roles the user is granted.
-     */
-    public List<String> getRolesForUser(String username) {
-        String sql = "select r.name from role r, user_role ur " +
-                "where ur.username=? and ur.role_id=r.id";
-        return queryForStrings(sql, username);
     }
 
     /**
@@ -306,77 +273,6 @@ public class UserDao extends AbstractDao {
         return update(sql, settings.getUsername(), Util.toJson(settings)) == 1;
     }
 
-    private void readRoles(User user) {
-        String sql = "select role_id from user_role where username=?";
-        List<Integer> roles = queryForInts(sql, user.getUsername());
-        for (Object role : roles) {
-            if (ROLE_ID_ADMIN.equals(role)) {
-                user.setAdminRole(true);
-            } else if (ROLE_ID_DOWNLOAD.equals(role)) {
-                user.setDownloadRole(true);
-            } else if (ROLE_ID_UPLOAD.equals(role)) {
-                user.setUploadRole(true);
-            } else if (ROLE_ID_PLAYLIST.equals(role)) {
-                user.setPlaylistRole(true);
-            } else if (ROLE_ID_COVER_ART.equals(role)) {
-                user.setCoverArtRole(true);
-            } else if (ROLE_ID_COMMENT.equals(role)) {
-                user.setCommentRole(true);
-            } else if (ROLE_ID_PODCAST.equals(role)) {
-                user.setPodcastRole(true);
-            } else if (ROLE_ID_STREAM.equals(role)) {
-                user.setStreamRole(true);
-            } else if (ROLE_ID_SETTINGS.equals(role)) {
-                user.setSettingsRole(true);
-            } else if (ROLE_ID_JUKEBOX.equals(role)) {
-                user.setJukeboxRole(true);
-            } else if (ROLE_ID_SHARE.equals(role)) {
-                user.setShareRole(true);
-            } else {
-                LOG.warn("Unknown role: {}", role);
-            }
-        }
-    }
-
-    private void writeRoles(User user) {
-        String sql = "delete from user_role where username=?";
-        update(sql, user.getUsername());
-        sql = "insert into user_role (username, role_id) values(?, ?)";
-        if (user.isAdminRole()) {
-            update(sql, user.getUsername(), ROLE_ID_ADMIN);
-        }
-        if (user.isDownloadRole()) {
-            update(sql, user.getUsername(), ROLE_ID_DOWNLOAD);
-        }
-        if (user.isUploadRole()) {
-            update(sql, user.getUsername(), ROLE_ID_UPLOAD);
-        }
-        if (user.isPlaylistRole()) {
-            update(sql, user.getUsername(), ROLE_ID_PLAYLIST);
-        }
-        if (user.isCoverArtRole()) {
-            update(sql, user.getUsername(), ROLE_ID_COVER_ART);
-        }
-        if (user.isCommentRole()) {
-            update(sql, user.getUsername(), ROLE_ID_COMMENT);
-        }
-        if (user.isPodcastRole()) {
-            update(sql, user.getUsername(), ROLE_ID_PODCAST);
-        }
-        if (user.isStreamRole()) {
-            update(sql, user.getUsername(), ROLE_ID_STREAM);
-        }
-        if (user.isJukeboxRole()) {
-            update(sql, user.getUsername(), ROLE_ID_JUKEBOX);
-        }
-        if (user.isSettingsRole()) {
-            update(sql, user.getUsername(), ROLE_ID_SETTINGS);
-        }
-        if (user.isShareRole()) {
-            update(sql, user.getUsername(), ROLE_ID_SHARE);
-        }
-    }
-
     private class UserCredentialRowMapper implements RowMapper<UserCredential> {
         @Override
         public UserCredential mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -396,12 +292,13 @@ public class UserDao extends AbstractDao {
     private class UserRowMapper implements RowMapper<User> {
         @Override
         public User mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new User(rs.getString(1),
-                    rs.getString(2),
-                    rs.getBoolean(3),
-                    rs.getLong(4),
-                    rs.getLong(5),
-                    rs.getLong(6));
+            return new User(rs.getString("username"),
+                    rs.getString("email"),
+                    rs.getBoolean("ldap_authenticated"),
+                    rs.getLong("bytes_streamed"),
+                    rs.getLong("bytes_downloaded"),
+                    rs.getLong("bytes_uploaded"),
+                    Optional.ofNullable(Util.fromJson(rs.getString("roles"), new TypeReference<Set<User.Role>>() {})).orElse(Collections.emptySet()));
         }
     }
 
