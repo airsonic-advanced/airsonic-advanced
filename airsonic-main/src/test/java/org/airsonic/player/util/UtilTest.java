@@ -1,6 +1,7 @@
 package org.airsonic.player.util;
 
 import org.airsonic.player.domain.MediaLibraryStatistics;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -32,7 +33,7 @@ public class UtilTest {
         assertEquals("910823", stringStringMap.get("artistCount"));
         assertEquals("30.0", stringStringMap.get("totalDurationInSeconds"));
         assertEquals("2930491082", stringStringMap.get("totalLengthInBytes"));
-        assertEquals(statistics.getScanDate().getEpochSecond() + "." + statistics.getScanDate().getNano(), stringStringMap.get("scanDate"));
+        assertEquals(statistics.getScanDate().getEpochSecond() + "." + StringUtils.leftPad(String.valueOf(statistics.getScanDate().getNano()), 9, "0"), stringStringMap.get("scanDate"));
     }
 
     @Test
