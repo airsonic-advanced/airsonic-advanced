@@ -178,20 +178,12 @@ public class UserDao extends AbstractDao {
             return true;
         }
 
-        sql = "select count(*) from user_settings where last_fm_password is not null or listenbrainz_token is not null";
-        if (queryForInt(sql, 0) > 0) {
-            return true;
-        }
-
         return false;
     }
 
     public boolean purgeCredentialsStoredInLegacyTables() {
         String sql = "update " + getUserTable() + " set password=''";
         int updated = update(sql);
-
-        sql = "update user_settings set last_fm_username=NULL, last_fm_password=NULL, listenbrainz_token=NULL";
-        updated += update(sql);
 
         return updated != 0;
     }
