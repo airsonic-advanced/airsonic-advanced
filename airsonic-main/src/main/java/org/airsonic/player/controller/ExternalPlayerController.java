@@ -104,7 +104,7 @@ public class ExternalPlayerController {
         Instant expires = null;
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication instanceof JWTAuthenticationToken) {
-            DecodedJWT token = jwtSecurityService.verify((String) authentication.getCredentials());
+            DecodedJWT token = (DecodedJWT) authentication.getDetails();
             expires = Optional.ofNullable(token).map(x -> x.getExpiresAt()).map(x -> x.toInstant()).orElse(null);
         }
         Instant finalExpires = expires;
