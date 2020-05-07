@@ -22,7 +22,7 @@ package org.airsonic.player.dao;
 import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.UserCredential.App;
-import org.airsonic.player.util.StringUtil;
+import org.airsonic.player.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,16 +55,7 @@ public class UserDao extends AbstractDao {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserDao.class);
     private static final String USER_COLUMNS = "username, email, ldap_authenticated, bytes_streamed, bytes_downloaded, bytes_uploaded";
-    private static final String USER_SETTINGS_COLUMNS = "username, locale, theme_id, final_version_notification, beta_version_notification, " +
-            "song_notification, main_track_number, main_artist, main_album, main_genre, " +
-            "main_year, main_bit_rate, main_duration, main_format, main_file_size, " +
-            "playlist_track_number, playlist_artist, playlist_album, playlist_genre, " +
-            "playlist_year, playlist_bit_rate, playlist_duration, playlist_format, playlist_file_size, " +
-            "last_fm_enabled, listenbrainz_enabled, " +
-            "transcode_scheme, show_now_playing, selected_music_folder_id, " +
-            "party_mode_enabled, now_playing_allowed, avatar_scheme, system_avatar_id, changed, show_artist_info, auto_hide_play_queue, " +
-            "view_as_list, default_album_list, queue_following_songs, show_side_bar, list_reload_delay, " +
-            "keyboard_shortcuts_enabled, pagination_size";
+    private static final String USER_SETTINGS_COLUMNS = "username, settings";
     private static final String USER_CREDENTIALS_COLUMNS = "username, app_username, credential, encoder, app, created, updated, expiration, comment";
 
     private static final Integer ROLE_ID_ADMIN = 1;
@@ -187,20 +178,12 @@ public class UserDao extends AbstractDao {
             return true;
         }
 
-        sql = "select count(*) from user_settings where last_fm_password is not null or listenbrainz_token is not null";
-        if (queryForInt(sql, 0) > 0) {
-            return true;
-        }
-
         return false;
     }
 
     public boolean purgeCredentialsStoredInLegacyTables() {
         String sql = "update " + getUserTable() + " set password=''";
         int updated = update(sql);
-
-        sql = "update user_settings set last_fm_username=NULL, last_fm_password=NULL, listenbrainz_token=NULL";
-        updated += update(sql);
 
         return updated != 0;
     }
@@ -311,25 +294,8 @@ public class UserDao extends AbstractDao {
         update("delete from user_settings where username=?", settings.getUsername());
 
         String sql = "insert into user_settings (" + USER_SETTINGS_COLUMNS + ") values (" + questionMarks(USER_SETTINGS_COLUMNS) + ")";
-        String locale = settings.getLocale() == null ? null : settings.getLocale().toString();
-        UserSettings.Visibility main = settings.getMainVisibility();
-        UserSettings.Visibility playlist = settings.getPlaylistVisibility();
-        return update(sql, settings.getUsername(), locale, settings.getThemeId(),
-                settings.isFinalVersionNotificationEnabled(), settings.isBetaVersionNotificationEnabled(),
-                settings.isSongNotificationEnabled(), main.isTrackNumberVisible(),
-                main.isArtistVisible(), main.isAlbumVisible(), main.isGenreVisible(), main.isYearVisible(),
-                main.isBitRateVisible(), main.isDurationVisible(), main.isFormatVisible(), main.isFileSizeVisible(),
-                playlist.isTrackNumberVisible(), playlist.isArtistVisible(), playlist.isAlbumVisible(),
-                playlist.isGenreVisible(), playlist.isYearVisible(), playlist.isBitRateVisible(), playlist.isDurationVisible(),
-                playlist.isFormatVisible(), playlist.isFileSizeVisible(),
-                settings.isLastFmEnabled(), settings.isListenBrainzEnabled(),
-                settings.getTranscodeScheme().name(), settings.isShowNowPlayingEnabled(),
-                settings.getSelectedMusicFolderId(), settings.isPartyModeEnabled(), settings.isNowPlayingAllowed(),
-                settings.getAvatarScheme().name(), settings.getSystemAvatarId(), settings.getChanged(),
-                settings.isShowArtistInfoEnabled(), settings.isAutoHidePlayQueue(),
-                settings.isViewAsList(), settings.getDefaultAlbumList().getId(), settings.isQueueFollowingSongs(),
-                settings.isShowSideBar(), 60 /* Unused listReloadDelay */, settings.isKeyboardShortcutsEnabled(),
-                settings.getPaginationSize()) == 1;
+
+        return update(sql, settings.getUsername(), Util.toJson(settings)) == 1;
     }
 
     private void readRoles(User user) {
@@ -434,56 +400,7 @@ public class UserDao extends AbstractDao {
     private static class UserSettingsRowMapper implements RowMapper<UserSettings> {
         @Override
         public UserSettings mapRow(ResultSet rs, int rowNum) throws SQLException {
-            int col = 1;
-            UserSettings settings = new UserSettings(rs.getString(col++));
-            settings.setLocale(StringUtil.parseLocale(rs.getString(col++)));
-            settings.setThemeId(rs.getString(col++));
-            settings.setFinalVersionNotificationEnabled(rs.getBoolean(col++));
-            settings.setBetaVersionNotificationEnabled(rs.getBoolean(col++));
-            settings.setSongNotificationEnabled(rs.getBoolean(col++));
-
-            settings.getMainVisibility().setTrackNumberVisible(rs.getBoolean(col++));
-            settings.getMainVisibility().setArtistVisible(rs.getBoolean(col++));
-            settings.getMainVisibility().setAlbumVisible(rs.getBoolean(col++));
-            settings.getMainVisibility().setGenreVisible(rs.getBoolean(col++));
-            settings.getMainVisibility().setYearVisible(rs.getBoolean(col++));
-            settings.getMainVisibility().setBitRateVisible(rs.getBoolean(col++));
-            settings.getMainVisibility().setDurationVisible(rs.getBoolean(col++));
-            settings.getMainVisibility().setFormatVisible(rs.getBoolean(col++));
-            settings.getMainVisibility().setFileSizeVisible(rs.getBoolean(col++));
-
-            settings.getPlaylistVisibility().setTrackNumberVisible(rs.getBoolean(col++));
-            settings.getPlaylistVisibility().setArtistVisible(rs.getBoolean(col++));
-            settings.getPlaylistVisibility().setAlbumVisible(rs.getBoolean(col++));
-            settings.getPlaylistVisibility().setGenreVisible(rs.getBoolean(col++));
-            settings.getPlaylistVisibility().setYearVisible(rs.getBoolean(col++));
-            settings.getPlaylistVisibility().setBitRateVisible(rs.getBoolean(col++));
-            settings.getPlaylistVisibility().setDurationVisible(rs.getBoolean(col++));
-            settings.getPlaylistVisibility().setFormatVisible(rs.getBoolean(col++));
-            settings.getPlaylistVisibility().setFileSizeVisible(rs.getBoolean(col++));
-
-            settings.setLastFmEnabled(rs.getBoolean(col++));
-            settings.setListenBrainzEnabled(rs.getBoolean(col++));
-
-            settings.setTranscodeScheme(TranscodeScheme.valueOf(rs.getString(col++)));
-            settings.setShowNowPlayingEnabled(rs.getBoolean(col++));
-            settings.setSelectedMusicFolderId(rs.getInt(col++));
-            settings.setPartyModeEnabled(rs.getBoolean(col++));
-            settings.setNowPlayingAllowed(rs.getBoolean(col++));
-            settings.setAvatarScheme(AvatarScheme.valueOf(rs.getString(col++)));
-            settings.setSystemAvatarId((Integer) rs.getObject(col++));
-            settings.setChanged(Optional.ofNullable(rs.getTimestamp(col++)).map(x -> x.toInstant()).orElse(null));
-            settings.setShowArtistInfoEnabled(rs.getBoolean(col++));
-            settings.setAutoHidePlayQueue(rs.getBoolean(col++));
-            settings.setViewAsList(rs.getBoolean(col++));
-            settings.setDefaultAlbumList(AlbumListType.fromId(rs.getString(col++)));
-            settings.setQueueFollowingSongs(rs.getBoolean(col++));
-            settings.setShowSideBar(rs.getBoolean(col++));
-            col++;  // Skip the now unused listReloadDelay
-            settings.setKeyboardShortcutsEnabled(rs.getBoolean(col++));
-            settings.setPaginationSize(rs.getInt(col++));
-
-            return settings;
+            return Util.fromJson(rs.getString("settings"), UserSettings.class);
         }
     }
 

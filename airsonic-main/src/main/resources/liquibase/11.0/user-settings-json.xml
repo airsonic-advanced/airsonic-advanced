@@ -1,0 +1,64 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="create-user-settings-json" author="anon">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user_settings"/>
+        </preConditions>
+        <createTable tableName="user_settings2">
+            <column name="username" type="${varchar_type}">
+                <constraints primaryKey="true" foreignKeyName="us2_u_fk" referencedTableName="user" referencedColumnNames="username" deleteCascade="true"/></column>
+            <column name="settings" type="${json_type}"></column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="user_settings2"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="populate-user-settings-json" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user_settings2"/>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.UserSettingsJsonTablePopulation"></customChange>
+        <rollback>
+            <delete tableName="user_settings2"></delete>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-non-json-user-settings" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user_settings"/>
+        </preConditions>
+        <dropTable tableName="user_settings"/>
+        <rollback changeSetId="schema28_002" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema28.xml"/>
+        <rollback changeSetId="schema30_002" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema30.xml"/>
+        <rollback changeSetId="schema30_003" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema30.xml"/>
+        <rollback changeSetId="schema32_002" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema32.xml"/>
+        <rollback changeSetId="schema32_002" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema32.xml"/>
+        <rollback changeSetId="schema34_003" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema34.xml"/>
+        <rollback changeSetId="schema35_002" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema35.xml"/>
+        <rollback changeSetId="schema35_007" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema35.xml"/>
+        <rollback changeSetId="schema35_008" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema35.xml"/>
+        <rollback changeSetId="schema37_006" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema37.xml"/>
+        <rollback changeSetId="schema50_002" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema50.xml"/>
+        <rollback changeSetId="schema51_002" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema51.xml"/>
+        <rollback changeSetId="schema51_003" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema51.xml"/>
+        <rollback changeSetId="schema51_004" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema51.xml"/>
+        <rollback changeSetId="schema53_003" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema53.xml"/>
+        <rollback changeSetId="schema53_004" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema53.xml"/>
+        <rollback changeSetId="schema53_006" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema53.xml"/>
+        <rollback changeSetId="schema61_003" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema61.xml"/>
+        <rollback changeSetId="add-user-pagination_001" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/6.2/add-user-pagination.xml"/>
+        <rollback changeSetId="support-listenbrainz" changeSetAuthor="BestSteve" changeSetPath="classpath:liquibase/10.6/support-listenbrainz.xml"/>
+        <!-- skipping timestamp precision changes in 10.6/timestamp-precision.xml and 11.0/hsqldb-timestamp-precision.xml -->
+    </changeSet>
+    <changeSet id="rename-user-settings-json" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user_settings2"/>
+            <not>
+                <tableExists tableName="user_settings"/>
+            </not>
+        </preConditions>
+        <renameTable newTableName="user_settings" oldTableName="user_settings2"/>
+    </changeSet>
+</databaseChangeLog>

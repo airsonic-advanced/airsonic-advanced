@@ -2043,7 +2043,7 @@ public class SubsonicRESTController {
         org.subsonic.restapi.User result = new org.subsonic.restapi.User();
         result.setUsername(user.getUsername());
         result.setEmail(user.getEmail());
-        result.setScrobblingEnabled(userSettings.isLastFmEnabled());
+        result.setScrobblingEnabled(userSettings.getLastFmEnabled());
         result.setAdminRole(user.isAdminRole());
         result.setSettingsRole(user.isSettingsRole());
         result.setDownloadRole(user.isDownloadRole());

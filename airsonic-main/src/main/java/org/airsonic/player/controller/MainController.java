@@ -60,10 +60,10 @@ public class MainController {
         map.put("user", securityService.getCurrentUser(request));
         map.put("visibility", userSettings.getMainVisibility());
         map.put("showAlbumYear", settingsService.isSortAlbumsByYear());
-        map.put("showArtistInfo", userSettings.isShowArtistInfoEnabled());
-        map.put("partyMode", userSettings.isPartyModeEnabled());
+        map.put("showArtistInfo", userSettings.getShowArtistInfoEnabled());
+        map.put("partyMode", userSettings.getPartyModeEnabled());
         map.put("brand", settingsService.getBrand());
-        map.put("viewAsList", userSettings.isViewAsList());
+        map.put("viewAsList", userSettings.getViewAsList());
         map.put("initialPaginationSize", userSettings.getPaginationSize());
         map.put("initialPathsJSON", Util.toJson(ServletRequestUtils.getStringParameters(request, "path")));
         map.put("initialIdsJSON", Util.toJson(ServletRequestUtils.getIntParameters(request, "id")));

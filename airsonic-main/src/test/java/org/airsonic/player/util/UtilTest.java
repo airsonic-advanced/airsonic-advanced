@@ -1,6 +1,7 @@
 package org.airsonic.player.util;
 
 import org.airsonic.player.domain.MediaLibraryStatistics;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -32,7 +33,7 @@ public class UtilTest {
         assertEquals("910823", stringStringMap.get("artistCount"));
         assertEquals("30.0", stringStringMap.get("totalDurationInSeconds"));
         assertEquals("2930491082", stringStringMap.get("totalLengthInBytes"));
-        assertEquals(String.valueOf(statistics.getScanDate().toEpochMilli()), stringStringMap.get("scanDate"));
+        assertEquals(statistics.getScanDate().getEpochSecond() + "." + StringUtils.leftPad(String.valueOf(statistics.getScanDate().getNano()), 9, "0"), stringStringMap.get("scanDate"));
     }
 
     @Test
@@ -43,7 +44,7 @@ public class UtilTest {
         stringStringMap.put("artistCount", "910823");
         stringStringMap.put("totalDurationInSeconds", "30");
         stringStringMap.put("totalLengthInBytes", "2930491082");
-        stringStringMap.put("scanDate", "1568350960725");
+        stringStringMap.put("scanDate", "1568350960.725");
         MediaLibraryStatistics statistics = Util.stringMapToObject(MediaLibraryStatistics.class, stringStringMap);
         assertEquals(5, statistics.getAlbumCount());
         assertEquals(4, statistics.getSongCount());
@@ -61,7 +62,7 @@ public class UtilTest {
         stringStringMap.put("artistCount", "910823");
         stringStringMap.put("totalDurationInSeconds", "30");
         stringStringMap.put("totalLengthInBytes", "2930491082");
-        stringStringMap.put("scanDate", "1568350960725");
+        stringStringMap.put("scanDate", "1568350960.725");
         stringStringMap.put("extraneousData", "nothingHereToLookAt");
         MediaLibraryStatistics statistics = Util.stringMapToObject(MediaLibraryStatistics.class, stringStringMap);
         assertEquals(5, statistics.getAlbumCount());
