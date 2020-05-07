@@ -3,6 +3,7 @@ package org.airsonic.player.dao;
 import org.airsonic.player.domain.AvatarScheme;
 import org.airsonic.player.domain.TranscodeScheme;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.User.Role;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.domain.UserSettings;
@@ -14,8 +15,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -35,24 +36,13 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
 
     @Before
     public void setUp() {
-        getJdbcTemplate().execute("delete from user_role");
         getJdbcTemplate().execute("delete from user_credentials");
         getJdbcTemplate().execute("delete from " + userDao.getUserTable());
     }
 
     @Test
     public void testCreateUser() {
-        User user = new User("sindre", "sindre@activeobjects.no", false, 1000L, 2000L, 3000L);
-        user.setAdminRole(true);
-        user.setCommentRole(true);
-        user.setCoverArtRole(true);
-        user.setDownloadRole(false);
-        user.setPlaylistRole(true);
-        user.setUploadRole(false);
-        user.setPodcastRole(true);
-        user.setStreamRole(true);
-        user.setJukeboxRole(true);
-        user.setSettingsRole(true);
+        User user = new User("sindre", "sindre@activeobjects.no", false, 1000L, 2000L, 3000L, Set.of(Role.ADMIN, Role.COMMENT, Role.COVERART, Role.PLAYLIST, Role.PODCAST, Role.STREAM, Role.JUKEBOX, Role.SETTINGS));
         UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC);
         userDao.createUser(user, uc);
 
@@ -65,12 +55,12 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
     public void testCreateUserTransactionalError() {
         User user = new User("muff1nman5", "noemail") {
             @Override
-            public boolean isPlaylistRole() {
+            public Set<Role> getRoles() {
                 throw new RuntimeException();
             }
         };
 
-        user.setAdminRole(true);
+        user.setRoles(Set.of(Role.ADMIN));
         UserCredential uc = new UserCredential("muff1nman5", "muff1nman5", "secret", "noop", App.AIRSONIC);
 
         assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> createTestUser(user, uc));
@@ -96,16 +86,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testUpdateUser() {
         User user = new User("sindre", null);
-        user.setAdminRole(true);
-        user.setCommentRole(true);
-        user.setCoverArtRole(true);
-        user.setDownloadRole(false);
-        user.setPlaylistRole(true);
-        user.setUploadRole(false);
-        user.setPodcastRole(true);
-        user.setStreamRole(true);
-        user.setJukeboxRole(true);
-        user.setSettingsRole(true);
+        user.setRoles(Set.of(Role.ADMIN, Role.COMMENT, Role.COVERART, Role.PLAYLIST, Role.PODCAST, Role.STREAM, Role.JUKEBOX, Role.SETTINGS));
         UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC);
         userDao.createUser(user, uc);
 
@@ -114,16 +95,8 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         user.setBytesStreamed(1);
         user.setBytesDownloaded(2);
         user.setBytesUploaded(3);
-        user.setAdminRole(false);
-        user.setCommentRole(false);
-        user.setCoverArtRole(false);
-        user.setDownloadRole(true);
-        user.setPlaylistRole(false);
-        user.setUploadRole(true);
-        user.setPodcastRole(false);
-        user.setStreamRole(false);
-        user.setJukeboxRole(false);
-        user.setSettingsRole(false);
+        user.setRoles(Set.of(Role.DOWNLOAD, Role.UPLOAD));
+
         userDao.updateUser(user);
 
         assertThat(userDao.getAllUsers().get(0)).isEqualToComparingFieldByField(user);
@@ -133,10 +106,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testUpdateCredential() {
         User user = new User("sindre", null);
-        user.setAdminRole(true);
-        user.setCommentRole(true);
-        user.setCoverArtRole(true);
-        user.setDownloadRole(false);
+        user.setRoles(Set.of(Role.ADMIN, Role.COMMENT, Role.COVERART));
         UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC);
         userDao.createUser(user, uc);
 
@@ -183,15 +153,11 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testGetRolesForUser() {
         User user = new User("sindre", null);
-        user.setAdminRole(true);
-        user.setCommentRole(true);
-        user.setPodcastRole(true);
-        user.setStreamRole(true);
-        user.setSettingsRole(true);
+        user.setRoles(Set.of(Role.ADMIN, Role.COMMENT, Role.PODCAST, Role.STREAM, Role.SETTINGS));
         userDao.createUser(user, new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC));
 
-        List<String> roles = userDao.getRolesForUser("sindre");
-        assertThat(roles).containsExactly("admin", "comment", "podcast", "stream", "settings");
+        Set<Role> roles = userDao.getUserByName("sindre", true).getRoles();
+        assertThat(roles).containsOnly(Role.ADMIN, Role.COMMENT, Role.PODCAST, Role.STREAM, Role.SETTINGS);
     }
 
     @Test

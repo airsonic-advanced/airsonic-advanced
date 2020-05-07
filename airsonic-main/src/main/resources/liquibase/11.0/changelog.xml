@@ -8,4 +8,5 @@
     <include file="drop-rename-transcoding.xml" relativeToChangelogFile="true"/>
     <include file="drop-duration-seconds.xml" relativeToChangelogFile="true"/>
     <include file="user-settings-json.xml" relativeToChangelogFile="true"/>
+    <include file="user-roles-json.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

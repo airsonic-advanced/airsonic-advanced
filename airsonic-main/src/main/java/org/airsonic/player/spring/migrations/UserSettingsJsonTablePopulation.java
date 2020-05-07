@@ -120,7 +120,6 @@ public class UserSettingsJsonTablePopulation implements CustomSqlChange {
         settings.setKeyboardShortcutsEnabled(rs.getBoolean("keyboard_shortcuts_enabled"));
         settings.setPaginationSize(rs.getInt("pagination_size"));
 
-        // skip list_reload_delay
         return settings;
     }
 

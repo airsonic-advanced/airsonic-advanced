@@ -1,0 +1,43 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="create-user-roles-json" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user"/>
+        </preConditions>
+        <addColumn tableName="user">
+            <column name="roles" type="${json_type}"></column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="user" columnName="roles"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="populate-user-roles-json" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user" columnName="roles"/>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.UserRolesJsonColumnPopulation"></customChange>
+        <rollback>
+            <update tableName="user">
+                <column name="roles"></column>
+            </update>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-non-json-user-roles" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user_role"/>
+            <tableExists tableName="role"/>
+        </preConditions>
+        <dropTable tableName="user_role"/>
+        <dropTable tableName="role"/>
+        <rollback changeSetId="schema25_003" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema25.xml"/>
+        <rollback changeSetId="schema25_005" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema25.xml"/>
+        <rollback changeSetId="schema26_007" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema26.xml"/>
+        <rollback changeSetId="schema32_006" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema32.xml"/>
+        <rollback changeSetId="schema35_004" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema35.xml"/>
+        <rollback changeSetId="schema37_002" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema37.xml"/>
+        <rollback changeSetId="schema37_003" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema37.xml"/>
+        <rollback changeSetId="schema45_002" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema45.xml"/>
+    </changeSet>
+</databaseChangeLog>

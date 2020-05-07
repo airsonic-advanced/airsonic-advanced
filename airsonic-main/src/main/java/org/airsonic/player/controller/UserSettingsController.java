@@ -23,6 +23,7 @@ import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.TranscodeScheme;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.User.Role;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.domain.UserSettings;
@@ -51,7 +52,9 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Controller for the page used to administrate users.
@@ -177,16 +180,38 @@ public class UserSettingsController {
         User user = securityService.getUserByName(command.getUsername());
         user.setEmail(StringUtils.trimToNull(command.getEmail()));
         user.setLdapAuthenticated(command.isLdapAuthenticated());
-        user.setAdminRole(command.isAdminRole());
-        user.setDownloadRole(command.isDownloadRole());
-        user.setUploadRole(command.isUploadRole());
-        user.setCoverArtRole(command.isCoverArtRole());
-        user.setCommentRole(command.isCommentRole());
-        user.setPodcastRole(command.isPodcastRole());
-        user.setStreamRole(command.isStreamRole());
-        user.setJukeboxRole(command.isJukeboxRole());
-        user.setSettingsRole(command.isSettingsRole());
-        user.setShareRole(command.isShareRole());
+        Set<Role> roles = new HashSet<>();
+        if (command.isAdminRole()) {
+            roles.add(Role.ADMIN);
+        }
+        if (command.isDownloadRole()) {
+            roles.add(Role.DOWNLOAD);
+        }
+        if (command.isUploadRole()) {
+            roles.add(Role.UPLOAD);
+        }
+        if (command.isCoverArtRole()) {
+            roles.add(Role.COVERART);
+        }
+        if (command.isCommentRole()) {
+            roles.add(Role.COMMENT);
+        }
+        if (command.isPodcastRole()) {
+            roles.add(Role.PODCAST);
+        }
+        if (command.isStreamRole()) {
+            roles.add(Role.STREAM);
+        }
+        if (command.isJukeboxRole()) {
+            roles.add(Role.JUKEBOX);
+        }
+        if (command.isSettingsRole()) {
+            roles.add(Role.SETTINGS);
+        }
+        if (command.isShareRole()) {
+            roles.add(Role.SHARE);
+        }
+        user.setRoles(roles);
 
         securityService.updateUser(user);
 
