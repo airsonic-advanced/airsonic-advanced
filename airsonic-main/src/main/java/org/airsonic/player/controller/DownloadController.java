@@ -103,11 +103,11 @@ public class DownloadController {
 
     @GetMapping
     public ResponseEntity<Resource> handleRequest(Principal p,
-                                                  @RequestParam Optional<Integer> id,
-                                                  @RequestParam(required = false) Integer playlist,
-                                                  @RequestParam(required = false) Integer player,
-                                                  @RequestParam(required = false, name = "i") List<Integer> indices,
-                                                  ServletWebRequest swr) throws Exception {
+            @RequestParam Optional<Integer> id,
+            @RequestParam(required = false) Integer playlist,
+            @RequestParam(required = false) Integer player,
+            @RequestParam(required = false, name = "i") List<Integer> indices,
+            ServletWebRequest swr) throws Exception {
         User user = securityService.getUserByName(p.getName());
         Player transferPlayer = playerService.getPlayer(swr.getRequest(), swr.getResponse(), false, false);
         String defaultDownloadName = null;
@@ -165,8 +165,8 @@ public class DownloadController {
      */
     private static long computeCrc(Path file) throws IOException {
         try (InputStream is = Files.newInputStream(file);
-             BufferedInputStream bis = new BufferedInputStream(is);
-             CheckedInputStream cis = new CheckedInputStream(bis, new CRC32())) {
+            BufferedInputStream bis = new BufferedInputStream(is);
+            CheckedInputStream cis = new CheckedInputStream(bis, new CRC32())) {
             byte[] buf = new byte[8192];
             while ((cis.read(buf)) != -1) {
                 continue;
@@ -181,7 +181,7 @@ public class DownloadController {
     }
 
     private ResponseDTO prepareResponse(List<MediaFile> files, List<Integer> indices,
-                                        Supplier<TransferStatus> statusSupplier, Consumer<TransferStatus> statusCloser, Path... additionalFiles)
+            Supplier<TransferStatus> statusSupplier, Consumer<TransferStatus> statusCloser, Path... additionalFiles)
             throws IOException {
         if (indices == null) {
             indices = IntStream.range(0, files.size()).boxed().collect(Collectors.toList());
@@ -205,8 +205,7 @@ public class DownloadController {
                             settingsService.getDownloadBitrateLimiter(),
                             statusSupplier,
                             statusCloser,
-                            (input, status) -> {
-                            }),
+                            (input, status) -> {}),
                     path.getFileName().toString(),
                     file.getFileSize(),
                     changed);
@@ -242,7 +241,7 @@ public class DownloadController {
                 // start a new thread to feed data in
                 new Thread(() -> {
                     try (PipedOutputStream pout = new PipedOutputStream(pin);
-                         ZipOutputStream zout = new ZipOutputStream(pout)) {
+                        ZipOutputStream zout = new ZipOutputStream(pout)) {
                         zout.setMethod(ZipOutputStream.STORED); // No compression.
                         pathsToZip.stream().forEach(LambdaUtils.uncheckConsumer(f -> {
                             status.setFile(f.getKey());
