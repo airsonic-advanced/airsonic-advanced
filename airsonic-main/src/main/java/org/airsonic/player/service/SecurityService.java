@@ -187,14 +187,6 @@ public class SecurityService implements UserDetailsService {
         return userDao.getCredentialCountByEncoder("legacy%") != 0;
     }
 
-    public boolean checkCredentialsStoredInLegacyTables() {
-        return userDao.checkCredentialsStoredInLegacyTables();
-    }
-
-    public boolean purgeCredentialsStoredInLegacyTables() {
-        return userDao.purgeCredentialsStoredInLegacyTables();
-    }
-
     public boolean migrateLegacyCredsToNonLegacy(boolean useDecodableOnly) {
         String decodableEncoder = settingsService.getDecodablePasswordEncoder();
         String nonDecodableEncoder = useDecodableOnly ? decodableEncoder

@@ -9,4 +9,5 @@
     <include file="drop-duration-seconds.xml" relativeToChangelogFile="true"/>
     <include file="user-settings-json.xml" relativeToChangelogFile="true"/>
     <include file="user-roles-json.xml" relativeToChangelogFile="true"/>
+    <include file="remove-password-column.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

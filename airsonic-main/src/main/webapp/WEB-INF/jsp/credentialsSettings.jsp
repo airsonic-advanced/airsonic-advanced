@@ -300,17 +300,6 @@
 
     <table style="white-space:nowrap" class="indent">
       <tr><th colspan=4 style="text-align:left"><fmt:message key='credentialsettings.systemchecks'/></th></tr>
-      <c:if test="${adminControls.credsStoredInLegacyTables}">
-      <tr>
-        <td><fmt:message key="credentialsettings.storedinlegacytables"/> <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialslegacytables"/></c:import></td>
-        <td>
-          <button id="purgeLegacyTablesButton" onclick="selectButtonCheckboxAndSubmit(this, event)">
-            <form:checkbox path="purgeCredsInLegacyTables" cssStyle="display:none" />
-            <fmt:message key='common.delete'/>
-          </button>
-        </td>
-      </tr>
-      </c:if>
       <c:if test="${adminControls.legacyCredsPresent}">
       <tr>
         <td><fmt:message key="credentialsettings.legacycredspresent"/><c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialslegacypasswords"/></c:import></td>

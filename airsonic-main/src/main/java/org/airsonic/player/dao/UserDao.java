@@ -156,22 +156,6 @@ public class UserDao extends AbstractDao {
         return deleteSuccess;
     }
 
-    public boolean checkCredentialsStoredInLegacyTables() {
-        String sql = "select count(*) from " + getUserTable() + " where password!=?";
-        if (queryForInt(sql, 0, "") > 0) {
-            return true;
-        }
-
-        return false;
-    }
-
-    public boolean purgeCredentialsStoredInLegacyTables() {
-        String sql = "update " + getUserTable() + " set password=''";
-        int updated = update(sql);
-
-        return updated != 0;
-    }
-
     /**
      * Returns the user with the given email address.
      *
@@ -201,10 +185,11 @@ public class UserDao extends AbstractDao {
      * @param user The user to create.
      */
     public void createUser(User user, UserCredential credential) {
-        String sql = "insert into " + getUserTable() + " (" + USER_COLUMNS + ", password) values (" + questionMarks(USER_COLUMNS) + ", ?)";
+        String sql = "insert into " + getUserTable() + " (" + USER_COLUMNS + ") values (" + questionMarks(USER_COLUMNS)
+                + ")";
         update(sql, user.getUsername(), user.getEmail(), user.isLdapAuthenticated(),
                 user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded(),
-                Util.toJson(user.getRoles()), "");
+                Util.toJson(user.getRoles()));
         createCredential(credential);
     }
 
