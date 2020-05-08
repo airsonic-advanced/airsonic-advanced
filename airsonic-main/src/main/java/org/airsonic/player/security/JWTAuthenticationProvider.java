@@ -17,6 +17,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -40,6 +41,11 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
         }
         String rawToken = (String) auth.getCredentials();
         DecodedJWT token = JWTSecurityService.verify(jwtKey, rawToken);
+
+        if (!token.getExpiresAt().toInstant().isAfter(Instant.now())) {
+            throw new InsufficientAuthenticationException("Credentials have expired");
+        }
+
         Claim path = token.getClaim(JWTSecurityService.CLAIM_PATH);
 
         // TODO:AD This is super unfortunate, but not sure there is a better way when using JSP
@@ -53,7 +59,7 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("IS_AUTHENTICATED_FULLY"));
         authorities.add(new SimpleGrantedAuthority("ROLE_TEMP"));
-        return new JWTAuthenticationToken(token.getSubject(), rawToken, authentication.getRequestedPath(), authorities);
+        return new JWTAuthenticationToken(token.getSubject(), rawToken, authentication.getRequestedPath(), authorities, token);
     }
 
     private static boolean roughlyEqual(String expectedRaw, String requestedPathRaw) {

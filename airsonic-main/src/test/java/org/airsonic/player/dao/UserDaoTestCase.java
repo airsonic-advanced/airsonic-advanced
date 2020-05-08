@@ -13,8 +13,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.comparator.NullSafeComparator;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.Set;
 
@@ -173,7 +176,18 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         UserSettings settings = new UserSettings("sindre");
         userDao.updateUserSettings(settings);
         UserSettings userSettings = userDao.getUserSettings("sindre");
-        assertThat(userSettings).usingRecursiveComparison().isEqualTo(settings);
+        assertThat(userSettings).usingComparatorForType(new NullSafeComparator<Instant>(new Comparator<Instant>() {
+            // use a custom comparator to account for micro second differences
+            // (Mysql only stores floats in json to a certain value)
+            @Override
+            public int compare(Instant o1, Instant o2) {
+                if (o1.equals(o2) || Math.abs(ChronoUnit.MICROS.between(o1, o2)) <= 2) {
+                    return 0;
+                }
+                return o1.compareTo(o2);
+            }
+        }, true), Instant.class)
+                .usingRecursiveComparison().isEqualTo(settings);
 
         settings = new UserSettings("sindre");
         settings.setLocale(Locale.SIMPLIFIED_CHINESE);

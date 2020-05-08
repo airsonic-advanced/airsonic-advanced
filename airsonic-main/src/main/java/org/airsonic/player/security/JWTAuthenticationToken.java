@@ -19,6 +19,12 @@ public class JWTAuthenticationToken extends UsernamePasswordAuthenticationToken 
         this.requestedPath = requestedPath;
     }
 
+    public JWTAuthenticationToken(Object principal, Object credentials, String requestedPath,
+            Collection<? extends GrantedAuthority> authorities, Object details) {
+        this(principal, credentials, requestedPath, authorities);
+        this.setDetails(details);
+    }
+
     public String getRequestedPath() {
         return requestedPath;
     }

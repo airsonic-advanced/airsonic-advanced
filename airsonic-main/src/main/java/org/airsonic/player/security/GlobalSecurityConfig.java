@@ -19,7 +19,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.authentication.configuration.GlobalAuthenticationConfigurerAdapter;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -46,7 +45,7 @@ import static org.airsonic.player.security.MultipleCredsMatchingAuthenticationPr
 @Configuration
 @Order(SecurityProperties.BASIC_AUTH_ORDER - 2)
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
-public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter {
+public class GlobalSecurityConfig {
 
     private static final Logger LOG = LoggerFactory.getLogger(GlobalSecurityConfig.class);
 
@@ -172,8 +171,8 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
         }
     }
 
-    @Override
-    public void configure(AuthenticationManagerBuilder auth) throws Exception {
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
         if (settingsService.isLdapEnabled()) {
             auth.ldapAuthentication()
                     .contextSource()
