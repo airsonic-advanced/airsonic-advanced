@@ -1,0 +1,10 @@
+extraction:
+  java:
+    index:
+      java_version: 11
+      build_command:
+        - "export PATH=/usr/lib/jvm/java-1.11.0-openjdk-amd64/bin:$PATH"
+        - "export JAVA_HOME=/usr/lib/jvm/java-1.11.0-openjdk-amd64"
+        - java -version
+        - javac -version
+        - mvn package -DskipTests -Dcheckstyle.skip=true
