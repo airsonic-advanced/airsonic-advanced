@@ -16,7 +16,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.2.6.RELEASE</version>
+        <version>2.2.7.RELEASE</version>
         <relativePath />
     </parent>
 
@@ -25,8 +25,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>11</java.version>
         <cxf.version>3.3.6</cxf.version>
-        <!-- Temporarily here because Spring Boot had a Postgres driver with a breaking change, remove once spring boot updates or we move to a breaking change -->
-        <postgresql.version>42.2.12</postgresql.version>
         <docker.container.repo>airsonicadvanced/airsonic-advanced</docker.container.repo>
     </properties>
 
