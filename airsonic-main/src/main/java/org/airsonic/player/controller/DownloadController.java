@@ -129,18 +129,18 @@ public class DownloadController {
             }
 
             if (mediaFile.isFile()) {
-                response = prepareResponse(Collections.singletonList(mediaFile), null, statusSupplier, statusCloser);
+                response = prepareResponse(Collections.singletonList(mediaFile), null, statusSupplier, statusCloser, Collections.emptyList());
                 defaultDownloadName = mediaFile.getFile().getFileName().toString();
             } else {
                 response = prepareResponse(mediaFileService.getChildrenOf(mediaFile, true, false, true), indices,
-                        statusSupplier, statusCloser, indices == null ? mediaFile.getCoverArtFile() : null);
+                        statusSupplier, statusCloser, indices == null ? Collections.singletonList(mediaFile.getCoverArtFile()) : Collections.emptyList());
                 defaultDownloadName = FilenameUtils.getBaseName(mediaFile.getPath()) + ".zip";
             }
         } else if (playlist != null) {
-            response = prepareResponse(playlistService.getFilesInPlaylist(playlist), indices, statusSupplier, statusCloser);
+            response = prepareResponse(playlistService.getFilesInPlaylist(playlist), indices, statusSupplier, statusCloser, Collections.emptyList());
             defaultDownloadName = playlistService.getPlaylist(playlist).getName() + ".zip";
         } else if (player != null) {
-            response = prepareResponse(transferPlayer.getPlayQueue().getFiles(), indices, statusSupplier, statusCloser);
+            response = prepareResponse(transferPlayer.getPlayQueue().getFiles(), indices, statusSupplier, statusCloser, Collections.emptyList());
             defaultDownloadName = "download.zip";
         }
 
@@ -181,7 +181,7 @@ public class DownloadController {
     }
 
     private ResponseDTO prepareResponse(List<MediaFile> files, List<Integer> indices,
-            Supplier<TransferStatus> statusSupplier, Consumer<TransferStatus> statusCloser, Path... additionalFiles)
+            Supplier<TransferStatus> statusSupplier, Consumer<TransferStatus> statusCloser, Collection<Path> additionalFiles)
             throws IOException {
         if (indices == null) {
             indices = IntStream.range(0, files.size()).boxed().collect(Collectors.toList());
@@ -194,7 +194,7 @@ public class DownloadController {
             return new ResponseDTO(null, "emptyfile.download", 0, -1);
         }
 
-        if (indices.size() == 1 && (additionalFiles == null || additionalFiles.length == 0)) {
+        if (indices.size() == 1 && (additionalFiles == null || additionalFiles.size() == 0)) {
             // single file
             MediaFile file = files.get(indices.get(0));
             Path path = file.getFile();
@@ -212,7 +212,8 @@ public class DownloadController {
         } else {
             // get a list of all paths under the tree, plus their zip names and sizes
             Collection<Pair<Path, Pair<String, Long>>> pathsToZip = Streams
-                    .concat(indices.stream().map(i -> files.get(i)).map(x -> x.getFile()), Stream.of(additionalFiles))
+                    .concat(indices.stream().map(i -> files.get(i)).map(x -> x.getFile()), additionalFiles.stream())
+                    .filter(Objects::nonNull)
                     .flatMap(p -> {
                         Path parent = p.getParent();
                         try (Stream<Path> paths = Files.walk(p)) {
