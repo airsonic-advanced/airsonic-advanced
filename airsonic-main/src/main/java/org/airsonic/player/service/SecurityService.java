@@ -102,7 +102,7 @@ public class SecurityService implements UserDetailsService {
         return new UserDetail(
                 username,
                 getCredentials(user.getUsername(), App.AIRSONIC),
-                !user.isLdapAuthenticated(),
+                true,
                 true,
                 true,
                 true,
