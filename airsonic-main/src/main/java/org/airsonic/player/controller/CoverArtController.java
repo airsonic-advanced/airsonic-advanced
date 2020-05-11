@@ -45,7 +45,6 @@ import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
-import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
 import javax.imageio.stream.ImageOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -232,15 +231,7 @@ public class CoverArtController implements LastModified {
 
     private Path getCachedImage(CoverArtRequest request, int size) throws IOException {
         String hash = DigestUtils.md5Hex(request.getKey());
-        String encoding = "png";
-        ImageWriteParam params = null;
-        ImageWriter writer = null;
-        if (request.getCoverArt() != null) {
-            encoding = "jpeg";
-            params = new JPEGImageWriteParam(null);
-            params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-            params.setCompressionQuality(0.9f); // default is 0.75
-        }
+        String encoding = request.getCoverArt() != null ? "jpeg" : "png";
         Path cachedImage = getImageCacheDirectory(size).resolve(hash + "." + encoding);
 
         // Synchronize to avoid concurrent writing to the same file.
@@ -249,6 +240,8 @@ public class CoverArtController implements LastModified {
             // Is cache missing or obsolete?
             if (!Files.exists(cachedImage) || request.lastModified().isAfter(FileUtil.lastModified(cachedImage))) {
 //                LOG.info("Cache MISS - " + request + " (" + size + ")");
+                ImageWriter writer = null;
+
                 try (OutputStream os = Files.newOutputStream(cachedImage);
                         BufferedOutputStream bos = new BufferedOutputStream(os);
                         ImageOutputStream out = ImageIO.createImageOutputStream(bos)) {
@@ -258,6 +251,12 @@ public class CoverArtController implements LastModified {
                         throw new Exception("Unable to decode image.");
                     }
                     writer = ImageIO.getImageWritersByFormatName(encoding).next();
+
+                    float quality = (float) (settingsService.getCoverArtQuality() / 100.0);
+                    ImageWriteParam params = writer.getDefaultWriteParam();
+                    params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                    params.setCompressionQuality(quality); // default is 0.75
+
                     writer.setOutput(out);
                     writer.write(null, new IIOImage(image, null, null), params);
 

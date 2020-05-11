@@ -107,6 +107,24 @@
         <tr><td colspan="2">&nbsp;</td></tr>
 
         <tr>
+            <td><fmt:message key="generalsettings.coverartquality"/></td>
+            <td>
+                <form:input path="coverArtQuality" size="15em"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="coverartquality"/></c:import>
+            </td>
+        </tr>
+
+        <tr>
+            <td><fmt:message key="generalsettings.coverartconcurrency"/></td>
+            <td>
+                <form:input path="coverArtConcurrency" size="15em"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="coverartconcurrency"/></c:import>
+            </td>
+        </tr>
+
+        <tr><td colspan="2">&nbsp;</td></tr>
+
+        <tr>
             <td>
             </td>
             <td>
