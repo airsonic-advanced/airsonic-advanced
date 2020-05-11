@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
+import java.time.ZoneId;
+import java.util.TimeZone;
 
 @SpringBootApplication(exclude = {
         JmxAutoConfiguration.class,
@@ -67,6 +69,10 @@ public class Application extends SpringBootServletInitializer implements WebServ
 
     public static void main(String[] args) {
         SpringApplicationBuilder builder = new SpringApplicationBuilder();
+        System.out.println(TimeZone.getDefault());
+        System.out.println(ZoneId.systemDefault());
+        System.out.println("Heap curr:" + Runtime.getRuntime().totalMemory());
+        System.out.println("Heap max:" + Runtime.getRuntime().maxMemory());
         doConfigure(builder).run(args);
     }
 
