@@ -33,6 +33,8 @@ public class GeneralSettingsCommand {
     private String musicFileTypes;
     private String videoFileTypes;
     private String coverArtFileTypes;
+    private Integer coverArtQuality;
+    private Integer coverArtConcurrency;
     private String index;
     private String ignoredArticles;
     private String shortcuts;
@@ -77,6 +79,22 @@ public class GeneralSettingsCommand {
 
     public void setCoverArtFileTypes(String coverArtFileTypes) {
         this.coverArtFileTypes = coverArtFileTypes;
+    }
+
+    public Integer getCoverArtQuality() {
+        return coverArtQuality;
+    }
+
+    public void setCoverArtQuality(Integer coverArtQuality) {
+        this.coverArtQuality = coverArtQuality;
+    }
+
+    public Integer getCoverArtConcurrency() {
+        return coverArtConcurrency;
+    }
+
+    public void setCoverArtConcurrency(Integer coverArtConcurrency) {
+        this.coverArtConcurrency = coverArtConcurrency;
     }
 
     public String getIndex() {
