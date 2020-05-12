@@ -19,8 +19,8 @@
  */
 package org.airsonic.player.service.scrobbler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.util.Util;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
@@ -54,26 +54,27 @@ public class ListenBrainzScrobbler {
             .build();
 
     /**
-     * Registers the given media file at listenbrainz.org. This method returns immediately, the actual registration is done
-     * by a separate thread.
+     * Registers the given media file at listenbrainz.org. This method returns
+     * immediately, the actual registration is done by a separate thread.
      *
      * @param mediaFile  The media file to register.
+     * @param url        The ListenBrainz URL (null for default)
      * @param token      The token to authentication user on ListenBrainz.
      * @param submission Whether this is a submission or a now playing notification.
      * @param time       Event time, or {@code null} to use current time.
      */
-    public synchronized void register(MediaFile mediaFile, String token, boolean submission, Instant time) {
+    public synchronized void register(MediaFile mediaFile, String url, String token, boolean submission, Instant time) {
         if (thread == null) {
             thread = new RegistrationThread();
             thread.start();
         }
 
         if (queue.size() >= MAX_PENDING_REGISTRATION) {
-            LOG.warn("ListenBrainz scrobbler queue is full. Ignoring '" + mediaFile.getTitle() + "'");
+            LOG.warn("ListenBrainz scrobbler queue is full. Ignoring '{}'", mediaFile.getTitle());
             return;
         }
 
-        RegistrationData registrationData = createRegistrationData(mediaFile, token, submission, time);
+        RegistrationData registrationData = createRegistrationData(mediaFile, url, token, submission, time);
         if (registrationData == null) {
             return;
         }
@@ -81,12 +82,13 @@ public class ListenBrainzScrobbler {
         try {
             queue.put(registrationData);
         } catch (InterruptedException x) {
-            LOG.warn("Interrupted while queuing ListenBrainz scrobble: " + x.toString());
+            LOG.warn("Interrupted while queuing ListenBrainz scrobble", x);
         }
     }
 
-    private RegistrationData createRegistrationData(MediaFile mediaFile, String token, boolean submission, Instant time) {
+    private RegistrationData createRegistrationData(MediaFile mediaFile, String url, String token, boolean submission, Instant time) {
         RegistrationData reg = new RegistrationData();
+        reg.url = url == null ? "https://api.listenbrainz.org/1/submit-listens" : url;
         reg.token = token;
         reg.artist = mediaFile.getArtist();
         reg.album = mediaFile.getAlbumName();
@@ -112,12 +114,11 @@ public class ListenBrainzScrobbler {
         }
 
         if (!submit(registrationData)) {
-            LOG.warn("Failed to scrobble song '" + registrationData.title + "' at ListenBrainz.");
+            LOG.warn("Failed to scrobble song '{}' at ListenBrainz ({}).", registrationData.title, registrationData.url);
         } else {
-            LOG.info("Successfully registered " +
-                    (registrationData.submission ? "submission" : "now playing") +
-                     " for song '" + registrationData.title + "'" +
-                     " at ListenBrainz: " + registrationData.time);
+            LOG.info("Successfully registered {} for song '{}' at ListenBrainz ({}): {}",
+                    (registrationData.submission ? "submission" : "now playing"), registrationData.title,
+                    registrationData.url, registrationData.time);
         }
     }
     /**
@@ -155,10 +156,9 @@ public class ListenBrainzScrobbler {
         payloads.add(payload);
         content.put("payload", payloads);
 
-        ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.writeValueAsString(content);
+        String json = Util.toJson(content);
 
-        executeJsonPostRequest("https://api.listenbrainz.org/1/submit-listens", registrationData.token, json);
+        executeJsonPostRequest(registrationData.url, registrationData.token, json);
 
         return true;
     }
@@ -174,8 +174,9 @@ public class ListenBrainzScrobbler {
     }
 
     private void executeRequest(HttpUriRequest request) throws ClientProtocolException, IOException {
-        CloseableHttpClient client = HttpClients.createDefault();
-        client.execute(request);
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            client.execute(request);
+        }
     }
 
     private class RegistrationThread extends Thread {
@@ -192,30 +193,30 @@ public class ListenBrainzScrobbler {
                     scrobble(registrationData);
                 } catch (ClientProtocolException x) {
                 } catch (IOException x) {
-                    handleNetworkError(registrationData, x.toString());
+                    handleNetworkError(registrationData, x);
                 } catch (Exception x) {
                     LOG.warn("Error in ListenBrainz registration: " + x.toString());
                 }
             }
         }
 
-        private void handleNetworkError(RegistrationData registrationData, String errorMessage) {
+        private void handleNetworkError(RegistrationData registrationData, Exception error) {
             try {
                 queue.put(registrationData);
-                LOG.info("ListenBrainz registration for '" + registrationData.title +
-                         "' encountered network error: " + errorMessage + ".  Will try again later. In queue: " + queue.size());
+                LOG.info("ListenBrainz registration for '{}' encountered network error. Will try again later. In queue: {}", registrationData.title, queue.size(), error);
             } catch (InterruptedException x) {
-                LOG.error("Failed to reschedule ListenBrainz registration for '" + registrationData.title + "': " + x.toString());
+                LOG.error("Failed to reschedule ListenBrainz registration for '{}'", registrationData.title, x);
             }
             try {
                 sleep(60L * 1000L);  // Wait 60 seconds.
             } catch (InterruptedException x) {
-                LOG.error("Failed to sleep after ListenBrainz registration failure for '" + registrationData.title + "': " + x.toString());
+                LOG.error("Failed to sleep after ListenBrainz registration failure for '{}'", registrationData.title, x);
             }
         }
     }
 
     private static class RegistrationData {
+        private String url;
         private String token;
         private String artist;
         private String album;

@@ -24,6 +24,7 @@ import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -82,6 +83,7 @@ public class PersonalSettingsController {
         command.setKeyboardShortcutsEnabled(userSettings.getKeyboardShortcutsEnabled());
         command.setLastFmEnabled(userSettings.getLastFmEnabled());
         command.setListenBrainzEnabled(userSettings.getListenBrainzEnabled());
+        command.setListenBrainzUrl(userSettings.getListenBrainzUrl());
         command.setPaginationSize(userSettings.getPaginationSize());
 
         Locale currentLocale = userSettings.getLocale();
@@ -153,6 +155,7 @@ public class PersonalSettingsController {
         settings.setKeyboardShortcutsEnabled(command.isKeyboardShortcutsEnabled());
         settings.setLastFmEnabled(command.isLastFmEnabled());
         settings.setListenBrainzEnabled(command.isListenBrainzEnabled());
+        settings.setListenBrainzUrl(StringUtils.trimToNull(command.getListenBrainzUrl()));
         settings.setSystemAvatarId(getSystemAvatarId(command));
         settings.setAvatarScheme(getAvatarScheme(command));
         settings.setPaginationSize(command.getPaginationSize());

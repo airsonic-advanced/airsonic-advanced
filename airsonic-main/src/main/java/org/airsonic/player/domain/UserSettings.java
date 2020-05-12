@@ -47,6 +47,7 @@ public class UserSettings {
     private Visibility playlistVisibility = new Visibility();
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
+    private String listenBrainzUrl;
     private TranscodeScheme transcodeScheme = TranscodeScheme.OFF;
     private int selectedMusicFolderId = -1;
     private boolean partyModeEnabled;
@@ -157,6 +158,14 @@ public class UserSettings {
 
     public void setListenBrainzEnabled(boolean listenBrainzEnabled) {
         this.listenBrainzEnabled = listenBrainzEnabled;
+    }
+
+    public String getListenBrainzUrl() {
+        return listenBrainzUrl;
+    }
+
+    public void setListenBrainzUrl(String listenBrainzUrl) {
+        this.listenBrainzUrl = listenBrainzUrl;
     }
 
     public TranscodeScheme getTranscodeScheme() {

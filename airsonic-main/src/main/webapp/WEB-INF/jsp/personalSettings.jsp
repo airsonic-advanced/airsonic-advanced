@@ -208,6 +208,10 @@
     </table>
 
     <table id="listenBrainzTable" style="padding-left:2em">
+        <tr>
+            <td><fmt:message key="personalsettings.listenbrainzurl"/></td>
+            <td><form:input path="listenBrainzUrl" size="36"/></td>
+        </tr>
         <c:if test="${listenBrainzCredsAbsent}" >
         <tr>
             <td>
