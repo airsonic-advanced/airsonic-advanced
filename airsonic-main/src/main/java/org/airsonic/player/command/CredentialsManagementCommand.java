@@ -215,7 +215,6 @@ public class CredentialsManagementCommand {
     }
 
     public static class AdminControls {
-        private boolean credsStoredInLegacyTables;
         private boolean legacyCredsPresent;
         private boolean openCredsPresent;
         private boolean defaultAdminCredsPresent;
@@ -235,18 +234,16 @@ public class CredentialsManagementCommand {
         private boolean decodableEncoderChanged;
         private boolean nonDecodablePreferenceChanged;
 
-        private boolean purgeCredsInLegacyTables;
         private boolean migrateLegacyCredsToNonLegacyDefault;
         private boolean migrateLegacyCredsToNonLegacyDecodableOnly;
 
         public AdminControls() {
         }
 
-        public AdminControls(boolean credsStoredInLegacyTables, boolean legacyCredsPresent, boolean openCredsPresent,
+        public AdminControls(boolean legacyCredsPresent, boolean openCredsPresent,
                 boolean defaultAdminCredsPresent, String jwtKey, String encryptionKey, String encryptionKeySalt,
                 String nonDecodableEncoder, String decodableEncoder, boolean preferNonDecodable) {
             super();
-            this.credsStoredInLegacyTables = credsStoredInLegacyTables;
             this.legacyCredsPresent = legacyCredsPresent;
             this.openCredsPresent = openCredsPresent;
             this.defaultAdminCredsPresent = defaultAdminCredsPresent;
@@ -256,14 +253,6 @@ public class CredentialsManagementCommand {
             this.nonDecodableEncoder = nonDecodableEncoder;
             this.decodableEncoder = decodableEncoder;
             this.preferNonDecodable = preferNonDecodable;
-        }
-
-        public boolean getCredsStoredInLegacyTables() {
-            return credsStoredInLegacyTables;
-        }
-
-        public void setCredsStoredInLegacyTables(boolean credsStoredInLegacyTables) {
-            this.credsStoredInLegacyTables = credsStoredInLegacyTables;
         }
 
         public boolean getLegacyCredsPresent() {
@@ -376,14 +365,6 @@ public class CredentialsManagementCommand {
 
         public void setNonDecodablePreferenceChanged(boolean nonDecodablePreferenceChanged) {
             this.nonDecodablePreferenceChanged = nonDecodablePreferenceChanged;
-        }
-
-        public boolean getPurgeCredsInLegacyTables() {
-            return purgeCredsInLegacyTables;
-        }
-
-        public void setPurgeCredsInLegacyTables(boolean purgeCredsInLegacyTables) {
-            this.purgeCredsInLegacyTables = purgeCredsInLegacyTables;
         }
 
         public boolean getMigrateLegacyCredsToNonLegacyDefault() {

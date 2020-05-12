@@ -115,7 +115,6 @@ public class CredentialsManagementController {
         if (userInDb.isAdminRole() && !map.containsAttribute("adminControls")) {
             map.addAttribute("adminControls",
                     new AdminControls(
-                            securityService.checkCredentialsStoredInLegacyTables(),
                             securityService.checkLegacyCredsPresent(),
                             securityService.checkOpenCredsPresent(),
                             securityService.checkDefaultAdminCredsPresent(),
@@ -206,9 +205,6 @@ public class CredentialsManagementController {
         }
 
         boolean success = true;
-        if (ac.getPurgeCredsInLegacyTables()) {
-            success = securityService.purgeCredentialsStoredInLegacyTables();
-        }
 
         if (ac.getMigrateLegacyCredsToNonLegacyDefault()) {
             success = securityService.migrateLegacyCredsToNonLegacy(false);
