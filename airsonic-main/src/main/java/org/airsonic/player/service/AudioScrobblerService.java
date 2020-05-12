@@ -107,7 +107,7 @@ public class AudioScrobblerService {
             }
             String decoded = decode(cred);
             if (decoded != null) {
-                listenBrainzScrobbler.register(mediaFile, decoded, submission, time);
+                listenBrainzScrobbler.register(mediaFile, userSettings.getListenBrainzUrl(), decoded, submission, time);
             }
         }
     }
