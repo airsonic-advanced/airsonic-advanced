@@ -62,6 +62,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
         - The bigger the table, the more performance benefits it sees
         - Play queue that took about 800s to render in the browser, can now render in < 1s
       - Allow optional paging and accessible searching within tables
+    - Customize generated cover art thumbnail quality
 - Bugfixes:
   - Several race condition fixes
   - Consistency checks and refactors
@@ -71,6 +72,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Uses Java's NIO for handling files instead of the older IO packages
   - More precise song duration calculation
   - Ability to pass properties via environment or system variables. You can but do not need to modify `airsonic.properties` to change preferences
+  - Ability to use custom URLs to scrobble on ListenBrainz servers
   - Ability to use Repeat-One in play queues in web-clients
   - Ability to upload multiple files simultaneously
   - Ability to upload and extract more archive formats:
