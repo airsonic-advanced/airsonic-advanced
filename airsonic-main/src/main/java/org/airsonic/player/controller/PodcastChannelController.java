@@ -53,13 +53,14 @@ public class PodcastChannelController {
 
         Map<String, Object> map = new HashMap<>();
         ModelAndView result = new ModelAndView();
-        result.addObject("model", map);
 
         int channelId = ServletRequestUtils.getRequiredIntParameter(request, "id");
 
         map.put("user", securityService.getCurrentUser(request));
         map.put("channel", podcastService.getChannel(channelId));
         map.put("episodes", podcastService.getEpisodes(channelId));
+
+        result.addObject("model", map);
         return result;
     }
 
