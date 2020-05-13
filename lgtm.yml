@@ -1,0 +1,20 @@
+extraction:
+  javascript:
+    index:
+      exclude:
+        - "airsonic-main/src/main/webapp/script"
+      include:
+        - "airsonic-main/src/main/webapp/script/playQueue"
+        - "airsonic-main/src/main/webapp/script/keyboard_shortcuts.js"
+        - "airsonic-main/src/main/webapp/script/playQueueCast.js"
+        - "airsonic-main/src/main/webapp/script/utils.js"
+        - "airsonic-main/src/main/webapp/script/videoPlayerCast.js"
+  java:
+    index:
+      java_version: 11
+      build_command:
+        - "export PATH=/usr/lib/jvm/java-1.11.0-openjdk-amd64/bin:$PATH"
+        - "export JAVA_HOME=/usr/lib/jvm/java-1.11.0-openjdk-amd64"
+        - java -version
+        - javac -version
+        - mvn package -DskipTests -Dcheckstyle.skip=true
