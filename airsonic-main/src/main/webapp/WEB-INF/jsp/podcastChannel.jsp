@@ -27,9 +27,9 @@
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" language="javascript">
         function init() {
-            top.StompClient.subscribe("pdcactChannel.jsp", {
+
+            top.StompClient.subscribe("podcactChannel.jsp", {
                 '/user/queue/playlists/writable': function(msg) {
-                    console.log('playlistSelectionCallback');
                     playlistSelectionCallback(JSON.parse(msg.body));
                 },
                 '/user/queue/playlists/files/append': function(msg) {
@@ -82,10 +82,7 @@
         function appendPlaylist(playlistId) {
             $("#dialog-select-playlist").dialog("close");
 
-            //var mediaFileIds = filesTable.rows({selected:true}).data().map(function(d) { return d.id; }).toArray();
             var mediaFileIds = getSelectedEpisodesMediaId();
-            console.log(mediaFileIds);
-
             top.StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
         }
 
@@ -208,6 +205,8 @@
     <c:forEach items="${model.episodes}" var="episode" varStatus="i">
 
         <tr>
+            <td class="fit"><input type="checkbox" id="episode${i.index}" value="${episode.id}" mediafileid="${episode.mediaFileId}" /></td>
+
             <c:choose>
                 <c:when test="${empty episode.mediaFileId or episode.status ne 'COMPLETED'}">
                     <td colspan="4"></td>
@@ -222,8 +221,6 @@
                     </c:import>
                 </c:otherwise>
             </c:choose>
-
-            <td class="fit"><input type="checkbox" id="episode${i.index}" value="${episode.id}" mediafileid="${episode.mediaFileId}" /></td>
 
             <td class="truncate">
                 <span title="${episode.title}" class="songTitle">${episode.title}</span>
@@ -267,7 +264,7 @@
 </table>
 
 <select id="moreActions" class="pagetype-dependent type-album type-video" onchange="actionSelected(this.options[selectedIndex].id);" style="margin-bottom:1.0em">
-    <option id="top" selected="selected"><fmt:message key="main.more.selection"/></option>
+    <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
     <option id="selectAll">&nbsp;&nbsp;<fmt:message key="playlist.more.selectall"/></option>
     <option id="selectNone">&nbsp;&nbsp;<fmt:message key="playlist.more.selectnone"/></option>
     <c:if test="${model.user.downloadRole}">
