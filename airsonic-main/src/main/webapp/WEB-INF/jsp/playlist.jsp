@@ -25,7 +25,6 @@
                 processing: true,
                 autoWidth: true,
                 scrollCollapse: true,
-                scrollY: "60vh",
               <c:if test="${model.editAllowed}">
                 rowReorder: {
                     dataSrc: "seq",
