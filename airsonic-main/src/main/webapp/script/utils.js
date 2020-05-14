@@ -75,10 +75,6 @@ function formatDuration(seconds) {
     return res;
 }
 
-function getCurrentPageName() {
-    return window.location.pathname.split("/").pop();
-}
-
 function setCookie(name, value, days) {
     var expires = "";
     if (days) {
