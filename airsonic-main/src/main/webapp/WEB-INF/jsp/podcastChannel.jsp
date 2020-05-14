@@ -26,9 +26,20 @@
 
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" language="javascript">
+        var podcastEpisodes = [];
         function init() {
+            <c:forEach items="${model.episodes}" var="episode" varStatus="i">
+            var episode = {};
+            episode.id = '${episode.id}';
+            episode.mediaFileId = '${episode.mediaFileId}';
+            episode.status = '${episode.status}';
+            podcastEpisodes.push(episode);
+            </c:forEach>
 
-            top.StompClient.subscribe("podcactChannel.jsp", {
+            top.StompClient.subscribe("podcastChannel.jsp", {
+                '/user/queue/mediafile/directory/get': function(msg) {
+                    getMediaDirectoryCallback(JSON.parse(msg.body));
+                },
                 '/user/queue/playlists/writable': function(msg) {
                     playlistSelectionCallback(JSON.parse(msg.body));
                 },
@@ -79,26 +90,53 @@
             }
             $("#dialog-select-playlist").dialog("open");
         }
+
         function appendPlaylist(playlistId) {
             $("#dialog-select-playlist").dialog("close");
-
             var mediaFileIds = getSelectedEpisodesMediaId();
             top.StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
         }
 
+        function getMediaDirectory(mediaFileId) {
+            getMediaDirectories([mediaFileId]);
+        }
+
+        function getMediaDirectories(ids, paths) {
+            top.StompClient.send("/app/mediafile/directory/get", JSON.stringify({ids: ids, paths: paths}));
+        }
+        function getMediaDirectoryCallback(mediaDirObj) {
+            if (downloadMedia) {
+                var selectedMediaIds = getSelectedEpisodesMediaId();
+                var selectedFilesIndexesToDownload = mediaDirObj.files.reduce(function(accumulator, file, index) {
+                    if (selectedMediaIds.indexOf(file.id.toString()) > -1) {
+                        accumulator.push(index);
+                    }
+                    return accumulator;
+                }, []);
+                location.href = "download.view?id=" + ${model.channel.mediaFileId}  + "&" + selectedFilesIndexesToDownload.map(i => "i=" + i).join("&");
+                downloadMedia = false;
+            }
+        }
+
+        var downloadMedia = false;
         // actionSelected() is invoked when the users selects from the "More actions..." combo box.
         function actionSelected(id) {
-            var selectedEpisodeIndexes = getSelectedEpisodesIndexes();
-
             if (id == "top") {
                 return;
             } else if (id == "selectAll") {
                 selectAll(true);
             } else if (id == "selectNone") {
                 selectAll(false);
-            } else if (id == "download" && selectedEpisodeIndexes) {
-                location.href = "download.view?id=" + ${model.channel.mediaFileId}  + "&" + selectedEpisodeIndexes.map(i => "i=" + i).join("&");
-            } else if (id == "appendPlaylist" && selectedEpisodeIndexes) {
+            } else if (id == "download") {
+                if (getSelectedEpisodesMediaId().length == 0) {
+                    return;
+                }
+                downloadMedia = true;
+                getMediaDirectory(${model.channel.mediaFileId});
+            } else if (id == "appendPlaylist") {
+                if (getSelectedEpisodesMediaId().length == 0) {
+                    return;
+                }
                 onAppendPlaylist();
             }
             $("#moreActions").prop("selectedIndex", 0);
@@ -143,23 +181,16 @@
             return result;
         }
 
-        function getSelectedEpisodesIndexes() {
-            var result = [];
-            for (var i = 0; i < ${fn:length(model.episodes)}; i++) {
-                var checkbox = $("#episode" + i);
-                if (checkbox.is(":checked")) {
-                    result.push(i);
-                }
-            }
-            return result;
-        }
-
         function getSelectedEpisodesMediaId() {
             var result = [];
             for (var i = 0; i < ${fn:length(model.episodes)}; i++) {
                 var checkbox = $("#episode" + i);
                 if (checkbox.is(":checked")) {
-                    result.push(checkbox.attr("mediafileid"));
+                    if (podcastEpisodes[i].status == 'COMPLETED') {
+                        result.push(podcastEpisodes[i].mediaFileId);
+                    } else {
+                        $().toastmessage("showErrorToast", "Download of the episode needs to be completed for that action");
+                    }
                 }
             }
             return result;
@@ -205,7 +236,7 @@
     <c:forEach items="${model.episodes}" var="episode" varStatus="i">
 
         <tr>
-            <td class="fit"><input type="checkbox" id="episode${i.index}" value="${episode.id}" mediafileid="${episode.mediaFileId}" /></td>
+            <td class="fit"><input type="checkbox" id="episode${i.index}" value="${episode.id}"/></td>
 
             <c:choose>
                 <c:when test="${empty episode.mediaFileId or episode.status ne 'COMPLETED'}">
