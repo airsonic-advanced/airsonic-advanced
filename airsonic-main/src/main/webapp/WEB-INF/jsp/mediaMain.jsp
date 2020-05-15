@@ -274,7 +274,6 @@
             processing: true,
             autoWidth: true,
             scrollCollapse: true,
-            //scrollY: "60vh",
             dom: "<'#filesHeader'><'tableSpacer'>lfrtip",
             select: {
                 style: "multi",
