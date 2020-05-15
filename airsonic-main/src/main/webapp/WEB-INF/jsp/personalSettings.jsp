@@ -7,14 +7,43 @@
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
     <script type="text/javascript" language="javascript">
+        function init() {
+            enableFields();
+            initPaginationSizeSelected();
+        }
+
         function enableFields() {
             $("#lastFm").is(":checked") ? $("#lastFmTable").show() : $("#lastFmTable").hide();
             $("#listenBrainz").is(":checked") ? $("#listenBrainzTable").show() : $("#listenBrainzTable").hide();
         }
+
+        function initPaginationSizeSelected() {
+            var options = $('#paginationSizeSelect option').map(function() { return $(this).val(); }).get();
+            var currentPaginationSizeValue = $("#paginationSize").val()
+            if (options.indexOf(currentPaginationSizeValue) == -1) {
+                $('#paginationSize').show()
+                $('#paginationSizeSelect').val('custom');
+            } else {
+                $('#paginationSize').hide();
+                $('#paginationSizeSelect').val(currentPaginationSizeValue);
+            }
+        }
+
+        function paginationSizeSelected(id) {
+            if (id == 'custom') {
+                if ($('#paginationSize').val() == '-1') {
+                    $('#paginationSize').val(20);
+                }
+                $('#paginationSize').show();
+            } else {
+                $('#paginationSize').hide();
+                $('#paginationSize').val(id);
+            }
+        }
     </script>
 </head>
 
-<body class="mainframe bgcolor1" onload="enableFields()">
+<body class="mainframe bgcolor1" onload="init()">
 <script type="text/javascript" src="<c:url value='/script/wz_tooltip.js'/>"></script>
 <script type="text/javascript" src="<c:url value='/script/tip_balloon.js'/>"></script>
 
@@ -69,6 +98,21 @@
                         <form:option value="${albumList.id}" label="${label}"/>
                     </c:forEach>
                 </form:select>
+            </td>
+        </tr>
+
+        <tr>
+            <td><fmt:message key="personalsettings.paginationsize"/></td>
+            <td>
+                <select id="paginationSizeSelect" style="width:15em" onchange="paginationSizeSelected(this.options[selectedIndex].value)">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="-1">All</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <form:input path="paginationSize" id="paginationSize" size="24" cssStyle="display: none;"/>
             </td>
         </tr>
     </table>
@@ -186,13 +230,6 @@
         <tr>
             <td><form:checkbox path="keyboardShortcutsEnabled" id="keyboardShortcutsEnabled" cssClass="checkbox"/></td>
             <td><label for="keyboardShortcutsEnabled"><fmt:message key="personalsettings.keyboardshortcutsenabled"/></label></td>
-        </tr>
-    </table>
-
-    <table class="indent">
-        <tr>
-            <td><fmt:message key="personalsettings.paginationsize"/></td>
-            <td><form:input path="paginationSize" size="24"/></td>
         </tr>
     </table>
 
