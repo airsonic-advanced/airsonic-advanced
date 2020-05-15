@@ -81,12 +81,12 @@ public class MainController {
         return new ModelAndView("mediaMain", "model", map);
     }
 
-    boolean isPodcast(int id) {
+    private boolean isPodcast(int id) {
         MediaFile mediaFile = mediaFileService.getMediaFile(id);
         return mediaFile.isPodcast();
     }
 
-    int getPodcastChannelId(int id) {
+    private int getPodcastChannelId(int id) {
         MediaFile mediaFile = mediaFileService.getMediaFile(id);
         return podcastService.getChannelIdByMediaFile(mediaFile);
     }
