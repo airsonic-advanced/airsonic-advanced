@@ -61,7 +61,7 @@ public class MainController {
         UserSettings userSettings = settingsService.getUserSettings(username);
         int[] requestParameterIds = ServletRequestUtils.getIntParameters(request, "id");
 
-        if (requestParameterIds != null && requestParameterIds.length == 1 && isPodcast(requestParameterIds[0])) {
+        if (requestParameterIds.length == 1 && isPodcast(requestParameterIds[0])) {
             return new ModelAndView(new RedirectView("/podcastChannel.view?id=" + getPodcastChannelId(requestParameterIds[0])));
         }
 
