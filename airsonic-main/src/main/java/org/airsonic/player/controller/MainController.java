@@ -28,6 +28,7 @@ import org.springframework.web.bind.ServletRequestUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.RedirectView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -47,6 +48,10 @@ public class MainController {
     private SecurityService securityService;
     @Autowired
     private SettingsService settingsService;
+    @Autowired
+    private MediaFileService mediaFileService;
+    @Autowired
+    private PodcastService podcastService;
 
     @GetMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -54,6 +59,11 @@ public class MainController {
 
         String username = securityService.getCurrentUsername(request);
         UserSettings userSettings = settingsService.getUserSettings(username);
+        int[] requestParameterIds = ServletRequestUtils.getIntParameters(request, "id");
+
+        if (requestParameterIds != null && requestParameterIds.length == 1 && isPodcast(requestParameterIds[0])) {
+            return new ModelAndView(new RedirectView("/podcastChannel.view?id=" + getPodcastChannelId(requestParameterIds[0])));
+        }
 
         map.put("coverArtSizeMedium", CoverArtScheme.MEDIUM.getSize());
         map.put("coverArtSizeLarge", CoverArtScheme.LARGE.getSize());
@@ -66,8 +76,18 @@ public class MainController {
         map.put("viewAsList", userSettings.isViewAsList());
         map.put("initialPaginationSize", userSettings.getPaginationSize());
         map.put("initialPathsJSON", Util.toJson(ServletRequestUtils.getStringParameters(request, "path")));
-        map.put("initialIdsJSON", Util.toJson(ServletRequestUtils.getIntParameters(request, "id")));
+        map.put("initialIdsJSON", Util.toJson(requestParameterIds));
 
         return new ModelAndView("mediaMain", "model", map);
+    }
+
+    boolean isPodcast(int id) {
+        MediaFile mediaFile = mediaFileService.getMediaFile(id);
+        return mediaFile.isPodcast();
+    }
+
+    int getPodcastChannelId(int id) {
+        MediaFile mediaFile = mediaFileService.getMediaFile(id);
+        return podcastService.getChannelIdByMediaFile(mediaFile);
     }
 }
