@@ -193,8 +193,8 @@ public class MediaScannerService {
 
         CompletableFuture.runAsync(() -> doScanLibrary(pool), pool)
                 .thenRunAsync(() -> playlistService.importPlaylists(), pool)
-                .thenRun(() -> pool.shutdown())
-                .thenRun(() -> setScanning(false));
+                .whenComplete((r,e) -> pool.shutdown())
+                .whenComplete((r,e) -> setScanning(false));
     }
 
     private void doScanLibrary(ForkJoinPool pool) {
