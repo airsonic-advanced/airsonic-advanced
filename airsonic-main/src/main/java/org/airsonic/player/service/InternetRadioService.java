@@ -141,7 +141,7 @@ public class InternetRadioService {
         String streamUrl = radio.getStreamUrl();
         HttpURLConnection urlConnection = connectToURLWithRedirects(new URL(streamUrl), PLAYLIST_REMOTE_MAX_REDIRECTS);
         String contentType = urlConnection.getContentType();
-        if (contentType.equals("audio/mpeg")) {
+        if ("audio/mpeg".equals(contentType)) {
             //for direct binary streams
             List<InternetRadioSource> entries = new ArrayList<>();
             entries.add(new InternetRadioSource(streamUrl));
