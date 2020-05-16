@@ -112,7 +112,7 @@
                     <option value="-1">All</option>
                     <option value="custom">Custom</option>
                 </select>
-                <form:input path="paginationSize" id="paginationSize" size="24" cssStyle="display: none;"/>
+                <form:input type="number" path="paginationSize" id="paginationSize" size="24" cssStyle="display: none;" min="1"/>
             </td>
         </tr>
     </table>
