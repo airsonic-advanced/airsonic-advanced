@@ -289,7 +289,7 @@
 
 </table>
 
-<select id="moreActions" class="pagetype-dependent type-album type-video" onchange="actionSelected(this.options[selectedIndex].id);" style="margin-bottom:1.0em">
+<select id="moreActions" onchange="actionSelected(this.options[selectedIndex].id);" style="margin-bottom:1.0em">
     <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
     <option id="selectAll">&nbsp;&nbsp;<fmt:message key="playlist.more.selectall"/></option>
     <option id="selectNone">&nbsp;&nbsp;<fmt:message key="playlist.more.selectnone"/></option>
