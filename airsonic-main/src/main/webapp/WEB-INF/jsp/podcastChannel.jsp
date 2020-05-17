@@ -125,16 +125,14 @@
             } else if (id == "selectNone") {
                 selectAll(false);
             } else if (id == "download") {
-                if (getSelectedEpisodesMediaId().length == 0) {
-                    return;
+                if (getSelectedEpisodesMediaId().length > 0) {
+                    downloadMedia = true;
+                    getMediaDirectory(${model.channel.mediaFileId});
                 }
-                downloadMedia = true;
-                getMediaDirectory(${model.channel.mediaFileId});
             } else if (id == "appendPlaylist") {
-                if (getSelectedEpisodesMediaId().length == 0) {
-                    return;
+                if (getSelectedEpisodesMediaId().length > 0) {
+                    onAppendPlaylist();
                 }
-                onAppendPlaylist();
             }
             $("#moreActions").prop("selectedIndex", 0);
         }
@@ -186,7 +184,7 @@
                     if (podcastEpisodes[i].status == 'COMPLETED') {
                         result.push(podcastEpisodes[i].mediaFileId);
                     } else {
-                        $().toastmessage("showErrorToast", "Download of the episode needs to be completed for that action");
+                        $().toastmessage("showErrorToast", "<fmt:message key="podcastreceiver.episodedownloadnotcomplete"/>");
                     }
                 }
             }
