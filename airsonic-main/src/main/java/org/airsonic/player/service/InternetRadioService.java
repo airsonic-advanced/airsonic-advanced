@@ -130,7 +130,6 @@ public class InternetRadioService {
 
     /**
      * Retrieve a list of sources from the given internet radio
-     * The radio stream can either by binary or a playlist pointing to binary streams
      *
      * This method uses a default maximum limit of PLAYLIST_REMOTE_MAX_LENGTH sources.
      *
@@ -138,24 +137,12 @@ public class InternetRadioService {
      * @return a list of internet radio sources
      */
     private List<InternetRadioSource> retrieveInternetRadioSources(InternetRadio radio) throws Exception {
-        String streamUrl = radio.getStreamUrl();
-        HttpURLConnection urlConnection = connectToURLWithRedirects(new URL(streamUrl), PLAYLIST_REMOTE_MAX_REDIRECTS);
-        String contentType = urlConnection.getContentType();
-        if ("audio/mpeg".equals(contentType)) {
-            //for direct binary streams
-            List<InternetRadioSource> entries = new ArrayList<>();
-            entries.add(new InternetRadioSource(streamUrl));
-            return entries;
-        } else {
-            //for playlists containing binary streams
-            return retrieveInternetRadioSources(
-                    radio,
-                    PLAYLIST_REMOTE_MAX_LENGTH,
-                    PLAYLIST_REMOTE_MAX_BYTE_SIZE,
-                    PLAYLIST_REMOTE_MAX_REDIRECTS
-            );
-        }
-
+        return retrieveInternetRadioSources(
+            radio,
+            PLAYLIST_REMOTE_MAX_LENGTH,
+            PLAYLIST_REMOTE_MAX_BYTE_SIZE,
+            PLAYLIST_REMOTE_MAX_REDIRECTS
+        );
     }
 
     /**
