@@ -10,17 +10,9 @@ WORKDIR $AIRSONIC_DIR
 ADD https://github.com/krallin/tini/releases/download/v0.19.0/tini /usr/local/bin/tini
 RUN chmod +x /usr/local/bin/tini
 
-RUN apt-get update && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository -y ppa:jonathonf/ffmpeg-4 && \
-    apt-get update && \
-    apt-get install -y ffmpeg \
-                       x264 \
-                       x265 \
-                       lame \
-                       bash \
-                       ttf-dejavu \
-                       gosu
+RUN apt-get update && apt-get install -y software-properties-common
+RUN add-apt-repository -y ppa:jonathonf/ffmpeg-4
+RUN apt-get update && apt-get install -y ffmpeg x264 x265 lame bash ttf-dejavu gosu
 
 COPY run.sh /usr/local/bin/run.sh
 RUN chmod +x /usr/local/bin/run.sh
