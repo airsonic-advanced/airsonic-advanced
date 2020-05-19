@@ -160,18 +160,16 @@ public class InternetRadioService {
 
         SpecificPlaylist inputPlaylist = null;
         HttpURLConnection urlConnection = connectToURLWithRedirects(new URL(streamUrl), maxRedirects);
-        try (InputStream in = urlConnection.getInputStream()) {
+        try (InputStream in = urlConnection.getInputStream();
+                BoundedInputStream bin = new BoundedInputStream(in, maxByteSize);) {
             String contentType = urlConnection.getContentType();
             if ("audio/mpeg".equals(contentType)) {
                 //for direct binary streams, just return a collection with a single internet radio source
+                LOG.debug("Got direct source media at {}", streamUrl);
                 return Collections.singletonList(new InternetRadioSource(streamUrl));
             }
             String contentEncoding = urlConnection.getContentEncoding();
-            if (maxByteSize > 0) {
-                inputPlaylist = SpecificPlaylistFactory.getInstance().readFrom(new BoundedInputStream(in, maxByteSize), contentEncoding);
-            } else {
-                inputPlaylist = SpecificPlaylistFactory.getInstance().readFrom(in, contentEncoding);
-            }
+            inputPlaylist = SpecificPlaylistFactory.getInstance().readFrom(bin, contentEncoding);
         } finally {
             urlConnection.disconnect();
         }
