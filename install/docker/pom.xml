@@ -46,17 +46,6 @@
                             </images>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>log-image</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>logs</goal>
-                        </goals>
-                        <configuration>
-                            <showLogs>true</showLogs>
-                            <docker.logAll>true</docker.logAll>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
             <plugin>
