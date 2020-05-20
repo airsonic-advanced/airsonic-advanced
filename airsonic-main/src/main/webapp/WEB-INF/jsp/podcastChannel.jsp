@@ -92,12 +92,12 @@
             } else if (id == "selectNone") {
                 selectAll(false);
             } else if (id == "download" || id == "appendPlaylist") {
+                var selectedEpisodeCount = getSelectedEpisodes().length;
                 var selectedDownloadedEpisodeCount = getSelectedDownloadedEpisodes().length;
+                if (selectedDownloadedEpisodeCount < selectedEpisodeCount) {
+                    $().toastmessage("showErrorToast", "<fmt:message key="podcastreceiver.episodedownloadnotcomplete"/>");
+                }
                 if (selectedDownloadedEpisodeCount > 0) {
-                    var selectedEpisodeCount = getSelectedEpisodes().length;
-                    if (selectedDownloadedEpisodeCount < selectedEpisodeCount) {
-                        $().toastmessage("showErrorToast", "<fmt:message key="podcastreceiver.episodedownloadnotcomplete"/>");
-                    }
                     if (id == "download") {
                         location.href = "download.view?" + getSelectedDownloadedEpisodes().map(e => e.mediaFileId).map(i => "id=" + i).join("&");
                     } else if (id == "appendPlaylist") {
@@ -148,7 +148,7 @@
                     if (addButton.length > 0) {
                         mediaFileId = addButton.eq(0).attr("id").substring(3);
                     }
-                    var isCompleted = parent.find("#downloadStatus").text().trim() == "<fmt:message key="podcastreceiver.status.completed"/>";
+                    var isCompleted = parent.find("span[id^='downloadStatus']").text().trim() == "<fmt:message key="podcastreceiver.status.completed"/>";
                     result.push({id: id, mediaFileId: mediaFileId, isCompleted: isCompleted});
                 }
             }
@@ -227,7 +227,7 @@
             </td>
 
             <td class="fit" style="text-align:center">
-                <span id="downloadStatus" class="detail">
+                <span id="downloadStatus${i.index}" class="detail">
                     <c:choose>
                         <c:when test="${episode.status eq 'DOWNLOADING'}">
                             <fmt:formatNumber type="percent" value="${episode.completionRate}"/>
