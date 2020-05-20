@@ -35,7 +35,7 @@
             <url>file://${project.basedir}/../repo</url>
         </repository>
         <repository>
-            <id>jaudiotagger-repository</id>
+            <id>jaudiotagger-repo</id>
             <url>https://dl.bintray.com/ijabz/maven</url>
         </repository>
         <repository>
