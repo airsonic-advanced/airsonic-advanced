@@ -1361,7 +1361,7 @@ public class SubsonicRESTController {
         if (!user.isDownloadRole()) {
             throw new APIException(ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to download files.");
         }
-        return downloadController.handleRequest(p, idInt, playlist, playerId, indices,
+        return downloadController.handleRequest(p, Optional.of(Collections.singletonList(idInt.get())), playlist, playerId, indices,
                 new ServletWebRequest(request, swr.getResponse()));
     }
 
