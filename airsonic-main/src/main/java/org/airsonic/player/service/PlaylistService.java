@@ -324,7 +324,7 @@ public class PlaylistService {
 
         List<Playlist> allPlaylists = playlistDao.getAllPlaylists();
         try (Stream<Path> children = Files.walk(playlistFolder)) {
-            children.filter(f -> Files.isDirectory(f) && Files.isReadable(f)).forEach(f -> {
+            children.filter(f -> Files.isRegularFile(f) && Files.isReadable(f)).forEach(f -> {
                 try {
                     importPlaylistIfUpdated(f, allPlaylists);
                 } catch (Exception x) {
@@ -350,7 +350,7 @@ public class PlaylistService {
         }
         try (InputStream in = Files.newInputStream(file)) {
             importPlaylist(User.USERNAME_ADMIN, FilenameUtils.getBaseName(fileName), fileName, in, existingPlaylist);
-            LOG.info("Auto-imported playlist " + file);
+            LOG.info("Auto-imported playlist {}", file);
         }
     }
 }
