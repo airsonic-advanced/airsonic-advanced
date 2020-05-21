@@ -94,8 +94,7 @@ public class SonosServiceRegistration {
         String localUrl = airsonicBaseUrl + "ws/Sonos";
         String controllerUrl = String.format("http://%s:1400/customsd", sonosControllerIp);
 
-        LOG.info((enabled ? "Enabling" : "Disabling") + " Sonos music service, using Sonos controller IP " + sonosControllerIp +
-                 ", SID " + sonosServiceId + ", and Airsonic URL " + localUrl);
+        LOG.info("Setting Sonos music service enabled={}, using Sonos controller IP={}, SID={}, Airsonic url={}", enabled, sonosControllerIp, sonosServiceId, localUrl);
 
         List<Pair<String, String>> params = new ArrayList<>();
         params.add(Pair.of("sid", String.valueOf(sonosServiceId)));
@@ -151,9 +150,8 @@ public class SonosServiceRegistration {
         // We're not using UTF8 encoding here since the Sonos controller doesn't like it.
         request.setEntity(new UrlEncodedFormEntity(params));
 
-
         String result = executeRequest(request);
-        LOG.info("Sonos controller returned: " + result);
+        LOG.info("Sonos controller returned: {}", result);
 
         return result.contains("Success");
     }

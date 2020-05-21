@@ -5,18 +5,18 @@
     <changeSet id="add-sonos-table-link" author="nacrylic">
         <preConditions onFail="MARK_RAN">
             <not>
-                <tableExists tableName="SONOSLINK" />
+                <tableExists tableName="sonoslink" />
             </not>
         </preConditions>
-        <createTable tableName="SONOSLINK">
-            <column name="LINKCODE" type="${varchar_type}">
+        <createTable tableName="sonoslink">
+            <column name="linkcode" type="${varchar_type}">
                 <constraints primaryKey="true" />
             </column>
-            <column name="USERNAME" type="${varchar_type}"/>
-            <column name="HOUSEHOLDID" type="${varchar_type}"/>
+            <column name="username" type="${varchar_type}"/>
+            <column name="householdid" type="${varchar_type}"/>
         </createTable>
         <rollback>
-            <dropTable tableName="SONOSLINK" />
+            <dropTable tableName="sonoslink" />
         </rollback>
     </changeSet>
 </databaseChangeLog>

@@ -31,7 +31,7 @@ import org.airsonic.player.service.sonos.SonosHelper;
 import org.airsonic.player.service.sonos.SonosServiceRegistration;
 import org.airsonic.player.service.sonos.SonosSoapFault;
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,7 +134,7 @@ public class SonosService implements SonosSoap {
             messagesCodes.add("sonossettings.controller.notfound");
             return messagesCodes;
         }
-        LOG.info("Found Sonos controllers: " + sonosControllers);
+        LOG.info("Found Sonos controllers: {}", sonosControllers);
 
         String sonosServiceName = settingsService.getSonosServiceName();
         int sonosServiceId = settingsService.getSonosServiceId();
@@ -142,7 +142,7 @@ public class SonosService implements SonosSoap {
 
         for (String sonosController : sonosControllers) {
             try {
-                if (registration.setEnabled(baseUrl, sonosController, enabled, sonosServiceName, sonosServiceId, authenticationType)) {
+                if (registration.setEnabled(StringUtils.appendIfMissing(baseUrl, "/"), sonosController, enabled, sonosServiceName, sonosServiceId, authenticationType)) {
 
                     messagesCodes.add("sonossettings.sonoslink.success");
                     // Remove old links.
@@ -154,7 +154,7 @@ public class SonosService implements SonosSoap {
                 }
             } catch (IOException x) {
                 messagesCodes.add("sonossettings.exception");
-                LOG.warn(String.format("Failed to enable/disable music service in Sonos controller %s: %s", sonosController, x));
+                LOG.warn("Failed to enable/disable music service in Sonos controller {}", sonosController, x);
             }
             messagesCodes.add("sonossettings.sonoslink.fail");
         }
@@ -180,7 +180,7 @@ public class SonosService implements SonosSoap {
         String username = getUsername();
         HttpServletRequest request = getRequest();
 
-        LOG.debug(String.format("getMetadata: id=%s index=%s count=%s recursive=%s", id, index, count, parameters.isRecursive()));
+        LOG.debug("getMetadata: id={} index={} count={} recursive={}", id, index, count, parameters.isRecursive());
 
         List<? extends AbstractMedia> media = null;
         MediaList mediaList = null;
@@ -353,10 +353,9 @@ public class SonosService implements SonosSoap {
                             Holder<HttpHeaders> httpHeaders, Holder<Integer> uriTimeout, Holder<PositionInformation> positionInformation,
                             Holder<String> privateDataFieldName
     ) throws CustomFault {
-        MediaFile mediaFile = sonosHelper.getMediaFile(Integer.parseInt(id));
-        result.value = sonosHelper.getMediaURI(mediaFile, getUsername(), getRequest());
+        result.value = sonosHelper.getMediaURI(Integer.parseInt(id), getUsername(), getRequest());
 
-        LOG.debug("getMediaURI: " + id + " -> " + result.value);
+        LOG.debug("getMediaURI: {} -> {}", id, result.value);
     }
 
     @Override
@@ -649,6 +648,4 @@ public class SonosService implements SonosSoap {
     public void setPlaylistService(PlaylistService playlistService) {
         this.playlistService = playlistService;
     }
-
-
 }

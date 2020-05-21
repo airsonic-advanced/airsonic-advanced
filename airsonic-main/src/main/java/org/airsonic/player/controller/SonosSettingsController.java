@@ -26,8 +26,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.ServletRequestUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
@@ -50,12 +51,12 @@ public class SonosSettingsController {
     @Autowired
     private SonosService sonosService;
 
-    @RequestMapping(method = RequestMethod.GET)
+    @GetMapping
     public ModelAndView doGet(HttpServletRequest request, Model model) throws Exception {
         return new ModelAndView("sonosSettings", "model", getModel(request));
     }
 
-    @RequestMapping(method = RequestMethod.POST)
+    @PostMapping
     public ModelAndView doPost(HttpServletRequest request) throws Exception {
 
         boolean sonosEnabled = ServletRequestUtils.getBooleanParameter(request, "sonosEnabled", false);
@@ -72,7 +73,6 @@ public class SonosSettingsController {
 
         List<String> returnCodes = sonosService.setMusicServiceEnabled(sonosEnabled, settingsService.getSonosCallbackHostAddress());
 
-
         Map<String, Object> map = getModel(request);
 
         map.put("returnCodes", returnCodes);
@@ -80,8 +80,8 @@ public class SonosSettingsController {
         return new ModelAndView("sonosSettings", "model", map);
     }
 
-    private  Map<String, Object> getModel(HttpServletRequest request) {
-        Map<String, Object> map = new HashMap<String, Object>();
+    private Map<String, Object> getModel(HttpServletRequest request) {
+        Map<String, Object> map = new HashMap<>();
         map.put("sonosEnabled", settingsService.isSonosEnabled());
         map.put("sonosServiceName", settingsService.getSonosServiceName());
         map.put("sonosLinkMethod", settingsService.getSonosLinkMethod());

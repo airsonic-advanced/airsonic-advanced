@@ -19,7 +19,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class JWTAuthenticationProvider implements AuthenticationProvider {
@@ -86,8 +88,6 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
                 changes the size parameter according to the client.
 
                 All parameters should be removed, but this would require too much retrofit work throughout the code.
-
-                Translated with www.DeepL.com/Translator
              */
             left.remove("size");
             right.remove("size");

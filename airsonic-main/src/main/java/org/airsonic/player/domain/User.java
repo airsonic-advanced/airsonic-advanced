@@ -38,8 +38,6 @@ public class User {
 
     private final String username;
     private String email;
-    private String sonosid;
-    private String linkcode;
     private boolean ldapAuthenticated;
     private long bytesStreamed;
     private long bytesDownloaded;
@@ -155,22 +153,6 @@ public class User {
 
     public boolean isShareRole() {
         return roles.contains(Role.SHARE);
-    }
-
-    public String getSonosid() {
-        return sonosid;
-    }
-
-    public void setSonosid(String sonosid) {
-        this.sonosid = sonosid;
-    }
-
-    public String getLinkcode() {
-        return linkcode;
-    }
-
-    public void setLinkcode(String linkcode) {
-        this.linkcode = linkcode;
     }
 
     @Override
