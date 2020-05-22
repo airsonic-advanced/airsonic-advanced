@@ -276,6 +276,12 @@ public class MediaScannerService {
 
             LOG.info("Completed media library scan.");
 
+            if (settingsService.isIgnoreFileTimestamps()) {
+                settingsService.setIgnoreFileTimestamps(false);
+                settingsService.save();
+                LOG.info("Ignore file timestamp property (for full scan) reset");
+            }
+
         } catch (Throwable x) {
             LOG.error("Failed to scan media library.", x);
         } finally {

@@ -107,6 +107,19 @@
         <tr><td colspan="2">&nbsp;</td></tr>
 
         <tr>
+            <td><fmt:message key="generalsettings.coverartsource"/></td>
+            <td>
+                <form:select path="coverArtSource" cssStyle="width:15em">
+                    <option value="file+tag"><fmt:message key="generalsettings.coverartsource.option.filetag"/></option>
+                    <option value="tag+file"><fmt:message key="generalsettings.coverartsource.option.tagfile"/></option>>
+                    <option value="file"><fmt:message key="generalsettings.coverartsource.option.file"/></option>
+                    <option value="tag"><fmt:message key="generalsettings.coverartsource.option.tag"/></option>
+                </form:select>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="coverartsource"/></c:import>
+            </td>
+        </tr>
+
+        <tr>
             <td><fmt:message key="generalsettings.coverartquality"/></td>
             <td>
                 <form:input path="coverArtQuality" size="15em"/>

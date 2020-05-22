@@ -73,6 +73,7 @@ public class SettingsService {
     private static final String KEY_MUSIC_FILE_TYPES = "MusicFileTypes";
     private static final String KEY_VIDEO_FILE_TYPES = "VideoFileTypes";
     private static final String KEY_COVER_ART_FILE_TYPES = "CoverArtFileTypes2";
+    private static final String KEY_COVER_ART_SOURCE = "CoverArtSource";
     private static final String KEY_COVER_ART_CONCURRENCY = "CoverArtConcurrency";
     private static final String KEY_COVER_ART_QUALITY = "CoverArtQuality";
     private static final String KEY_WELCOME_TITLE = "WelcomeTitle";
@@ -158,6 +159,7 @@ public class SettingsService {
     private static final String DEFAULT_MUSIC_FILE_TYPES = "mp3 ogg oga aac m4a m4b flac wav wma aif aiff ape mpc shn mka opus";
     private static final String DEFAULT_VIDEO_FILE_TYPES = "flv avi mpg mpeg mp4 m4v mkv mov wmv ogv divx m2ts webm";
     private static final String DEFAULT_COVER_ART_FILE_TYPES = "cover.jpg cover.png cover.gif folder.jpg jpg jpeg gif png";
+    private static final String DEFAULT_COVER_ART_SOURCE = "file+tag";
     private static final int DEFAULT_COVER_ART_CONCURRENCY = 4;
     private static final int DEFAULT_COVER_ART_QUALITY = 90;
     private static final String DEFAULT_WELCOME_TITLE = "Welcome to Airsonic!";
@@ -571,6 +573,15 @@ public class SettingsService {
             cachedCoverArtFileTypes = splitLowerString(getCoverArtFileTypes(), " ");
         }
         return cachedCoverArtFileTypes;
+    }
+
+
+    public String getCoverArtSource() {
+        return getProperty(KEY_COVER_ART_SOURCE, DEFAULT_COVER_ART_SOURCE);
+    }
+
+    public void setCoverArtSource(String source) {
+        setProperty(KEY_COVER_ART_SOURCE, source);
     }
 
     public int getCoverArtConcurrency() {

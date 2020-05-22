@@ -54,6 +54,7 @@ public class GeneralSettingsController {
     protected void formBackingObject(Model model) {
         GeneralSettingsCommand command = new GeneralSettingsCommand();
         command.setCoverArtFileTypes(settingsService.getCoverArtFileTypes());
+        command.setCoverArtSource(settingsService.getCoverArtSource());
         command.setCoverArtConcurrency(settingsService.getCoverArtConcurrency());
         command.setCoverArtQuality(settingsService.getCoverArtQuality());
         command.setIgnoredArticles(settingsService.getIgnoredArticles());
@@ -112,6 +113,7 @@ public class GeneralSettingsController {
         settingsService.setMusicFileTypes(command.getMusicFileTypes());
         settingsService.setVideoFileTypes(command.getVideoFileTypes());
         settingsService.setCoverArtFileTypes(command.getCoverArtFileTypes());
+        settingsService.setCoverArtSource(command.getCoverArtSource());
         settingsService.setCoverArtConcurrency(command.getCoverArtConcurrency());
         settingsService.setCoverArtQuality(command.getCoverArtQuality());
         settingsService.setSortAlbumsByYear(command.isSortAlbumsByYear());

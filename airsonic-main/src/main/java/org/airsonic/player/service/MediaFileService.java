@@ -586,6 +586,30 @@ public class MediaFileService {
      * Finds a cover art image for the given directory, by looking for it on the disk.
      */
     private Path findCoverArt(Collection<Path> candidates) {
+        Path candidate = null;
+        var coverArtSource = settingsService.getCoverArtSource();
+        if ("tag+file".equals(coverArtSource)) {
+            candidate = findTagCover(candidates);
+            if (candidate != null) {
+                return candidate;
+            } else {
+                return findFileCover(candidates);
+            }
+        } else if ("file".equals(coverArtSource)) {
+            return findFileCover(candidates);
+        } else if ("tag".equals(coverArtSource)) {
+            return findTagCover(candidates);
+        } else { // actually if ("file+tag".equals(coverArtSource)) ==> default
+            candidate = findFileCover(candidates);
+            if (candidate != null) {
+                return candidate;
+            } else {
+                return findTagCover(candidates);
+            }
+        }
+    }
+
+    private Path findFileCover(Collection<Path> candidates) {
         for (String mask : settingsService.getCoverArtFileTypesSet()) {
             Path cand = candidates.parallelStream().filter(c -> {
                 String candidate = c.getFileName().toString().toLowerCase();
@@ -596,8 +620,10 @@ public class MediaFileService {
                 return cand;
             }
         }
+        return null;
+    }
 
-        // Look for embedded images in audiofiles. (Only check first audio file encountered).
+    private Path findTagCover(Collection<Path> candidates) {
         return candidates.parallelStream().filter(parser::isApplicable).findFirst().filter(c -> parser.isImageAvailable(getMediaFile(c))).orElse(null);
     }
 
