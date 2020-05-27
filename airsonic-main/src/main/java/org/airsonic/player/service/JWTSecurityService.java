@@ -31,7 +31,6 @@ public class JWTSecurityService {
 
     // TODO make this configurable
     public static final int DEFAULT_DAYS_VALID_FOR = 7;
-    public static final String USERNAME_ANONYMOUS = "anonymous";
     private static SecureRandom secureRandom = new SecureRandom();
 
     private final SettingsService settingsService;

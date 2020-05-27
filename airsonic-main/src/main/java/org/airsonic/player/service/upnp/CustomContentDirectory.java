@@ -22,6 +22,7 @@ package org.airsonic.player.service.upnp;
 import com.google.common.collect.Lists;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Player;
+import org.airsonic.player.domain.User;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SettingsService;
@@ -72,7 +73,7 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
             builder.queryParam("format", TranscodingService.FORMAT_RAW);
         }
 
-        jwtSecurityService.addJWTToken(JWTSecurityService.USERNAME_ANONYMOUS, builder);
+        jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS, builder);
 
         String url = builder.toUriString();
 
