@@ -7,6 +7,8 @@ import com.sonos.services._1.Credentials;
 
 import org.airsonic.player.dao.SonosLinkDao;
 import org.airsonic.player.domain.SonosLink;
+import org.airsonic.player.domain.User;
+import org.airsonic.player.security.JWTAuthenticationProvider;
 import org.airsonic.player.security.JWTAuthenticationProvider.VerificationCheck;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.SettingsService;
@@ -98,7 +100,8 @@ public class SonosLinkInterceptor extends AbstractSoapInterceptor {
                     SecurityContextHolder.getContext().setAuthentication(authenticationManager.authenticate(token));
                 }
             } else if (action != null && authenticationType == AuthenticationType.ANONYMOUS) {
-//                securityService.authenticate();
+                JWTAuthenticationToken token = new JWTAuthenticationToken(User.USERNAME_SONOS, null, null, JWTAuthenticationProvider.JWT_AUTHORITIES, null);
+                SecurityContextHolder.getContext().setAuthentication(token);
             } else {
                 LOG.debug("Unable to process SOAP message: {}", message.toString());
                 throw new SonosSoapFault.LoginUnauthorized();
@@ -152,9 +155,16 @@ public class SonosLinkInterceptor extends AbstractSoapInterceptor {
     public static class SonosJWTVerification implements VerificationCheck {
         @Autowired
         private SonosLinkDao sonosLinkDao;
+        @Autowired
+        private SettingsService settingsService;
 
         @Override
         public void check(DecodedJWT jwt) throws InsufficientAuthenticationException {
+            AuthenticationType authenticationType = AuthenticationType.valueOf(settingsService.getSonosLinkMethod());
+            // no need for extra checks because there isn't a link code
+            if (authenticationType == AuthenticationType.ANONYMOUS) {
+                return;
+            }
             String linkcode = jwt.getClaim(CLAIM_LINKCODE).asString();
             SonosLink sonosLink = sonosLinkDao.findByLinkcode(linkcode);
 

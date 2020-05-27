@@ -68,11 +68,12 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
             }
         }
 
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("IS_AUTHENTICATED_FULLY"));
-        authorities.add(new SimpleGrantedAuthority("ROLE_TEMP"));
-        return new JWTAuthenticationToken(token.getSubject(), rawToken, authentication.getRequestedPath(), authorities, token);
+        return new JWTAuthenticationToken(token.getSubject(), rawToken, authentication.getRequestedPath(), JWT_AUTHORITIES, token);
     }
+
+    public static List<GrantedAuthority> JWT_AUTHORITIES = List.of(
+            new SimpleGrantedAuthority("IS_AUTHENTICATED_FULLY"),
+            new SimpleGrantedAuthority("ROLE_TEMP"));
 
     private static boolean roughlyEqual(String expectedRaw, String requestedPathRaw) {
         LOG.debug("Comparing expected [{}] vs requested [{}]", expectedRaw, requestedPathRaw);
