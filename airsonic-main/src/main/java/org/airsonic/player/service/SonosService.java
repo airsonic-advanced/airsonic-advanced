@@ -631,7 +631,7 @@ public class SonosService implements SonosSoap {
         SonosLink sonosLink = sonosLinkDao.findByLinkcode(linkCode);
         if (sonosLink != null && householdId.equals(sonosLink.getHouseholdId())) {
             HttpServletRequest req = getRequest();
-            String authToken = sonosHelper.createJwt(sonosLink, req.getRequestURI() + "?" + req.getQueryString(), settingsService.getSonosLinkMethod());
+            String authToken = sonosHelper.createJwt(sonosLink, req.getRequestURI() + "?" + req.getQueryString());
 
             DeviceAuthTokenResult authTokenResult = new DeviceAuthTokenResult();
             authTokenResult.setAuthToken(authToken);

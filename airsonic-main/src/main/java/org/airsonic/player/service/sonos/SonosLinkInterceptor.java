@@ -8,6 +8,7 @@ import com.sonos.services._1.Credentials;
 import org.airsonic.player.dao.SonosLinkDao;
 import org.airsonic.player.domain.SonosLink;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.security.JWTAuthenticationProvider;
 import org.airsonic.player.security.JWTAuthenticationProvider.VerificationCheck;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.SettingsService;
@@ -56,7 +57,6 @@ public class SonosLinkInterceptor extends AbstractSoapInterceptor {
 
     public static final String CLAIM_HOUSEHOLDID = "householdid";
     public static final String CLAIM_LINKCODE = "linkcode";
-    public static final String CLAIM_AUTHTYPE = "authtype";
 
     // these do not carry creds
     private static Set<String> openMethod = Sets.newHashSet("getAppLink", "getDeviceAuthToken");
@@ -70,9 +70,6 @@ public class SonosLinkInterceptor extends AbstractSoapInterceptor {
 
     @Autowired
     private SettingsService settingsService;
-
-    @Autowired
-    private SonosHelper sonosHelper;
 
     private JAXBContext jaxbContext;
 
@@ -88,36 +85,27 @@ public class SonosLinkInterceptor extends AbstractSoapInterceptor {
                 throw new SonosSoapFault.LoginUnauthorized();
             }
 
-            HttpServletRequest request = (HttpServletRequest) message.get(AbstractHTTPDestination.HTTP_REQUEST);
-
             String action = getAction(message);
+            AuthenticationType authenticationType = AuthenticationType.valueOf(settingsService.getSonosLinkMethod());
 
-            if (action != null) {
-                if (openMethod.contains(action)) {
-                    LOG.debug("No auth required for SOAP message: {}", message.toString());
-                    return;
-                }
-                AuthenticationType authenticationType = AuthenticationType.valueOf(settingsService.getSonosLinkMethod());
-                String sonosLinkToken = null;
-                if (authenticationType == AuthenticationType.APPLICATION_LINK) {
-                    sonosLinkToken = getToken(message);
-                } else if (authenticationType == AuthenticationType.ANONYMOUS) {
-                    sonosLinkToken = sonosHelper.createJwt(
-                            new SonosLink(User.USERNAME_SONOS, "irrelevant", "irrelevant"),
-                            request.getRequestURI() + "?" + request.getQueryString(),
-                            AuthenticationType.ANONYMOUS.toString());
-                }
+            if (action != null && openMethod.contains(action)) {
+                LOG.debug("No auth required for SOAP message: {}", message.toString());
 
+            } else if (action != null && authenticationType == AuthenticationType.APPLICATION_LINK) {
+                HttpServletRequest request = (HttpServletRequest) message.get(AbstractHTTPDestination.HTTP_REQUEST);
+                String sonosLinkToken = getToken(message);
                 if (sonosLinkToken != null) {
                     JWTAuthenticationToken token = new JWTAuthenticationToken(null, sonosLinkToken,
                             request.getRequestURI() + "?" + request.getQueryString());
                     SecurityContextHolder.getContext().setAuthentication(authenticationManager.authenticate(token));
-                    return;
                 }
+            } else if (action != null && authenticationType == AuthenticationType.ANONYMOUS) {
+                JWTAuthenticationToken token = new JWTAuthenticationToken(User.USERNAME_SONOS, null, null, JWTAuthenticationProvider.JWT_AUTHORITIES, null);
+                SecurityContextHolder.getContext().setAuthentication(token);
+            } else {
+                LOG.debug("Unable to process SOAP message: {}", message.toString());
+                throw new SonosSoapFault.LoginUnauthorized();
             }
-
-            LOG.debug("Unable to process SOAP message: {}", message.toString());
-            throw new SonosSoapFault.LoginUnauthorized();
         } catch (CredentialsExpiredException e) {
             throw new SonosSoapFault.AuthTokenExpired();
         } catch (Exception e) {
@@ -167,11 +155,13 @@ public class SonosLinkInterceptor extends AbstractSoapInterceptor {
     public static class SonosJWTVerification implements VerificationCheck {
         @Autowired
         private SonosLinkDao sonosLinkDao;
+        @Autowired
+        private SettingsService settingsService;
 
         @Override
         public void check(DecodedJWT jwt) throws InsufficientAuthenticationException {
-            AuthenticationType authenticationType = AuthenticationType.valueOf(jwt.getClaim(CLAIM_AUTHTYPE).asString());
-            // no need to verify if anonymous because household ids and link codes don't exist
+            AuthenticationType authenticationType = AuthenticationType.valueOf(settingsService.getSonosLinkMethod());
+            // no need for extra checks because there isn't a link code
             if (authenticationType == AuthenticationType.ANONYMOUS) {
                 return;
             }
