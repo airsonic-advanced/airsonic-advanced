@@ -22,7 +22,7 @@ public class SonosLinkDao extends AbstractDao {
 
     public void create(SonosLink sonosLink) {
         String sql = "insert into sonoslink (" + COLUMNS + ") values (" + questionMarks(COLUMNS) + ')';
-        update(sql, sonosLink.getUsername(), sonosLink.getHouseholdid(), sonosLink.getLinkcode());
+        update(sql, sonosLink.getUsername(), sonosLink.getHouseholdId(), sonosLink.getLinkcode());
     }
 
     public void removeAll() {
