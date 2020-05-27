@@ -64,4 +64,11 @@ public class SonosSoapFault extends RuntimeException {
             super("Cannot find link code, retry", "Client.NOT_LINKED_RETRY", 5);
         }
     }
+
+    public static class AuthTokenExpired extends SonosSoapFault {
+
+        public AuthTokenExpired() {
+            super("Creds expired", "Client.AuthTokenExpired", 6);
+        }
+    }
 }
