@@ -19,12 +19,16 @@
 
 package org.airsonic.player.service;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.sonos.services._1.*;
+import com.sonos.services._1_1.CustomFault;
 import com.sonos.services._1_1.SonosSoap;
 import org.airsonic.player.dao.SonosLinkDao;
 import org.airsonic.player.domain.AlbumListType;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Playlist;
+import org.airsonic.player.domain.SonosLink;
 import org.airsonic.player.security.MultipleCredsMatchingAuthenticationProvider;
 import org.airsonic.player.service.search.IndexType;
 import org.airsonic.player.service.sonos.SonosHelper;
@@ -32,6 +36,7 @@ import org.airsonic.player.service.sonos.SonosServiceRegistration;
 import org.airsonic.player.service.sonos.SonosSoapFault;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.cxf.transport.http.AbstractHTTPDestination;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +55,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.TimeUnit;
 
 import static org.airsonic.player.service.sonos.SonosServiceRegistration.AuthenticationType;
 
@@ -142,7 +148,7 @@ public class SonosService implements SonosSoap {
 
         for (String sonosController : sonosControllers) {
             try {
-                if (registration.setEnabled(StringUtils.appendIfMissing(baseUrl, "/"), sonosController, enabled, sonosServiceName, sonosServiceId, authenticationType)) {
+                if (registration.setEnabled(baseUrl, sonosController, enabled, sonosServiceName, sonosServiceId, authenticationType)) {
 
                     messagesCodes.add("sonossettings.sonoslink.success");
                     // Remove old links.
@@ -250,8 +256,8 @@ public class SonosService implements SonosSoap {
             mediaList = SonosHelper.createSubList(index, count, media);
         }
 
-        LOG.debug(String.format("getMetadata result: id=%s index=%s count=%s total=%s",
-                                id, mediaList.getIndex(), mediaList.getCount(), mediaList.getTotal()));
+        LOG.debug("getMetadata result: id={} index={} count={} total={}", id, mediaList.getIndex(),
+                mediaList.getCount(), mediaList.getTotal());
 
         GetMetadataResponse response = new GetMetadataResponse();
         response.setGetMetadataResult(mediaList);
@@ -260,7 +266,7 @@ public class SonosService implements SonosSoap {
 
     @Override
     public GetExtendedMetadataResponse getExtendedMetadata(GetExtendedMetadata parameters) {
-        LOG.debug("getExtendedMetadata: " + parameters.getId());
+        LOG.debug("getExtendedMetadata: {}", parameters.getId());
 
         int id = Integer.parseInt(parameters.getId());
         MediaFile mediaFile = mediaFileService.getMediaFile(id);
@@ -308,7 +314,7 @@ public class SonosService implements SonosSoap {
 
     @Override
     public GetSessionIdResponse getSessionId(GetSessionId parameters) {
-        LOG.debug("getSessionId: " + parameters.getUsername());
+        LOG.debug("getSessionId: {}", parameters.getUsername());
 
         try {
             Authentication auth = authProvider.authenticate(new UsernamePasswordAuthenticationToken(parameters.getUsername(), parameters.getPassword()));
@@ -325,7 +331,7 @@ public class SonosService implements SonosSoap {
 
     @Override
     public GetMediaMetadataResponse getMediaMetadata(GetMediaMetadata parameters) {
-        LOG.debug("getMediaMetadata: " + parameters.getId());
+        LOG.debug("getMediaMetadata: {}", parameters.getId());
         GetMediaMetadataResponse response = new GetMediaMetadataResponse();
 
         try {
@@ -528,13 +534,11 @@ public class SonosService implements SonosSoap {
     private HttpServletRequest getRequest() {
         MessageContext messageContext = context == null ? null : context.getMessageContext();
 
-        // See org.apache.cxf.transport.http.AbstractHTTPDestination#HTTP_REQUEST
-        return messageContext == null ? null : (HttpServletRequest) messageContext.get("HTTP.REQUEST");
+        return messageContext == null ? null : (HttpServletRequest) messageContext.get(AbstractHTTPDestination.HTTP_REQUEST);
     }
 
-
     private String getUsername() {
-        return securityService.getLoginUser();
+        return context.getUserPrincipal().getName();
     }
 
     public void setSonosHelper(SonosHelper sonosHelper) {
@@ -561,6 +565,32 @@ public class SonosService implements SonosSoap {
         return null;
     }
 
+    private Cache<String, String> sonosLinkCache = CacheBuilder.newBuilder().expireAfterWrite(7, TimeUnit.MINUTES).<String, String>build();
+
+    // The link code must be exactly 32 characters long
+    private String createLinkCode() {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private String generateLinkCode(String householdId) {
+        String linkCode = createLinkCode();
+        sonosLinkCache.put(linkCode, householdId);
+        return linkCode;
+    }
+
+    public String getHouseholdId(String linkCode) {
+        return sonosLinkCache.getIfPresent(linkCode);
+    }
+
+    public boolean addSonosAuthorization(String username, String householdId, String linkcode) {
+        if (sonosLinkDao.findByLinkcode(linkcode) != null) {
+            return false;
+        }
+
+        sonosLinkDao.create(new SonosLink(username, householdId, linkcode));
+        return true;
+    }
+
     @Override
     public AppLinkResult getAppLink(String householdId, String hardware, String osVersion, String sonosAppName, String callbackPath) throws CustomFault {
         AppLinkResult result = new AppLinkResult();
@@ -569,7 +599,7 @@ public class SonosService implements SonosSoap {
         result.getAuthorizeAccount().setAppUrlStringId("appUrlStringId");
         DeviceLinkCodeResult linkCodeResult = new DeviceLinkCodeResult();
 
-        String linkCode = securityService.generateLinkCode(householdId);
+        String linkCode = generateLinkCode(householdId);
         linkCodeResult.setLinkCode(linkCode);
         linkCodeResult.setRegUrl(settingsService.getSonosCallbackHostAddress() + "sonoslink?linkCode=" + linkCode);
         linkCodeResult.setShowLinkCode(false);
@@ -585,12 +615,12 @@ public class SonosService implements SonosSoap {
     }
 
     @Override
-    public void setPlayedSeconds(String id, int seconds) {
+    public void setPlayedSeconds(String id, int seconds, String contextId, String privateData, Integer offsetMillis) throws CustomFault {
 
     }
 
     @Override
-    public ReportPlaySecondsResult reportPlaySeconds(String id, int seconds) {
+    public ReportPlaySecondsResult reportPlaySeconds(String id, int seconds, String contextId, String privateData, Integer offsetMillis) throws CustomFault {
         return null;
     }
 
@@ -598,20 +628,22 @@ public class SonosService implements SonosSoap {
     public DeviceAuthTokenResult getDeviceAuthToken(String householdId, String linkCode, String linkDeviceId, String callbackPath) throws CustomFault {
         LOG.debug("Get device auth token for householdid {} and linkcode {}.", householdId, linkCode);
 
-        String authToken = securityService.getSonosAuthToken(householdId, linkCode);
+        SonosLink sonosLink = sonosLinkDao.findByLinkcode(linkCode);
+        if (sonosLink != null && householdId.equals(sonosLink.getHouseholdId())) {
+            HttpServletRequest req = getRequest();
+            String authToken = sonosHelper.createJwt(sonosLink, req.getRequestURI() + "?" + req.getQueryString());
 
-        if (authToken == null) {
+            DeviceAuthTokenResult authTokenResult = new DeviceAuthTokenResult();
+            authTokenResult.setAuthToken(authToken);
+            authTokenResult.setPrivateKey("alwaysAuthenticate");
+
+            authTokenResult.setUserInfo(new UserInfo());
+            authTokenResult.getUserInfo().setNickname(sonosLink.getUsername());
+
+            return authTokenResult;
+        } else {
             throw new SonosSoapFault.NotLinkedRetry();
         }
-
-        DeviceAuthTokenResult authTokenResult = new DeviceAuthTokenResult();
-        authTokenResult.setAuthToken(authToken);
-        authTokenResult.setPrivateKey("alwaysAuthenticate");
-
-        authTokenResult.setUserInfo(new UserInfo());
-        authTokenResult.getUserInfo().setNickname(securityService.getSonosLink(linkCode).getUsername());
-
-        return authTokenResult;
     }
 
     @Override
@@ -624,12 +656,22 @@ public class SonosService implements SonosSoap {
     }
 
     @Override
-    public void reportPlayStatus(String id, String status) {
+    public void reportPlayStatus(String id, String status, String contextId, Integer offsetMillis) throws CustomFault {
 
     }
 
     @Override
-    public ContentKey getContentKey(String id, String uri) {
+    public ContentKey getContentKey(String id, String uri, String deviceSessionToken) throws CustomFault {
+        return null;
+    }
+
+    @Override
+    public DeviceAuthTokenResult refreshAuthToken() throws CustomFault {
+        return null;
+    }
+
+    @Override
+    public UserInfo getUserInfo() throws CustomFault {
         return null;
     }
 
