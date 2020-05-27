@@ -671,14 +671,15 @@ public class SonosHelper {
         return players.get(0);
     }
 
-    public String createJwt(SonosLink sonoslink, String path) {
+    public String createJwt(SonosLink sonoslink, String path, String authType) {
         // valid for 7 days by default
         return jwtSecurityService
                 .addJWTToken(
                         sonoslink.getUsername(),
                         UriComponentsBuilder.fromUriString(path),
                         Map.of(SonosLinkInterceptor.CLAIM_LINKCODE, sonoslink.getLinkcode(),
-                                SonosLinkInterceptor.CLAIM_HOUSEHOLDID, sonoslink.getHouseholdId()))
+                                SonosLinkInterceptor.CLAIM_HOUSEHOLDID, sonoslink.getHouseholdId(),
+                                SonosLinkInterceptor.CLAIM_AUTHTYPE, authType))
                 .build()
                 .getQueryParams()
                 .getFirst(JWTSecurityService.JWT_PARAM_NAME);
