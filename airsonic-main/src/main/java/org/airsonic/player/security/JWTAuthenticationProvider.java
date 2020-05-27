@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.CredentialsExpiredException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -34,6 +35,8 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
         this.jwtKey = jwtSignAndVerifyKey;
     }
 
+    private Map<String, List<VerificationCheck>> additionalChecks = new HashMap<>();
+
     @Override
     public Authentication authenticate(Authentication auth) throws AuthenticationException {
         JWTAuthenticationToken authentication = (JWTAuthenticationToken) auth;
@@ -45,7 +48,7 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
         DecodedJWT token = JWTSecurityService.verify(jwtKey, rawToken);
 
         if (!token.getExpiresAt().toInstant().isAfter(Instant.now())) {
-            throw new InsufficientAuthenticationException("Credentials have expired");
+            throw new CredentialsExpiredException("Credentials have expired");
         }
 
         Claim path = token.getClaim(JWTSecurityService.CLAIM_PATH);
@@ -56,6 +59,13 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
         } else if (!roughlyEqual(path.asString(), authentication.getRequestedPath())) {
             throw new InsufficientAuthenticationException("Credentials not valid for path " + authentication
                     .getRequestedPath() + ". They are valid for " + path.asString());
+        }
+
+        List<VerificationCheck> moreChecks = additionalChecks.get(UriComponentsBuilder.fromUriString(authentication.getRequestedPath()).build().getPath());
+        if (moreChecks != null) {
+            for (VerificationCheck check : moreChecks) {
+                check.check(token);
+            }
         }
 
         List<GrantedAuthority> authorities = new ArrayList<>();
@@ -94,23 +104,31 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
 
             MapDifference<String, List<String>> difference = Maps.difference(left, right);
 
-            if (!difference.entriesDiffering().isEmpty() ||
-                    !difference.entriesOnlyOnLeft().isEmpty() ||
-                    difference.entriesOnlyOnRight().size() != 1 ||
-                    difference.entriesOnlyOnRight().get(JWTSecurityService.JWT_PARAM_NAME) == null) {
-                LOG.debug("False: expected query params [{}] do not match requested query params [{}]", expected.getQueryParams(), requested.getQueryParams());
-                return false;
+            if (difference.entriesDiffering().isEmpty() || difference.entriesOnlyOnLeft().isEmpty()
+                    || (difference.entriesOnlyOnRight().size() == 1 && difference.entriesOnlyOnRight().get(JWTSecurityService.JWT_PARAM_NAME) != null)) {
+                return true;
             }
+
+            LOG.debug("False: expected query params [{}] do not match requested query params [{}]", expected.getQueryParams(), requested.getQueryParams());
+            return false;
 
         } catch (Exception e) {
             LOG.warn("Exception encountered while comparing paths", e);
             return false;
         }
-        return true;
+    }
+
+    public void addAdditionalCheck(String path, VerificationCheck check) {
+        additionalChecks.computeIfAbsent(path, k -> new ArrayList<>()).add(check);
     }
 
     @Override
     public boolean supports(Class<?> authentication) {
         return JWTAuthenticationToken.class.isAssignableFrom(authentication);
+    }
+
+    @FunctionalInterface
+    public interface VerificationCheck {
+        public void check(DecodedJWT jwt) throws AuthenticationException;
     }
 }
