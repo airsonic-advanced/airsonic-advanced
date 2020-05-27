@@ -1,10 +1,10 @@
 package org.airsonic.player.service;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTCreator.Builder;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import org.airsonic.player.domain.SonosLink;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,10 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Map;
+import java.util.Map.Entry;
 
 @Service("jwtSecurityService")
 public class JWTSecurityService {
@@ -25,10 +28,6 @@ public class JWTSecurityService {
 
     public static final String JWT_PARAM_NAME = "jwt";
     public static final String CLAIM_PATH = "path";
-
-    public static final String CLAIM_USERNAME = "username";
-    public static final String CLAIM_HOUSEHOLDID = "householdid";
-    public static final String CLAIM_LINKCODE = "linkcode";
 
     // TODO make this configurable
     public static final int DEFAULT_DAYS_VALID_FOR = 7;
@@ -51,16 +50,22 @@ public class JWTSecurityService {
         return Algorithm.HMAC256(jwtKey);
     }
 
-    private static String createToken(String jwtKey, String user, String path, Instant expireDate) {
+    private static String createToken(String jwtKey, String user, String path, Instant expireDate, Map<String, String> additionalClaims) {
         UriComponents components = UriComponentsBuilder.fromUriString(path).build();
         String query = components.getQuery();
-        String claim = components.getPath() + (!StringUtils.isBlank(query) ? "?" + components.getQuery() : "");
-        return JWT.create()
+        String pathClaim = components.getPath() + (!StringUtils.isBlank(query) ? "?" + components.getQuery() : "");
+        Builder builder = JWT
+                .create()
                 .withIssuer("airsonic")
                 .withSubject(user)
-                .withClaim(CLAIM_PATH, claim)
-                .withExpiresAt(Date.from(expireDate))
-                .sign(getAlgorithm(jwtKey));
+                .withClaim(CLAIM_PATH, pathClaim)
+                .withExpiresAt(Date.from(expireDate));
+
+        for (Entry<String, String> claim : additionalClaims.entrySet()) {
+            builder = builder.withClaim(claim.getKey(), claim.getValue());
+        }
+
+        return builder.sign(getAlgorithm(jwtKey));
     }
 
     public String addJWTToken(String user, String uri) {
@@ -68,15 +73,26 @@ public class JWTSecurityService {
     }
 
     public UriComponentsBuilder addJWTToken(String user, UriComponentsBuilder builder) {
-        return addJWTToken(user, builder, Instant.now().plus(DEFAULT_DAYS_VALID_FOR, ChronoUnit.DAYS));
+        return addJWTToken(user, builder, Collections.emptyMap());
+    }
+
+    public UriComponentsBuilder addJWTToken(String user, UriComponentsBuilder builder,
+            Map<String, String> additionalClaims) {
+        return addJWTToken(user, builder, Instant.now().plus(DEFAULT_DAYS_VALID_FOR, ChronoUnit.DAYS),
+                additionalClaims);
     }
 
     public UriComponentsBuilder addJWTToken(String user, UriComponentsBuilder builder, Instant expires) {
+        return addJWTToken(user, builder, expires, Collections.emptyMap());
+    }
+
+    public UriComponentsBuilder addJWTToken(String user, UriComponentsBuilder builder, Instant expires, Map<String, String> additionalClaims) {
         String token = JWTSecurityService.createToken(
                 settingsService.getJWTKey(),
                 user,
                 builder.toUriString(),
-                expires);
+                expires,
+                additionalClaims);
         builder.queryParam(JWTSecurityService.JWT_PARAM_NAME, token);
         return builder;
     }
@@ -89,24 +105,5 @@ public class JWTSecurityService {
 
     public DecodedJWT verify(String credentials) {
         return verify(settingsService.getJWTKey(), credentials);
-    }
-
-
-    /**
-     * Create an unexpiring token
-     */
-    public String createSonosToken(String username, String householdId, String linkCode) {
-        return JWT.create()
-                .withClaim(CLAIM_USERNAME, username)
-                .withClaim(CLAIM_HOUSEHOLDID, householdId)
-                .withClaim(CLAIM_LINKCODE, linkCode)
-                .sign(getAlgorithm(settingsService.getJWTKey()));
-    }
-
-
-    public SonosLink verifySonosLink(String sonosLinkToken) {
-        DecodedJWT jwt = verify(sonosLinkToken);
-        return new SonosLink(jwt.getClaim(CLAIM_USERNAME).asString(),
-                jwt.getClaim(CLAIM_HOUSEHOLDID).asString(), jwt.getClaim(CLAIM_LINKCODE).asString());
     }
 }
