@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 
 <html><head>
     <%@ include file="head.jsp" %>
@@ -12,7 +12,7 @@
 </head>
 <body style="min-width:550px" class="mainframe bgcolor1">
 
-    <form method="post" action="/sonoslink">
+    <form method="post" action="<c:url value='/sonoslink'/>">
         <sec:csrfInput />
 
         <div id="loginframe" class="bgcolor2 shadow">
