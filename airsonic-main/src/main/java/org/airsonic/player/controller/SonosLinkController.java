@@ -18,25 +18,26 @@
  */
 package org.airsonic.player.controller;
 
-import org.airsonic.player.service.SecurityService;
-import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.SonosService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
-import static com.google.common.collect.Maps.newHashMap;
-
 /**
- * Controller for the page used to administrate the Sonos music service settings.
+ * Controller for the page used to administer the Sonos music service settings.
  *
  * @author Sindre Mehus
  */
@@ -45,44 +46,37 @@ import static com.google.common.collect.Maps.newHashMap;
 public class SonosLinkController {
 
     @Autowired
-    private SettingsService settingsService;
-    @Autowired
     private SonosService sonosService;
     @Autowired
-    private SecurityService securityService;
+    private AuthenticationManager authManager;
 
-    @RequestMapping(method = RequestMethod.GET)
+    @GetMapping
     public ModelAndView doGet(HttpServletRequest request) {
         String linkCode = request.getParameter("linkCode");
 
-        String household = securityService.getHousehold(linkCode);
+        String household = sonosService.getHouseholdId(linkCode);
 
         String view = household != null ? "sonosLinkLogin" : "sonosLinkNotFound";
 
-        Map<String,Object> model = newHashMap();
-        model.put("linkCode", linkCode);
-
-        return new ModelAndView(view, "model", model);
+        return new ModelAndView(view, "model", Map.of("linkCode", linkCode));
     }
 
-    @RequestMapping(method = RequestMethod.POST)
+    @PostMapping
     public ModelAndView doPost(HttpServletRequest request) {
         String linkCode = request.getParameter("linkCode");
-        String j_username = request.getParameter("j_username");
-        String j_password = request.getParameter("j_password");
+        String username = request.getParameter("j_username");
+        String password = request.getParameter("j_password");
 
-        String household = securityService.getHousehold(linkCode);
+        String household = sonosService.getHouseholdId(linkCode);
         if (household == null) {
-            Map<String,Object> model = newHashMap();
-            model.put("linkCode", linkCode);
-            return new ModelAndView("sonosLinkNotFound", "model", model);
+            return new ModelAndView("sonosLinkNotFound", "model", Map.of("linkCode", linkCode));
         }
 
         try {
-            Authentication authenticate = securityService.authenticate(j_username, j_password);
+            Authentication authenticate = authManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
             if (authenticate.isAuthenticated()) {
-                securityService.authoriseSonos(j_username, household, linkCode);
-                return new ModelAndView("sonosSuccess", "model", newHashMap());
+                sonosService.addSonosAuthorization(username, household, linkCode);
+                return new ModelAndView("sonosSuccess", "model", Collections.emptyMap());
             } else {
                 return loginFailed(linkCode);
             }
@@ -92,7 +86,7 @@ public class SonosLinkController {
     }
 
     private ModelAndView loginFailed(String linkCode) {
-        Map<String,Object> model = newHashMap();
+        Map<String, Object> model = new HashMap<>();
         model.put("linkCode", linkCode);
         model.put("error", true);
 
