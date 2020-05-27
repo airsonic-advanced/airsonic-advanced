@@ -2,10 +2,11 @@
 <stringtables xmlns="http://sonos.com/sonosapi">
     <stringtable rev="1" xml:lang="en-US">
         <string stringId="ServicePromo">Airsonic is a free, web-based media streamer, providing ubiquitous access to your music.</string>
-        <string stringId="appUrlStringId">Start procedure for link my account.</string>
+        <string stringId="appUrlStringId">Start procedure to link my account.</string>
         <string stringId="Error0Message">Sorry, wrong Airsonic username or password.</string>
         <string stringId="Error1Message">Access denied.</string>
         <string stringId="Error5Message">Cannot find link code.</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
     </stringtable>
     <stringtable rev="1" xml:lang="fr-FR">
         <string stringId="ServicePromo">Airsonic est une application de diffusion multimédia gratuite sur le Web, offrant un accès omniprésent à votre musique.</string>
@@ -13,6 +14,7 @@
         <string stringId="Error0Message">Erreur de nom d'utilisateur ou de mot de passe.</string>
         <string stringId="Error1Message">Accès non authorisé.</string>
         <string stringId="Error5Message">Impossible de trouver le LinkCode</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
     </stringtable>
     <stringtable rev="1" xml:lang="da-DK">
         <string stringId="ServicePromo">Airsonic er en gratis, webbaseret mediestreamer, der giver allestedsnærværende adgang til din musik.</string>
@@ -20,6 +22,7 @@
         <string stringId="Error0Message">Beklager, forkert Airsonic brugernavn eller adgangskode.</string>
         <string stringId="Error1Message">Access denied.</string>
         <string stringId="Error5Message">Cannot find link code.</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
     </stringtable>
     <stringtable rev="1" xml:lang="de-DE">
         <string stringId="ServicePromo">Airsonic ist eine kostenlose Multimedia-Webcasting-Anwendung, die einen allgegenwärtigen Zugriff auf Ihre Musik ermöglicht.</string>
@@ -27,6 +30,7 @@
         <string stringId="Error0Message">Fehler im Benutzernamen oder Passwort.</string>
         <string stringId="Error1Message">Access denied.</string>
         <string stringId="Error5Message">Cannot find link code.</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
     </stringtable>
     <stringtable rev="1" xml:lang="it-IT">
         <string stringId="ServicePromo">Airsonic è un'applicazione gratuita di webcasting multimediale che fornisce un accesso onnipresente alla tua musica.</string>
@@ -34,6 +38,8 @@
         <string stringId="Error0Message">Errore nel nome utente o nella password.</string>
         <string stringId="Error1Message">Access denied.</string>
         <string stringId="Error5Message">Cannot find link code.</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
+       v 
     </stringtable>
     <stringtable rev="1" xml:lang="es-ES">
         <string stringId="ServicePromo">Airsonic es una aplicación gratuita de webcasting multimedia que proporciona acceso ubicuo a su música.</string>
@@ -41,6 +47,7 @@
         <string stringId="Error0Message">Error en el nombre de usuario o contraseña.</string>
         <string stringId="Error1Message">Access denied.</string>
         <string stringId="Error5Message">Cannot find link code.</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
     </stringtable>
     <stringtable rev="1" xml:lang="pt-BR">
         <string stringId="ServicePromo">Airsonic é um aplicativo gratuito de webcasting multimídia que fornece acesso onipresente à sua música.</string>
@@ -48,6 +55,7 @@
         <string stringId="Error0Message">Erro no nome de usuário ou senha.</string>
         <string stringId="Error1Message">Access denied.</string>
         <string stringId="Error5Message">Cannot find link code.</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
     </stringtable>
     <stringtable rev="1" xml:lang="sv-SE">
         <string stringId="ServicePromo">Airsonic är en gratis webbaserad mediestreamer som erbjuder allestädes närvarande tillgång till din musik.</string>
@@ -55,6 +63,7 @@
         <string stringId="Error0Message">Ledsen, fel Airsonic användarnamn eller lösenord.</string>
         <string stringId="Error1Message">Access denied.</string>
         <string stringId="Error5Message">Cannot find link code.</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
     </stringtable>
     <stringtable rev="1" xml:lang="nl-NL">
         <string stringId="ServicePromo">Airsonic is een gratis multimediale webcastingtoepassing die alomtegenwoordige toegang tot uw muziek biedt.</string>
@@ -62,6 +71,7 @@
         <string stringId="Error0Message">Fout in de gebruikersnaam of het wachtwoord.</string>
         <string stringId="Error1Message">Access denied.</string>
         <string stringId="Error5Message">Cannot find link code.</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
     </stringtable>
     <stringtable rev="1" xml:lang="nb-NO">
         <string stringId="ServicePromo">Airsonic er en gratis, nettbasert mediestreamer som gir allestedsnærværende tilgang til musikken din.</string>
@@ -69,6 +79,7 @@
         <string stringId="Error0Message">Beklager, feil Airsonic brukernavn eller passord.</string>
         <string stringId="Error1Message">Access denied.</string>
         <string stringId="Error5Message">Cannot find link code.</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
     </stringtable>
     <stringtable rev="1" xml:lang="ja-JP">
         <string stringId="ServicePromo">Airsonicは無料のWebベースのメディアストリーマーであり、音楽への遍在的なアクセスを提供します。</string>
@@ -76,6 +87,7 @@
         <string stringId="Error0Message">申し訳ありませんが、Airsonicのユーザー名またはパスワードが間違っています。</string>
         <string stringId="Error1Message">Access denied.</string>
         <string stringId="Error5Message">Cannot find link code.</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
     </stringtable>
     <stringtable rev="1" xml:lang="zh-CN">
         <string stringId="ServicePromo">Airsonic是一个免费的基于Web的媒体流媒体，可让您无所不在地访问音乐。</string>
@@ -83,6 +95,7 @@
         <string stringId="Error0Message">抱歉，错误的Airsonic用户名或密码。</string>
         <string stringId="Error1Message">Access denied.</string>
         <string stringId="Error5Message">Cannot find link code.</string>
+        <string stringId="Error6Message">Account token expired. Please refresh.</string>
     </stringtable>
 
 </stringtables>
