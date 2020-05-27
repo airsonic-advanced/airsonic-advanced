@@ -1,5 +1,6 @@
 package org.airsonic.player.security;
 
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.collect.MapDifference;
@@ -9,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.CredentialsExpiredException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
@@ -18,7 +20,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,10 +46,14 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
             return null;
         }
         String rawToken = (String) auth.getCredentials();
-        DecodedJWT token = JWTSecurityService.verify(jwtKey, rawToken);
+        DecodedJWT token = null;
 
-        if (!token.getExpiresAt().toInstant().isAfter(Instant.now())) {
-            throw new CredentialsExpiredException("Credentials have expired");
+        try {
+            token = JWTSecurityService.verify(jwtKey, rawToken);
+        } catch (TokenExpiredException ex) {
+            throw new CredentialsExpiredException("Credentials have expired", ex);
+        } catch (Exception ex) {
+            throw new BadCredentialsException("Error verifying JWT", ex);
         }
 
         Claim path = token.getClaim(JWTSecurityService.CLAIM_PATH);
