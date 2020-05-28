@@ -694,7 +694,9 @@ public class SonosService implements SonosSoap {
 
     @Override
     public UserInfo getUserInfo() throws CustomFault {
-        return null;
+        UserInfo info = new UserInfo();
+        info.setNickname(getUsername());
+        return info;
     }
 
     public void setMediaFileService(MediaFileService mediaFileService) {
