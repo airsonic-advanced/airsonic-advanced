@@ -4,6 +4,8 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.collect.Sets;
 
 import com.sonos.services._1.Credentials;
+import com.sonos.services._1.DeviceAuthTokenResult;
+import com.sonos.services._1.RefreshAuthTokenResponse;
 
 import org.airsonic.player.dao.SonosLinkDao;
 import org.airsonic.player.domain.SonosLink;
@@ -12,6 +14,7 @@ import org.airsonic.player.security.JWTAuthenticationProvider;
 import org.airsonic.player.security.JWTAuthenticationProvider.VerificationCheck;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.SonosService;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.cxf.binding.soap.SoapMessage;
 import org.apache.cxf.binding.soap.interceptor.AbstractSoapInterceptor;
@@ -29,7 +32,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Node;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -57,6 +59,7 @@ public class SonosLinkInterceptor extends AbstractSoapInterceptor {
 
     public static final String CLAIM_HOUSEHOLDID = "householdid";
     public static final String CLAIM_LINKCODE = "linkcode";
+    public static final String CLAIM_REFRESH_TOKEN = "refreshtoken";
 
     // these do not carry creds
     private static Set<String> openMethod = Sets.newHashSet("getAppLink", "getDeviceAuthToken");
@@ -71,29 +74,37 @@ public class SonosLinkInterceptor extends AbstractSoapInterceptor {
     @Autowired
     private SettingsService settingsService;
 
-    private JAXBContext jaxbContext;
+    @Autowired
+    private SonosService sonosService;
 
-    @PostConstruct
-    public void postConstruct() throws JAXBException {
-        jaxbContext = JAXBContext.newInstance("com.sonos.services._1");
+    private static Unmarshaller unmarshaller = createUnmarshaller();
+
+    private static Unmarshaller createUnmarshaller() {
+        try {
+            return JAXBContext.newInstance("com.sonos.services._1").createUnmarshaller();
+        } catch (JAXBException e) {
+            throw new AssertionError(e);
+        }
     }
 
     @Override
     public void handleMessage(SoapMessage message) throws Fault {
+        String action = null;
+        HttpServletRequest request = (HttpServletRequest) message.get(AbstractHTTPDestination.HTTP_REQUEST);
+
         try {
             if (!settingsService.isSonosEnabled()) {
                 throw new SonosSoapFault.LoginUnauthorized();
             }
 
-            String action = getAction(message);
+            action = getAction(message);
             AuthenticationType authenticationType = AuthenticationType.valueOf(settingsService.getSonosLinkMethod());
 
             if (action != null && openMethod.contains(action)) {
                 LOG.debug("No auth required for SOAP message: {}", message.toString());
 
             } else if (action != null && authenticationType == AuthenticationType.APPLICATION_LINK) {
-                HttpServletRequest request = (HttpServletRequest) message.get(AbstractHTTPDestination.HTTP_REQUEST);
-                String sonosLinkToken = getToken(message);
+                String sonosLinkToken = getCredentials(message).getLoginToken().getToken();
                 if (sonosLinkToken != null) {
                     JWTAuthenticationToken token = new JWTAuthenticationToken(null, sonosLinkToken,
                             request.getRequestURI() + "?" + request.getQueryString());
@@ -107,22 +118,31 @@ public class SonosLinkInterceptor extends AbstractSoapInterceptor {
                 throw new SonosSoapFault.LoginUnauthorized();
             }
         } catch (CredentialsExpiredException e) {
-            throw new SonosSoapFault.AuthTokenExpired();
+            if ("refreshAuthToken".equals(action)) {
+                // just let it continue on to the method with expired creds
+                return;
+            }
+            try {
+                DeviceAuthTokenResult token = sonosService.refreshAuthToken(getCredentials(message), request);
+                RefreshAuthTokenResponse resp = new RefreshAuthTokenResponse();
+                resp.setRefreshAuthTokenResult(token);
+                throw new SonosSoapFault.TokenRefreshRequired(resp);
+            } catch (SonosSoapFault.TokenRefreshRequired e1) {
+                throw e1;
+            } catch (Exception e1) {
+                throw new SonosSoapFault.AuthTokenExpired();
+            }
         } catch (Exception e) {
             throw new SonosSoapFault.LoginUnauthorized();
         }
     }
 
-    private String getToken(SoapMessage message) throws JAXBException {
-        QName creadentialQName = new QName("http://www.sonos.com/Services/1.1", "credentials");
-
-        Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+    public static Credentials getCredentials(SoapMessage message) throws JAXBException {
+        QName credentialQName = new QName("http://www.sonos.com/Services/1.1", "credentials");
 
         for (Header header : message.getHeaders()) {
-            if (creadentialQName.equals(header.getName())) {
-                Credentials credentials = unmarshaller.unmarshal((Node) header.getObject(), Credentials.class).getValue();
-
-                return credentials.getLoginToken().getToken();
+            if (credentialQName.equals(header.getName())) {
+                return unmarshaller.unmarshal((Node) header.getObject(), Credentials.class).getValue();
             }
         }
 

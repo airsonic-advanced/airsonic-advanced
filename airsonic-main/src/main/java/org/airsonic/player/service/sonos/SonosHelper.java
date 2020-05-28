@@ -19,6 +19,7 @@
 
 package org.airsonic.player.service.sonos;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.sonos.services._1.*;
@@ -29,6 +30,7 @@ import org.airsonic.player.service.*;
 import org.airsonic.player.service.search.IndexType;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -671,17 +673,26 @@ public class SonosHelper {
         return players.get(0);
     }
 
-    public String createJwt(SonosLink sonoslink, String path) {
+    public String createJwt(SonosLink sonoslink, String path, String privateKey) {
         // valid for 7 days by default
         return jwtSecurityService
                 .addJWTToken(
                         sonoslink.getUsername(),
                         UriComponentsBuilder.fromUriString(path),
                         Map.of(SonosLinkInterceptor.CLAIM_LINKCODE, sonoslink.getLinkcode(),
-                                SonosLinkInterceptor.CLAIM_HOUSEHOLDID, sonoslink.getHouseholdId()))
+                                SonosLinkInterceptor.CLAIM_HOUSEHOLDID, sonoslink.getHouseholdId(),
+                                SonosLinkInterceptor.CLAIM_REFRESH_TOKEN, privateKey))
                 .build()
                 .getQueryParams()
                 .getFirst(JWTSecurityService.JWT_PARAM_NAME);
+    }
+
+    public Pair<SonosLink, String> getSonosLinkFromJWT(String jwt) {
+        DecodedJWT djwt = JWTSecurityService.decode(jwt); // does NOT verify!
+        SonosLink sl = new SonosLink(djwt.getSubject(),
+                djwt.getClaim(SonosLinkInterceptor.CLAIM_HOUSEHOLDID).asString(),
+                djwt.getClaim(SonosLinkInterceptor.CLAIM_LINKCODE).asString());
+        return Pair.of(sl, djwt.getClaim(SonosLinkInterceptor.CLAIM_REFRESH_TOKEN).asString());
     }
 
     public void setMediaFileService(MediaFileService mediaFileService) {

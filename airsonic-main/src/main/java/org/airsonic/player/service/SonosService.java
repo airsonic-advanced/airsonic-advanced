@@ -32,10 +32,14 @@ import org.airsonic.player.domain.SonosLink;
 import org.airsonic.player.security.MultipleCredsMatchingAuthenticationProvider;
 import org.airsonic.player.service.search.IndexType;
 import org.airsonic.player.service.sonos.SonosHelper;
+import org.airsonic.player.service.sonos.SonosLinkInterceptor;
 import org.airsonic.player.service.sonos.SonosServiceRegistration;
 import org.airsonic.player.service.sonos.SonosSoapFault;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.cxf.binding.soap.SoapMessage;
+import org.apache.cxf.jaxws.context.WrappedMessageContext;
 import org.apache.cxf.transport.http.AbstractHTTPDestination;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -537,6 +541,14 @@ public class SonosService implements SonosSoap {
         return messageContext == null ? null : (HttpServletRequest) messageContext.get(AbstractHTTPDestination.HTTP_REQUEST);
     }
 
+    private SoapMessage getMessage() {
+        MessageContext messageContext = context == null ? null : context.getMessageContext();
+        if (messageContext == null || !(messageContext instanceof WrappedMessageContext)) {
+            return null;
+        }
+        return (SoapMessage) ((WrappedMessageContext) messageContext).getWrappedMessage();
+    }
+
     private String getUsername() {
         return context.getUserPrincipal().getName();
     }
@@ -570,6 +582,11 @@ public class SonosService implements SonosSoap {
     // The link code must be exactly 32 characters long
     private String createLinkCode() {
         return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    // The refresh token must be up to 2048 chars
+    private String createRefreshToken() {
+        return UUID.randomUUID().toString();
     }
 
     private String generateLinkCode(String householdId) {
@@ -630,17 +647,7 @@ public class SonosService implements SonosSoap {
 
         SonosLink sonosLink = sonosLinkDao.findByLinkcode(linkCode);
         if (sonosLink != null && householdId.equals(sonosLink.getHouseholdId())) {
-            HttpServletRequest req = getRequest();
-            String authToken = sonosHelper.createJwt(sonosLink, req.getRequestURI() + "?" + req.getQueryString());
-
-            DeviceAuthTokenResult authTokenResult = new DeviceAuthTokenResult();
-            authTokenResult.setAuthToken(authToken);
-            authTokenResult.setPrivateKey("alwaysAuthenticate");
-
-            authTokenResult.setUserInfo(new UserInfo());
-            authTokenResult.getUserInfo().setNickname(sonosLink.getUsername());
-
-            return authTokenResult;
+            return createAuthToken(sonosLink, getRequest());
         } else {
             throw new SonosSoapFault.NotLinkedRetry();
         }
@@ -667,7 +674,37 @@ public class SonosService implements SonosSoap {
 
     @Override
     public DeviceAuthTokenResult refreshAuthToken() throws CustomFault {
-        return null;
+        try {
+            Credentials expiredCreds = SonosLinkInterceptor.getCredentials(getMessage());
+            return refreshAuthToken(expiredCreds, getRequest());
+        } catch (Exception e) {
+            throw new SonosSoapFault.LoginInvalid();
+        }
+    }
+
+    public DeviceAuthTokenResult refreshAuthToken(Credentials expiredCreds, HttpServletRequest request) {
+        Pair<SonosLink, String> jwtSonosLink = sonosHelper.getSonosLinkFromJWT(expiredCreds.getLoginToken().getToken());
+        if (StringUtils.equals(jwtSonosLink.getRight(), expiredCreds.getLoginToken().getKey())
+                && StringUtils.equals(jwtSonosLink.getLeft().getHouseholdId(), expiredCreds.getLoginToken().getHouseholdId())
+                && jwtSonosLink.getLeft().equals(sonosLinkDao.findByLinkcode(jwtSonosLink.getLeft().getLinkcode()))) {
+            return createAuthToken(jwtSonosLink.getLeft(), request);
+        } else {
+            throw new SonosSoapFault.LoginInvalid();
+        }
+    }
+
+    public DeviceAuthTokenResult createAuthToken(SonosLink sonosLink, HttpServletRequest req) {
+        String refreshToken = createRefreshToken();
+        String authToken = sonosHelper.createJwt(sonosLink, req.getRequestURI() + "?" + req.getQueryString(), refreshToken);
+
+        DeviceAuthTokenResult authTokenResult = new DeviceAuthTokenResult();
+        authTokenResult.setAuthToken(authToken);
+        authTokenResult.setPrivateKey(refreshToken);
+
+        authTokenResult.setUserInfo(new UserInfo());
+        authTokenResult.getUserInfo().setNickname(sonosLink.getUsername());
+
+        return authTokenResult;
     }
 
     @Override
