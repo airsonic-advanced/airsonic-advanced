@@ -29,7 +29,6 @@ import org.airsonic.player.domain.AlbumListType;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Playlist;
 import org.airsonic.player.domain.SonosLink;
-import org.airsonic.player.security.MultipleCredsMatchingAuthenticationProvider;
 import org.airsonic.player.service.search.IndexType;
 import org.airsonic.player.service.sonos.SonosHelper;
 import org.airsonic.player.service.sonos.SonosLinkSecurityInterceptor;
@@ -44,8 +43,6 @@ import org.apache.cxf.transport.http.AbstractHTTPDestination;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -113,8 +110,6 @@ public class SonosService implements SonosSoap {
     private PlaylistService playlistService;
     @Autowired
     private UPnPService upnpService;
-    @Autowired
-    private MultipleCredsMatchingAuthenticationProvider authProvider;
     @Autowired
     private SonosServiceRegistration registration;
     @Autowired
@@ -319,18 +314,8 @@ public class SonosService implements SonosSoap {
     @Override
     public GetSessionIdResponse getSessionId(GetSessionId parameters) {
         LOG.debug("getSessionId: {}", parameters.getUsername());
-
-        try {
-            Authentication auth = authProvider.authenticate(new UsernamePasswordAuthenticationToken(parameters.getUsername(), parameters.getPassword()));
-
-            // Use username as session ID for easy access to it later.
-            GetSessionIdResponse result = new GetSessionIdResponse();
-            result.setGetSessionIdResult(auth.getName());
-            return result;
-
-        } catch (Exception e) {
-            throw new SonosSoapFault.LoginInvalid();
-        }
+        // deprecated and not supported
+        throw new SonosSoapFault.LoginInvalid();
     }
 
     @Override
