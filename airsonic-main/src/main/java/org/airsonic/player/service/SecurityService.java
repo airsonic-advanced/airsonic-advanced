@@ -78,29 +78,8 @@ public class SecurityService implements UserDetailsService {
     @Autowired
     private UserDao userDao;
 
-//    @Autowired
-//    private SonosLinkDao sonosLinkDao;
-
     @Autowired
     private SettingsService settingsService;
-
-//    @Autowired
-//    private JWTSecurityService jwtSecurityService;
-//
-//    /*
-//        TODO This is initialized in GlobalSecurityConfig.
-//
-//        Something wrong here, some circular ref, maybe rebuild responsibilities...
-//
-//        We are :
-//           - RESTRequestParameterProcessingFilter need SecurityService cause is UserDetailsService.
-//           - But SecurityService need AuthenticationManager they create in GlobalSecurityConfig
-//           - But GlobalSecurityConfig create RESTRequestParameterProcessingFilter
-//
-//           So GlobalSecurityConfig -> RESTRequestParameterProcessingFilter -> SecurityService -> AuthenticationManager (but create in GlobalSecurityConfig)
-//     */
-//    private AuthenticationManager authenticationManager;
-
 
     /**
      * Locates the user based on the username.
@@ -541,81 +520,5 @@ public class SecurityService implements UserDetailsService {
             creds = null;
         }
     }
-
-    //
-//  // =======================================================================================================
-//  // Utilities for Sonos link.
-//
-//  public Authentication authenticate(String username, String password) {
-//      UsernamePasswordAuthenticationToken authReq = new UsernamePasswordAuthenticationToken(username, password);
-//      return authenticationManager.authenticate(authReq);
-//  }
-//
-//  public void authenticate(String sonosLinkToken) throws SonosSoapFault.LoginUnauthorized {
-//      SonosLink sonosLink = jwtSecurityService.verifySonosLink(sonosLinkToken);
-//
-//      SonosLink saved = sonosLinkDao.findByLinkcode(sonosLink.getLinkcode());
-//      if (saved != null && saved.identical(sonosLink)) {
-//          setUser(sonosLink.getUsername());
-//      } else {
-//          throw new SonosSoapFault.LoginUnauthorized();
-//      }
-//  }
-//
-//  public void authenticate() throws SonosSoapFault.LoginUnauthorized {
-//      setUser(USERNAME_SONOS);
-//  }
-
-//    /**
-//     * Insert the authorisation in sonoslink. Verify is the linkcode exist, and cannot be get again.
-//     *
-//     * @param username The username authorisation for sonos link
-//     * @param householdId The id of entry in sonos controller
-//     * @param linkcode The link code used between sonos and airsonic.
-//     * @return true if the insert is ok, false if some entry exist with the linkcode
-//     */
-//    public boolean authoriseSonos(String username, String householdId, String linkcode) {
-//        if (sonosLinkDao.findByLinkcode(linkcode) != null) {
-//            return false;
-//        }
-//
-//        sonosLinkDao.create(new SonosLink(username, householdId, linkcode));
-//        return true;
-//    }
-//
-//    /**
-//     * Find the user they have a linkCode for the householdId set, build the authToken and return it.
-//     *
-//     * @param householdId The householdId from Sonos
-//     * @param linkCode The linkCode return it before
-//     * @return The build authToken or null if didn't find any user with householdId and linkCode
-//     */
-//    public String getSonosAuthToken(String householdId, String linkCode) {
-//
-//        SonosLink sonosLink = sonosLinkDao.findByLinkcode(linkCode);
-//        if (sonosLink != null && householdId.equals(sonosLink.getHouseholdId())) {
-//            return buildToken(sonosLink);
-//        } else {
-//            return null;
-//        }
-//    }
-//
-//    private String buildToken(SonosLink link) {
-//        return jwtSecurityService.createSonosToken(link.getUsername(), link.getHouseholdId(), link.getLinkcode());
-//    }
-//
-//    public SonosLink getSonosLink(String linkCode) {
-//        return sonosLinkDao.findByLinkcode(linkCode);
-//    }
-//
-//    private void setUser(String username) throws SonosSoapFault.LoginUnauthorized {
-//        User user = getUserByName(username, true);
-//        Authentication authentication = authenticate(user.getUsername(), user.getPassword());
-//        SecurityContextHolder.getContext().setAuthentication(authentication);
-//    }
-//
-//    public void setAuthenticationManager(AuthenticationManager authenticationManager) {
-//        this.authenticationManager = authenticationManager;
-//    }
 
 }
