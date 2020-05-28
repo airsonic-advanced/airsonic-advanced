@@ -19,6 +19,8 @@
 
 package org.airsonic.player.service.sonos;
 
+import com.sonos.services._1.RefreshAuthTokenResponse;
+
 /**
  * @author Sindre Mehus
  * @version $Id$
@@ -69,6 +71,19 @@ public class SonosSoapFault extends RuntimeException {
 
         public AuthTokenExpired() {
             super("Creds expired", "Client.AuthTokenExpired", 6);
+        }
+    }
+
+    public static class TokenRefreshRequired extends SonosSoapFault {
+        RefreshAuthTokenResponse refreshTokens;
+
+        public TokenRefreshRequired(RefreshAuthTokenResponse refreshTokens) {
+            super("Refresh tokens", "Client.TokenRefreshRequired", 7);
+            this.refreshTokens = refreshTokens;
+        }
+
+        public RefreshAuthTokenResponse getRefreshTokens() {
+            return refreshTokens;
         }
     }
 }
