@@ -105,4 +105,8 @@ public class JWTSecurityService {
     public DecodedJWT verify(String credentials) {
         return verify(settingsService.getJWTKey(), credentials);
     }
+
+    public static DecodedJWT decode(String token) {
+        return JWT.decode(token);
+    }
 }
