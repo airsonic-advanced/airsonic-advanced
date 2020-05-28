@@ -29,7 +29,6 @@ import org.airsonic.player.security.GlobalSecurityConfig;
 import org.airsonic.player.security.PasswordDecoder;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +74,6 @@ public class SecurityService implements UserDetailsService {
 
     @Autowired
     private UserDao userDao;
-
     @Autowired
     private SettingsService settingsService;
 
@@ -482,6 +480,14 @@ public class SecurityService implements UserDetailsService {
                 || StringUtils.equalsIgnoreCase(StringUtils.appendIfMissing(file, "/"), StringUtils.appendIfMissing(folder, "/"))
                 // file prefix is folder (MUST append '/', otherwise /a/b2 startswith /a/b)
                 || StringUtils.startsWithIgnoreCase(file, StringUtils.appendIfMissing(folder, "/"));
+    }
+
+    public void setSettingsService(SettingsService settingsService) {
+        this.settingsService = settingsService;
+    }
+
+    public void setUserDao(UserDao userDao) {
+        this.userDao = userDao;
     }
 
     public static class UserDetail extends org.springframework.security.core.userdetails.User {
