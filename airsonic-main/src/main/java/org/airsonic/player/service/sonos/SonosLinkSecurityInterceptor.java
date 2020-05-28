@@ -111,7 +111,7 @@ public class SonosLinkSecurityInterceptor extends AbstractSoapInterceptor {
                     SecurityContextHolder.getContext().setAuthentication(authenticationManager.authenticate(token));
                 }
             } else if (action != null && authenticationType == AuthenticationType.ANONYMOUS) {
-                JWTAuthenticationToken token = new JWTAuthenticationToken(User.USERNAME_SONOS, null, null, JWTAuthenticationProvider.JWT_AUTHORITIES, null);
+                JWTAuthenticationToken token = new JWTAuthenticationToken(User.USERNAME_ANONYMOUS, null, null, JWTAuthenticationProvider.JWT_AUTHORITIES, null);
                 SecurityContextHolder.getContext().setAuthentication(token);
             } else {
                 LOG.debug("Unable to process SOAP message: {}", message.toString());

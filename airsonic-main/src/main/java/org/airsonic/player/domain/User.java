@@ -34,8 +34,6 @@ public class User {
     public static final String USERNAME_ADMIN = "admin";
     public static final String USERNAME_GUEST = "guest";
     public static final String USERNAME_ANONYMOUS = "anonymous";
-    public static final String USERNAME_SONOS = "sonos";
-
 
     private final String username;
     private String email;
