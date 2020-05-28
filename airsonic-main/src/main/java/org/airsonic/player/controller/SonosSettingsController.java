@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Controller for the page used to administrate the Sonos music service settings.
+ * Controller for the page used to administer the Sonos music service settings.
  *
  * @author Sindre Mehus
  */
@@ -61,7 +61,7 @@ public class SonosSettingsController {
 
         boolean sonosEnabled = ServletRequestUtils.getBooleanParameter(request, "sonosEnabled", false);
         String sonosServiceName = StringUtils.trimToNull(request.getParameter("sonosServiceName"));
-        if (sonosServiceName == null) {
+        if (StringUtils.isBlank(sonosServiceName)) {
             sonosServiceName = "Airsonic";
         }
 
@@ -71,7 +71,7 @@ public class SonosSettingsController {
         settingsService.setSonosCallbackHostAddress(StringUtils.appendIfMissing(StringUtils.trimToNull(request.getParameter("callbackHostAddress")), "/"));
         settingsService.save();
 
-        List<String> returnCodes = sonosService.setMusicServiceEnabled(sonosEnabled, settingsService.getSonosCallbackHostAddress());
+        List<String> returnCodes = sonosService.updateMusicServiceRegistration();
 
         Map<String, Object> map = getModel(request);
 

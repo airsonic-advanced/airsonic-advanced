@@ -131,11 +131,11 @@ public class SonosService implements SonosSoap {
     /**
      * Try to enable/disable the Sonos link.
      *
-     * @param enabled or not, is not the sonoslink table is clear
-     * @param baseUrl call back root address
-     * @return list of message code for user return
+     * @return list of message codes for user return
      */
-    public List<String> setMusicServiceEnabled(boolean enabled, String baseUrl) {
+    public List<String> updateMusicServiceRegistration() {
+        boolean enabled = settingsService.isSonosEnabled();
+        String baseUrl = settingsService.getSonosCallbackHostAddress();
         List<String> messagesCodes = new ArrayList<>();
 
         List<String> sonosControllers = upnpService.getSonosControllerHosts();
