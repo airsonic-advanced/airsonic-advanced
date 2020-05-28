@@ -117,7 +117,7 @@ public class SonosServiceRegistration {
             params.add(Pair.of("caps", "ucPlaylists"));
             params.add(Pair.of("caps", "extendedMD"));
 
-            // If you change /home/michel/externalDev/airsonic/airsonic-main/src/main/webapp/sonos/presentationMap.xml
+            // If you change airsonic/airsonic-main/src/main/webapp/sonos/presentationMap.xml
             // Change the presentationMapVersion @see https://musicpartners.sonos.com/node/134
             params.add(Pair.of("presentationMapVersion", "1"));
             params.add(Pair.of("presentationMapUri", airsonicBaseUrl + "sonos/presentationMap.xml"));

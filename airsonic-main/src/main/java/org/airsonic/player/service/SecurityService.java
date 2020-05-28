@@ -37,10 +37,8 @@ import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataAccessException;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -241,17 +239,6 @@ public class SecurityService implements UserDetailsService {
         String username = getCurrentUsername(request);
         return username == null ? null : getUserByName(username);
     }
-
-    public static String getLoginUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.User) {
-            return ((org.springframework.security.core.userdetails.User)authentication.getPrincipal()).getUsername();
-        }
-
-        return null;
-    }
-
 
     /**
      * Returns the name of the currently logged-in user.
@@ -520,5 +507,4 @@ public class SecurityService implements UserDetailsService {
             creds = null;
         }
     }
-
 }
