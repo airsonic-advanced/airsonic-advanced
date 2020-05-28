@@ -32,7 +32,7 @@ import org.airsonic.player.domain.SonosLink;
 import org.airsonic.player.security.MultipleCredsMatchingAuthenticationProvider;
 import org.airsonic.player.service.search.IndexType;
 import org.airsonic.player.service.sonos.SonosHelper;
-import org.airsonic.player.service.sonos.SonosLinkInterceptor;
+import org.airsonic.player.service.sonos.SonosLinkSecurityInterceptor;
 import org.airsonic.player.service.sonos.SonosServiceRegistration;
 import org.airsonic.player.service.sonos.SonosSoapFault;
 import org.apache.commons.lang.RandomStringUtils;
@@ -675,7 +675,7 @@ public class SonosService implements SonosSoap {
     @Override
     public DeviceAuthTokenResult refreshAuthToken() throws CustomFault {
         try {
-            Credentials expiredCreds = SonosLinkInterceptor.getCredentials(getMessage());
+            Credentials expiredCreds = SonosLinkSecurityInterceptor.getCredentials(getMessage());
             return refreshAuthToken(expiredCreds, getRequest());
         } catch (Exception e) {
             throw new SonosSoapFault.LoginInvalid();

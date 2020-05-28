@@ -2,7 +2,7 @@ package org.airsonic.player.spring;
 
 import org.airsonic.player.service.SonosService;
 import org.airsonic.player.service.sonos.SonosFaultInterceptor;
-import org.airsonic.player.service.sonos.SonosLinkInterceptor;
+import org.airsonic.player.service.sonos.SonosLinkSecurityInterceptor;
 import org.apache.cxf.Bus;
 import org.apache.cxf.jaxws.EndpointImpl;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +20,7 @@ public class SonosConfiguration {
     @Bean
     public Endpoint sonosEndpoint(Bus bus, SonosService sonosService,
             SonosFaultInterceptor sonosFaultInterceptor,
-            SonosLinkInterceptor sonosSecurity) {
+            SonosLinkSecurityInterceptor sonosSecurity) {
         EndpointImpl endpoint = new EndpointImpl(bus, sonosService);
         endpoint.setOutFaultInterceptors(Collections.singletonList(sonosFaultInterceptor));
         endpoint.setInInterceptors(Collections.singletonList(sonosSecurity));

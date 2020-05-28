@@ -679,9 +679,9 @@ public class SonosHelper {
                 .addJWTToken(
                         sonoslink.getUsername(),
                         UriComponentsBuilder.fromUriString(path),
-                        Map.of(SonosLinkInterceptor.CLAIM_LINKCODE, sonoslink.getLinkcode(),
-                                SonosLinkInterceptor.CLAIM_HOUSEHOLDID, sonoslink.getHouseholdId(),
-                                SonosLinkInterceptor.CLAIM_REFRESH_TOKEN, privateKey))
+                        Map.of(SonosLinkSecurityInterceptor.CLAIM_LINKCODE, sonoslink.getLinkcode(),
+                                SonosLinkSecurityInterceptor.CLAIM_HOUSEHOLDID, sonoslink.getHouseholdId(),
+                                SonosLinkSecurityInterceptor.CLAIM_REFRESH_TOKEN, privateKey))
                 .build()
                 .getQueryParams()
                 .getFirst(JWTSecurityService.JWT_PARAM_NAME);
@@ -690,9 +690,9 @@ public class SonosHelper {
     public Pair<SonosLink, String> getSonosLinkFromJWT(String jwt) {
         DecodedJWT djwt = JWTSecurityService.decode(jwt); // does NOT verify!
         SonosLink sl = new SonosLink(djwt.getSubject(),
-                djwt.getClaim(SonosLinkInterceptor.CLAIM_HOUSEHOLDID).asString(),
-                djwt.getClaim(SonosLinkInterceptor.CLAIM_LINKCODE).asString());
-        return Pair.of(sl, djwt.getClaim(SonosLinkInterceptor.CLAIM_REFRESH_TOKEN).asString());
+                djwt.getClaim(SonosLinkSecurityInterceptor.CLAIM_HOUSEHOLDID).asString(),
+                djwt.getClaim(SonosLinkSecurityInterceptor.CLAIM_LINKCODE).asString());
+        return Pair.of(sl, djwt.getClaim(SonosLinkSecurityInterceptor.CLAIM_REFRESH_TOKEN).asString());
     }
 
     public void setMediaFileService(MediaFileService mediaFileService) {

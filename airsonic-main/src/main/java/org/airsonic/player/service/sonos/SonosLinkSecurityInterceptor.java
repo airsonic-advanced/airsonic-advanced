@@ -54,8 +54,8 @@ import static org.airsonic.player.service.sonos.SonosServiceRegistration.Authent
  * </p>
  */
 @Component
-public class SonosLinkInterceptor extends AbstractSoapInterceptor {
-    private static final Logger LOG = LoggerFactory.getLogger(SonosLinkInterceptor.class);
+public class SonosLinkSecurityInterceptor extends AbstractSoapInterceptor {
+    private static final Logger LOG = LoggerFactory.getLogger(SonosLinkSecurityInterceptor.class);
 
     public static final String CLAIM_HOUSEHOLDID = "householdid";
     public static final String CLAIM_LINKCODE = "linkcode";
@@ -64,7 +64,7 @@ public class SonosLinkInterceptor extends AbstractSoapInterceptor {
     // these do not carry creds
     private static Set<String> openMethod = Sets.newHashSet("getAppLink", "getDeviceAuthToken");
 
-    public SonosLinkInterceptor() {
+    public SonosLinkSecurityInterceptor() {
         super(Phase.PRE_INVOKE);
     }
 
