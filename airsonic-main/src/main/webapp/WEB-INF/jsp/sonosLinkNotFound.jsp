@@ -11,6 +11,7 @@
 
 </head>
 <body style="min-width:550px" class="mainframe bgcolor1">
-SONOS linkCode ${model.linkCode} not found..
+Linkcode: ${model.linkCode} <br>
+<fmt:message key="sonos.householdid.notfound"/>
 </body>
 </html>

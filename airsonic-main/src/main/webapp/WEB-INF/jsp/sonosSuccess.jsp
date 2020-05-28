@@ -11,6 +11,6 @@
 
 </head>
 <body style="min-width:550px" class="mainframe bgcolor1">
-SONOS successfully linked
+<fmt:message key="sonos.link.ok"/>
 </body>
 </html>
