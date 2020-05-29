@@ -2,11 +2,9 @@ package org.airsonic.player.service.sonos;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.collect.Sets;
-
 import com.sonos.services._1.Credentials;
 import com.sonos.services._1.DeviceAuthTokenResult;
 import com.sonos.services._1.RefreshAuthTokenResponse;
-
 import org.airsonic.player.dao.SonosLinkDao;
 import org.airsonic.player.domain.SonosLink;
 import org.airsonic.player.domain.User;
