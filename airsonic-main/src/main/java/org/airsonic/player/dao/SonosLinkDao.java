@@ -7,13 +7,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 @Repository
 @Transactional
 public class SonosLinkDao extends AbstractDao {
-    private static final String COLUMNS = "username, householdid, linkcode";
+    private static final String COLUMNS = "username, linkcode, householdid, initiator, initiated";
 
     private SonosLinkRowMapper rowMapper = new SonosLinkRowMapper();
+
+    public List<SonosLink> getAll() {
+        String sql = "select " + COLUMNS + " from sonoslink";
+        return query(sql, rowMapper);
+    }
 
     public SonosLink findByLinkcode(String linkcode) {
         String sql = "select " + COLUMNS + " from sonoslink where linkcode=?";
@@ -22,7 +28,7 @@ public class SonosLinkDao extends AbstractDao {
 
     public void create(SonosLink sonosLink) {
         String sql = "insert into sonoslink (" + COLUMNS + ") values (" + questionMarks(COLUMNS) + ')';
-        update(sql, sonosLink.getUsername(), sonosLink.getHouseholdId(), sonosLink.getLinkcode());
+        update(sql, sonosLink.getUsername(), sonosLink.getLinkcode(), sonosLink.getHouseholdId(), sonosLink.getInitiator(), sonosLink.getInitiated());
     }
 
     public void removeAll() {
@@ -33,7 +39,7 @@ public class SonosLinkDao extends AbstractDao {
     private static class SonosLinkRowMapper implements RowMapper<SonosLink> {
         @Override
         public SonosLink mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new SonosLink(rs.getString("username"), rs.getString("householdid"), rs.getString("linkcode"));
+            return new SonosLink(rs.getString("username"), rs.getString("linkcode"), rs.getString("householdid"), rs.getString("initiator"), rs.getTimestamp("initiated").toInstant());
         }
     }
 }

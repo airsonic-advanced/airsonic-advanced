@@ -2,18 +2,24 @@ package org.airsonic.player.domain;
 
 import org.springframework.util.Assert;
 
+import java.time.Instant;
+
 public class SonosLink {
     private final String username;
-    private final String householdId;
     private final String linkcode;
+    private final String householdId;
+    private final String initiator;
+    private final Instant initiated;
 
-    public SonosLink(String username, String householdId, String linkcode) {
+    public SonosLink(String username, String linkcode, String householdId, String initiator, Instant initiated) {
         Assert.notNull(username, "The username must be provided");
         Assert.notNull(householdId, "The householdId must be provided");
         Assert.notNull(linkcode, "The linkcode must be provided");
         this.username = username;
-        this.householdId = householdId;
         this.linkcode = linkcode;
+        this.householdId = householdId;
+        this.initiator = initiator;
+        this.initiated = initiated;
     }
 
     public String getUsername() {
@@ -26,6 +32,14 @@ public class SonosLink {
 
     public String getLinkcode() {
         return linkcode;
+    }
+
+    public String getInitiator() {
+        return initiator;
+    }
+
+    public Instant getInitiated() {
+        return initiated;
     }
 
     @Override

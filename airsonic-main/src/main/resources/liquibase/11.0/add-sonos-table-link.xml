@@ -14,6 +14,8 @@
             </column>
             <column name="username" type="${varchar_type}"/>
             <column name="householdid" type="${varchar_type}"/>
+            <column name="initiator" type="${varchar_type}"/>
+            <column name="initiated" type="datetime(9)"/>
         </createTable>
         <rollback>
             <dropTable tableName="sonoslink" />

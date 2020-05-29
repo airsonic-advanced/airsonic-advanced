@@ -43,7 +43,8 @@
     </div>
 
     <p class="detail" style="width:60%;white-space:normal"><fmt:message key="sonossettings.description"/></p>
-    <p><label for="sonosEnabled"><fmt:message key="sonossettings.linkMethod"/></label></p>
+
+    <p><label><fmt:message key="sonossettings.linkMethod"/></label></p>
     <div><label>
         <input type="radio" name="sonosLinkMethod" value="APPLICATION_LINK"
                <c:if test="${model.sonosLinkMethod == 'APPLICATION_LINK'}">checked="checked"</c:if>>
@@ -51,6 +52,41 @@
     </label></div>
     <p class="detail" style="width:60%;white-space:normal;padding-top:0">
         <fmt:message key="sonossettings.linkMethod.applicationLink.description"/>
+    </p>
+    <p class="detail" style="width:60%;white-space:normal"><fmt:message key="sonossettings.existinglinks"/>
+    <table id="sonosLinksTable">
+        <tr>
+          <th style="padding:0 0.5em 0 0.5em;border-style:double">Linkcode</th>
+          <th style="padding:0 0.5em 0 0.5em;border-style:double">User</th>
+          <th style="padding:0 0.5em 0 0.5em;border-style:double">Household</th>
+          <th style="padding:0 0.5em 0 0.5em;border-style:double">Initiator</th>
+          <th style="padding:0 0.5em 0 0.5em;border-style:double">Initiated</th>
+        </tr>
+        <tr>
+            <td style="text-align:center;border-style:dotted" colspan=5><fmt:message key="sonossettings.existinglinks"/></td>
+        </tr>
+      <c:forEach items="${model.existingLinks}" var="elink">
+        <tr>
+          <td style="padding:0 0.5em 0 0.5em">${elink.linkcode}</td>
+          <td style="padding:0 0.5em 0 0.5em">${elink.username}</td>
+          <td style="padding:0 0.5em 0 0.5em">${elink.householdId}</td>
+          <td style="padding:0 0.5em 0 0.5em">${elink.initiator}</td>
+          <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${elink.initiated}" style="SS" /></td>
+        </tr>
+      </c:forEach>
+        <tr>
+            <td style="text-align:center;border-style:dotted" colspan=5><fmt:message key="sonossettings.pendinglinks"/></td>
+        </tr>
+      <c:forEach items="${model.pendingLinks}" var="plink">
+        <tr>
+          <td style="padding:0 0.5em 0 0.5em">${plink.key}</td>
+          <td style="padding:0 0.5em 0 0.5em"></td>
+          <td style="padding:0 0.5em 0 0.5em">${plink.value.left}</td>
+          <td style="padding:0 0.5em 0 0.5em">${plink.value.middle}</td>
+          <td style="padding:0 0.5em 0 0.5em"><javatime:format value="${plink.value.right}" style="SS" /></td>
+        </tr>
+      </c:forEach>
+    </table>
     </p>
     <div><label>
         <input type="radio" name="sonosLinkMethod" value="ANONYMOUS"

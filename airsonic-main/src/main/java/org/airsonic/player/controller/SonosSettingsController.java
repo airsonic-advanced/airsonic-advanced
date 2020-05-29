@@ -86,7 +86,8 @@ public class SonosSettingsController {
         map.put("sonosServiceName", settingsService.getSonosServiceName());
         map.put("sonosLinkMethod", settingsService.getSonosLinkMethod());
         map.put("callbackHostAddress", settingsService.getSonosCallbackHostAddress(NetworkService.getBaseUrl(request)));
-
+        map.put("existingLinks", sonosService.getExistingSonosLinks());
+        map.put("pendingLinks", sonosService.getPendingSonosLinks());
         return map;
     }
 }

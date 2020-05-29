@@ -19,6 +19,7 @@
 package org.airsonic.player.controller;
 
 import org.airsonic.player.service.SonosService;
+import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -32,6 +33,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,11 +56,9 @@ public class SonosLinkController {
     public ModelAndView doGet(HttpServletRequest request) {
         String linkCode = request.getParameter("linkCode");
 
-        String household = sonosService.getHouseholdId(linkCode);
+        String view = sonosService.getInitiatedLinkCodeData(linkCode) != null ? "sonosLinkLogin" : "sonosLinkFailure";
 
-        String view = household != null ? "sonosLinkLogin" : "sonosLinkNotFound";
-
-        return new ModelAndView(view, "model", Map.of("linkCode", linkCode));
+        return new ModelAndView(view, "model", Map.of("linkCode", linkCode, "errorCode", "sonos.linkcode.notfound"));
     }
 
     @PostMapping
@@ -67,16 +67,19 @@ public class SonosLinkController {
         String username = request.getParameter("j_username");
         String password = request.getParameter("j_password");
 
-        String household = sonosService.getHouseholdId(linkCode);
-        if (household == null) {
-            return new ModelAndView("sonosLinkNotFound", "model", Map.of("linkCode", linkCode));
+        Triple<String, String, Instant> data = sonosService.getInitiatedLinkCodeData(linkCode);
+        if (data == null) {
+            return new ModelAndView("sonosLinkFailure", "model", Map.of("linkCode", linkCode, "errorCode", "sonos.linkcode.notfound"));
         }
 
         try {
             Authentication authenticate = authManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
             if (authenticate.isAuthenticated()) {
-                sonosService.addSonosAuthorization(username, household, linkCode);
-                return new ModelAndView("sonosSuccess", "model", Collections.emptyMap());
+                if (sonosService.addSonosAuthorization(username, linkCode, data.getLeft(), data.getMiddle(), data.getRight())) {
+                    return new ModelAndView("sonosSuccess", "model", Collections.emptyMap());
+                } else {
+                    return new ModelAndView("sonosLinkFailure", "model", Map.of("linkCode", linkCode, "errorCode", "sonos.linkcode.alreadyused"));
+                }
             } else {
                 return loginFailed(linkCode);
             }

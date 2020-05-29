@@ -690,8 +690,9 @@ public class SonosHelper {
     public Pair<SonosLink, String> getSonosLinkFromJWT(String jwt) {
         DecodedJWT djwt = JWTSecurityService.decode(jwt); // does NOT verify!
         SonosLink sl = new SonosLink(djwt.getSubject(),
+                djwt.getClaim(SonosLinkSecurityInterceptor.CLAIM_LINKCODE).asString(),
                 djwt.getClaim(SonosLinkSecurityInterceptor.CLAIM_HOUSEHOLDID).asString(),
-                djwt.getClaim(SonosLinkSecurityInterceptor.CLAIM_LINKCODE).asString());
+                null, null);
         return Pair.of(sl, djwt.getClaim(SonosLinkSecurityInterceptor.CLAIM_REFRESH_TOKEN).asString());
     }
 

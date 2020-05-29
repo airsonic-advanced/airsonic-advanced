@@ -37,6 +37,7 @@ import org.airsonic.player.service.sonos.SonosSoapFault;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.cxf.binding.soap.SoapMessage;
 import org.apache.cxf.jaxws.context.WrappedMessageContext;
 import org.apache.cxf.transport.http.AbstractHTTPDestination;
@@ -562,7 +563,7 @@ public class SonosService implements SonosSoap {
         return null;
     }
 
-    private Cache<String, String> sonosLinkCache = CacheBuilder.newBuilder().expireAfterWrite(7, TimeUnit.MINUTES).<String, String>build();
+    private Cache<String, Triple<String, String, Instant>> sonosLinkCache = CacheBuilder.newBuilder().expireAfterWrite(7, TimeUnit.MINUTES).<String, Triple<String, String, Instant>>build();
 
     // The link code must be exactly 32 characters long
     private String createLinkCode() {
@@ -574,23 +575,32 @@ public class SonosService implements SonosSoap {
         return UUID.randomUUID().toString();
     }
 
-    private String generateLinkCode(String householdId) {
+    private String generateLinkCode(String householdId, String sonosAppName, Instant initiated) {
         String linkCode = createLinkCode();
-        sonosLinkCache.put(linkCode, householdId);
+        sonosLinkCache.put(linkCode, Triple.of(householdId, sonosAppName, initiated));
         return linkCode;
     }
 
-    public String getHouseholdId(String linkCode) {
+    public Triple<String, String, Instant> getInitiatedLinkCodeData(String linkCode) {
         return sonosLinkCache.getIfPresent(linkCode);
     }
 
-    public boolean addSonosAuthorization(String username, String householdId, String linkcode) {
+    public boolean addSonosAuthorization(String username, String linkcode, String householdId, String sonosApp, Instant initiated) {
         if (sonosLinkDao.findByLinkcode(linkcode) != null) {
             return false;
         }
 
-        sonosLinkDao.create(new SonosLink(username, householdId, linkcode));
+        sonosLinkDao.create(new SonosLink(username, linkcode, householdId, sonosApp, initiated));
+        sonosLinkCache.invalidate(linkcode);
         return true;
+    }
+
+    public List<SonosLink> getExistingSonosLinks() {
+        return sonosLinkDao.getAll();
+    }
+
+    public Map<String, Triple<String, String, Instant>> getPendingSonosLinks() {
+        return sonosLinkCache.asMap();
     }
 
     @Override
@@ -601,7 +611,7 @@ public class SonosService implements SonosSoap {
         result.getAuthorizeAccount().setAppUrlStringId("appUrlStringId");
         DeviceLinkCodeResult linkCodeResult = new DeviceLinkCodeResult();
 
-        String linkCode = generateLinkCode(householdId);
+        String linkCode = generateLinkCode(householdId, sonosAppName, Instant.now());
         linkCodeResult.setLinkCode(linkCode);
         linkCodeResult.setRegUrl(settingsService.getSonosCallbackHostAddress() + "sonoslink?linkCode=" + linkCode);
         linkCodeResult.setShowLinkCode(false);
