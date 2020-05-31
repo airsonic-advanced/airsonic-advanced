@@ -79,9 +79,9 @@
     </div>
 
     <div>
-        <form:checkbox path="doFullScan" cssClass="checkbox" id="doFullScan"/>
-        <form:label path="doFullScan"><fmt:message key="musicfoldersettings.dofullscan"/></form:label>
-        <c:import url="helpToolTip.jsp"><c:param name="topic" value="dofullscan"/></c:import>
+        <form:checkbox path="fullScan" cssClass="checkbox" id="fullScan"/>
+        <form:label path="fullScan"><fmt:message key="musicfoldersettings.fullscan"/></form:label>
+        <c:import url="helpToolTip.jsp"><c:param name="topic" value="fullscan"/></c:import>
     </div>
 
     <div style="padding-top: 0.5em;padding-bottom: 0.3em">

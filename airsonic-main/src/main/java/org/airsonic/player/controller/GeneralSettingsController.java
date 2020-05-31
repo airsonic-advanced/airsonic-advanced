@@ -106,7 +106,7 @@ public class GeneralSettingsController {
 
         redirectAttributes.addFlashAttribute("settings_toast", true);
 
-        if (!settingsService.getCoverArtSource().equals(command.getCoverArtSource())) {
+        if (settingsService.getCoverArtSource() != command.getCoverArtSource()) {
             settingsService.setIgnoreFileTimestamps(true);
         }
 

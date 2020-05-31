@@ -110,10 +110,10 @@
             <td><fmt:message key="generalsettings.coverartsource"/></td>
             <td>
                 <form:select path="coverArtSource" cssStyle="width:15em">
-                    <form:option value="file+tag"><fmt:message key="generalsettings.coverartsource.option.filetag"/></form:option>
-                    <form:option value="tag+file"><fmt:message key="generalsettings.coverartsource.option.tagfile"/></form:option>>
-                    <form:option value="file"><fmt:message key="generalsettings.coverartsource.option.file"/></form:option>
-                    <form:option value="tag"><fmt:message key="generalsettings.coverartsource.option.tag"/></form:option>
+                    <form:option value="FILEANDTAG"><fmt:message key="generalsettings.coverartsource.option.filetag"/></form:option>
+                    <form:option value="TAGANDFILE"><fmt:message key="generalsettings.coverartsource.option.tagfile"/></form:option>>
+                    <form:option value="FILE"><fmt:message key="generalsettings.coverartsource.option.file"/></form:option>
+                    <form:option value="TAG"><fmt:message key="generalsettings.coverartsource.option.tag"/></form:option>
                 </form:select>
                 <c:import url="helpToolTip.jsp"><c:param name="topic" value="coverartsource"/></c:import>
             </td>
