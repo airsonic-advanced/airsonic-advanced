@@ -588,24 +588,25 @@ public class MediaFileService {
     private Path findCoverArt(Collection<Path> candidates) {
         Path candidate = null;
         var coverArtSource = settingsService.getCoverArtSource();
-        if ("tag+file".equals(coverArtSource)) {
-            candidate = findTagCover(candidates);
-            if (candidate != null) {
-                return candidate;
-            } else {
+        switch (coverArtSource) {
+            case TAGTHENFILE:
+                candidate = findTagCover(candidates);
+                if (candidate != null) {
+                    return candidate;
+                } else {
+                    return findFileCover(candidates);
+                }
+            case FILE:
                 return findFileCover(candidates);
-            }
-        } else if ("file".equals(coverArtSource)) {
-            return findFileCover(candidates);
-        } else if ("tag".equals(coverArtSource)) {
-            return findTagCover(candidates);
-        } else { // actually if ("file+tag".equals(coverArtSource)) ==> default
-            candidate = findFileCover(candidates);
-            if (candidate != null) {
-                return candidate;
-            } else {
+            case TAG:
                 return findTagCover(candidates);
-            }
+            default: //actually FILETHENTAG
+                candidate = findFileCover(candidates);
+                if (candidate != null) {
+                    return candidate;
+                } else {
+                    return findTagCover(candidates);
+                }
         }
     }
 

@@ -8,8 +8,8 @@ package org.airsonic.player.domain;
  * @author Faeb35
  */
 public enum CoverArtSource {
-    FILEANDTAG,
-    TAGANDFILE,
+    FILETHENTAG,
+    TAGTHENFILE,
     FILE,
     TAG
 }
