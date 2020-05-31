@@ -589,14 +589,6 @@ public class MediaFileService {
         Path candidate = null;
         var coverArtSource = settingsService.getCoverArtSource();
         switch (coverArtSource) {
-            default:
-            case FILETHENTAG:
-                candidate = findFileCover(candidates);
-                if (candidate != null) {
-                    return candidate;
-                } else {
-                    return findTagCover(candidates);
-                }
             case TAGTHENFILE:
                 candidate = findTagCover(candidates);
                 if (candidate != null) {
@@ -608,6 +600,14 @@ public class MediaFileService {
                 return findFileCover(candidates);
             case TAG:
                 return findTagCover(candidates);
+            case FILETHENTAG:
+            default:
+                candidate = findFileCover(candidates);
+                if (candidate != null) {
+                    return candidate;
+                } else {
+                    return findTagCover(candidates);
+                }
         }
     }
 
