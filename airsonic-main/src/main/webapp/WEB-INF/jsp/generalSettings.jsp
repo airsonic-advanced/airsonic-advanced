@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" %>
+<%@ page import="org.airsonic.player.domain.CoverArtSource" %>
 <%--@elvariable id="command" type="org.airsonic.player.command.GeneralSettingsCommand"--%>
 
 <html><head>
@@ -110,10 +111,10 @@
             <td><fmt:message key="generalsettings.coverartsource"/></td>
             <td>
                 <form:select path="coverArtSource" cssStyle="width:15em">
-                    <form:option value="FILEANDTAG"><fmt:message key="generalsettings.coverartsource.option.filetag"/></form:option>
-                    <form:option value="TAGANDFILE"><fmt:message key="generalsettings.coverartsource.option.tagfile"/></form:option>>
-                    <form:option value="FILE"><fmt:message key="generalsettings.coverartsource.option.file"/></form:option>
-                    <form:option value="TAG"><fmt:message key="generalsettings.coverartsource.option.tag"/></form:option>
+                    <form:option value="${CoverArtSource.FILETHENTAG}"><fmt:message key="generalsettings.coverartsource.option.filetag"/></form:option>
+                    <form:option value="${CoverArtSource.TAGTHENFILE}"><fmt:message key="generalsettings.coverartsource.option.tagfile"/></form:option>>
+                    <form:option value="${CoverArtSource.FILE}"><fmt:message key="generalsettings.coverartsource.option.file"/></form:option>
+                    <form:option value="${CoverArtSource.TAG}"><fmt:message key="generalsettings.coverartsource.option.tag"/></form:option>
                 </form:select>
                 <c:import url="helpToolTip.jsp"><c:param name="topic" value="coverartsource"/></c:import>
             </td>
