@@ -19,6 +19,7 @@
 
 package org.airsonic.player.service.sonos;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.sonos.services._1.*;
@@ -29,8 +30,10 @@ import org.airsonic.player.service.*;
 import org.airsonic.player.service.search.IndexType;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -70,6 +73,8 @@ public class SonosHelper {
     private LastFmService lastFmService;
     @Autowired
     private PodcastService podcastService;
+    @Autowired
+    private JWTSecurityService jwtSecurityService;
 
     public List<AbstractMedia> forRoot() {
         MediaMetadata shuffle = new MediaMetadata();
@@ -256,7 +261,7 @@ public class SonosHelper {
             mediaCollection.setCanPlay(true);
 
             AlbumArtUrl albumArtURI = new AlbumArtUrl();
-            albumArtURI.setValue(getCoverArtUrl(String.valueOf(dir.getId()), request));
+            albumArtURI.setValue(getCoverArtUrl(String.valueOf(dir.getId()), username, request));
             mediaCollection.setAlbumArtURI(albumArtURI);
         } else {
             mediaCollection.setItemType(ItemType.CONTAINER);
@@ -270,7 +275,8 @@ public class SonosHelper {
         for (Playlist playlist : playlistService.getReadablePlaylistsForUser(username)) {
             MediaCollection mediaCollection = new MediaCollection();
             AlbumArtUrl albumArtURI = new AlbumArtUrl();
-            albumArtURI.setValue(getCoverArtUrl(CoverArtController.PLAYLIST_COVERART_PREFIX + playlist.getId(), request));
+            albumArtURI.setValue(
+                    getCoverArtUrl(CoverArtController.PLAYLIST_COVERART_PREFIX + playlist.getId(), username, request));
 
             mediaCollection.setId(SonosService.ID_PLAYLIST_PREFIX + playlist.getId());
             mediaCollection.setCanPlay(true);
@@ -579,7 +585,7 @@ public class SonosHelper {
 //        result.setDynamic();// TODO: For starred songs
 
         AlbumArtUrl albumArtURI = new AlbumArtUrl();
-        albumArtURI.setValue(getCoverArtUrl(String.valueOf(song.getId()), request));
+        albumArtURI.setValue(getCoverArtUrl(String.valueOf(song.getId()), username, request));
 
         TrackMetadata trackMetadata = new TrackMetadata();
         trackMetadata.setArtist(song.getArtist());
@@ -606,8 +612,9 @@ public class SonosHelper {
         mediaFileDao.unstarMediaFile(id, username);
     }
 
-    private String getCoverArtUrl(String id, HttpServletRequest request) {
-        return getBaseUrl(request) + "coverArt.view?id=" + id + "&size=" + CoverArtScheme.LARGE.getSize();
+    private String getCoverArtUrl(String id, String username, HttpServletRequest request) {
+        String uri = getBaseUrl(request) + "ext/coverArt.view?id=" + id + "&size=" + CoverArtScheme.LARGE.getSize();
+        return jwtSecurityService.addJWTToken(username, uri);
     }
 
     public static MediaList createSubList(int index, int count, List<? extends AbstractMedia> mediaCollections) {
@@ -641,8 +648,8 @@ public class SonosHelper {
     public String getMediaURI(int mediaFileId, String username, HttpServletRequest request) {
         Player player = createPlayerIfNecessary(username);
         MediaFile song = mediaFileService.getMediaFile(mediaFileId);
-
-        return NetworkService.getBaseUrl(request) + "stream?id=" + song.getId() + "&player=" + player.getId();
+        String uri = getBaseUrl(request) + "ext/stream?id=" + song.getId() + "&player=" + player.getId();
+        return jwtSecurityService.addJWTToken(username, uri);
     }
 
     private Player createPlayerIfNecessary(String username) {
@@ -657,9 +664,36 @@ public class SonosHelper {
             player.setTechnology(PlayerTechnology.EXTERNAL_WITH_PLAYLIST);
             playerService.createPlayer(player);
             players = playerService.getPlayersForUserAndClientId(username, AIRSONIC_CLIENT_ID);
+
+            // @FIXME when a new transcoding choice can be set we can put the right transcoding here for Sonos player.
+            // Now, we remove transcoding for Sonos player
+            transcodingService.setTranscodingsForPlayer(players.get(0), new int[0]);
         }
 
         return players.get(0);
+    }
+
+    public String createJwt(SonosLink sonoslink, String path, String privateKey) {
+        // valid for 7 days by default
+        return jwtSecurityService
+                .addJWTToken(
+                        sonoslink.getUsername(),
+                        UriComponentsBuilder.fromUriString(path),
+                        Map.of(SonosLinkSecurityInterceptor.CLAIM_LINKCODE, sonoslink.getLinkcode(),
+                                SonosLinkSecurityInterceptor.CLAIM_HOUSEHOLDID, sonoslink.getHouseholdId(),
+                                SonosLinkSecurityInterceptor.CLAIM_REFRESH_TOKEN, privateKey))
+                .build()
+                .getQueryParams()
+                .getFirst(JWTSecurityService.JWT_PARAM_NAME);
+    }
+
+    public Pair<SonosLink, String> getSonosLinkFromJWT(String jwt) {
+        DecodedJWT djwt = JWTSecurityService.decode(jwt); // does NOT verify!
+        SonosLink sl = new SonosLink(djwt.getSubject(),
+                djwt.getClaim(SonosLinkSecurityInterceptor.CLAIM_LINKCODE).asString(),
+                djwt.getClaim(SonosLinkSecurityInterceptor.CLAIM_HOUSEHOLDID).asString(),
+                null, null);
+        return Pair.of(sl, djwt.getClaim(SonosLinkSecurityInterceptor.CLAIM_REFRESH_TOKEN).asString());
     }
 
     public void setMediaFileService(MediaFileService mediaFileService) {

@@ -19,6 +19,8 @@
 
 package org.airsonic.player.service.sonos;
 
+import com.sonos.services._1.RefreshAuthTokenResponse;
+
 /**
  * @author Sindre Mehus
  * @version $Id$
@@ -30,7 +32,8 @@ public class SonosSoapFault extends RuntimeException {
     // Must match values in strings.xml
     private final int sonosError;
 
-    protected SonosSoapFault(String faultCode, int sonosError) {
+    protected SonosSoapFault(String message, String faultCode, int sonosError) {
+        super(message);
         this.faultCode = faultCode;
         this.sonosError = sonosError;
     }
@@ -46,14 +49,41 @@ public class SonosSoapFault extends RuntimeException {
     public static class LoginInvalid extends SonosSoapFault {
 
         public LoginInvalid() {
-            super("Client.LoginInvalid", 0);
+            super("Login invalid", "Client.LoginInvalid", 0);
         }
     }
 
     public static class LoginUnauthorized extends SonosSoapFault {
 
         public LoginUnauthorized() {
-            super("Client.LoginUnauthorized", 1);
+            super("Login unauthorized","Client.LoginUnauthorized", 1);
+        }
+    }
+
+    public static class NotLinkedRetry extends SonosSoapFault {
+
+        public NotLinkedRetry() {
+            super("Cannot find link code, retry", "Client.NOT_LINKED_RETRY", 5);
+        }
+    }
+
+    public static class AuthTokenExpired extends SonosSoapFault {
+
+        public AuthTokenExpired() {
+            super("Creds expired", "Client.AuthTokenExpired", 6);
+        }
+    }
+
+    public static class TokenRefreshRequired extends SonosSoapFault {
+        RefreshAuthTokenResponse refreshTokens;
+
+        public TokenRefreshRequired(RefreshAuthTokenResponse refreshTokens) {
+            super("Refresh tokens", "Client.TokenRefreshRequired", 7);
+            this.refreshTokens = refreshTokens;
+        }
+
+        public RefreshAuthTokenResponse getRefreshTokens() {
+            return refreshTokens;
         }
     }
 }

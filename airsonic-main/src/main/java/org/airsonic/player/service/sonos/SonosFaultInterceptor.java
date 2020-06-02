@@ -19,6 +19,7 @@
 
 package org.airsonic.player.service.sonos;
 
+import org.airsonic.player.service.sonos.SonosSoapFault.TokenRefreshRequired;
 import org.apache.cxf.binding.soap.SoapMessage;
 import org.apache.cxf.binding.soap.interceptor.AbstractSoapInterceptor;
 import org.apache.cxf.helpers.DOMUtils;
@@ -30,6 +31,9 @@ import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import javax.xml.namespace.QName;
 
 /**
@@ -43,8 +47,18 @@ public class SonosFaultInterceptor extends AbstractSoapInterceptor {
 
     private static final Logger LOG = LoggerFactory.getLogger(SonosFaultInterceptor.class);
 
+    private static Marshaller marshaller = createMarshaller();
+
+    private static Marshaller createMarshaller() {
+        try {
+            return JAXBContext.newInstance("com.sonos.services._1").createMarshaller();
+        } catch (JAXBException e) {
+            throw new AssertionError(e);
+        }
+    }
+
     /**
-     * Constructor, setting the phase to Marshal.  This happens before the default Fault Interceptor
+     * Constructor, setting the phase to Marshal. This happens before the default Fault Interceptor
      */
     public SonosFaultInterceptor() {
         super(Phase.MARSHAL);
@@ -56,7 +70,7 @@ public class SonosFaultInterceptor extends AbstractSoapInterceptor {
     @Override
     public void handleMessage(SoapMessage message) throws Fault {
         Fault fault = (Fault) message.getContent(Exception.class);
-        LOG.warn("Error: " + fault, fault);
+        LOG.warn("Error with Soap message", fault);
 
         if (fault.getCause() instanceof SonosSoapFault) {
             SonosSoapFault cause = (SonosSoapFault) fault.getCause();
@@ -67,11 +81,19 @@ public class SonosFaultInterceptor extends AbstractSoapInterceptor {
             Element details = document.createElement("detail");
             fault.setDetail(details);
 
-            details.appendChild(document.createElement("ExceptionInfo"));
+            if (cause instanceof TokenRefreshRequired) {
+                try {
+                    marshaller.marshal(((TokenRefreshRequired) cause).getRefreshTokens(), details);
+                } catch (JAXBException e) {
+                    LOG.warn("Could not marshal Sonos refresh tokens", e);
+                }
+            } else {
+                details.appendChild(document.createElement("ExceptionInfo"));
 
-            Element sonosError = document.createElement("SonosError");
-            sonosError.setTextContent(String.valueOf(cause.getSonosError()));
-            details.appendChild(sonosError);
+                Element sonosError = document.createElement("SonosError");
+                sonosError.setTextContent(String.valueOf(cause.getSonosError()));
+                details.appendChild(sonosError);
+            }
         }
     }
 }

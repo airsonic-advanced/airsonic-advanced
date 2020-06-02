@@ -7,6 +7,7 @@ import com.google.common.io.BaseEncoding;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.sonos.SonosLinkSecurityInterceptor.SonosJWTVerification;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -34,6 +36,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import javax.servlet.ServletContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -104,6 +108,12 @@ public class GlobalSecurityConfig {
 
     @Autowired
     MultipleCredsMatchingAuthenticationProvider multipleCredsProvider;
+
+    @Autowired
+    SonosJWTVerification sonosJwtVerification;
+
+    @Autowired
+    private ServletContext servletContext;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -190,7 +200,9 @@ public class GlobalSecurityConfig {
             settingsService.setJWTKey(jwtKey);
             settingsService.save();
         }
-        auth.authenticationProvider(new JWTAuthenticationProvider(jwtKey));
+        JWTAuthenticationProvider jwtAuth = new JWTAuthenticationProvider(jwtKey);
+        jwtAuth.addAdditionalCheck(servletContext.getContextPath() + "/ws/Sonos", sonosJwtVerification);
+        auth.authenticationProvider(jwtAuth);
         auth.authenticationProvider(multipleCredsProvider);
     }
 
@@ -200,6 +212,12 @@ public class GlobalSecurityConfig {
 
         public ExtSecurityConfiguration() {
             super(true);
+        }
+
+        @Override
+        @Bean
+        public AuthenticationManager authenticationManagerBean() throws Exception {
+            return super.authenticationManagerBean();
         }
 
         @Bean(name = "jwtAuthenticationFilter")
@@ -218,7 +236,11 @@ public class GlobalSecurityConfig {
                     .csrf().requireCsrfProtectionMatcher(csrfSecurityRequestMatcher).and()
                     .headers().frameOptions().sameOrigin().and()
                     .authorizeRequests()
-                    .antMatchers("/ext/stream/**", "/ext/coverArt*", "/ext/share/**", "/ext/hls/**")
+                    .antMatchers(
+                            "/ext/stream/**",
+                            "/ext/coverArt*",
+                            "/ext/share/**",
+                            "/ext/hls/**")
                     .hasAnyRole("TEMP", "USER").and()
                     .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                     .exceptionHandling().and()
@@ -257,14 +279,14 @@ public class GlobalSecurityConfig {
 
             http
                     .csrf()
+                    .ignoringAntMatchers("/ws/Sonos/**")
                     .requireCsrfProtectionMatcher(csrfSecurityRequestMatcher)
                     .and().headers()
                     .frameOptions()
                     .sameOrigin()
                     .and().authorizeRequests()
-                    .antMatchers("/recover*", "/accessDenied*",
-                            "/style/**", "/icons/**", "/flash/**", "/script/**",
-                            "/sonos/**", "/login", "/error")
+                    .antMatchers("/recover*", "/accessDenied*", "/style/**", "/icons/**", "/flash/**", "/script/**",
+                            "/login", "/error", "/sonos/**", "/sonoslink/**", "/ws/Sonos/**")
                     .permitAll()
                     .antMatchers("/personalSettings*",
                             "/playerSettings*", "/shareSettings*", "/credentialsSettings*")
