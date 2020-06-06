@@ -51,6 +51,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -417,8 +418,8 @@ public class SecurityService implements UserDetailsService {
     }
 
     private MusicFolder getMusicFolderForFile(Path file) {
-        String path = file.toString();
-        return settingsService.getAllMusicFolders(false, true).stream().filter(folder -> isFileInFolder(path, folder.getPath().toString())).findFirst().orElse(null);
+        return settingsService.getAllMusicFolders(false, true).stream()
+                .filter(folder -> isFileInFolder(file, folder.getPath())).findFirst().orElse(null);
     }
 
     /**
@@ -429,7 +430,7 @@ public class SecurityService implements UserDetailsService {
      */
     private boolean isInPodcastFolder(Path file) {
         String podcastFolder = settingsService.getPodcastFolder();
-        return isFileInFolder(file.toString(), podcastFolder);
+        return isFileInFolder(file, Paths.get(podcastFolder));
     }
 
     public String getRootFolderForFile(Path file) {
@@ -454,32 +455,18 @@ public class SecurityService implements UserDetailsService {
 
     /**
      * Returns whether the given file is located in the given folder (or any of its sub-folders).
-     * If the given file contains the expression ".." (indicating a reference to the parent directory),
-     * this method will return <code>false</code>.
+     * The function normalizes the paths to resolve ".." or "." but does not go to the filesystem
+     * (so nonexistent file paths may be checked)
      *
      * @param file   The file in question.
      * @param folder The folder in question.
      * @return Whether the given file is located in the given folder.
      */
-    protected static boolean isFileInFolder(String file, String folder) {
-        // Deny access if file contains ".." surrounded by slashes (or end of line).
-        if (file.matches(".*(/|\\\\)\\.\\.(/|\\\\|$).*")) {
-            return false;
-        }
+    protected static boolean isFileInFolder(Path file, Path folder) {
+        Path nFile = file.normalize();
+        Path nFolder = folder.normalize();
 
-        // Convert slashes.
-        file = file.replace('\\', '/');
-        folder = folder.replace('\\', '/');
-
-        return
-                // identity matches
-                // /a/ == /a, /a == /a/, /a == /a, /a/ == /a/
-                StringUtils.equalsIgnoreCase(file, folder)
-                || StringUtils.equalsIgnoreCase(file, StringUtils.appendIfMissing(folder, "/"))
-                || StringUtils.equalsIgnoreCase(StringUtils.appendIfMissing(file, "/"), folder)
-                || StringUtils.equalsIgnoreCase(StringUtils.appendIfMissing(file, "/"), StringUtils.appendIfMissing(folder, "/"))
-                // file prefix is folder (MUST append '/', otherwise /a/b2 startswith /a/b)
-                || StringUtils.startsWithIgnoreCase(file, StringUtils.appendIfMissing(folder, "/"));
+        return nFile.startsWith(nFolder);
     }
 
     public void setSettingsService(SettingsService settingsService) {
