@@ -45,10 +45,10 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-        <repository> 
-            <id>repository.spring.release</id> 
-            <name>Spring GA Repository</name> 
-            <url>https://repo.spring.io/release</url> 
+        <repository>
+            <id>repository.spring.release</id>
+            <name>Spring GA Repository</name>
+            <url>https://repo.spring.io/release</url>
         </repository>
     </repositories>
 
