@@ -20,7 +20,6 @@
 package org.airsonic.player.service.upnp;
 
 import org.airsonic.player.domain.*;
-import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.PlaylistService;
 import org.airsonic.player.service.search.IndexManager;
@@ -270,7 +269,7 @@ public class FolderBasedContentDirectory extends CustomContentDirectory {
     }
 
     private URI getAlbumArtUrl(MediaFile album) {
-        return jwtSecurityService.addJWTToken(JWTSecurityService.USERNAME_ANONYMOUS, UriComponentsBuilder.fromUriString(getBaseUrl() + "/ext/coverArt.view")
+        return jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS, UriComponentsBuilder.fromUriString(getBaseUrl() + "/ext/coverArt.view")
                 .queryParam("id", album.getId())
                 .queryParam("size", CoverArtScheme.LARGE.getSize()))
                 .build()

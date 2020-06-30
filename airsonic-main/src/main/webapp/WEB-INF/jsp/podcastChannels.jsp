@@ -42,7 +42,7 @@
     <div class="albumThumb">
         <c:import url="coverArt.jsp">
             <c:param name="podcastChannelId" value="${channel.key.id}"/>
-            <c:param name="coverArtSize" value="200"/>
+            <c:param name="coverArtSize" value="160"/>
             <c:param name="caption1" value="${fn:escapeXml(channel.key.title)}"/>
             <c:param name="caption2" value="${caption2}"/>
             <c:param name="captionCount" value="2"/>

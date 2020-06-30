@@ -21,6 +21,7 @@ package org.airsonic.player.service.upnp;
 
 import org.airsonic.player.domain.CoverArtScheme;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.User;
 import org.airsonic.player.service.*;
 import org.fourthline.cling.support.contentdirectory.ContentDirectoryErrorCode;
 import org.fourthline.cling.support.contentdirectory.ContentDirectoryException;
@@ -196,7 +197,7 @@ public class DispatchingContentDirectory extends CustomContentDirectory {
     }
 
     public URI getAlbumArtUrl(int id) {
-        return jwtSecurityService.addJWTToken(JWTSecurityService.USERNAME_ANONYMOUS, UriComponentsBuilder.fromUriString(getBaseUrl() + "/ext/coverArt.view").queryParam("id", id).queryParam("size", CoverArtScheme.LARGE.getSize())).build().encode().toUri();
+        return jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS, UriComponentsBuilder.fromUriString(getBaseUrl() + "/ext/coverArt.view").queryParam("id", id).queryParam("size", CoverArtScheme.LARGE.getSize())).build().encode().toUri();
     }
 
     public PlaylistUpnpProcessor getPlaylistProcessor() {

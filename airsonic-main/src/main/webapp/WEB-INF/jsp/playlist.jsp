@@ -332,7 +332,7 @@
 <div style="float:left;margin-right:1.5em;margin-bottom:1.5em">
 <c:import url="coverArt.jsp">
     <c:param name="playlistId" value="${model.playlist.id}"/>
-    <c:param name="coverArtSize" value="200"/>
+    <c:param name="coverArtSize" value="160"/>
 </c:import>
 </div>
 
