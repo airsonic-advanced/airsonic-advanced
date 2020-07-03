@@ -21,7 +21,7 @@ if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
         java_opts_array+=( "$item" )
     done < <([[ $JAVA_OPTS ]] && xargs printf '%s\0' <<<"$JAVA_OPTS")
     exec java -Xmx256m \
-     -Dserver.host=0.0.0.0 \
+     -Dserver.address=0.0.0.0 \
      -Dserver.port=$AIRSONIC_PORT \
      -Dserver.servlet.context-path=$CONTEXT_PATH \
      -Dairsonic.home=$AIRSONIC_DIR/airsonic \
