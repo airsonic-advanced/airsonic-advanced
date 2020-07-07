@@ -88,6 +88,7 @@ public class SettingsService {
     private static final String KEY_INDEX_CREATION_HOUR = "IndexCreationHour";
     private static final String KEY_FAST_CACHE_ENABLED = "FastCacheEnabled";
     private static final String KEY_FULL_SCAN = "FullScan";
+    private static final String KEY_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN = "ClearFullScanSettingAfterScan";
     private static final String KEY_PODCAST_UPDATE_INTERVAL = "PodcastUpdateInterval";
     private static final String KEY_PODCAST_FOLDER = "PodcastFolder";
     private static final String KEY_PODCAST_EPISODE_RETENTION_COUNT = "PodcastEpisodeRetentionCount";
@@ -182,6 +183,7 @@ public class SettingsService {
     private static final int DEFAULT_INDEX_CREATION_HOUR = 3;
     private static final boolean DEFAULT_FAST_CACHE_ENABLED = false;
     private static final boolean DEFAULT_FULL_SCAN = false;
+    private static final boolean DEFAULT_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN = false;
     private static final int DEFAULT_PODCAST_UPDATE_INTERVAL = 24;
     private static final String DEFAULT_PODCAST_FOLDER = Util.getDefaultPodcastFolder();
     private static final int DEFAULT_PODCAST_EPISODE_RETENTION_COUNT = 10;
@@ -668,8 +670,16 @@ public class SettingsService {
         return getBoolean(KEY_FULL_SCAN, DEFAULT_FULL_SCAN);
     }
 
-    public void setFullScan(boolean fullscan) {
+    public void setFullScan(Boolean fullscan) {
         setBoolean(KEY_FULL_SCAN, fullscan);
+    }
+
+    public boolean getClearFullScanSettingAfterScan() {
+        return getBoolean(KEY_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN, DEFAULT_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN);
+    }
+
+    public void setClearFullScanSettingAfterScan(Boolean clear) {
+        setBoolean(KEY_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN, clear);
     }
 
     /**
