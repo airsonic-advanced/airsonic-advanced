@@ -45,6 +45,8 @@ public class MusicFolderSettingsCommand {
     private MusicFolderInfo newMusicFolder;
     private String excludePatternString;
     private boolean ignoreSymLinks;
+    private Boolean fullScan;
+    private Boolean clearFullScanSettingAfterScan;
 
     public String getInterval() {
         return interval;
@@ -116,6 +118,22 @@ public class MusicFolderSettingsCommand {
 
     public void setIgnoreSymLinks(boolean ignoreSymLinks) {
         this.ignoreSymLinks = ignoreSymLinks;
+    }
+
+    public Boolean getFullScan() {
+        return fullScan;
+    }
+
+    public void setFullScan(Boolean fullScan) {
+        this.fullScan = fullScan;
+    }
+
+    public Boolean getClearFullScanSettingAfterScan() {
+        return clearFullScanSettingAfterScan;
+    }
+
+    public void setClearFullScanSettingAfterScan(Boolean clearFullScanSettingAfterScan) {
+        this.clearFullScanSettingAfterScan = clearFullScanSettingAfterScan;
     }
 
     public static class MusicFolderInfo {
