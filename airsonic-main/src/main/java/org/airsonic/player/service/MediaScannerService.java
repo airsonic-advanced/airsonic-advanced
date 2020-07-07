@@ -274,6 +274,12 @@ public class MediaScannerService {
 
             CompletableFuture.allOf(albumPersistence, artistPersistence, mediaFilePersistence, genrePersistence).join();
 
+            if (settingsService.getClearFullScanSettingAfterScan()) {
+                settingsService.setClearFullScanSettingAfterScan(null);
+                settingsService.setFullScan(null);
+                settingsService.save();
+            }
+
             LOG.info("Completed media library scan.");
 
         } catch (Throwable x) {

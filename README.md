@@ -133,6 +133,7 @@ Compatibility Notes:
 ------
 The following properties are new in Airsonic-Advanced:
   - `MediaScannerParallelism`: (default: number of available processors + 1) The parallelism to use when scanning media
+  - `ClearFullScanSettingAfterScan`: (default: false) Whether to clear FullScan setting after the next SUCCESSFUL scan (useful for doing full scan once and then reverting to default scan)
 
 The following property names are different between Airsonic and Airsonic-Advanced:
   - `UPNP_PORT` -> `UPnpPort`
