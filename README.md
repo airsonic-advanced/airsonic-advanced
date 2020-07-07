@@ -137,6 +137,7 @@ The following properties are new in Airsonic-Advanced:
 The following property names are different between Airsonic and Airsonic-Advanced:
   - `UPNP_PORT` -> `UPnpPort`
   - `server.context-path` -> `server.servlet.context-path` (Airsonic will use the latter from 11.0 onwards)
+  - `IgnoreFileTimestamps` -> `FullScan`
 
 Note that Airsonic-Advanced communicates with its Web UI via websockets. If you're behind a proxy, you need to enable websockets and allow UPGRADE http requests through the proxy. A sample configuration is posted here: [nginx sample](https://github.com/airsonic-advanced/airsonic-advanced/issues/145)
 
