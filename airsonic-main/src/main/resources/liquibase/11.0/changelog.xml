@@ -11,4 +11,5 @@
     <include file="user-roles-json.xml" relativeToChangelogFile="true"/>
     <include file="remove-password-column.xml" relativeToChangelogFile="true"/>
     <include file="add-sonos-table-link.xml" relativeToChangelogFile="true"/>
+    <include file="player-id-autoincrement.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
