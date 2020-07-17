@@ -133,10 +133,12 @@ Compatibility Notes:
 ------
 The following properties are new in Airsonic-Advanced:
   - `MediaScannerParallelism`: (default: number of available processors + 1) The parallelism to use when scanning media
+  - `ClearFullScanSettingAfterScan`: (default: false) Whether to clear FullScan setting after the next SUCCESSFUL scan (useful for doing full scan once and then reverting to default scan)
 
 The following property names are different between Airsonic and Airsonic-Advanced:
   - `UPNP_PORT` -> `UPnpPort`
   - `server.context-path` -> `server.servlet.context-path` (Airsonic will use the latter from 11.0 onwards)
+  - `IgnoreFileTimestamps` -> `FullScan`
 
 Note that Airsonic-Advanced communicates with its Web UI via websockets. If you're behind a proxy, you need to enable websockets and allow UPGRADE http requests through the proxy. A sample configuration is posted here: [nginx sample](https://github.com/airsonic-advanced/airsonic-advanced/issues/145)
 

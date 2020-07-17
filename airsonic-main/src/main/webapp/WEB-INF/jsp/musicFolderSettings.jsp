@@ -13,6 +13,19 @@
             <c:if test="${settings_reload}">
             parent.frames.left.location.href="left.view?";
             </c:if>
+
+            updateClearFullScan();
+
+            $("#fullScan").change(function() { updateClearFullScan(); });
+        }
+
+        function updateClearFullScan() {
+            if (!$("#fullScan").prop("checked")) {
+                $("#clearFullScanSettingAfterScan").prop("disabled", true);
+                $("#clearFullScanSettingAfterScan").prop("checked", false);
+            } else {
+                $("#clearFullScanSettingAfterScan").prop("disabled", false);
+            }
         }
     </script>
 </head>
@@ -76,6 +89,17 @@
     <div>
 	<form:checkbox path="ignoreSymLinks" id="ignoreSymLinks"/>
      	<form:label path="ignoreSymLinks"><fmt:message key="musicfoldersettings.ignoresymlinks"/></form:label>
+    </div>
+
+    <div>
+        <form:checkbox path="fullScan" cssClass="checkbox" id="fullScan"/>
+        <form:label path="fullScan"><fmt:message key="musicfoldersettings.fullscan"/></form:label>
+        <c:import url="helpToolTip.jsp"><c:param name="topic" value="fullscan"/></c:import>
+    </div>
+    <div style="margin-left:1em;">
+        <form:checkbox path="clearFullScanSettingAfterScan" cssClass="checkbox" id="clearFullScanSettingAfterScan"/>
+        <form:label path="clearFullScanSettingAfterScan"><fmt:message key="musicfoldersettings.fullscanclear"/></form:label>
+        <c:import url="helpToolTip.jsp"><c:param name="topic" value="clearfullscan"/></c:import>
     </div>
 
     <div style="padding-top: 0.5em;padding-bottom: 0.3em">

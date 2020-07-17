@@ -1,4 +1,5 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" %>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8" %>
+<%@ page import="org.airsonic.player.domain.CoverArtSource" %>
 <%--@elvariable id="command" type="org.airsonic.player.command.GeneralSettingsCommand"--%>
 
 <html><head>
@@ -105,6 +106,18 @@
         </tr>
 
         <tr><td colspan="2">&nbsp;</td></tr>
+        <tr>
+            <td><fmt:message key="generalsettings.coverartsource"/></td>
+            <td>
+                <form:select path="coverArtSource" cssStyle="width:15em">
+                    <form:option value="${CoverArtSource.FILETAG}"><fmt:message key="generalsettings.coverartsource.option.filetag"/></form:option>
+                    <form:option value="${CoverArtSource.TAGFILE}"><fmt:message key="generalsettings.coverartsource.option.tagfile"/></form:option>>
+                    <form:option value="${CoverArtSource.FILE}"><fmt:message key="generalsettings.coverartsource.option.file"/></form:option>
+                    <form:option value="${CoverArtSource.TAG}"><fmt:message key="generalsettings.coverartsource.option.tag"/></form:option>
+                </form:select>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="coverartsource"/></c:import>
+            </td>
+        </tr>
 
         <tr>
             <td><fmt:message key="generalsettings.coverartquality"/></td>

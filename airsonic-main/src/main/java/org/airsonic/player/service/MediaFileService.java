@@ -155,7 +155,7 @@ public class MediaFileService {
 
     private MediaFile checkLastModified(MediaFile mediaFile, boolean useFastCache) {
         if (useFastCache || (mediaFile.getVersion() >= MediaFileDao.VERSION
-                && !settingsService.isIgnoreFileTimestamps()
+                && !settingsService.getFullScan()
                 && mediaFile.getChanged().compareTo(FileUtil.lastModified(mediaFile.getFile())) > -1)) {
             LOG.debug("Detected unmodified file (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
             return mediaFile;
@@ -586,6 +586,32 @@ public class MediaFileService {
      * Finds a cover art image for the given directory, by looking for it on the disk.
      */
     private Path findCoverArt(Collection<Path> candidates) {
+        Path candidate = null;
+        var coverArtSource = settingsService.getCoverArtSource();
+        switch (coverArtSource) {
+            case TAGFILE:
+                candidate = findTagCover(candidates);
+                if (candidate != null) {
+                    return candidate;
+                } else {
+                    return findFileCover(candidates);
+                }
+            case FILE:
+                return findFileCover(candidates);
+            case TAG:
+                return findTagCover(candidates);
+            case FILETAG:
+            default:
+                candidate = findFileCover(candidates);
+                if (candidate != null) {
+                    return candidate;
+                } else {
+                    return findTagCover(candidates);
+                }
+        }
+    }
+
+    private Path findFileCover(Collection<Path> candidates) {
         for (String mask : settingsService.getCoverArtFileTypesSet()) {
             Path cand = candidates.parallelStream().filter(c -> {
                 String candidate = c.getFileName().toString().toLowerCase();
@@ -596,7 +622,10 @@ public class MediaFileService {
                 return cand;
             }
         }
+        return null;
+    }
 
+    private Path findTagCover(Collection<Path> candidates) {
         // Look for embedded images in audiofiles. (Only check first audio file encountered).
         return candidates.parallelStream().filter(parser::isApplicable).findFirst().filter(c -> parser.isImageAvailable(getMediaFile(c))).orElse(null);
     }
