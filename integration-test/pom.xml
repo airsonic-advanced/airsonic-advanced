@@ -137,7 +137,12 @@
                                             <port>4040:4040</port>
                                         </ports>
                                         <wait>
-                                            <time>100000</time>
+                                            <http>
+                                                <url>${docker.testing.host}/rest/ping</url>
+                                                <method>GET</method>
+                                                <status>200..399</status>
+                                            </http>
+                                            <time>300000</time>
                                             <healthy>true</healthy>
                                         </wait>
                                         <env>
