@@ -129,8 +129,6 @@ public class StreamController {
             LOG.info("{}: Incoming Podcast request for playlist {}", swr.getRequest().getRemoteAddr(), playlist);
         }
 
-//        response.setHeader("Access-Control-Allow-Origin", "*");
-
         String targetFormat = hls ? "ts" : format;
         Integer bitRate = maxBitRate.filter(x -> x != 0).orElse(null);
 
