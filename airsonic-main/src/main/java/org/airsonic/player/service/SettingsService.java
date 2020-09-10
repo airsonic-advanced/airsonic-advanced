@@ -433,8 +433,9 @@ public class SettingsService {
     }
 
     private static void logServerInfo() {
-        LOG.info("Java: " + System.getProperty("java.version") +
-                ", OS: " + System.getProperty("os.name"));
+        LOG.info("Java: " + Runtime.version() +
+                ", OS: " + System.getProperty("os.name") +
+                ", Memory (max bytes): " + Runtime.getRuntime().maxMemory());
     }
 
     public void save() {
