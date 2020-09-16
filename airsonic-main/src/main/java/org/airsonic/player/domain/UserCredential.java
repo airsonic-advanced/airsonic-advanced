@@ -1,7 +1,5 @@
 package org.airsonic.player.domain;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.time.Instant;
 
 public class UserCredential {
@@ -21,7 +19,7 @@ public class UserCredential {
         this.username = username;
         this.appUsername = appUsername;
         this.credential = credential;
-        this.encoder = StringUtils.trimToNull(encoder);
+        this.encoder = encoder;
         this.app = app;
         this.comment = comment;
         this.expiration = expiration;
@@ -80,7 +78,7 @@ public class UserCredential {
     }
 
     public void setEncoder(String encoder) {
-        this.encoder = StringUtils.trimToNull(encoder);
+        this.encoder = encoder;
     }
 
     public App getApp() {
