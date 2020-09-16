@@ -47,6 +47,7 @@ public class UserSettings {
     private Visibility playlistVisibility = new Visibility();
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
+    private String listenBrainzUrl;
     private TranscodeScheme transcodeScheme = TranscodeScheme.OFF;
     private int selectedMusicFolderId = -1;
     private boolean partyModeEnabled;
@@ -55,6 +56,9 @@ public class UserSettings {
     private Integer systemAvatarId;
     private Instant changed = Instant.now();
     private int paginationSize;
+
+    public UserSettings() {
+    }
 
     public UserSettings(String username) {
         this.username = username;
@@ -84,7 +88,7 @@ public class UserSettings {
         this.themeId = themeId;
     }
 
-    public boolean isShowNowPlayingEnabled() {
+    public boolean getShowNowPlayingEnabled() {
         return showNowPlayingEnabled;
     }
 
@@ -92,7 +96,7 @@ public class UserSettings {
         this.showNowPlayingEnabled = showNowPlayingEnabled;
     }
 
-    public boolean isShowArtistInfoEnabled() {
+    public boolean getShowArtistInfoEnabled() {
         return showArtistInfoEnabled;
     }
 
@@ -100,7 +104,7 @@ public class UserSettings {
         this.showArtistInfoEnabled = showArtistInfoEnabled;
     }
 
-    public boolean isFinalVersionNotificationEnabled() {
+    public boolean getFinalVersionNotificationEnabled() {
         return finalVersionNotificationEnabled;
     }
 
@@ -108,7 +112,7 @@ public class UserSettings {
         this.finalVersionNotificationEnabled = finalVersionNotificationEnabled;
     }
 
-    public boolean isBetaVersionNotificationEnabled() {
+    public boolean getBetaVersionNotificationEnabled() {
         return betaVersionNotificationEnabled;
     }
 
@@ -116,7 +120,7 @@ public class UserSettings {
         this.betaVersionNotificationEnabled = betaVersionNotificationEnabled;
     }
 
-    public boolean isSongNotificationEnabled() {
+    public boolean getSongNotificationEnabled() {
         return songNotificationEnabled;
     }
 
@@ -140,7 +144,7 @@ public class UserSettings {
         this.playlistVisibility = playlistVisibility;
     }
 
-    public boolean isLastFmEnabled() {
+    public boolean getLastFmEnabled() {
         return lastFmEnabled;
     }
 
@@ -148,12 +152,20 @@ public class UserSettings {
         this.lastFmEnabled = lastFmEnabled;
     }
 
-    public boolean isListenBrainzEnabled() {
+    public boolean getListenBrainzEnabled() {
         return listenBrainzEnabled;
     }
 
     public void setListenBrainzEnabled(boolean listenBrainzEnabled) {
         this.listenBrainzEnabled = listenBrainzEnabled;
+    }
+
+    public String getListenBrainzUrl() {
+        return listenBrainzUrl;
+    }
+
+    public void setListenBrainzUrl(String listenBrainzUrl) {
+        this.listenBrainzUrl = listenBrainzUrl;
     }
 
     public TranscodeScheme getTranscodeScheme() {
@@ -172,7 +184,7 @@ public class UserSettings {
         this.selectedMusicFolderId = selectedMusicFolderId;
     }
 
-    public boolean isPartyModeEnabled() {
+    public boolean getPartyModeEnabled() {
         return partyModeEnabled;
     }
 
@@ -180,7 +192,7 @@ public class UserSettings {
         this.partyModeEnabled = partyModeEnabled;
     }
 
-    public boolean isNowPlayingAllowed() {
+    public boolean getNowPlayingAllowed() {
         return nowPlayingAllowed;
     }
 
@@ -188,7 +200,7 @@ public class UserSettings {
         this.nowPlayingAllowed = nowPlayingAllowed;
     }
 
-    public boolean isAutoHidePlayQueue() {
+    public boolean getAutoHidePlayQueue() {
         return autoHidePlayQueue;
     }
 
@@ -196,7 +208,7 @@ public class UserSettings {
         this.autoHidePlayQueue = autoHidePlayQueue;
     }
 
-    public boolean isKeyboardShortcutsEnabled() {
+    public boolean getKeyboardShortcutsEnabled() {
         return keyboardShortcutsEnabled;
     }
 
@@ -204,7 +216,7 @@ public class UserSettings {
         this.keyboardShortcutsEnabled = keyboardShortcutsEnabled;
     }
 
-    public boolean isShowSideBar() {
+    public boolean getShowSideBar() {
         return showSideBar;
     }
 
@@ -212,7 +224,7 @@ public class UserSettings {
         this.showSideBar = showSideBar;
     }
 
-    public boolean isViewAsList() {
+    public boolean getViewAsList() {
         return viewAsList;
     }
 
@@ -262,7 +274,7 @@ public class UserSettings {
         this.changed = changed;
     }
 
-    public boolean isQueueFollowingSongs() {
+    public boolean getQueueFollowingSongs() {
         return queueFollowingSongs;
     }
 
@@ -282,102 +294,102 @@ public class UserSettings {
      * Configuration of what information to display about a song.
      */
     public static class Visibility {
-        private boolean isTrackNumberVisible;
-        private boolean isArtistVisible;
-        private boolean isAlbumVisible;
-        private boolean isGenreVisible;
-        private boolean isYearVisible;
-        private boolean isBitRateVisible;
-        private boolean isDurationVisible;
-        private boolean isFormatVisible;
-        private boolean isFileSizeVisible;
+        private boolean trackNumberVisible;
+        private boolean artistVisible;
+        private boolean albumVisible;
+        private boolean genreVisible;
+        private boolean yearVisible;
+        private boolean bitRateVisible;
+        private boolean durationVisible;
+        private boolean formatVisible;
+        private boolean fileSizeVisible;
 
         public Visibility() {}
 
         public Visibility(boolean trackNumberVisible, boolean artistVisible, boolean albumVisible,
                           boolean genreVisible, boolean yearVisible, boolean bitRateVisible,
                           boolean durationVisible, boolean formatVisible, boolean fileSizeVisible) {
-            isTrackNumberVisible = trackNumberVisible;
-            isArtistVisible = artistVisible;
-            isAlbumVisible = albumVisible;
-            isGenreVisible = genreVisible;
-            isYearVisible = yearVisible;
-            isBitRateVisible = bitRateVisible;
-            isDurationVisible = durationVisible;
-            isFormatVisible = formatVisible;
-            isFileSizeVisible = fileSizeVisible;
+            this.trackNumberVisible = trackNumberVisible;
+            this.artistVisible = artistVisible;
+            this.albumVisible = albumVisible;
+            this.genreVisible = genreVisible;
+            this.yearVisible = yearVisible;
+            this.bitRateVisible = bitRateVisible;
+            this.durationVisible = durationVisible;
+            this.formatVisible = formatVisible;
+            this.fileSizeVisible = fileSizeVisible;
         }
 
-        public boolean isTrackNumberVisible() {
-            return isTrackNumberVisible;
+        public boolean getTrackNumberVisible() {
+            return trackNumberVisible;
         }
 
         public void setTrackNumberVisible(boolean trackNumberVisible) {
-            isTrackNumberVisible = trackNumberVisible;
+            this.trackNumberVisible = trackNumberVisible;
         }
 
-        public boolean isArtistVisible() {
-            return isArtistVisible;
+        public boolean getArtistVisible() {
+            return artistVisible;
         }
 
         public void setArtistVisible(boolean artistVisible) {
-            isArtistVisible = artistVisible;
+            this.artistVisible = artistVisible;
         }
 
-        public boolean isAlbumVisible() {
-            return isAlbumVisible;
+        public boolean getAlbumVisible() {
+            return albumVisible;
         }
 
         public void setAlbumVisible(boolean albumVisible) {
-            isAlbumVisible = albumVisible;
+            this.albumVisible = albumVisible;
         }
 
-        public boolean isGenreVisible() {
-            return isGenreVisible;
+        public boolean getGenreVisible() {
+            return genreVisible;
         }
 
         public void setGenreVisible(boolean genreVisible) {
-            isGenreVisible = genreVisible;
+            this.genreVisible = genreVisible;
         }
 
-        public boolean isYearVisible() {
-            return isYearVisible;
+        public boolean getYearVisible() {
+            return yearVisible;
         }
 
         public void setYearVisible(boolean yearVisible) {
-            isYearVisible = yearVisible;
+            this.yearVisible = yearVisible;
         }
 
-        public boolean isBitRateVisible() {
-            return isBitRateVisible;
+        public boolean getBitRateVisible() {
+            return bitRateVisible;
         }
 
         public void setBitRateVisible(boolean bitRateVisible) {
-            isBitRateVisible = bitRateVisible;
+            this.bitRateVisible = bitRateVisible;
         }
 
-        public boolean isDurationVisible() {
-            return isDurationVisible;
+        public boolean getDurationVisible() {
+            return durationVisible;
         }
 
         public void setDurationVisible(boolean durationVisible) {
-            isDurationVisible = durationVisible;
+            this.durationVisible = durationVisible;
         }
 
-        public boolean isFormatVisible() {
-            return isFormatVisible;
+        public boolean getFormatVisible() {
+            return formatVisible;
         }
 
         public void setFormatVisible(boolean formatVisible) {
-            isFormatVisible = formatVisible;
+            this.formatVisible = formatVisible;
         }
 
-        public boolean isFileSizeVisible() {
-            return isFileSizeVisible;
+        public boolean getFileSizeVisible() {
+            return fileSizeVisible;
         }
 
         public void setFileSizeVisible(boolean fileSizeVisible) {
-            isFileSizeVisible = fileSizeVisible;
+            this.fileSizeVisible = fileSizeVisible;
         }
     }
 }

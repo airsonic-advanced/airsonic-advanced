@@ -8,7 +8,7 @@
     <script type="text/javascript">
         var previousQuery = "";
         var instantSearchTimeout;
-        var showSideBar = ${model.showSideBar ? 'true' : 'false'};
+        var showSideBar = ${model.showSideBar};
 
         function init() {
             top.StompClient.subscribe("top.jsp", {
@@ -18,19 +18,36 @@
             });
 
             top.StompClient.onConnect.push(function() {
-                $("#connectionStatus img").attr("src", "<spring:theme code='connectedImage'/>");
-                $("#connectionStatus div").text("<fmt:message key='top.connected' />");
+                setConnectedImage();
             });
 
             top.StompClient.onDisconnect.push(function() {
-                $("#connectionStatus img").attr("src", "<spring:theme code='disconnectedImage'/>");
-                $("#connectionStatus div").text("<fmt:message key='top.disconnected' />");
+                setDisconnectedImage();
             });
 
             top.StompClient.onConnecting.push(function() {
-                $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
-                $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
+                setConnectingImage();
             });
+
+            // in case this frame instantiates too late
+            if (top.StompClient.state == 'connected') {
+                setConnectedImage();
+            }
+        }
+
+        function setConnectedImage() {
+            $("#connectionStatus img").attr("src", "<spring:theme code='connectedImage'/>");
+            $("#connectionStatus div").text("<fmt:message key='top.connected' />");
+        }
+
+        function setDisconnectedImage() {
+            $("#connectionStatus img").attr("src", "<spring:theme code='disconnectedImage'/>");
+            $("#connectionStatus div").text("<fmt:message key='top.disconnected' />");
+        }
+
+        function setConnectingImage() {
+            $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
+            $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
         }
 
         function toggleLeftFrameCallback(show) {
@@ -64,10 +81,11 @@
         }
 
         function doShowLeftFrame() {
-            $("#show-left-frame").hide();
-            $("#hide-left-frame").show();
-            toggleLeftFrame(230);
-            showSideBar = true;
+            $("div.left-nav-container", window.parent.document).show('slide', {direction:"left"}, 100, function() {
+                $("#show-left-frame").hide();
+                $("#hide-left-frame").show();
+                showSideBar = true;
+            });
         }
 
         function hideLeftFrame() {
@@ -76,33 +94,15 @@
         }
 
         function doHideLeftFrame() {
-            $("#hide-left-frame").hide();
-            $("#show-left-frame").show();
-            toggleLeftFrame(0);
-            showSideBar = false;
-        }
-
-        function toggleLeftFrameVisible() {
-            if (showSideBar) hideLeftFrame();
-            else showLeftFrame();
-        }
-
-        function toggleLeftFrame(width) {
-            <%-- Disable animation in Chrome. It stopped working in Chrome 44. --%>
-            var duration = navigator.userAgent.indexOf("Chrome") != -1 ? 0 : 400;
-
-            $("#dummy-animation-target").stop();
-            $("#dummy-animation-target").animate({"max-width": width}, {
-                step: function (now, fx) {
-                    top.document.getElementById("mainFrameset").cols = now + ",*";
-                },
-                duration: duration
+            $("div.left-nav-container", window.parent.document).hide('slide', {direction:"left"}, 100, function() {
+                $("#hide-left-frame").hide();
+                $("#show-left-frame").show();
+                showSideBar = false;
             });
         }
         
         function toggleConnectionStatus() {
-            $("#connectionStatus img").attr("src", "<spring:theme code='connectingImage'/>");
-            $("#connectionStatus div").text("<fmt:message key='top.connecting' />");
+            setConnectingImage();
             if (top.StompClient.state == 'connected') {
                 top.StompClient.disconnect();
             } else if (top.StompClient.state == 'dc') {
@@ -181,25 +181,34 @@
         </td>
 
         <td style="padding-left:15pt;padding-right:5pt;vertical-align: middle;width: 100%;text-align: center">
-            <c:if test="${model.user.settingsRole}"><a href="personalSettings.view" target="main"></c:if>
+            <div>
+            <c:if test="${model.user.settingsRole}">
+              <a href="personalSettings.view" target="main">
+            </c:if>
             <c:choose>
-                <c:when test="${model.showAvatar}">
-                    <sub:url value="avatar.view" var="avatarUrl">
-                        <sub:param name="username" value="${model.user.username}"/>
-                    </sub:url>
-                    <div style="padding-bottom: 4px">
-                        <img src="${avatarUrl}" alt="User" width="30" height="30">
-                    </div>
-                </c:when>
-                <c:otherwise>
-                    <img src="<spring:theme code='userImage'/>" alt="User" height="24">
-                </c:otherwise>
+              <c:when test="${model.showAvatar}">
+                <sub:url value="avatar.view" var="avatarUrl">
+                  <sub:param name="username" value="${model.user.username}"/>
+                </sub:url>
+                <img src="${avatarUrl}" alt="User" width="30" height="30">
+              </c:when>
+              <c:otherwise>
+                <img src="<spring:theme code='userImage'/>" alt="User" height="24">
+              </c:otherwise>
             </c:choose>
-
-            <div class="detail">
-                <c:out value="${model.user.username}" escapeXml="true"/>
+            <c:if test="${model.user.settingsRole}">
+              </a>
+            </c:if>
+              <div class="topHeader">
+                <c:if test="${model.user.settingsRole}">
+                  <a href="personalSettings.view" target="main">
+                </c:if>
+                  <c:out value="${model.user.username}" escapeXml="true"/>
+                <c:if test="${model.user.settingsRole}">
+                  </a>
+                </c:if>
+              </div>
             </div>
-            <c:if test="${model.user.settingsRole}"></a></c:if>
         </td>
 
         <td style="padding-left:15pt;padding-right:5pt;vertical-align: right;width: 100%;text-align: center">

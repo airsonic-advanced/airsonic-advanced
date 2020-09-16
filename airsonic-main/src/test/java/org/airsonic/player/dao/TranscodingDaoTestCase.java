@@ -25,7 +25,7 @@ public class TranscodingDaoTestCase extends DaoTestCaseBean2 {
 
     @Before
     public void setUp() {
-        getJdbcTemplate().execute("delete from transcoding2");
+        getJdbcTemplate().execute("delete from transcoding");
     }
 
     @Test

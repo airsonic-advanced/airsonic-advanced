@@ -20,10 +20,11 @@
 package org.airsonic.player.service;
 
 import com.google.common.io.MoreFiles;
-
+import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.metadata.JaudiotaggerParser;
 import org.airsonic.player.service.metadata.MetaData;
 import org.airsonic.player.service.metadata.MetaDataParser;
@@ -45,6 +46,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,6 +73,8 @@ public class MediaFileService {
     private JaudiotaggerParser parser;
     @Autowired
     private MetaDataParserFactory metaDataParserFactory;
+    @Autowired
+    private LocaleResolver localeResolver;
     private boolean memoryCacheEnabled = true;
 
     /**
@@ -109,10 +113,10 @@ public class MediaFileService {
         }
 
         // Not found in database, must read from disk.
-        result = createMediaFile(file);
+        result = createMediaFile(file, null);
 
         // Put in database.
-        mediaFileDao.createOrUpdateMediaFile(result);
+        updateMediaFile(result);
 
         return result;
     }
@@ -151,14 +155,14 @@ public class MediaFileService {
 
     private MediaFile checkLastModified(MediaFile mediaFile, boolean useFastCache) {
         if (useFastCache || (mediaFile.getVersion() >= MediaFileDao.VERSION
-                && !settingsService.isIgnoreFileTimestamps()
+                && !settingsService.getFullScan()
                 && mediaFile.getChanged().compareTo(FileUtil.lastModified(mediaFile.getFile())) > -1)) {
             LOG.debug("Detected unmodified file (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
             return mediaFile;
         }
         LOG.debug("Updating database file from disk (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
-        mediaFile = createMediaFile(mediaFile.getFile());
-        mediaFileDao.createOrUpdateMediaFile(mediaFile);
+        mediaFile = createMediaFile(mediaFile.getFile(), mediaFile);
+        updateMediaFile(mediaFile);
         return mediaFile;
     }
 
@@ -378,9 +382,9 @@ public class MediaFileService {
                     .map(x -> {
                         MediaFile media = storedChildrenMap.remove(x.toString());
                         if (media == null) {
-                            media = createMediaFile(x);
+                            media = createMediaFile(x, null);
                             // Add children that are not already stored.
-                            mediaFileDao.createOrUpdateMediaFile(media);
+                            updateMediaFile(media);
                         } else {
                             media = checkLastModified(media, false); //has to be false, only time it's called
                         }
@@ -395,7 +399,7 @@ public class MediaFileService {
             // Update timestamp in parent.
             parent.setChildrenLastUpdated(parent.getChanged());
             parent.setPresent(true);
-            mediaFileDao.createOrUpdateMediaFile(parent);
+            updateMediaFile(parent);
 
             return result;
         } catch (IOException e) {
@@ -443,8 +447,14 @@ public class MediaFileService {
         return (name.startsWith(".") && !name.startsWith("..")) || name.startsWith("@eaDir") || "Thumbs.db".equals(name);
     }
 
-    private MediaFile createMediaFile(Path file) {
-        MediaFile existingFile = mediaFileDao.getMediaFile(file.toString());
+    private MediaFile createMediaFile(Path file, MediaFile existingFile) {
+        if (!Files.exists(file)) {
+            if (existingFile != null) {
+                existingFile.setPresent(false);
+                existingFile.setChildrenLastUpdated(Instant.ofEpochMilli(1));
+            }
+            return existingFile;
+        }
 
         MediaFile mediaFile = new MediaFile();
         Instant lastModified = FileUtil.lastModified(file);
@@ -547,10 +557,9 @@ public class MediaFileService {
         return MediaFile.MediaType.MUSIC;
     }
 
-    @CacheEvict(key = "#mediaFile.file")
     public void refreshMediaFile(MediaFile mediaFile) {
-        mediaFile = createMediaFile(mediaFile.getFile());
-        mediaFileDao.createOrUpdateMediaFile(mediaFile);
+        mediaFile = createMediaFile(mediaFile.getFile(), mediaFile);
+        updateMediaFile(mediaFile);
     }
 
     @CacheEvict(allEntries = true)
@@ -577,6 +586,32 @@ public class MediaFileService {
      * Finds a cover art image for the given directory, by looking for it on the disk.
      */
     private Path findCoverArt(Collection<Path> candidates) {
+        Path candidate = null;
+        var coverArtSource = settingsService.getCoverArtSource();
+        switch (coverArtSource) {
+            case TAGFILE:
+                candidate = findTagCover(candidates);
+                if (candidate != null) {
+                    return candidate;
+                } else {
+                    return findFileCover(candidates);
+                }
+            case FILE:
+                return findFileCover(candidates);
+            case TAG:
+                return findTagCover(candidates);
+            case FILETAG:
+            default:
+                candidate = findFileCover(candidates);
+                if (candidate != null) {
+                    return candidate;
+                } else {
+                    return findTagCover(candidates);
+                }
+        }
+    }
+
+    private Path findFileCover(Collection<Path> candidates) {
         for (String mask : settingsService.getCoverArtFileTypesSet()) {
             Path cand = candidates.parallelStream().filter(c -> {
                 String candidate = c.getFileName().toString().toLowerCase();
@@ -587,7 +622,10 @@ public class MediaFileService {
                 return cand;
             }
         }
+        return null;
+    }
 
+    private Path findTagCover(Collection<Path> candidates) {
         // Look for embedded images in audiofiles. (Only check first audio file encountered).
         return candidates.parallelStream().filter(parser::isApplicable).findFirst().filter(c -> parser.isImageAvailable(getMediaFile(c))).orElse(null);
     }
@@ -633,6 +671,7 @@ public class MediaFileService {
         this.metaDataParserFactory = metaDataParserFactory;
     }
 
+    @CacheEvict(key = "#mediaFile.file")
     public void updateMediaFile(MediaFile mediaFile) {
         mediaFileDao.createOrUpdateMediaFile(mediaFile);
     }
@@ -660,6 +699,24 @@ public class MediaFileService {
             album.incrementPlayCount();
             albumDao.createOrUpdateAlbum(album);
         }
+    }
+
+    public List<MediaFileEntry> toMediaFileEntryList(List<MediaFile> files, String username, boolean calculateStarred, boolean calculateFolderAccess,
+            Function<MediaFile, String> streamUrlGenerator, Function<MediaFile, String> remoteStreamUrlGenerator,
+            Function<MediaFile, String> remoteCoverArtUrlGenerator) {
+        Locale locale = Optional.ofNullable(username).map(localeResolver::resolveLocale).orElse(null);
+        List<MediaFileEntry> entries = new ArrayList<>(files.size());
+        for (MediaFile file : files) {
+            String streamUrl = Optional.ofNullable(streamUrlGenerator).map(g -> g.apply(file)).orElse(null);
+            String remoteStreamUrl = Optional.ofNullable(remoteStreamUrlGenerator).map(g -> g.apply(file)).orElse(null);
+            String remoteCoverArtUrl = Optional.ofNullable(remoteCoverArtUrlGenerator).map(g -> g.apply(file)).orElse(null);
+
+            boolean starred = calculateStarred && username != null && getMediaFileStarredDate(file.getId(), username) != null;
+            boolean folderAccess = !calculateFolderAccess || username == null || securityService.isFolderAccessAllowed(file, username);
+            entries.add(MediaFileEntry.fromMediaFile(file, locale, starred, folderAccess, streamUrl, remoteStreamUrl, remoteCoverArtUrl));
+        }
+
+        return entries;
     }
 
     public int getAlbumCount(List<MusicFolder> musicFolders) {

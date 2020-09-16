@@ -22,6 +22,7 @@ package org.airsonic.player.controller;
 import com.github.biconou.AudioPlayer.AudioSystemUtils;
 import org.airsonic.player.command.PlayerSettingsCommand;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.service.PlayQueueService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.TranscodingService;
@@ -57,6 +58,8 @@ public class PlayerSettingsController {
     private SecurityService securityService;
     @Autowired
     private TranscodingService transcodingService;
+    @Autowired
+    private PlayQueueService playQueueService;
 
     @GetMapping
     protected String displayForm() {
@@ -85,9 +88,9 @@ public class PlayerSettingsController {
             command.setDescription(player.toString());
             command.setType(player.getType());
             command.setLastSeen(player.getLastSeen());
-            command.setDynamicIp(player.isDynamicIp());
-            command.setAutoControlEnabled(player.isAutoControlEnabled());
-            command.setM3uBomEnabled(player.isM3uBomEnabled());
+            command.setDynamicIp(player.getDynamicIp());
+            command.setAutoControlEnabled(player.getAutoControlEnabled());
+            command.setM3uBomEnabled(player.getM3uBomEnabled());
             command.setTranscodeSchemeName(player.getTranscodeScheme().name());
             command.setTechnologyName(player.getTechnology().name());
             command.setAllTranscodings(transcodingService.getAllTranscodings());
@@ -117,20 +120,57 @@ public class PlayerSettingsController {
     protected String doSubmitAction(@ModelAttribute("command") PlayerSettingsCommand command, RedirectAttributes redirectAttributes) {
         Player player = playerService.getPlayerById(command.getPlayerId());
         if (player != null) {
-            player.setAutoControlEnabled(command.isAutoControlEnabled());
-            player.setM3uBomEnabled(command.isM3uBomEnabled());
-            player.setDynamicIp(command.isDynamicIp());
-            player.setName(StringUtils.trimToNull(command.getName()));
-            player.setTranscodeScheme(TranscodeScheme.valueOf(command.getTranscodeSchemeName()));
-            player.setTechnology(PlayerTechnology.valueOf(command.getTechnologyName()));
-            player.setJavaJukeboxMixer(command.getJavaJukeboxMixer());
+            boolean update = false;
+            boolean stopped = false;
+            if (player.getAutoControlEnabled() != command.getAutoControlEnabled()) {
+                player.setAutoControlEnabled(command.getAutoControlEnabled());
+                update = true;
+            }
+            if (player.getM3uBomEnabled() != command.getM3uBomEnabled()) {
+                player.setM3uBomEnabled(command.getM3uBomEnabled());
+                update = true;
+            }
+            if (player.getDynamicIp() != command.getDynamicIp()) {
+                player.setDynamicIp(command.getDynamicIp());
+                update = true;
+            }
+            if (!StringUtils.equals(player.getName(), StringUtils.trimToNull(command.getName()))) {
+                player.setName(StringUtils.trimToNull(command.getName()));
+                update = true;
+            }
+            if (player.getTranscodeScheme() != TranscodeScheme.valueOf(command.getTranscodeSchemeName())) {
+                if (!stopped) {
+                    playQueueService.stop(player);
+                    stopped = true;
+                }
+                player.setTranscodeScheme(TranscodeScheme.valueOf(command.getTranscodeSchemeName()));
+                update = true;
+            }
+            if (player.getTechnology() != PlayerTechnology.valueOf(command.getTechnologyName())) {
+                if (!stopped) {
+                    playQueueService.stop(player);
+                    stopped = true;
+                }
+                player.setTechnology(PlayerTechnology.valueOf(command.getTechnologyName()));
+                update = true;
+            }
+            if (!StringUtils.equals(player.getJavaJukeboxMixer(), command.getJavaJukeboxMixer())) {
+                if (!stopped) {
+                    playQueueService.stop(player);
+                    stopped = true;
+                }
+                player.setJavaJukeboxMixer(command.getJavaJukeboxMixer());
+                update = true;
+            }
 
-            playerService.updatePlayer(player);
+            if (update) {
+                playerService.updatePlayer(player);
+            }
+
             transcodingService.setTranscodingsForPlayer(player, command.getActiveTranscodingIds());
 
-            redirectAttributes.addFlashAttribute("settings_reload", true);
             redirectAttributes.addFlashAttribute("settings_toast", true);
-            return "redirect:playerSettings.view";
+            return "redirect:playerSettings.view?id=" + command.getPlayerId();
         } else {
             return "redirect:notFound";
         }

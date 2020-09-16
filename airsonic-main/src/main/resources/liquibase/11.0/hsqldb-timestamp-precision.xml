@@ -1,0 +1,284 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet dbms="hsqldb" id="user-credentials-timestamps-1" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_credentials" columnName="created" />
+        </preConditions>
+        <modifyDataType tableName="user_credentials" columnName="created" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="user_credentials" columnName="created" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="user-credentials-timestamps-2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_credentials" columnName="updated" />
+        </preConditions>
+        <modifyDataType tableName="user_credentials" columnName="updated" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="user_credentials" columnName="updated" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="user-credentials-timestamps-3" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_credentials" columnName="expiration" />
+        </preConditions>
+        <modifyDataType tableName="user_credentials" columnName="expiration" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="user_credentials" columnName="expiration" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema26-timestamps-1" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_file_info" columnName="last_played" />
+        </preConditions>
+        <modifyDataType tableName="music_file_info" columnName="last_played" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="music_file_info" columnName="last_played" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema26-timestamps-2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="player" columnName="last_seen" />
+        </preConditions>
+        <modifyDataType tableName="player" columnName="last_seen" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="player" columnName="last_seen" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema32-timestamps-1" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="podcast_episode" columnName="publish_date" />
+        </preConditions>
+        <modifyDataType tableName="podcast_episode" columnName="publish_date" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="podcast_episode" columnName="publish_date" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema35-timestamps-1" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="system_avatar" columnName="created_date" />
+        </preConditions>
+        <modifyDataType tableName="system_avatar" columnName="created_date" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="system_avatar" columnName="created_date" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema35-timestamps-2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="custom_avatar" columnName="created_date" />
+        </preConditions>
+        <modifyDataType tableName="custom_avatar" columnName="created_date" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="custom_avatar" columnName="created_date" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema37-timestamps-1" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="changed" />
+        </preConditions>
+        <modifyDataType tableName="music_folder" columnName="changed" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="music_folder" columnName="changed" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema37-timestamps-2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="internet_radio" columnName="changed" />
+        </preConditions>
+        <modifyDataType tableName="internet_radio" columnName="changed" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="internet_radio" columnName="changed" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema37-timestamps-3" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_settings" columnName="changed" />
+        </preConditions>
+        <modifyDataType tableName="user_settings" columnName="changed" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="user_settings" columnName="changed" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema45-timestamps-1" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="share" columnName="created" />
+        </preConditions>
+        <modifyDataType tableName="share" columnName="created" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="share" columnName="created" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema45-timestamps-2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="share" columnName="expires" />
+        </preConditions>
+        <modifyDataType tableName="share" columnName="expires" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="share" columnName="expires" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema45-timestamps-3" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="share" columnName="last_visited" />
+        </preConditions>
+        <modifyDataType tableName="share" columnName="last_visited" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="share" columnName="last_visited" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-1" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="last_played" />
+        </preConditions>
+        <modifyDataType tableName="media_file" columnName="last_played" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="media_file" columnName="last_played" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="created" />
+        </preConditions>
+        <modifyDataType tableName="media_file" columnName="created" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="share" columnName="created" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-3" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="changed" />
+        </preConditions>
+        <modifyDataType tableName="media_file" columnName="changed" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="media_file" columnName="changed" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-4" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="last_scanned" />
+        </preConditions>
+        <modifyDataType tableName="media_file" columnName="last_scanned" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="media_file" columnName="last_scanned" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-5" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="children_last_updated" />
+        </preConditions>
+        <modifyDataType tableName="media_file" columnName="children_last_updated" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="media_file" columnName="children_last_updated" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-6" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="artist" columnName="last_scanned" />
+        </preConditions>
+        <modifyDataType tableName="artist" columnName="last_scanned" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="artist" columnName="last_scanned" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-7" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="last_played" />
+        </preConditions>
+        <modifyDataType tableName="album" columnName="last_played" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="album" columnName="last_played" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-8" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="created" />
+        </preConditions>
+        <modifyDataType tableName="album" columnName="created" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="album" columnName="created" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-9" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="last_scanned" />
+        </preConditions>
+        <modifyDataType tableName="album" columnName="last_scanned" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="album" columnName="last_scanned" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-10" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="starred_media_file" columnName="created" />
+        </preConditions>
+        <modifyDataType tableName="starred_media_file" columnName="created" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="starred_media_file" columnName="created" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-11" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="starred_album" columnName="created" />
+        </preConditions>
+        <modifyDataType tableName="starred_album" columnName="created" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="starred_album" columnName="created" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-12" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="starred_artist" columnName="created" />
+        </preConditions>
+        <modifyDataType tableName="starred_artist" columnName="created" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="starred_artist" columnName="created" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-13" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="playlist" columnName="created" />
+        </preConditions>
+        <modifyDataType tableName="playlist" columnName="created" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="playlist" columnName="created" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-14" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="playlist" columnName="changed" />
+        </preConditions>
+        <modifyDataType tableName="playlist" columnName="changed" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="playlist" columnName="changed" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-15" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="bookmark" columnName="created" />
+        </preConditions>
+        <modifyDataType tableName="bookmark" columnName="created" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="bookmark" columnName="created" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema47-timestamps-16" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="bookmark" columnName="changed" />
+        </preConditions>
+        <modifyDataType tableName="bookmark" columnName="changed" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="bookmark" columnName="changed" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+    <changeSet dbms="hsqldb" id="legacy-schema52-timestamps-1" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="play_queue" columnName="changed" />
+        </preConditions>
+        <modifyDataType tableName="play_queue" columnName="changed" newDataType="java.sql.Types.TIMESTAMP(9)"/>
+        <rollback>
+                <modifyDataType tableName="play_queue" columnName="changed" newDataType="datetime"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

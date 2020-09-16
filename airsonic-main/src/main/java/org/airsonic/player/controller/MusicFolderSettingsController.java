@@ -96,13 +96,14 @@ public class MusicFolderSettingsController {
         command.setNewMusicFolder(new MusicFolderSettingsCommand.MusicFolderInfo());
         command.setExcludePatternString(settingsService.getExcludePatternString());
         command.setIgnoreSymLinks(settingsService.getIgnoreSymLinks());
+        command.setFullScan(settingsService.getFullScan());
+        command.setClearFullScanSettingAfterScan(!settingsService.getFullScan() ? settingsService.getFullScan() : settingsService.getClearFullScanSettingAfterScan());
 
-        model.addAttribute("command",command);
+        model.addAttribute("command", command);
     }
 
 
     private void expunge() {
-
         // to be before dao#expunge
         MediaLibraryStatistics statistics = indexManager.getStatistics();
         if (statistics != null) {
@@ -123,7 +124,6 @@ public class MusicFolderSettingsController {
         LOG.debug("Deleting non-present media files...");
         mediaFileDao.expunge();
         LOG.debug("Database cleanup complete.");
-        mediaFileDao.checkpoint();
     }
 
     private List<MusicFolderSettingsCommand.MusicFolderInfo> wrap(List<MusicFolder> musicFolders) {
@@ -155,6 +155,8 @@ public class MusicFolderSettingsController {
         settingsService.setOrganizeByFolderStructure(command.isOrganizeByFolderStructure());
         settingsService.setExcludePatternString(command.getExcludePatternString());
         settingsService.setIgnoreSymLinks(command.getIgnoreSymLinks());
+        settingsService.setFullScan(command.getFullScan());
+        settingsService.setClearFullScanSettingAfterScan(!command.getFullScan() ? command.getFullScan() : command.getClearFullScanSettingAfterScan());
         settingsService.save();
 
 

@@ -20,10 +20,24 @@ public class UserSettingsWSController {
     @SendToUser
     public boolean setShowSideBar(Principal p, boolean show) {
         UserSettings userSettings = settingsService.getUserSettings(p.getName());
-        userSettings.setShowSideBar(show);
-        userSettings.setChanged(Instant.now());
-        settingsService.updateUserSettings(userSettings);
+        if (show != userSettings.getShowSideBar()) {
+            userSettings.setShowSideBar(show);
+            userSettings.setChanged(Instant.now());
+            settingsService.updateUserSettings(userSettings);
+        }
         return show;
+    }
+
+    @MessageMapping("/viewAsList")
+    @SendToUser
+    public boolean setViewAsList(Principal p, boolean viewAsList) {
+        UserSettings userSettings = settingsService.getUserSettings(p.getName());
+        if (viewAsList != userSettings.getViewAsList()) {
+            userSettings.setViewAsList(viewAsList);
+            userSettings.setChanged(Instant.now());
+            settingsService.updateUserSettings(userSettings);
+        }
+        return viewAsList;
     }
 
     public void setSettingsService(SettingsService settingsService) {

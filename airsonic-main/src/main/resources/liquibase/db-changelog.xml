@@ -6,12 +6,14 @@
     <property name="binary_type" dbms="postgresql" value="bytea" />
     <property name="binary_type" value="blob" />
     <property name="curr_date_expr" value="current_timestamp" />
+    <property name="json_type" dbms="hsqldb" value="clob"/>
+    <property name="json_type" value="json"/>
     <property name="varchar_type" dbms="mariadb,mysql" value="varchar(${mysqlVarcharLimit})" />
     <property name="varchar_type" value="varchar" />
     <include file="legacy/legacy-changelog.xml" relativeToChangelogFile="true"/>
     <include file="6.2/changelog.xml" relativeToChangelogFile="true"/>
     <include file="6.3/changelog.xml" relativeToChangelogFile="true"/>
     <include file="6.4/changelog.xml" relativeToChangelogFile="true"/>
-    <include file="10.2/changelog.xml" relativeToChangelogFile="true"/>
     <include file="10.6/changelog.xml" relativeToChangelogFile="true"/>
+    <include file="11.0/changelog.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

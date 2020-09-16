@@ -4,7 +4,9 @@
  * Author: Jeebs (Fisher Evans)
  */
 
-@import "default.css";
+@import "default-without-mediaelement.css";
+@import "mediaelement-dark.css";
+@import "dark-theme.css";
 
 table {
 	color: #d2f1d5;
@@ -43,15 +45,50 @@ h2, b, tr {
     color: #d2f1d5;
 }
 
+/* regular foreground color */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: #d2f1d5;
+}
+
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button, button.dt-button, div.dt-button, a.dt-button {
+    color: #00d61b !important;
+}
+
+/* a:hover color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover, button.dt-button:hover:not(.disabled), div.dt-button:hover:not(.disabled), a.dt-button:hover:not(.disabled) {
+    border-color: #272727;
+}
+
+/* regular color + .border1 border-color */
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    color: #d2f1d5 !important;
+    border-color: #272727;
+}
+
+table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+    background-color: #242824;
+}
+
+table.dataTable tbody>tr.selected, table.dataTable tbody>tr>.selected {
+    background-color: #555E55;
+}
+
+table.dataTable.hover tbody>tr.selected:hover, table.dataTable.hover tbody>tr>.selected:hover, table.dataTable.display tbody>tr.selected:hover, table.dataTable.display tbody>tr>.selected:hover {
+    background-color: #495049;
+}
+
+table.music.dataTable tbody tr.currently-playing {
+    background-color: #3D433D;
+}
+
+table.music.dataTable tbody tr.currently-playing:hover {
+    background-color: #303630;
+}
+
 /* Link color */
 a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
     color: #00d61b
-}
-
-/* Link hover color */
-a:hover, a:hover * {
-    text-decoration: underline;
-    color: #ffffff;
 }
 
 /* Color for warning messages. */

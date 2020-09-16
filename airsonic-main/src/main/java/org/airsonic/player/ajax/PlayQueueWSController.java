@@ -28,7 +28,7 @@ public class PlayQueueWSController {
     @SubscribeMapping("/get")
     public PlayQueueInfo getPlayQueue(@DestinationVariable int playerId, SimpMessageHeaderAccessor headers) throws Exception {
         Player player = getPlayer(playerId, headers);
-        return playQueueService.getPlayQueueInfo(player, false);
+        return playQueueService.getPlayQueueInfo(player);
     }
 
     @MessageMapping("/start")

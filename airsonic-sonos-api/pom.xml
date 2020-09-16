@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.airsonic.player</groupId>
         <artifactId>airsonic</artifactId>
-        <version>10.6.0-SNAPSHOT</version>
+        <version>11.0.0-SNAPSHOT</version>
     </parent>
 
     <dependencies>
@@ -39,7 +39,7 @@
                             <sourceRoot>${project.build.directory}/generated-sources/cxf</sourceRoot>
                             <wsdlOptions>
                                 <wsdlOption>
-                                    <wsdl>${basedir}/src/main/resources/sonos-1.1.wsdl</wsdl>
+                                    <wsdl>${basedir}/src/main/resources/sonos-8.4_9.2.wsdl</wsdl>
                                 </wsdlOption>
                             </wsdlOptions>
                         </configuration>

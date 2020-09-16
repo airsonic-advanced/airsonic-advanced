@@ -38,16 +38,16 @@ public class JWTSecurityServiceTest {
         this.expectedClaimString = expectedClaimString;
     }
 
-
     @Test
     public void addJWTToken() {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(uriString);
-        String actualUri = service.addJWTToken(builder).build().toUriString();
+        String actualUri = service.addJWTToken("xyz", builder).build().toUriString();
         String jwtToken = UriComponentsBuilder.fromUriString(actualUri).build().getQueryParams().getFirst(
                 JWTSecurityService.JWT_PARAM_NAME);
         DecodedJWT verify = verifier.verify(jwtToken);
         Claim claim = verify.getClaim(JWTSecurityService.CLAIM_PATH);
         assertEquals(expectedClaimString, claim.asString());
+        assertEquals("xyz", verify.getSubject());
     }
 
     private SettingsService settingsWithKey(String jwtKey) {

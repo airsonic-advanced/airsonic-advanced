@@ -90,3 +90,7 @@
 .mejs__captions-layer a {
     color: #000;
 }
+
+.mejs-speed-button>button, .mejs__speed-button>button {
+    color: #000 !important;
+}

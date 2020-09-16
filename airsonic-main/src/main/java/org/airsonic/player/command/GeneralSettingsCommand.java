@@ -20,6 +20,7 @@
 package org.airsonic.player.command;
 
 import org.airsonic.player.controller.GeneralSettingsController;
+import org.airsonic.player.domain.CoverArtSource;
 import org.airsonic.player.domain.Theme;
 
 /**
@@ -33,6 +34,9 @@ public class GeneralSettingsCommand {
     private String musicFileTypes;
     private String videoFileTypes;
     private String coverArtFileTypes;
+    private CoverArtSource coverArtSource;
+    private Integer coverArtQuality;
+    private Integer coverArtConcurrency;
     private String index;
     private String ignoredArticles;
     private String shortcuts;
@@ -77,6 +81,30 @@ public class GeneralSettingsCommand {
 
     public void setCoverArtFileTypes(String coverArtFileTypes) {
         this.coverArtFileTypes = coverArtFileTypes;
+    }
+
+    public CoverArtSource getCoverArtSource() {
+        return coverArtSource;
+    }
+
+    public void setCoverArtSource(CoverArtSource coverArtSource) {
+        this.coverArtSource = coverArtSource;
+    }
+
+    public Integer getCoverArtQuality() {
+        return coverArtQuality;
+    }
+
+    public void setCoverArtQuality(Integer coverArtQuality) {
+        this.coverArtQuality = coverArtQuality;
+    }
+
+    public Integer getCoverArtConcurrency() {
+        return coverArtConcurrency;
+    }
+
+    public void setCoverArtConcurrency(Integer coverArtConcurrency) {
+        this.coverArtConcurrency = coverArtConcurrency;
     }
 
     public String getIndex() {

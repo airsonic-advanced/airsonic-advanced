@@ -1,7 +1,6 @@
 package org.airsonic.player.io;
 
 import com.google.common.util.concurrent.RateLimiter;
-
 import org.airsonic.player.domain.TransferStatus;
 import org.springframework.core.io.Resource;
 
@@ -128,16 +127,6 @@ public class PipeStreams {
 
             this.source = source;
             source.sink = this;
-        }
-
-        @Override
-        public void mark(int readLimit) {
-            return;
-        }
-
-        @Override
-        public boolean markSupported() {
-            return false;
         }
 
         @Override

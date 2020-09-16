@@ -36,11 +36,10 @@ public class LegacyDatabaseStartupTestCase {
         Path dbDirectory = Paths.get(homeParent, "db");
         FileUtils.copyRecursively(LegacyDatabaseStartupTestCase.class.getResource("/db/pre-liquibase/db"), dbDirectory);
         // have to change the url here because old db files are libresonic
-        System.setProperty("DatabaseConfigEmbedUrl",
-                SettingsService.getDefaultJDBCUrl().replaceAll("airsonic$", "libresonic"));
-        System.setProperty("DatabaseConfigEmbedUsername", "sa");
-        System.setProperty("DatabaseConfigEmbedPassword", "");
-        System.setProperty("DatabaseConfigEmbedDriver", "org.hsqldb.jdbcDriver");
+        System.setProperty(SettingsService.KEY_DATABASE_URL,
+                SettingsService.getDefaultJDBCUrl().replaceAll("airsonic;", "libresonic;"));
+        System.setProperty(SettingsService.KEY_DATABASE_USERNAME, "sa");
+        System.setProperty(SettingsService.KEY_DATABASE_PASSWORD, "");
     }
 
     @Autowired

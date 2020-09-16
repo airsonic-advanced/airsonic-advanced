@@ -1,20 +1,11 @@
-function isKeyboardShortcutsEnabled() {
-  if (window === parent.frames.top) {
-    var config = JSON.parse(document.getElementById('preferencesConfig').textContent)
-    return config['keyboardShortcutsEnabled'];
-  } else {
-    return parent.frames.top.isKeyboardShortcutsEnabled();
-  }
-}
-
-if (isKeyboardShortcutsEnabled()) {
-  Mousetrap.bind('space', function() { parent.frames.playQueue.onToggleStartStop(); return false; });
-  Mousetrap.bind('left',  function() { parent.frames.playQueue.onPrevious(); });
-  Mousetrap.bind('right', function() { parent.frames.playQueue.onNext(); });
-  Mousetrap.bind('*',     function() { parent.frames.playQueue.onStarCurrent(); });
-  Mousetrap.bind('plus',  function() { parent.frames.playQueue.onGainAdd(+5); });
-  Mousetrap.bind('-',     function() { parent.frames.playQueue.onGainAdd(-5); });
-  Mousetrap.bind('q',     function() { parent.frames.playQueue.onTogglePlayQueue(); });
+if (top.keyboardShortcutsEnabled) {
+  Mousetrap.bind('space', function() { top.playQueue.onToggleStartStop(); return false; });
+  Mousetrap.bind('left',  function() { top.playQueue.onPrevious(); });
+  Mousetrap.bind('right', function() { top.playQueue.onNext('OFF'); });
+  Mousetrap.bind('*',     function() { top.playQueue.onStarCurrent(); });
+  Mousetrap.bind('plus',  function() { top.playQueue.onGainAdd(+5); });
+  Mousetrap.bind('-',     function() { top.playQueue.onGainAdd(-5); });
+  Mousetrap.bind('q',     function() { top.playQueue.onTogglePlayQueue(!top.playQueue.isVisible); });
 
   Mousetrap.bind('/',     function() { parent.frames.upper.$("#query").focus(); });
   Mousetrap.bind('m',     function() { parent.frames.upper.toggleLeftFrameVisible(); });

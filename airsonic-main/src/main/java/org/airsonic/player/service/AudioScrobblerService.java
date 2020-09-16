@@ -79,11 +79,11 @@ public class AudioScrobblerService {
         UserSettings userSettings = settingsService.getUserSettings(username);
 
         EnumSet<App> enabledApps = EnumSet.noneOf(App.class);
-        if (userSettings.isLastFmEnabled()) {
+        if (userSettings.getLastFmEnabled()) {
             enabledApps.add(App.LASTFM);
         }
 
-        if (userSettings.isListenBrainzEnabled()) {
+        if (userSettings.getListenBrainzEnabled()) {
             enabledApps.add(App.LISTENBRAINZ);
         }
 
@@ -107,7 +107,7 @@ public class AudioScrobblerService {
             }
             String decoded = decode(cred);
             if (decoded != null) {
-                listenBrainzScrobbler.register(mediaFile, decoded, submission, time);
+                listenBrainzScrobbler.register(mediaFile, userSettings.getListenBrainzUrl(), decoded, submission, time);
             }
         }
     }

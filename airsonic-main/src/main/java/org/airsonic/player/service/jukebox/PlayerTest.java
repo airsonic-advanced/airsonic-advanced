@@ -53,6 +53,7 @@ public class PlayerTest implements AudioPlayer.Listener {
         try {
             player = new AudioPlayer(new FileInputStream("/Users/sindre/Downloads/sample.au"), this);
         } catch (Exception e) {
+            player.close();
             throw new RuntimeException(e);
         }
     }
@@ -61,6 +62,7 @@ public class PlayerTest implements AudioPlayer.Listener {
         new PlayerTest();
     }
 
+    @Override
     public void stateChanged(AudioPlayer player, AudioPlayer.State state) {
         System.out.println(state);
     }

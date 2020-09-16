@@ -19,13 +19,14 @@
  */
 package org.airsonic.player.domain;
 
+import org.airsonic.player.dao.AbstractDao.Column;
 import org.apache.commons.lang.StringUtils;
 
 import java.time.Instant;
 
 /**
- * Represens a remote player.  A player has a unique ID, a user-defined name, a logged-on user,
- * miscellaneous identifiers, and an associated playlist.
+ * Represents a remote player. A player has a unique ID, a user-defined name, a
+ * logged-on user, miscellaneous identifiers, and an associated playlist.
  *
  * @author Sindre Mehus
  */
@@ -38,12 +39,13 @@ public class Player {
     private String type;
     private String username;
     private String ipAddress;
-    private boolean isDynamicIp = true;
-    private boolean isAutoControlEnabled = true;
-    private boolean isM3uBomEnabled = true;
+    private boolean dynamicIp = true;
+    private boolean autoControlEnabled = true;
+    private boolean m3uBomEnabled = true;
     private Instant lastSeen;
     private TranscodeScheme transcodeScheme = TranscodeScheme.OFF;
     private PlayQueue playQueue;
+    @Column("mixer")
     private String javaJukeboxMixer;
 
     /**
@@ -181,17 +183,17 @@ public class Player {
      *
      * @return Whether the player is automatically started.
      */
-    public boolean isAutoControlEnabled() {
-        return isAutoControlEnabled;
+    public boolean getAutoControlEnabled() {
+        return autoControlEnabled;
     }
 
     /**
      * Sets whether the player is automatically started.
      *
-     * @param isAutoControlEnabled Whether the player is automatically started.
+     * @param autoControlEnabled Whether the player is automatically started.
      */
-    public void setAutoControlEnabled(boolean isAutoControlEnabled) {
-        this.isAutoControlEnabled = isAutoControlEnabled;
+    public void setAutoControlEnabled(boolean autoControlEnabled) {
+        this.autoControlEnabled = autoControlEnabled;
     }
 
     /**
@@ -199,17 +201,17 @@ public class Player {
      *
      * @return Whether apply BOM mark when generating a M3U file.
      */
-    public boolean isM3uBomEnabled() {
-        return isM3uBomEnabled;
+    public boolean getM3uBomEnabled() {
+        return m3uBomEnabled;
     }
 
     /**
      * Sets whether apply BOM mark when generating a M3U file.
      *
-     * @param isM3uBomEnabled Whether apply BOM mark when generating a M3U file.
+     * @param m3uBomEnabled Whether apply BOM mark when generating a M3U file.
      */
-    public void setM3uBomEnabled(boolean isM3uBomEnabled) {
-        this.isM3uBomEnabled = isM3uBomEnabled;
+    public void setM3uBomEnabled(boolean m3uBomEnabled) {
+        this.m3uBomEnabled = m3uBomEnabled;
     }
 
     /**
@@ -271,8 +273,8 @@ public class Player {
      *
      * @return Whether this player has a dynamic IP address.
      */
-    public boolean isDynamicIp() {
-        return isDynamicIp;
+    public boolean getDynamicIp() {
+        return dynamicIp;
     }
 
     /**
@@ -281,7 +283,7 @@ public class Player {
      * @param dynamicIp Whether this player has a dynamic IP address.
      */
     public void setDynamicIp(boolean dynamicIp) {
-        isDynamicIp = dynamicIp;
+        this.dynamicIp = dynamicIp;
     }
 
     /**

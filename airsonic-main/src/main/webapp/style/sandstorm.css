@@ -16,15 +16,34 @@
     background-color: #CCCC99
 }
 
+/* a:link color */
+.dataTables_wrapper .dataTables_paginate .paginate_button, button.dt-button, div.dt-button, a.dt-button {
+    color: #057368 !important;
+}
+
+table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+    background-color: #BBBB77;
+}
+
+table.dataTable tbody>tr.selected, table.dataTable tbody>tr>.selected {
+    background-color: #AAAA33;
+}
+
+table.dataTable.hover tbody>tr.selected:hover, table.dataTable.hover tbody>tr>.selected:hover, table.dataTable.display tbody>tr.selected:hover, table.dataTable.display tbody>tr>.selected:hover {
+    background-color: #999933;
+}
+
+table.music.dataTable tbody tr.currently-playing {
+    background-color: #BBBB66;
+}
+
+table.music.dataTable tbody tr.currently-playing:hover {
+    background-color: #AAAA55;
+}
+
 /* Link color */
 a:link, a:active, a:visited, a:link *, a:active *, a:visited * {
     color: #057368
-}
-
-/* Link hover color */
-a:hover, a:hover * {
-    text-decoration: underline;
-    color: #DD6900
 }
 
 /* Scrollbar colors (supported on IE and Opera) */

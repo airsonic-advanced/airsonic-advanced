@@ -19,7 +19,7 @@
  */
 package org.airsonic.player.domain;
 
-import org.airsonic.player.util.StringUtil;
+import org.airsonic.player.dao.AbstractDao.Column;
 
 import java.time.Instant;
 
@@ -30,6 +30,7 @@ public class Playlist {
 
     private int id;
     private String username;
+    @Column("is_public")
     private boolean shared;
     private String name;
     private String comment;
@@ -57,7 +58,7 @@ public class Playlist {
     }
 
     public Playlist(Playlist p) {
-        this(p.getId(), p.getUsername(), p.isShared(), p.getName(), p.getComment(), p.getFileCount(), p.getDuration(),
+        this(p.getId(), p.getUsername(), p.getShared(), p.getName(), p.getComment(), p.getFileCount(), p.getDuration(),
                 p.getCreated(), p.getChanged(), p.getImportedFrom());
     }
 
@@ -77,7 +78,7 @@ public class Playlist {
         this.username = username;
     }
 
-    public boolean isShared() {
+    public boolean getShared() {
         return shared;
     }
 
@@ -115,10 +116,6 @@ public class Playlist {
 
     public void setDuration(double duration) {
         this.duration = duration;
-    }
-
-    public String getDurationAsString() {
-        return StringUtil.formatDuration((long) (duration * 1000), false);
     }
 
     public Instant getCreated() {

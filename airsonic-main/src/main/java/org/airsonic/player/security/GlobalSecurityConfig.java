@@ -4,10 +4,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
-
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.sonos.SonosLinkSecurityInterceptor.SonosJWTVerification;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +18,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.authentication.configuration.GlobalAuthenticationConfigurerAdapter;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -37,7 +37,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import java.security.SecureRandom;
+import javax.servlet.ServletContext;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -48,13 +49,11 @@ import static org.airsonic.player.security.MultipleCredsMatchingAuthenticationPr
 @Configuration
 @Order(SecurityProperties.BASIC_AUTH_ORDER - 2)
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
-public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter {
+public class GlobalSecurityConfig {
 
     private static final Logger LOG = LoggerFactory.getLogger(GlobalSecurityConfig.class);
 
     static final String FAILURE_URL = "/login?error=1";
-
-    static final String DEVELOPMENT_REMEMBER_ME_KEY = "airsonic";
 
     @SuppressWarnings("deprecation")
     public static final Map<String, PasswordEncoder> ENCODERS = new HashMap<>(ImmutableMap
@@ -110,6 +109,12 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
     @Autowired
     MultipleCredsMatchingAuthenticationProvider multipleCredsProvider;
 
+    @Autowired
+    SonosJWTVerification sonosJwtVerification;
+
+    @Autowired
+    private ServletContext servletContext;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         boolean generatedKeys = false;
@@ -138,7 +143,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
         ENCODERS.put("encrypted-AES-GCM", encoder);
         ENCODERS.put("encrypted-AES-GCM" + SALT_TOKEN_MECHANISM_SPECIALIZATION, new SaltedTokenPasswordEncoder(encoder));
 
-        return new DelegatingPasswordEncoder(settingsService.getNonDecodablePasswordEncoder(), ENCODERS) {
+        DelegatingPasswordEncoder pEncoder = new DelegatingPasswordEncoder(settingsService.getNonDecodablePasswordEncoder(), ENCODERS) {
             @Override
             public boolean upgradeEncoding(String prefixEncodedPassword) {
                 PasswordEncoder encoder = ENCODERS.get(StringUtils.substringBetween(prefixEncodedPassword, "{", "}"));
@@ -149,6 +154,20 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
                 return false;
             }
         };
+
+        pEncoder.setDefaultPasswordEncoderForMatches(new PasswordEncoder() {
+            @Override
+            public boolean matches(CharSequence rawPassword, String encodedPassword) {
+                return false;
+            }
+
+            @Override
+            public String encode(CharSequence rawPassword) {
+                return null;
+            }
+        });
+
+        return pEncoder;
     }
 
     @EventListener
@@ -157,13 +176,13 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
             AbstractAuthenticationToken token = (AbstractAuthenticationToken) event.getSource();
             Object details = token.getDetails();
             if (details instanceof WebAuthenticationDetails) {
-                LOG.info("Login failed from [" + ((WebAuthenticationDetails) details).getRemoteAddress() + "]");
+                LOG.info("Login failed from [{}]", ((WebAuthenticationDetails) details).getRemoteAddress());
             }
         }
     }
 
-    @Override
-    public void configure(AuthenticationManagerBuilder auth) throws Exception {
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
         if (settingsService.isLdapEnabled()) {
             auth.ldapAuthentication()
                     .contextSource()
@@ -181,14 +200,10 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
             settingsService.setJWTKey(jwtKey);
             settingsService.save();
         }
-        auth.authenticationProvider(new JWTAuthenticationProvider(jwtKey));
+        JWTAuthenticationProvider jwtAuth = new JWTAuthenticationProvider(jwtKey);
+        jwtAuth.addAdditionalCheck(servletContext.getContextPath() + "/ws/Sonos", sonosJwtVerification);
+        auth.authenticationProvider(jwtAuth);
         auth.authenticationProvider(multipleCredsProvider);
-    }
-
-    private static String generateRememberMeKey() {
-        byte[] array = new byte[32];
-        new SecureRandom().nextBytes(array);
-        return new String(array);
     }
 
     @Configuration
@@ -197,6 +212,12 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
 
         public ExtSecurityConfiguration() {
             super(true);
+        }
+
+        @Override
+        @Bean
+        public AuthenticationManager authenticationManagerBean() throws Exception {
+            return super.authenticationManagerBean();
         }
 
         @Bean(name = "jwtAuthenticationFilter")
@@ -215,7 +236,11 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
                     .csrf().requireCsrfProtectionMatcher(csrfSecurityRequestMatcher).and()
                     .headers().frameOptions().sameOrigin().and()
                     .authorizeRequests()
-                    .antMatchers("/ext/stream/**", "/ext/coverArt*", "/ext/share/**", "/ext/hls/**")
+                    .antMatchers(
+                            "/ext/stream/**",
+                            "/ext/coverArt*",
+                            "/ext/share/**",
+                            "/ext/hls/**")
                     .hasAnyRole("TEMP", "USER").and()
                     .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                     .exceptionHandling().and()
@@ -246,33 +271,22 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
             // the expiration time, or even, given enough time, recover the password
             // from the MD5 hash.
             //
-            // See: https://docs.spring.io/spring-security/site/docs/3.0.x/reference/remember-me.html
-
+            // A null key means an ephemeral key is autogenerated
             String rememberMeKey = settingsService.getRememberMeKey();
-            boolean development = SettingsService.isDevelopmentMode();
-            if (StringUtils.isBlank(rememberMeKey) && !development) {
-                // ...if it is empty, generate a random key on startup (default).
-                LOG.debug("Generating a new ephemeral 'remember me' key in a secure way.");
-                rememberMeKey = generateRememberMeKey();
-            } else if (StringUtils.isBlank(rememberMeKey) && development) {
-                // ...if we are in development mode, we can use a fixed key.
-                LOG.warn("Using a fixed 'remember me' key because we're in development mode, this is INSECURE.");
-                rememberMeKey = DEVELOPMENT_REMEMBER_ME_KEY;
-            } else {
-                // ...otherwise, use the custom key directly.
-                LOG.info("Using a fixed 'remember me' key from system properties, this is insecure.");
+            if (rememberMeKey != null) {
+                LOG.info("Using a fixed 'remember me' key from properties, this is insecure.");
             }
 
             http
                     .csrf()
+                    .ignoringAntMatchers("/ws/Sonos/**")
                     .requireCsrfProtectionMatcher(csrfSecurityRequestMatcher)
                     .and().headers()
                     .frameOptions()
                     .sameOrigin()
                     .and().authorizeRequests()
-                    .antMatchers("/recover*", "/accessDenied*",
-                            "/style/**", "/icons/**", "/flash/**", "/script/**",
-                            "/sonos/**", "/login", "/error")
+                    .antMatchers("/recover*", "/accessDenied*", "/style/**", "/icons/**", "/flash/**", "/script/**",
+                            "/login", "/error", "/sonos/**", "/sonoslink/**", "/ws/Sonos/**")
                     .permitAll()
                     .antMatchers("/personalSettings*",
                             "/playerSettings*", "/shareSettings*", "/credentialsSettings*")
@@ -305,8 +319,7 @@ public class GlobalSecurityConfig extends GlobalAuthenticationConfigurerAdapter 
                     .usernameParameter("j_username")
                     .passwordParameter("j_password")
                     // see http://docs.spring.io/spring-security/site/docs/3.2.4.RELEASE/reference/htmlsingle/#csrf-logout
-                    .and().logout().logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")).logoutSuccessUrl(
-                    "/login?logout")
+                    .and().logout().deleteCookies("JSESSIONID").logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")).logoutSuccessUrl("/login?logout")
                     .and().rememberMe().key(rememberMeKey).userDetailsService(securityService);
         }
     }

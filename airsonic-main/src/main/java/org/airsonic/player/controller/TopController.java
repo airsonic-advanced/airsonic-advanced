@@ -57,7 +57,7 @@ public class TopController {
         UserSettings userSettings = settingsService.getUserSettings(user.getUsername());
 
         map.put("user", user);
-        map.put("showSideBar", userSettings.isShowSideBar());
+        map.put("showSideBar", userSettings.getShowSideBar());
         map.put("showAvatar", userSettings.getAvatarScheme() != AvatarScheme.NONE);
         return new ModelAndView("top","model", map);
     }

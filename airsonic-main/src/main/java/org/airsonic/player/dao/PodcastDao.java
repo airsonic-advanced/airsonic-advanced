@@ -24,10 +24,12 @@ import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastStatus;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
+
+import javax.annotation.PostConstruct;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -49,20 +51,20 @@ public class PodcastDao extends AbstractDao {
     private PodcastChannelRowMapper channelRowMapper = new PodcastChannelRowMapper();
     private PodcastEpisodeRowMapper episodeRowMapper = new PodcastEpisodeRowMapper();
 
+    @PostConstruct
+    public void register() throws Exception {
+        registerInserts("podcast_channel", "id", Arrays.asList(CHANNEL_INSERT_COLUMNS.split(", ")), PodcastChannel.class);
+        registerInserts("podcast_episode", "id", Arrays.asList(EPISODE_INSERT_COLUMNS.split(", ")), PodcastEpisode.class);
+    }
+
     /**
      * Creates a new Podcast channel.
      *
      * @param channel The Podcast channel to create.
      * @return The ID of the newly created channel.
      */
-    @Transactional
     public int createChannel(PodcastChannel channel) {
-        String sql = "insert into podcast_channel (" + CHANNEL_INSERT_COLUMNS + ") values (" + questionMarks(
-                CHANNEL_INSERT_COLUMNS) + ")";
-        update(sql, channel.getUrl(), channel.getTitle(), channel.getDescription(), channel.getImageUrl(),
-                channel.getStatus().name(), channel.getErrorMessage());
-
-        return queryForInt("select max(id) from podcast_channel", 0);
+        return insert("podcast_channel", channel);
     }
 
     /**
@@ -110,11 +112,7 @@ public class PodcastDao extends AbstractDao {
      * @param episode The Podcast episode to create.
      */
     public void createEpisode(PodcastEpisode episode) {
-        String sql = "insert into podcast_episode (" + EPISODE_INSERT_COLUMNS + ") values (" + questionMarks(EPISODE_INSERT_COLUMNS) + ")";
-        update(sql, episode.getChannelId(), episode.getUrl(), episode.getPath(),
-                episode.getTitle(), episode.getDescription(), episode.getPublishDate(),
-                episode.getDuration(), episode.getBytesTotal(), episode.getBytesDownloaded(),
-                episode.getStatus().name(), episode.getErrorMessage());
+        insert("podcast_episode", episode);
     }
 
     /**

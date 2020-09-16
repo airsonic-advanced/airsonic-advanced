@@ -4,9 +4,10 @@
 -->
 Airsonic-Advanced
 =================
-[![Build Status](https://travis-ci.org/airsonic-advanced/airsonic-advanced.svg?branch=master)](https://travis-ci.org/airsonic-advanced/airsonic-advanced)
-[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/airsonic/airsonic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic/airsonic/context:javascript)
-[![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/airsonic/airsonic.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic/airsonic/context:java)
+![](https://github.com/airsonic-advanced/airsonic-advanced/workflows/Edge%20Deploy%20CI%20(Maven)/badge.svg)
+![](https://github.com/airsonic-advanced/airsonic-advanced/workflows/Stable%20Deploy%20CI%20(Maven)/badge.svg)
+[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/airsonic-advanced/airsonic-advanced.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic-advanced/airsonic-advanced/context:javascript)
+[![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/airsonic-advanced/airsonic-advanced.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/airsonic-advanced/airsonic-advanced/context:java)
 
 What is Airsonic-Advanced?
 --------------------------
@@ -40,8 +41,11 @@ The following is an incomplete list of features that are enhanced from Airsonic:
 - Performance enhancements
   - A more efficient and compliant streaming engine, utilizing piping and threading
   - Removal of pessimistic locking throughout the software in favor of more modern concurrency techniques
+  - Upgraded internal database that uses connection pooling and uses MVCC control mode for dealing with concurrent updates
+    - Massive throughput boost (100K mrdia library scan times reduced from ~40 min to ~3 mins)
+  - Much faster UI rendering for browsers, especially for massive playlists
   - Aggressively uses multi-threading and parallelization for most operations, including but not limited to:
-    - Massively parallelized engine for media scanning (media scanning is done much much faster)
+    - Massively parallelized engine for media scanning (media scanning is done much much faster, ~8x)
     - Other various use cases utilizing async or parallel options via fork-join pools
   - Use of websockets to communicate with web-clients instead of polling
     - Much lighter on resource utilization as well as more dynamic
@@ -50,14 +54,31 @@ The following is an incomplete list of features that are enhanced from Airsonic:
     - Web clients can update UIs immediately (live views)
     - Removal of DWR (10 year old technology used as an interface between the web-client and the server)
     - Provides status indicator whether client is connected to server
+- UI:
+    - HTML5 compliant
+      - Redesigned layout: Uses iframes instead of framesets and frames
+    - Utilize a dedicated library (DataTables) to render tables
+      - Deferred rendering and data manipulation outside the DOM allows much faster rendering (~10x-800x!)
+        - The bigger the table, the more performance benefits it sees
+        - Play queue that took about 800s to render in the browser, can now render in < 1s
+      - Allow optional paging and accessible searching within tables
+    - Customize generated cover art thumbnail quality
 - Bugfixes:
   - Several race condition fixes
   - Consistency checks and refactors
 - Miscellaneous
+  - Works with JDK14
   - Uses JSR 310 (Java time) instead of older Java packages for time/duration tracking
   - Uses Java's NIO for handling files instead of the older IO packages
   - More precise song duration calculation
+  - Ability to pass properties via environment or system variables. You can but do not need to modify `airsonic.properties` to change preferences
+  - Ability to use custom URLs to scrobble on ListenBrainz servers
   - Ability to use Repeat-One in play queues in web-clients
+  - Ability to upload multiple files simultaneously
+  - Ability to upload and extract more archive formats:
+    - rar
+    - 7z
+    - tar
 - Testing
   - Various fixes to make it compatible with multiple external DBs
   - Automated tests are performed against external DBs
@@ -66,7 +87,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
     - MariaDB
   - Uses failsafe for integration testing instead of cucumber
 - Build and deployment
-  - An updated Docker image with OpenJDK 11 base layer.
+  - An updated Docker image with JRE 14 base layer.
   - A more advanced build pipeline including automatic releases and deploys at merge
     - Allows people to grab the newest build without compiling from source as soon as features/enhancements are merged, instead of waiting for the next stable build (which may be months away)
 
@@ -74,12 +95,74 @@ The complete list of PRs that were used to enhance Airsonic can be seen on the P
 
 Airsonic-Advanced will occasionally backport features introduced in the base Airsonic fork, but is generally much more modern and bleeding edge than Airsonic.
 
+Usage
+-----
+Airsonic-Advanced v10.6.x series (and its snapshots) are intercompatible with vanilla Airsonic 10.6.x series. This may not necessarily be the case with 11.x versions.
+
+Also note that Airsonic-Advanced 11.x (and its snapshots) are *breaking* non-backwards-compatible version changes. You will not be able to revert back to 10.6.x after upgrading (the system _does_ create a backup of the DB in case such revert is necessary, but it must be manually restored).
+
+### Stand-alone binaries
+Airsonic-Advanced can be downloaded from
+[GitHub](https://github.com/airsonic-advanced/airsonic-advanced/releases).
+
+The release signature may be verified using the [public key](https://github.com/airsonic-advanced/airsonic-advanced/blob/master/releases_public_key.asc).
+
+You need a _minimum_ Java Runtime Environment (JRE) of 1.8 for 10.6.x series and 11 for 11.x onwards (including snapshots). It is run similarly to (and in lieu of) vanilla Airsonic.
+
+Read the [compatibility notes](#compatibility-notes).
+
+### Docker
+Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced).
+
+Please note that for Docker images, the volume mounting points have changed and are different from Airsonic. Airsonic mount points are at `/airsonic/*` inside the container. Airsonic-Advanced tries to use the same volume locations as the default war image at `/var/*` in order to remain consistent if people want to switch between the containers and non-containers.
+  - `Music:/airsonic/music` -> `Music:/var/music`
+  - `Podcasts:/airsonic/podcast` -> `Podcasts:/var/podcast`
+  - `Playlists:/airsonic/playlists` -> `Playlists:/var/playlists`
+  - `/airsonic/data` -> `/var/airsonic`
+
+Also note that the Docker image will by default run as user root (0), group root (0), and so any files created in the external volume will be owned as such. You may change the user running the internal process in one of two ways:
+  - Specifying `--user` when invoking the `docker run` command, and providing it with one or both in the format `uid:gid`
+  - Specifying the `PUID` or `PGID` environment variables to the container image when invoking the `docker run` command (`-e PUID=uid -e PGID=gid`)
+
+Vanilla Airsonic can be downloaded from
+[GitHub](https://github.com/airsonic/airsonic/releases).
+
+Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Advanced shares similar running instructions unless stated otherwise.
+
+Compatibility Notes:
+------
+The following properties are new in Airsonic-Advanced:
+  - `MediaScannerParallelism`: (default: number of available processors + 1) The parallelism to use when scanning media
+  - `ClearFullScanSettingAfterScan`: (default: false) Whether to clear FullScan setting after the next SUCCESSFUL scan (useful for doing full scan once and then reverting to default scan)
+
+The following property names are different between Airsonic and Airsonic-Advanced:
+  - `UPNP_PORT` -> `UPnpPort`
+  - `server.context-path` -> `server.servlet.context-path` (Airsonic will use the latter from 11.0 onwards)
+  - `IgnoreFileTimestamps` -> `FullScan`
+
+Note that Airsonic-Advanced communicates with its Web UI via websockets. If you're behind a proxy, you need to enable websockets and allow UPGRADE http requests through the proxy. A sample configuration is posted here: [nginx sample](https://github.com/airsonic-advanced/airsonic-advanced/issues/145)
+
+### 11.x series
+Certain property names have been changed from 10.6 to recent snapshots of 11.0 and will be _automigrated_. When modifying properties, use the modern name.
+  - `DatabaseConfigEmbedDriver` -> `spring.datasource.driver-class-name`
+  - `DatabaseConfigEmbedUrl` -> `spring.datasource.url`
+  - `DatabaseConfigEmbedUsername` -> `spring.datasource.username`
+  - `DatabaseConfigEmbedPassword` -> `spring.datasource.password`
+  - `DatabaseConfigJNDIName` -> `spring.datasource.jndi-name`
+  - `DatabaseMysqlMaxlength` -> `spring.liquibase.parameters.mysqlVarcharLimit`
+  - `DatabaseUsertableQuote` -> `spring.liquibase.parameters.userTableQuote`
+
+Other properties are obsolete and have been removed:
+  - `DatabaseConfigType`
+
+First migration to 11.x will create a backup DB next to the DB folder. It will be marked as `db.backup.<timestamp>`. Use this folder as the DB if a revert to an older major version is needed (11.0 -> 10.6.0).
+
 History
 -----
 
 The original [Subsonic](http://www.subsonic.org/) is developed by [Sindre Mehus](mailto:sindre@activeobjects.no). Subsonic was open source through version 6.0-beta1, and closed-source from then onwards.
 
-Libresonic was created and maintained by [Eugene E. Kashpureff Jr](mailto:eugene@kashpureff.org). It originated as an unofficial("Kang") of Subsonic which did not contain the Licensing code checks present in the official builds. With the announcement of Subsonic's closed-source future, a decision was made to make a full fork and rebrand to Libresonic.
+Libresonic was created and maintained by [Eugene E. Kashpureff Jr](mailto:eugene@kashpureff.org). It originated as an unofficial ("Kang") of Subsonic which did not contain the Licensing code checks present in the official builds. With the announcement of Subsonic's closed-source future, a decision was made to make a full fork and rebrand to Libresonic.
 
 Around July 2017, it was discovered that Eugene had different intentions/goals
 for the project than some contributors had.  Although the developers were
@@ -92,9 +175,7 @@ based on the Subsonic codebase that is free, open source, and community driven.
 
 Around November 2019, Airsonic-Advanced was forked off the base Airsonic fork due to differences in pace and review of development. Several key features of the framework were outdated, and attempts to upgrade them occasionally took upto a year. Airsonic-Advanced tries a modern implementation and bleeding edge approach to development, and is thus usually ahead of the base fork in dependencies and features.
 
-Pull Requests are always welcome. Keep in mind that we strive to balance
-stability with new features. As such, all Pull Requests are reviewed before
-being merged to ensure we continue to meet our goals.
+Pull Requests are always welcome. All Pull Requests are reviewed before being merged to ensure we continue to meet our goals.
 
 License
 -------
@@ -109,28 +190,11 @@ released under [MIT License](http://www.opensource.org/licenses/mit-license.php)
 The icons are from the amazing [feather](https://feathericons.com/) project,
 and are licensed under [MIT license](https://github.com/feathericons/feather/blob/master/LICENSE).
 
-Usage
------
-Airsonic-Advanced can be downloaded from
-[GitHub](https://github.com/airsonic-advanced/airsonic-advanced/releases).
-
-Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced).
-
-Please note that for Docker images, the volume mounting points have changed and are different from Airsonic. Airsonic mount points are at /airsonic/* inside the container. Airsonic-Advanced tries to use the same volume locations as the default war image at /var/* in order to remain consistent if people want to switch between the containers and non-containers.
-  - `Music:/airsonic/music` -> `Music:/var/music`
-  - `Podcasts:/airsonic/podcast` -> `Podcasts:/var/podcast`
-  - `Playlists:/airsonic/playlists` -> `Playlists:/var/playlists`
-  - `/airsonic/data` -> `/var/airsonic`
-
-Airsonic can be downloaded from
-[GitHub](https://github.com/airsonic/airsonic/releases).
-
-Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic.
-
-
 Community
 ---------
-Airsonic itself has several places outside of github for community discussion, questions, etc:
+Bugs/feature requests/discussions pertaining to Airsonic-Advanced may be raised as issues within GitHub on the Airsonic-Advanced project page.
+
+Vanilla Airsonic itself has several places outside of GitHub for community discussion, questions, etc:
 
 - [#airsonic:matrix.org on Matrix](https://matrix.to/#/#airsonic:matrix.org)
 - [#airsonic on IRC](http://webchat.freenode.net?channels=%23airsonic)

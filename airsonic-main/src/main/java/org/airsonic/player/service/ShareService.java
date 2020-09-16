@@ -109,7 +109,7 @@ public class ShareService {
         for (MediaFile file : files) {
             shareDao.createSharedFiles(share.getId(), file.getPath());
         }
-        LOG.info("Created share '" + share.getName() + "' with " + files.size() + " file(s).");
+        LOG.info("Created share '{}' with {} file(s).", share.getName(), files.size());
 
         return share;
     }
@@ -124,7 +124,7 @@ public class ShareService {
 
     public String getShareUrl(HttpServletRequest request, Share share) {
         String shareUrl = NetworkService.getBaseUrl(request) + "ext/share/" + share.getName();
-        return jwtSecurityService.addJWTToken(UriComponentsBuilder.fromUriString(shareUrl), share.getExpires()).build().toUriString();
+        return jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS, UriComponentsBuilder.fromUriString(shareUrl), share.getExpires()).build().toUriString();
     }
 
     public void setSecurityService(SecurityService securityService) {

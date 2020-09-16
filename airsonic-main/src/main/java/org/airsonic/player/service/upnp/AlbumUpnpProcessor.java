@@ -25,6 +25,7 @@ import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.CoverArtScheme;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.User;
 import org.airsonic.player.service.SearchService;
 import org.fourthline.cling.support.model.BrowseResult;
 import org.fourthline.cling.support.model.DIDLContent;
@@ -146,7 +147,7 @@ public class AlbumUpnpProcessor extends UpnpContentProcessor <Album, MediaFile> 
     }
 
     public URI getAlbumArtURI(int albumId) {
-        return getDispatcher().getJwtSecurityService().addJWTToken(UriComponentsBuilder.fromUriString(getDispatcher().getBaseUrl() + "/ext/coverArt.view").queryParam("id", albumId).queryParam("size", CoverArtScheme.LARGE.getSize())).build().encode().toUri();
+        return getDispatcher().getJwtSecurityService().addJWTToken(User.USERNAME_ANONYMOUS, UriComponentsBuilder.fromUriString(getDispatcher().getBaseUrl() + "/ext/coverArt.view").queryParam("id", albumId).queryParam("size", CoverArtScheme.LARGE.getSize())).build().encode().toUri();
     }
 
     public PersonWithRole[] getAlbumArtists(String artist) {

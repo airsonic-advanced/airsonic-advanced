@@ -3,6 +3,7 @@ package org.airsonic.player.dao;
 import org.airsonic.player.domain.AvatarScheme;
 import org.airsonic.player.domain.TranscodeScheme;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.User.Role;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.domain.UserSettings;
@@ -12,10 +13,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.comparator.NullSafeComparator;
 
 import java.time.Instant;
-import java.util.List;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.Locale;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -35,24 +39,13 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
 
     @Before
     public void setUp() {
-        getJdbcTemplate().execute("delete from user_role");
         getJdbcTemplate().execute("delete from user_credentials");
         getJdbcTemplate().execute("delete from " + userDao.getUserTable());
     }
 
     @Test
     public void testCreateUser() {
-        User user = new User("sindre", "sindre@activeobjects.no", false, 1000L, 2000L, 3000L);
-        user.setAdminRole(true);
-        user.setCommentRole(true);
-        user.setCoverArtRole(true);
-        user.setDownloadRole(false);
-        user.setPlaylistRole(true);
-        user.setUploadRole(false);
-        user.setPodcastRole(true);
-        user.setStreamRole(true);
-        user.setJukeboxRole(true);
-        user.setSettingsRole(true);
+        User user = new User("sindre", "sindre@activeobjects.no", false, 1000L, 2000L, 3000L, Set.of(Role.ADMIN, Role.COMMENT, Role.COVERART, Role.PLAYLIST, Role.PODCAST, Role.STREAM, Role.JUKEBOX, Role.SETTINGS));
         UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC);
         userDao.createUser(user, uc);
 
@@ -63,21 +56,21 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
 
     @Test
     public void testCreateUserTransactionalError() {
-        User user = new User("muff1nman", "noemail") {
+        User user = new User("muff1nman5", "noemail") {
             @Override
-            public boolean isPlaylistRole() {
+            public Set<Role> getRoles() {
                 throw new RuntimeException();
             }
         };
 
-        user.setAdminRole(true);
-        UserCredential uc = new UserCredential("muff1nman", "muff1nman", "secret", "noop", App.AIRSONIC);
+        user.setRoles(Set.of(Role.ADMIN));
+        UserCredential uc = new UserCredential("muff1nman5", "muff1nman5", "secret", "noop", App.AIRSONIC);
 
         assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> createTestUser(user, uc));
-        assertThat(userDao.getUserByName("muff1nman", true)).isNull();
+        assertThat(userDao.getUserByName("muff1nman5", true)).isNull();
 
-        User user2 = new User("muff1nman", "noemail");
-        UserCredential uc2 = new UserCredential("muff1nman", "muff1nman", "secret", "noop", App.AIRSONIC) {
+        User user2 = new User("muff1nman6", "noemail");
+        UserCredential uc2 = new UserCredential("muff1nman6", "muff1nman6", "secret", "noop", App.AIRSONIC) {
             @Override
             public String getCredential() {
                 throw new RuntimeException();
@@ -85,7 +78,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         };
 
         assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> createTestUser(user2, uc2));
-        assertThat(userDao.getUserByName("muff1nman", true)).isNull();
+        assertThat(userDao.getUserByName("muff1nman6", true)).isNull();
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -96,16 +89,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testUpdateUser() {
         User user = new User("sindre", null);
-        user.setAdminRole(true);
-        user.setCommentRole(true);
-        user.setCoverArtRole(true);
-        user.setDownloadRole(false);
-        user.setPlaylistRole(true);
-        user.setUploadRole(false);
-        user.setPodcastRole(true);
-        user.setStreamRole(true);
-        user.setJukeboxRole(true);
-        user.setSettingsRole(true);
+        user.setRoles(Set.of(Role.ADMIN, Role.COMMENT, Role.COVERART, Role.PLAYLIST, Role.PODCAST, Role.STREAM, Role.JUKEBOX, Role.SETTINGS));
         UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC);
         userDao.createUser(user, uc);
 
@@ -114,16 +98,8 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         user.setBytesStreamed(1);
         user.setBytesDownloaded(2);
         user.setBytesUploaded(3);
-        user.setAdminRole(false);
-        user.setCommentRole(false);
-        user.setCoverArtRole(false);
-        user.setDownloadRole(true);
-        user.setPlaylistRole(false);
-        user.setUploadRole(true);
-        user.setPodcastRole(false);
-        user.setStreamRole(false);
-        user.setJukeboxRole(false);
-        user.setSettingsRole(false);
+        user.setRoles(Set.of(Role.DOWNLOAD, Role.UPLOAD));
+
         userDao.updateUser(user);
 
         assertThat(userDao.getAllUsers().get(0)).isEqualToComparingFieldByField(user);
@@ -133,10 +109,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testUpdateCredential() {
         User user = new User("sindre", null);
-        user.setAdminRole(true);
-        user.setCommentRole(true);
-        user.setCoverArtRole(true);
-        user.setDownloadRole(false);
+        user.setRoles(Set.of(Role.ADMIN, Role.COMMENT, Role.COVERART));
         UserCredential uc = new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC);
         userDao.createUser(user, uc);
 
@@ -157,7 +130,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         assertThat(userDao.getUserByName("sindre", true)).isEqualToComparingFieldByField(user);
 
         assertNull("Error in getUserByName().", userDao.getUserByName("sindre2", true));
-        assertNull("Error in getUserByName().", userDao.getUserByName("Sindre ", true));
+        // assertNull("Error in getUserByName().", userDao.getUserByName("Sindre ", true)); // depends on the collation of the DB
         assertNull("Error in getUserByName().", userDao.getUserByName("bente", true));
         assertNull("Error in getUserByName().", userDao.getUserByName("", true));
         assertNull("Error in getUserByName().", userDao.getUserByName(null, true));
@@ -183,15 +156,11 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testGetRolesForUser() {
         User user = new User("sindre", null);
-        user.setAdminRole(true);
-        user.setCommentRole(true);
-        user.setPodcastRole(true);
-        user.setStreamRole(true);
-        user.setSettingsRole(true);
+        user.setRoles(Set.of(Role.ADMIN, Role.COMMENT, Role.PODCAST, Role.STREAM, Role.SETTINGS));
         userDao.createUser(user, new UserCredential("sindre", "sindre", "secret", "noop", App.AIRSONIC));
 
-        List<String> roles = userDao.getRolesForUser("sindre");
-        assertThat(roles).containsExactly("admin", "comment", "podcast", "stream", "settings");
+        Set<Role> roles = userDao.getUserByName("sindre", true).getRoles();
+        assertThat(roles).containsOnly(Role.ADMIN, Role.COMMENT, Role.PODCAST, Role.STREAM, Role.SETTINGS);
     }
 
     @Test
@@ -207,7 +176,18 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         UserSettings settings = new UserSettings("sindre");
         userDao.updateUserSettings(settings);
         UserSettings userSettings = userDao.getUserSettings("sindre");
-        assertThat(userSettings).usingRecursiveComparison().isEqualTo(settings);
+        assertThat(userSettings).usingComparatorForType(new NullSafeComparator<Instant>(new Comparator<Instant>() {
+            // use a custom comparator to account for micro second differences
+            // (Mysql only stores floats in json to a certain value)
+            @Override
+            public int compare(Instant o1, Instant o2) {
+                if (o1.equals(o2) || Math.abs(ChronoUnit.MICROS.between(o1, o2)) <= 2) {
+                    return 0;
+                }
+                return o1.compareTo(o2);
+            }
+        }, true), Instant.class)
+                .usingRecursiveComparison().isEqualTo(settings);
 
         settings = new UserSettings("sindre");
         settings.setLocale(Locale.SIMPLIFIED_CHINESE);

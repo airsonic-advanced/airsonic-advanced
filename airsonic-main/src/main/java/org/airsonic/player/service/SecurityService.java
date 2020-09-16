@@ -27,6 +27,7 @@ import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.security.GlobalSecurityConfig;
 import org.airsonic.player.security.PasswordDecoder;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +46,9 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 
+import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -93,12 +97,12 @@ public class SecurityService implements UserDetailsService {
             throw new UsernameNotFoundException("User \"" + username + "\" was not found.");
         }
 
-        List<GrantedAuthority> authorities = getGrantedAuthorities(username);
+        List<GrantedAuthority> authorities = getGrantedAuthorities(user);
 
         return new UserDetail(
                 username,
                 getCredentials(user.getUsername(), App.AIRSONIC),
-                !user.isLdapAuthenticated(),
+                true,
                 true,
                 true,
                 true,
@@ -183,14 +187,6 @@ public class SecurityService implements UserDetailsService {
         return userDao.getCredentialCountByEncoder("legacy%") != 0;
     }
 
-    public boolean checkCredentialsStoredInLegacyTables() {
-        return userDao.checkCredentialsStoredInLegacyTables();
-    }
-
-    public boolean purgeCredentialsStoredInLegacyTables() {
-        return userDao.purgeCredentialsStoredInLegacyTables();
-    }
-
     public boolean migrateLegacyCredsToNonLegacy(boolean useDecodableOnly) {
         String decodableEncoder = settingsService.getDecodablePasswordEncoder();
         String nonDecodableEncoder = useDecodableOnly ? decodableEncoder
@@ -222,13 +218,12 @@ public class SecurityService implements UserDetailsService {
         }
     }
 
-    public List<GrantedAuthority> getGrantedAuthorities(String username) {
+    public List<GrantedAuthority> getGrantedAuthorities(User user) {
         return Stream.concat(
                 Stream.of(
                         new SimpleGrantedAuthority("IS_AUTHENTICATED_ANONYMOUSLY"),
                         new SimpleGrantedAuthority("ROLE_USER")),
-                userDao.getRolesForUser(username).stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())))
+                user.getRoles().stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.name())))
                 .collect(Collectors.toList());
     }
 
@@ -401,8 +396,14 @@ public class SecurityService implements UserDetailsService {
      *
      * @return Whether the given file may be uploaded.
      */
-    public boolean isUploadAllowed(Path file) {
-        return isInMusicFolder(file) && !Files.exists(file);
+    public void checkUploadAllowed(Path file, boolean checkFileExists) throws IOException {
+        if (!isInMusicFolder(file)) {
+            throw new AccessDeniedException(file.toString(), null, "Specified location is not in writable music folder");
+        }
+
+        if (checkFileExists && Files.exists(file)) {
+            throw new FileAlreadyExistsException(file.toString(), null, "File already exists");
+        }
     }
 
     /**
@@ -495,7 +496,9 @@ public class SecurityService implements UserDetailsService {
         public UserDetail(String username, List<UserCredential> creds, boolean enabled, boolean accountNonExpired,
                 boolean credentialsNonExpired, boolean accountNonLocked,
                 Collection<? extends GrantedAuthority> authorities) {
-            super(username, "", enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
+            super(username,
+                    DigestUtils.md5Hex(creds.stream().map(x -> x.getEncoder() + "/" + x.getCredential() + "/" + x.getExpiration()).collect(Collectors.joining())),
+                    enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
 
             this.creds = creds;
         }
@@ -506,6 +509,7 @@ public class SecurityService implements UserDetailsService {
 
         @Override
         public void eraseCredentials() {
+            super.eraseCredentials();
             creds = null;
         }
     }

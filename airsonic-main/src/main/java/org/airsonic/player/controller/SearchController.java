@@ -77,7 +77,7 @@ public class SearchController {
         User user = securityService.getCurrentUser(request);
         UserSettings userSettings = settingsService.getUserSettings(user.getUsername());
         command.setUser(user);
-        command.setPartyModeEnabled(userSettings.isPartyModeEnabled());
+        command.setPartyModeEnabled(userSettings.getPartyModeEnabled());
 
         List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(user.getUsername());
         String query = StringUtils.trimToNull(command.getQuery());

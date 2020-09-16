@@ -1,4 +1,5 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" %>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8" %>
+<%@ page import="org.airsonic.player.domain.CoverArtSource" %>
 <%--@elvariable id="command" type="org.airsonic.player.command.GeneralSettingsCommand"--%>
 
 <html><head>
@@ -105,6 +106,36 @@
         </tr>
 
         <tr><td colspan="2">&nbsp;</td></tr>
+        <tr>
+            <td><fmt:message key="generalsettings.coverartsource"/></td>
+            <td>
+                <form:select path="coverArtSource" cssStyle="width:15em">
+                    <form:option value="${CoverArtSource.FILETAG}"><fmt:message key="generalsettings.coverartsource.option.filetag"/></form:option>
+                    <form:option value="${CoverArtSource.TAGFILE}"><fmt:message key="generalsettings.coverartsource.option.tagfile"/></form:option>>
+                    <form:option value="${CoverArtSource.FILE}"><fmt:message key="generalsettings.coverartsource.option.file"/></form:option>
+                    <form:option value="${CoverArtSource.TAG}"><fmt:message key="generalsettings.coverartsource.option.tag"/></form:option>
+                </form:select>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="coverartsource"/></c:import>
+            </td>
+        </tr>
+
+        <tr>
+            <td><fmt:message key="generalsettings.coverartquality"/></td>
+            <td>
+                <form:input path="coverArtQuality" size="15em"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="coverartquality"/></c:import>
+            </td>
+        </tr>
+
+        <tr>
+            <td><fmt:message key="generalsettings.coverartconcurrency"/></td>
+            <td>
+                <form:input path="coverArtConcurrency" size="15em"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="coverartconcurrency"/></c:import>
+            </td>
+        </tr>
+
+        <tr><td colspan="2">&nbsp;</td></tr>
 
         <tr>
             <td>
@@ -163,12 +194,5 @@
 
     </table>
 </form:form>
-
-<c:if test="${settings_reload}">
-    <script language="javascript" type="text/javascript">
-        parent.frames.left.location.href="left.view?";
-        parent.frames.playQueue.location.href="playQueue.view?";
-    </script>
-</c:if>
 
 </body></html>

@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.airsonic.player</groupId>
         <artifactId>airsonic</artifactId>
-        <version>10.6.0-SNAPSHOT</version>
+        <version>11.0.0-SNAPSHOT</version>
     </parent>
 
     <properties>
@@ -149,12 +149,12 @@
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-            <version>8.2.0</version>
+            <version>8.4.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
-            <version>8.2.0</version>
+            <version>8.4.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.ant</groupId>
@@ -196,6 +196,22 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.20</version>
+        </dependency>
+        <dependency>
+            <groupId>org.tukaani</groupId>
+            <artifactId>xz</artifactId>
+            <version>1.8</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.junrar</groupId>
+            <artifactId>junrar</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
             <version>3.0.2</version>
@@ -223,9 +239,9 @@
         </dependency>
 
         <dependency>
-            <groupId>hsqldb</groupId>
+            <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-            <version>1.8.0.7</version>
+            <version>2.5.0</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -282,12 +298,6 @@
 		</dependency>
 
         <dependency>
-            <groupId>stax</groupId>
-            <artifactId>stax-api</artifactId>
-            <version>1.0.1</version>
-        </dependency>
-
-        <dependency>
             <groupId>jakarta.mail</groupId>
             <artifactId>jakarta.mail-api</artifactId>
         </dependency>
@@ -325,12 +335,16 @@
         <dependency>
             <groupId>org.fourthline.cling</groupId>
             <artifactId>cling-core</artifactId>
+            <!-- Cling removed the org.fourthline.cling.transport.impl.apache package in 2.1, which is needed to make Cling work with Tomcat. -->
+            <!-- Don't upgrade this unless you can test UPnP/DLNA support properly! -->
             <version>2.0.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.fourthline.cling</groupId>
             <artifactId>cling-support</artifactId>
+            <!-- Cling removed the org.fourthline.cling.transport.impl.apache package in 2.1, which is needed to make Cling work with Tomcat. -->
+            <!-- Don't upgrade this unless you can test UPnP/DLNA support properly! -->
             <version>2.0.1</version>
         </dependency>
 
@@ -389,11 +403,15 @@
             <version>${cxf.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-configuration2</artifactId>
-            <version>2.4</version>
+            <version>2.7</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -441,6 +459,14 @@
                 <exclusion>
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
+                </exclusion>
+                <exclusion>
+                 <groupId>javax.xml.stream</groupId>
+                 <artifactId>stax-api</artifactId>
+                </exclusion>
+                <exclusion>
+                 <groupId>stax</groupId>
+                 <artifactId>stax-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -568,18 +594,10 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring.boot.version}</version>
                 <configuration>
                     <mainClass>org.airsonic.player.Application</mainClass>
                     <layout>WAR</layout>
                 </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -625,10 +643,10 @@
                 <addOutputDirectoryToResources>true</addOutputDirectoryToResources>
               </configuration>
             </plugin>
-            <plugin>
+            <!-- <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-            </plugin>
+            </plugin>  -->
             <plugin>
                 <groupId>net.nicoulaj.maven.plugins</groupId>
                 <artifactId>checksum-maven-plugin</artifactId>
@@ -639,10 +657,10 @@
                 <artifactId>aspectj-maven-plugin</artifactId>
                 <version>1.11.1</version>
                 <configuration>
-                    <source>${java.compiler.version}</source>
-                    <target>${java.compiler.version}</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                     <proc>none</proc>
-                    <complianceLevel>${java.compiler.version}</complianceLevel>
+                    <complianceLevel>${java.version}</complianceLevel>
                     <showWeaveInfo>true</showWeaveInfo>
                      <aspectLibraries>
                          <aspectLibrary>
@@ -670,7 +688,7 @@
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-jspc-maven-plugin</artifactId>
-                <version>9.4.21.v20190926</version>
+                <version>9.4.28.v20200408</version>
                 <executions>
                     <execution>
                         <id>jspc</id>

@@ -54,6 +54,7 @@ public class PersonalSettingsCommand {
     private boolean queueFollowingSongs;
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
+    private String listenBrainzUrl;
     private int paginationSize;
 
     public User getUser() {
@@ -238,6 +239,14 @@ public class PersonalSettingsCommand {
 
     public void setListenBrainzEnabled(boolean listenBrainzEnabled) {
         this.listenBrainzEnabled = listenBrainzEnabled;
+    }
+
+    public String getListenBrainzUrl() {
+        return listenBrainzUrl;
+    }
+
+    public void setListenBrainzUrl(String listenBrainzUrl) {
+        this.listenBrainzUrl = listenBrainzUrl;
     }
 
     public boolean isQueueFollowingSongs() {

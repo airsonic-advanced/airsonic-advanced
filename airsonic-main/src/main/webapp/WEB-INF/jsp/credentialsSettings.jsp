@@ -1,4 +1,4 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" isErrorPage="true" %>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8" isErrorPage="true" %>
 
 <html><head>
     <%@ include file="head.jsp" %>
@@ -234,6 +234,7 @@
     </c:if>
   </c:forEach>
 </table>
+<p style="padding-top:1em"><fmt:message key="credentialsettings.immutable"/></p>
 <p style="padding-top:1em;padding-bottom:1em">
     <input type="submit" value="<fmt:message key='common.save'/>" style="margin-right:0.3em"/>
     <input type="button" id="createcredsbutton" value="<fmt:message key='credentialsettings.addcredentials'/>" onclick="createNewCredsFnc(event)"/>
@@ -296,21 +297,10 @@
 <c:if test="${adminRole}">
 <div>
   <h3><fmt:message key='credentialsettings.admincontrols'/></h3>
-  <form:form method="post" action="credentialsSettings/admin" modelAttribute="adminControls">
+  <form:form method="post" action="${pageContext.request.contextPath}/credentialsSettings/admin" modelAttribute="adminControls">
 
     <table style="white-space:nowrap" class="indent">
       <tr><th colspan=4 style="text-align:left"><fmt:message key='credentialsettings.systemchecks'/></th></tr>
-      <c:if test="${adminControls.credsStoredInLegacyTables}">
-      <tr>
-        <td><fmt:message key="credentialsettings.storedinlegacytables"/> <c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialslegacytables"/></c:import></td>
-        <td>
-          <button id="purgeLegacyTablesButton" onclick="selectButtonCheckboxAndSubmit(this, event)">
-            <form:checkbox path="purgeCredsInLegacyTables" cssStyle="display:none" />
-            <fmt:message key='common.delete'/>
-          </button>
-        </td>
-      </tr>
-      </c:if>
       <c:if test="${adminControls.legacyCredsPresent}">
       <tr>
         <td><fmt:message key="credentialsettings.legacycredspresent"/><c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialslegacypasswords"/></c:import></td>
@@ -446,12 +436,6 @@
     <form:errors class="warning" cssStyle="width:15em"/>
   </form:form>
 </div>
-</c:if>
-
-<c:if test="${settings_reload}">
-    <script language="javascript" type="text/javascript">
-        parent.location.href="index.view?";
-    </script>
 </c:if>
 
 </body></html>

@@ -1,0 +1,80 @@
+name: 'Stable Deploy CI (Maven)'
+
+on:
+  push:
+    branches: [ stable/** ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: "github.repository == 'airsonic-advanced/airsonic-advanced' && startsWith(github.ref, 'refs/heads/stable/')"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - run: mvn versions:set -DremoveSnapshot=true -DgenerateBackupPoms=false
+      - name: Build with Maven
+        run: mvn -DskipTests -Dcheckstyle.skip=true package -P docker
+      - name: Calculate tags
+        if: success()
+        id: tagcalc
+        run: |
+          # Create tag
+          tag=$(grep "version=" airsonic-main/target/generated/build-metadata/build.properties | cut -d"=" -f2);
+          minor=$(echo $tag | cut -d"." -f1-2);
+          major=$(echo $minor | cut -d"." -f1);
+          echo $tag;
+          echo "::set-output name=tag::$tag"
+          echo "::set-output name=minor::$minor"
+          echo "::set-output name=major::$major"
+      - name: Import GPG Key for signing
+        run: echo "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}" | gpg --quiet --batch --yes --import
+      - name: Sign artifacts
+        run: |
+          echo "${{ secrets.GPG_SIGNING_PASSPHRASE }}" | gpg --quiet --batch --yes --pinentry-mode loopback --clearsign --passphrase-fd 0 airsonic-main/target/artifacts-checksums.sha;
+          #echo "${{ secrets.GPG_SIGNING_PASSPHRASE }}" | gpg --quiet --batch --yes --pinentry-mode loopback --detach-sign --armor --passphrase-fd 0 airsonic-main/target/airsonic.war;
+      - name: Deploy to GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.tagcalc.outputs.tag }}
+          name: Stable Release ${{ steps.tagcalc.outputs.tag }}
+          draft: false
+          prerelease: false
+          body: |
+            List of issues addressed: https://github.com/airsonic-advanced/airsonic-advanced/issues?q=milestone%3A${{ steps.tagcalc.outputs.tag }}
+          files: |
+            airsonic-main/target/airsonic.war
+            airsonic-main/target/artifacts-checksums.sha.asc
+      - name: Tag Docker Images
+        run: |
+          # Tag the docker image
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:stable;
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.tag }};
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.minor }};
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.major }};
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:stable-${{ steps.tagcalc.outputs.tag }};
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitcommit-${{ github.sha }};
+          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitrun-${{ github.run_id }};
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+      - name: Deploy to DockerHub
+        run: |
+          docker push airsonicadvanced/airsonic-advanced:latest;
+          docker push airsonicadvanced/airsonic-advanced:stable;
+          docker push airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.tag }};
+          docker push airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.minor }};
+          docker push airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.major }};
+          docker push airsonicadvanced/airsonic-advanced:stable-${{ steps.tagcalc.outputs.tag }};
+          docker push airsonicadvanced/airsonic-advanced:gitcommit-${{ github.sha }};
+          docker push airsonicadvanced/airsonic-advanced:gitrun-${{ github.run_id }};

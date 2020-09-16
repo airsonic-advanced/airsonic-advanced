@@ -22,7 +22,6 @@ package org.airsonic.player.service;
 import de.umass.lastfm.*;
 import de.umass.lastfm.Album;
 import de.umass.lastfm.Artist;
-
 import org.airsonic.player.dao.ArtistDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;

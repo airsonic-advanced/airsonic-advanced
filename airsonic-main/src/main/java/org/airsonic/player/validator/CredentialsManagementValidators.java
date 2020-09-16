@@ -63,14 +63,14 @@ public class CredentialsManagementValidators {
 
         @Override
         public boolean isValid(String field, ConstraintValidatorContext context) {
-            if (type == null) {
+            if (field == null) {
                 return true;
             }
 
             if (StringUtils.equals("nonlegacydecodable", type)) {
-                return GlobalSecurityConfig.NONLEGACY_DECODABLE_ENCODERS.contains(type);
+                return GlobalSecurityConfig.NONLEGACY_DECODABLE_ENCODERS.contains(field);
             } else if (StringUtils.equals("nonlegacynondecodable", type)) {
-                return GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS.contains(type);
+                return GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS.contains(field);
             }
 
             return GlobalSecurityConfig.ENCODERS.keySet().contains(field);

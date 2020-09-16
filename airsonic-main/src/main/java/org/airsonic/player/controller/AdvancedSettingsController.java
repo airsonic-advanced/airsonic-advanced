@@ -71,7 +71,6 @@ public class AdvancedSettingsController {
     @PostMapping
     protected String doSubmitAction(@ModelAttribute AdvancedSettingsCommand command, RedirectAttributes redirectAttributes) {
 
-        redirectAttributes.addFlashAttribute("settings_reload", false);
         redirectAttributes.addFlashAttribute("settings_toast", true);
 
         try {

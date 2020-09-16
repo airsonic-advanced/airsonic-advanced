@@ -137,7 +137,7 @@ public class LeftController {
         map.put("selectedMusicFolder", selectedMusicFolder);
         map.put("radios", settingsService.getAllInternetRadios());
         map.put("shortcuts", musicIndexService.getShortcuts(musicFoldersToUse));
-        map.put("partyMode", userSettings.isPartyModeEnabled());
+        map.put("partyMode", userSettings.getPartyModeEnabled());
         map.put("organizeByFolderStructure", settingsService.isOrganizeByFolderStructure());
         map.put("musicFolderChanged", musicFolderChanged);
 
