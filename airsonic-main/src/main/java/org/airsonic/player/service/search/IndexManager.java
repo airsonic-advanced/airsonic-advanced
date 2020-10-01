@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -110,11 +111,19 @@ public class IndexManager {
 
     private Map<IndexType, IndexWriter> writers = new ConcurrentHashMap<>();
 
+    private BiFunction<IndexType, IndexWriter, IndexWriter> checkIndexWriter = (t, w) -> {
+        if (w == null || !w.isOpen()) {
+            return createIndexWriter(t);
+        }
+
+        return w;
+    };
+
     public void index(Album album) {
         Term primarykey = documentFactory.createPrimarykey(album);
         Document document = documentFactory.createAlbumId3Document(album);
         try {
-            writers.get(IndexType.ALBUM_ID3).updateDocument(primarykey, document);
+            writers.compute(IndexType.ALBUM_ID3, checkIndexWriter).updateDocument(primarykey, document);
         } catch (Exception x) {
             LOG.error("Failed to create search index for {}", album, x);
         }
@@ -124,7 +133,7 @@ public class IndexManager {
         Term primarykey = documentFactory.createPrimarykey(artist);
         Document document = documentFactory.createArtistId3Document(artist, musicFolder);
         try {
-            writers.get(IndexType.ARTIST_ID3).updateDocument(primarykey, document);
+            writers.compute(IndexType.ARTIST_ID3, checkIndexWriter).updateDocument(primarykey, document);
         } catch (Exception x) {
             LOG.error("Failed to create search index for {}", artist, x);
         }
@@ -135,13 +144,13 @@ public class IndexManager {
         try {
             if (mediaFile.isFile()) {
                 Document document = documentFactory.createSongDocument(mediaFile);
-                writers.get(IndexType.SONG).updateDocument(primarykey, document);
+                writers.compute(IndexType.SONG, checkIndexWriter).updateDocument(primarykey, document);
             } else if (mediaFile.isAlbum()) {
                 Document document = documentFactory.createAlbumDocument(mediaFile);
-                writers.get(IndexType.ALBUM).updateDocument(primarykey, document);
+                writers.compute(IndexType.ALBUM, checkIndexWriter).updateDocument(primarykey, document);
             } else {
                 Document document = documentFactory.createArtistDocument(mediaFile);
-                writers.get(IndexType.ARTIST).updateDocument(primarykey, document);
+                writers.compute(IndexType.ARTIST, checkIndexWriter).updateDocument(primarykey, document);
             }
         } catch (Exception x) {
             LOG.error("Failed to create search index for {}", mediaFile, x);
@@ -149,19 +158,18 @@ public class IndexManager {
     }
 
     public final void startIndexing() {
-        EnumSet.allOf(IndexType.class).parallelStream().forEach(x -> {
-            try {
-                writers.put(x, createIndexWriter(x));
-            } catch (IOException e) {
-                LOG.error("Failed to create search index for {}", x, e);
-            }
-        });
+        EnumSet.allOf(IndexType.class).parallelStream().forEach(x -> writers.put(x, createIndexWriter(x)));
     }
 
-    private IndexWriter createIndexWriter(IndexType indexType) throws IOException {
+    private IndexWriter createIndexWriter(IndexType indexType) {
         Path indexDirectory = getIndexDirectory.apply(indexType);
-        IndexWriterConfig config = new IndexWriterConfig(analyzerFactory.getAnalyzer());
-        return new IndexWriter(FSDirectory.open(indexDirectory), config);
+        try {
+            IndexWriterConfig config = new IndexWriterConfig(analyzerFactory.getAnalyzer());
+            return new IndexWriter(FSDirectory.open(indexDirectory), config);
+        } catch (IOException e) {
+            LOG.error("Failed to create search index for {}", indexType, e);
+            return null;
+        }
     }
 
     public void expunge() {
@@ -169,7 +177,7 @@ public class IndexManager {
                 .map(m -> documentFactory.createPrimarykey(m))
                 .toArray(i -> new Term[i]);
         try {
-            writers.get(IndexType.ARTIST).deleteDocuments(primarykeys);
+            writers.compute(IndexType.ARTIST, checkIndexWriter).deleteDocuments(primarykeys);
         } catch (IOException e) {
             LOG.error("Failed to delete artist doc.", e);
         }
@@ -178,7 +186,7 @@ public class IndexManager {
                 .map(m -> documentFactory.createPrimarykey(m))
                 .toArray(i -> new Term[i]);
         try {
-            writers.get(IndexType.ALBUM).deleteDocuments(primarykeys);
+            writers.compute(IndexType.ALBUM, checkIndexWriter).deleteDocuments(primarykeys);
         } catch (IOException e) {
             LOG.error("Failed to delete album doc.", e);
         }
@@ -187,7 +195,7 @@ public class IndexManager {
                 .map(m -> documentFactory.createPrimarykey(m))
                 .toArray(i -> new Term[i]);
         try {
-            writers.get(IndexType.SONG).deleteDocuments(primarykeys);
+            writers.compute(IndexType.SONG, checkIndexWriter).deleteDocuments(primarykeys);
         } catch (IOException e) {
             LOG.error("Failed to delete song doc.", e);
         }
@@ -196,7 +204,7 @@ public class IndexManager {
                 .map(m -> documentFactory.createPrimarykey(m))
                 .toArray(i -> new Term[i]);
         try {
-            writers.get(IndexType.ARTIST_ID3).deleteDocuments(primarykeys);
+            writers.compute(IndexType.ARTIST_ID3, checkIndexWriter).deleteDocuments(primarykeys);
         } catch (IOException e) {
             LOG.error("Failed to delete artistId3 doc.", e);
         }
@@ -205,7 +213,7 @@ public class IndexManager {
                 .map(m -> documentFactory.createPrimarykey(m))
                 .toArray(i -> new Term[i]);
         try {
-            writers.get(IndexType.ALBUM_ID3).deleteDocuments(primarykeys);
+            writers.compute(IndexType.ALBUM_ID3, checkIndexWriter).deleteDocuments(primarykeys);
         } catch (IOException e) {
             LOG.error("Failed to delete albumId3 doc.", e);
         }
