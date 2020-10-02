@@ -14,7 +14,7 @@
 
     <properties>
         <chameleon.version>1.2.1-RELEASE</chameleon.version>
-        <tomcat.server.scope>provided</tomcat.server.scope>
+        <tomcat.server.scope>compile</tomcat.server.scope>
     </properties>
 
     <dependencies>
@@ -67,12 +67,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.servlet.jsp</groupId>
-            <artifactId>jakarta.servlet.jsp-api</artifactId>
-            <version>2.3.6</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -283,16 +277,23 @@
         </dependency>
 
         <dependency>
+            <groupId>jakarta.servlet.jsp</groupId>
+            <artifactId>jakarta.servlet.jsp-api</artifactId>
+            <version>2.3.6</version>
+            <scope>${tomcat.server.scope}</scope>
+        </dependency>
+
+        <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
-            <scope>provided</scope>
+            <scope>${tomcat.server.scope}</scope>
         </dependency>
 
         <dependency>
             <groupId>org.glassfish.web</groupId>
             <artifactId>jakarta.servlet.jsp.jstl</artifactId>
             <version>1.2.6</version>
-            <scope>runtime</scope>
+            <scope>${tomcat.server.scope}</scope>
         </dependency>
         <dependency>
 		    <groupId>net.sargue</groupId>
@@ -723,15 +724,15 @@
     <profiles>
         <profile>
             <id>tomcat-embed</id>
+            <properties>
+                <tomcat.server.scope>provided</tomcat.server.scope>
+            </properties>
+        </profile>
+        <profile>
+            <id>standalone</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-        </profile>
-        <profile>
-            <id>ide-tomcat-embed</id>
-            <properties>
-                <tomcat.server.scope>compile</tomcat.server.scope>
-            </properties>
         </profile>
     </profiles>
 </project>
