@@ -311,6 +311,7 @@
                                 <ignoredUnusedDeclaredDependency>org.liquibase:liquibase-core</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>jakarta.xml.bind:jakarta.xml.bind-api*</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.apache.cxf:cxf-rt-frontend-jaxws</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.glassfish.web:jakarta.servlet.jsp.jstl</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>
