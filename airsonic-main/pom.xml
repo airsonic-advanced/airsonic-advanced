@@ -532,7 +532,6 @@
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
-            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>jakarta.xml.ws</groupId>
