@@ -32,7 +32,6 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.FSDirectory;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -256,7 +255,7 @@ public class IndexManager {
      * Return the MediaLibraryStatistics saved on commit in the index. Ensures that each index reports the same data.
      * On invalid indices, returns null.
      */
-    public @Nullable MediaLibraryStatistics getStatistics() {
+    public MediaLibraryStatistics getStatistics() {
         Set<MediaLibraryStatistics> stats = EnumSet.allOf(IndexType.class).parallelStream().map(t -> {
             IndexSearcher searcher = getSearcher(t);
             if (searcher == null) {
@@ -290,7 +289,7 @@ public class IndexManager {
      * At initial startup, it may return null
      * if the user performs any search before performing a scan.
      */
-    public @Nullable IndexSearcher getSearcher(IndexType indexType) {
+    public IndexSearcher getSearcher(IndexType indexType) {
         return Optional.ofNullable(searchers.computeIfAbsent(indexType, k -> {
             Path indexDirectory = getIndexDirectory.apply(k);
             try {

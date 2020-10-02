@@ -24,7 +24,6 @@ import org.airsonic.player.domain.*;
 import org.airsonic.player.service.SearchService;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.*;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -191,9 +190,7 @@ public class SearchServiceImpl implements SearchService {
             List<MusicFolder> folderList, Class<T> assignableClass) {
 
         // we only support album, artist, and song for now
-        @Nullable
         IndexType indexType = util.getIndexType.apply(assignableClass);
-        @Nullable
         String fieldName = util.getFieldName.apply(assignableClass);
 
         ParamSearchResult<T> result = new ParamSearchResult<T>();
