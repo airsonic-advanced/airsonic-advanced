@@ -513,8 +513,9 @@ public class TranscodingService {
             return null;
         }
 
-        // Over-estimate size a bit (2 seconds) so don't cut off early in case of small calculation differences
-        return Math.round((duration + 2) * maxBitRate * 1000L / 8L);
+        // Over-estimate size a bit (a custom time surplus plus a custom byte surplus) so don't cut off early in case of small calculation differences
+        return Math.round((duration + (settingsService.getTranscodeEstimateTimePadding() / 1000.0)) * maxBitRate * 1000L / 8L)
+                + settingsService.getTranscodeEstimateBytePadding();
     }
 
     private boolean isRangeAllowed(Parameters parameters) {
