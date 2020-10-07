@@ -79,6 +79,26 @@
         </tr>
     </table>
 
+    <table style="white-space:nowrap" class="indent">
+        <tr>
+            <td style="font-weight: bold;">
+                <fmt:message key="advancedsettings.transcodeestimatetimepadding"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="transcodeestimatetimepadding"/></c:import>
+            </td>
+            <td>
+                <input class="monospace" name="transcodeEstimateTimePadding" size="8" value="${model.transcodeEstimateTimePadding}"/>
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold;">
+                <fmt:message key="advancedsettings.transcodeestimatebytepadding"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="transcodeestimatebytepadding"/></c:import>
+            </td>
+            <td>
+                <input class="monospace" name="transcodeEstimateBytePadding" size="8" value="${model.transcodeEstimateBytePadding}"/>
+            </td>
+        </tr>
+    </table>
 
     <p style="padding-top:0.75em">
         <input type="submit" value="<fmt:message key='common.save'/>" style="margin-right:0.3em">
