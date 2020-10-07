@@ -173,10 +173,10 @@
             <span style="vertical-align: middle">
                 <c:choose>
                     <c:when test="${empty radio.homepageUrl}">
-                        ${fn:escapeXml(radio.name)}
+                        <span title="${fn:escapeXml(radio.name)}">${fn:escapeXml(radio.name)}</span>
                     </c:when>
                     <c:otherwise>
-                        <a target="_blank" rel="noopener" href="${radio.homepageUrl}">${fn:escapeXml(radio.name)}</a>
+                        <a target="_blank" rel="noopener" href="${radio.homepageUrl}" title="Visit ${fn:escapeXml(radio.name)}">${fn:escapeXml(radio.name)}</a>
                     </c:otherwise>
                 </c:choose>
             </span>
