@@ -103,7 +103,7 @@ public class DownloadController {
 
     @GetMapping
     public ResponseEntity<Resource> handleRequest(Principal p,
-            @RequestParam Optional<Integer> id,
+            @RequestParam(name = "id") Optional<List<Integer>> ids,
             @RequestParam(required = false) Integer playlist,
             @RequestParam(required = false) Integer player,
             @RequestParam(required = false, name = "i") List<Integer> indices,
@@ -121,20 +121,27 @@ public class DownloadController {
             LOG.info("Transferred {} bytes to user: {}, player: {}", status.getBytesTransferred(), user.getUsername(), transferPlayer);
         };
 
-        MediaFile mediaFile = id.map(mediaFileService::getMediaFile).orElse(null);
+        if (ids.isPresent()) {
+            List<MediaFile> mediaFiles = ids.get().stream().map(mediaFileService::getMediaFile).collect(Collectors.toList());
 
-        if (mediaFile != null) {
-            if (!securityService.isFolderAccessAllowed(mediaFile, user.getUsername())) {
-                throw new AccessDeniedException("Access to file " + mediaFile.getId() + " is forbidden for user " + user.getUsername());
-            }
+            mediaFiles.forEach(mediaFile -> {
+                if (!securityService.isFolderAccessAllowed(mediaFile, user.getUsername())) {
+                    throw new AccessDeniedException("Access to file " + mediaFile.getId() + " is forbidden for user " + user.getUsername());
+                }
+            });
 
-            if (mediaFile.isFile()) {
-                response = prepareResponse(Collections.singletonList(mediaFile), null, statusSupplier, statusCloser, Collections.emptyList());
-                defaultDownloadName = mediaFile.getFile().getFileName().toString();
+            MediaFile firstMediaFile = mediaFiles.get(0);
+            if (firstMediaFile.isDirectory()) {
+                response = prepareResponse(mediaFileService.getChildrenOf(firstMediaFile, true, false, true), indices,
+                        statusSupplier, statusCloser, indices == null ? Collections.singletonList(firstMediaFile.getCoverArtFile()) : Collections.emptyList());
+                defaultDownloadName = FilenameUtils.getBaseName(firstMediaFile.getPath()) + ".zip";
             } else {
-                response = prepareResponse(mediaFileService.getChildrenOf(mediaFile, true, false, true), indices,
-                        statusSupplier, statusCloser, indices == null ? Collections.singletonList(mediaFile.getCoverArtFile()) : Collections.emptyList());
-                defaultDownloadName = FilenameUtils.getBaseName(mediaFile.getPath()) + ".zip";
+                response = prepareResponse(mediaFiles, null, statusSupplier, statusCloser, Collections.emptyList());
+                if (mediaFiles.size() == 1) {
+                    defaultDownloadName = firstMediaFile.getFile().getFileName().toString();
+                } else {
+                    defaultDownloadName = FilenameUtils.getBaseName(firstMediaFile.getParentFile().toString()) + ".zip";
+                }
             }
         } else if (playlist != null) {
             response = prepareResponse(playlistService.getFilesInPlaylist(playlist), indices, statusSupplier, statusCloser, Collections.emptyList());

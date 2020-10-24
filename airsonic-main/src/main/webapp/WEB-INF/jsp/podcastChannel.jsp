@@ -23,8 +23,26 @@
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
 
+    <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <script type="text/javascript" language="javascript">
         function init() {
+            top.StompClient.subscribe("podcastChannel.jsp", {
+                '/user/queue/playlists/writable': function(msg) {
+                    playlistSelectionCallback(JSON.parse(msg.body));
+                },
+                '/user/queue/playlists/files/append': function(msg) {
+                    $().toastmessage("showSuccessToast", "<fmt:message key='playlist.toast.appendtoplaylist'/>");
+                },
+            });
+
+            $("#dialog-select-playlist").dialog({resizable: true, height: 350, autoOpen: false,
+                buttons: {
+                    "<fmt:message key="common.cancel"/>": function() {
+                        $(this).dialog("close");
+                    }
+                }
+            });
+
             $("#dialog-delete").dialog({resizable: false, height: 170, autoOpen: false,
                 buttons: {
                     "<fmt:message key="common.delete"/>": function() {
@@ -37,9 +55,62 @@
                 }});
         }
 
+        // need to keep track if a request was sent because plaQueue may also send a request
+        var awaitingAppendPlaylistRequest = false;
+        function onAppendPlaylist() {
+            awaitingAppendPlaylistRequest = true;
+            // retrieve writable lists so we can open dialog to ask user which playlist to append to
+            top.StompClient.send("/app/playlists/writable", "");
+        }
+
+        function playlistSelectionCallback(playlists) {
+            if (!awaitingAppendPlaylistRequest) {
+                return;
+            }
+            awaitingAppendPlaylistRequest = false;
+            $("#dialog-select-playlist-list").empty();
+            for (var i = 0; i < playlists.length; i++) {
+                var playlist = playlists[i];
+                $("<p class='dense'><b><a href='#' onclick='appendPlaylist(" + playlist.id + ")'>" + escapeHtml(playlist.name)
+                    + "</a></b></p>").appendTo("#dialog-select-playlist-list");
+            }
+            $("#dialog-select-playlist").dialog("open");
+        }
+
+        function appendPlaylist(playlistId) {
+            $("#dialog-select-playlist").dialog("close");
+            var mediaFileIds = getSelectedDownloadedEpisodes().map(e => e.mediaFileId);
+            top.StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
+        }
+
+        // actionSelected() is invoked when the users selects from the "More actions..." combo box.
+        function actionSelected(id) {
+            if (id == "top") {
+                return;
+            } else if (id == "selectAll") {
+                selectAll(true);
+            } else if (id == "selectNone") {
+                selectAll(false);
+            } else if (id == "download" || id == "appendPlaylist") {
+                var selectedEpisodeCount = getSelectedEpisodes().length;
+                var selectedDownloadedEpisodeCount = getSelectedDownloadedEpisodes().length;
+                if (selectedDownloadedEpisodeCount < selectedEpisodeCount) {
+                    $().toastmessage("showErrorToast", "<fmt:message key="podcastreceiver.episodedownloadnotcomplete"/>");
+                }
+                if (selectedDownloadedEpisodeCount > 0) {
+                    if (id == "download") {
+                        location.href = "download.view?" + getSelectedDownloadedEpisodes().map(e => e.mediaFileId).map(i => "id=" + i).join("&");
+                    } else if (id == "appendPlaylist") {
+                        onAppendPlaylist();
+                    }
+                }
+            }
+            $("#moreActions").prop("selectedIndex", 0);
+        }
+
         function downloadSelected() {
             location.href = "podcastReceiverAdmin.view?channelId=${model.channel.id}&" +
-                    getSelectedEpisodes().map(i => "downloadEpisode=" + i).join("&");
+                    getSelectedEpisodes().map(e => e.id).map(i => "downloadEpisode=" + i).join("&");
         }
 
         function deleteChannel() {
@@ -48,7 +119,7 @@
 
         function deleteSelected() {
             location.href = "podcastReceiverAdmin.view?channelId=${model.channel.id}&" +
-                    getSelectedEpisodes().map(i => "deleteEpisode=" + i).join("&");
+                    getSelectedEpisodes().map(e => e.id).map(i => "deleteEpisode=" + i).join("&");
         }
 
         function refreshChannels() {
@@ -59,15 +130,33 @@
             location.href = "podcastChannel.view?id=${model.channel.id}";
         }
 
+        function selectAll(checked) {
+            for (var i = 0; i < ${fn:length(model.episodes)}; i++) {
+                $("#episode" + i).prop("checked", checked);
+            }
+        }
+
         function getSelectedEpisodes() {
             var result = [];
             for (var i = 0; i < ${fn:length(model.episodes)}; i++) {
                 var checkbox = $("#episode" + i);
                 if (checkbox.is(":checked")) {
-                    result.push(checkbox.val());
+                    var id = checkbox.val();
+                    var parent = checkbox.parent().parent();
+                    var addButton = parent.find("td > img[id^='add']");
+                    var mediaFileId = '';
+                    if (addButton.length > 0) {
+                        mediaFileId = addButton.eq(0).attr("id").substring(3);
+                    }
+                    var isCompleted = parent.find("span[id^='downloadStatus']").text().trim() == "<fmt:message key="podcastreceiver.status.completed"/>";
+                    result.push({id: id, mediaFileId: mediaFileId, isCompleted: isCompleted});
                 }
             }
             return result;
+        }
+
+        function getSelectedDownloadedEpisodes() {
+            return getSelectedEpisodes().filter(e => e.isCompleted == true);
         }
 
     </script>
@@ -83,7 +172,7 @@
 
 <h1 id="name"><a href="podcastChannels.view"><fmt:message key="podcastreceiver.title"/></a> &raquo; ${fn:escapeXml(model.channel.title)}</h1>
 <h2>
-    <span class="header"><a href="javascript:top.playQueue.onPlayPodcastChannel(${model.channel.id})"><fmt:message key="common.play"/></a></span>
+    <span class="header"><a href="javascript:top.playQueue.onPlayPodcastChannel(${model.channel.id})"><fmt:message key="main.playall"/></a></span>
 
     <c:if test="${model.user.podcastRole}">
         | <span class="header"><a href="javascript:deleteChannel()"><fmt:message key="common.delete"/></a></span>
@@ -138,7 +227,7 @@
             </td>
 
             <td class="fit" style="text-align:center">
-                <span class="detail">
+                <span id="downloadStatus${i.index}" class="detail">
                     <c:choose>
                         <c:when test="${episode.status eq 'DOWNLOADING'}">
                             <fmt:formatNumber type="percent" value="${episode.completionRate}"/>
@@ -166,21 +255,48 @@
 
 </table>
 
-<table style="padding-top:1em"><tr>
-    <c:if test="${model.user.podcastRole}">
-        <td style="padding-right:2em"><div class="forward"><a href="javascript:downloadSelected()"><fmt:message key="podcastreceiver.downloadselected"/></a></div></td>
-        <td style="padding-right:2em"><div class="forward"><a href="javascript:deleteSelected()"><fmt:message key="podcastreceiver.deleteselected"/></a></div></td>
+<select id="moreActions" onchange="actionSelected(this.options[selectedIndex].id);" style="margin-bottom:1.0em">
+    <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
+    <option id="selectAll">&nbsp;&nbsp;<fmt:message key="playlist.more.selectall"/></option>
+    <option id="selectNone">&nbsp;&nbsp;<fmt:message key="playlist.more.selectnone"/></option>
+    <c:if test="${model.user.downloadRole}">
+        <option id="download">&nbsp;&nbsp;<fmt:message key="common.download"/></option>
     </c:if>
-    <td style="padding-right:2em"><div class="forward"><a href="javascript:refreshPage()"><fmt:message key="podcastreceiver.refresh"/></a></div></td>
-    <c:if test="${model.user.adminRole}">
-        <td style="padding-right:2em"><div class="forward"><a href="podcastSettings.view?"><fmt:message key="podcastreceiver.settings"/></a></div></td>
-    </c:if>
-</tr></table>
+    <option id="appendPlaylist">&nbsp;&nbsp;<fmt:message key="playlist.append"/></option>
+</select>
 
+<table style="padding-top:1em">
+    <tr>
+        <c:if test="${model.user.podcastRole}">
+            <td style="padding-right:2em">
+                <div class="forward"><a href="javascript:downloadSelected()"><fmt:message key="podcastreceiver.downloadselected"/></a></div>
+            </td>
+            <td style="padding-right:2em">
+                <div class="forward"><a href="javascript:deleteSelected()"><fmt:message key="podcastreceiver.deleteselected"/></a></div>
+            </td>
+        </c:if>
+        <td style="padding-right:2em">
+            <div class="forward"><a href="javascript:refreshPage()"><fmt:message key="podcastreceiver.refresh"/></a>
+            </div>
+        </td>
+        <c:if test="${model.user.adminRole}">
+            <td style="padding-right:2em">
+                <div class="forward"><a href="podcastSettings.view?"><fmt:message key="podcastreceiver.settings"/></a>
+                </div>
+            </td>
+        </c:if>
+    </tr>
+</table>
 
 <div id="dialog-delete" title="<fmt:message key='common.confirm'/>" style="display: none;">
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>
         <fmt:message key="podcastreceiver.confirmdelete"/></p>
 </div>
 
-</body></html>
+<div id="dialog-select-playlist" title="<fmt:message key='main.addtoplaylist.title'/>" style="display: none;">
+    <p><fmt:message key="main.addtoplaylist.text"/></p>
+    <div id="dialog-select-playlist-list"></div>
+</div>
+
+</body>
+</html>
