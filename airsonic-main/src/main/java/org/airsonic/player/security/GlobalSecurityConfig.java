@@ -34,6 +34,7 @@ import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
 import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
@@ -282,7 +283,9 @@ public class GlobalSecurityConfig {
             http
                     .cors()
                     .and()
-                    .addFilterBefore(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                    .httpBasic()
+                    .and()
+                    .addFilterAfter(restAuthenticationFilter, BasicAuthenticationFilter.class)
                     .csrf()
                     .ignoringAntMatchers("/ws/Sonos/**")
                     .requireCsrfProtectionMatcher(csrfSecurityRequestMatcher)
