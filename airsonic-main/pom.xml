@@ -223,13 +223,13 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
+            <exclusions>
+             <exclusion>
+              <groupId>org.checkerframework</groupId>
+              <artifactId>checker-qual</artifactId>
+             </exclusion>
+            </exclusions>
         </dependency>
-		<dependency>
-			<groupId>org.checkerframework</groupId>
-			<artifactId>checker-qual</artifactId>
-			<scope>compile</scope>
-			<version>2.8.1</version>
-		</dependency>
 
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -546,6 +546,12 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+            <exclusions>
+             <exclusion>
+              <groupId>org.checkerframework</groupId>
+              <artifactId>checker-qual</artifactId>
+             </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>mysql</groupId>

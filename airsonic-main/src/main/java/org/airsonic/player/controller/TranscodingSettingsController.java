@@ -59,6 +59,8 @@ public class TranscodingSettingsController {
         map.put("transcodeDirectory", transcodingService.getTranscodeDirectory());
         map.put("downsampleCommand", settingsService.getDownsamplingCommand());
         map.put("hlsCommand", settingsService.getHlsCommand());
+        map.put("transcodeEstimateTimePadding", settingsService.getTranscodeEstimateTimePadding());
+        map.put("transcodeEstimateBytePadding", settingsService.getTranscodeEstimateBytePadding());
         map.put("brand", settingsService.getBrand());
 
         model.addAttribute("model", map);
@@ -135,6 +137,12 @@ public class TranscodingSettingsController {
         }
         settingsService.setDownsamplingCommand(StringUtils.trim(request.getParameter("downsampleCommand")));
         settingsService.setHlsCommand(StringUtils.trim(request.getParameter("hlsCommand")));
+
+        String timePad = StringUtils.trimToNull(request.getParameter("transcodeEstimateTimePadding"));
+        String bytePad = StringUtils.trimToNull(request.getParameter("transcodeEstimateBytePadding"));
+        settingsService.setTranscodeEstimateTimePadding(timePad == null ? null : Long.parseLong(timePad));
+        settingsService.setTranscodeEstimateBytePadding(bytePad == null ? null : Long.parseLong(bytePad));
+
         settingsService.save();
         return null;
     }

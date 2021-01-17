@@ -35,8 +35,6 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -82,7 +80,7 @@ public class QueryFactory {
      *   - Path comparison is more appropriate with "Or".
      *   - If "SpanOr" is maintained, the DOC design needs to be changed.
      */
-    private final BiFunction<@NonNull Boolean, @NonNull List<MusicFolder>, @NonNull Query> toFolderQuery = (
+    private final BiFunction<Boolean, List<MusicFolder>, Query> toFolderQuery = (
             isId3, folders) -> {
         BooleanQuery.Builder mfQuery = new BooleanQuery.Builder();
         folders.stream()
@@ -102,8 +100,7 @@ public class QueryFactory {
      *  - Self made parser process reduces one library dependency.
      *  - It is easy to make corrections later when changing the query to improve search accuracy.
      */
-    private Query createMultiFieldWildQuery(@NonNull String[] fieldNames, @NonNull String queryString,
-            @NonNull IndexType indexType)
+    private Query createMultiFieldWildQuery(String[] fieldNames, String queryString, IndexType indexType)
             throws IOException {
 
         BooleanQuery.Builder mainQuery = new BooleanQuery.Builder();
@@ -153,7 +150,7 @@ public class QueryFactory {
      * XXX 3.x -> 8.x :
      * RangeQuery has been changed to not allow null.
      */
-    private final BiFunction<@Nullable Integer, @Nullable Integer, @NonNull Query> toYearRangeQuery =
+    private final BiFunction<Integer, Integer, Query> toYearRangeQuery =
         (from, to) -> {
             return IntPoint.newRangeQuery(FieldNames.YEAR,
                 isEmpty(from) ? Integer.MIN_VALUE : from,

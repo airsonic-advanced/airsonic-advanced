@@ -36,9 +36,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.servlet.ServletContext;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -257,10 +261,8 @@ public class GlobalSecurityConfig {
 
         @Override
         protected void configure(HttpSecurity http) throws Exception {
-
             RESTRequestParameterProcessingFilter restAuthenticationFilter = new RESTRequestParameterProcessingFilter();
             restAuthenticationFilter.setAuthenticationManager(authenticationManagerBean());
-            http = http.addFilterBefore(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
             // Try to load the 'remember me' key.
             //
@@ -278,6 +280,9 @@ public class GlobalSecurityConfig {
             }
 
             http
+                    .cors()
+                    .and()
+                    .addFilterBefore(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                     .csrf()
                     .ignoringAntMatchers("/ws/Sonos/**")
                     .requireCsrfProtectionMatcher(csrfSecurityRequestMatcher)
@@ -322,5 +327,19 @@ public class GlobalSecurityConfig {
                     .and().logout().deleteCookies("JSESSIONID").logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")).logoutSuccessUrl("/login?logout")
                     .and().rememberMe().key(rememberMeKey).userDetailsService(securityService);
         }
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Collections.singletonList("*"));
+        configuration.setAllowedMethods(Collections.singletonList("*"));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/rest/**", configuration);
+        source.registerCorsConfiguration("/stream/**", configuration);
+        source.registerCorsConfiguration("/ext/stream/**", configuration);
+        source.registerCorsConfiguration("/ext/hls/**", configuration);
+        source.registerCorsConfiguration("/ext/hls/**", configuration);
+        return source;
     }
 }

@@ -30,7 +30,6 @@ import org.airsonic.player.domain.SearchResult;
 import org.airsonic.player.service.MediaFileService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.document.Document;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -99,7 +98,7 @@ public class SearchServiceUtilities {
         }
     };
 
-    public final Function<Class<?>, @Nullable IndexType> getIndexType = (assignableClass) -> {
+    public final Function<Class<?>, IndexType> getIndexType = (assignableClass) -> {
         IndexType indexType = null;
         if (assignableClass.isAssignableFrom(Album.class)) {
             indexType = IndexType.ALBUM_ID3;
@@ -111,7 +110,7 @@ public class SearchServiceUtilities {
         return indexType;
     };
 
-    public final Function<Class<?>, @Nullable String> getFieldName = (assignableClass) -> {
+    public final Function<Class<?>, String> getFieldName = (assignableClass) -> {
         String fieldName = null;
         if (assignableClass.isAssignableFrom(Album.class)) {
             fieldName = FieldNames.ALBUM;
