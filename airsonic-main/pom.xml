@@ -14,11 +14,10 @@
 
     <properties>
         <chameleon.version>1.2.1-RELEASE</chameleon.version>
-        <tomcat.server.scope>provided</tomcat.server.scope>
+        <tomcat.server.scope>compile</tomcat.server.scope>
     </properties>
 
     <dependencies>
-
         <dependency>
             <groupId>org.airsonic.player</groupId>
             <artifactId>subsonic-rest-api</artifactId>
@@ -70,10 +69,8 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.servlet.jsp</groupId>
-            <artifactId>jakarta.servlet.jsp-api</artifactId>
-            <version>2.3.6</version>
-            <scope>provided</scope>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -280,16 +277,23 @@
         </dependency>
 
         <dependency>
+            <groupId>jakarta.servlet.jsp</groupId>
+            <artifactId>jakarta.servlet.jsp-api</artifactId>
+            <version>2.3.6</version>
+            <scope>${tomcat.server.scope}</scope>
+        </dependency>
+
+        <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
-            <scope>provided</scope>
+            <scope>${tomcat.server.scope}</scope>
         </dependency>
 
         <dependency>
             <groupId>org.glassfish.web</groupId>
             <artifactId>jakarta.servlet.jsp.jstl</artifactId>
             <version>1.2.6</version>
-            <scope>runtime</scope>
+            <scope>${tomcat.server.scope}</scope>
         </dependency>
         <dependency>
 		    <groupId>net.sargue</groupId>
@@ -370,7 +374,6 @@
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-transports-http</artifactId>
-            <version>${cxf.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework</groupId>
@@ -382,25 +385,21 @@
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-core</artifactId>
-            <version>${cxf.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-frontend-jaxws</artifactId>
-            <version>${cxf.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-bindings-soap</artifactId>
-            <version>${cxf.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-databinding-jaxb</artifactId>
-            <version>${cxf.version}</version>
         </dependency>
 
         <dependency>
@@ -534,7 +533,6 @@
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
-            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>jakarta.xml.ws</groupId>
@@ -694,7 +692,7 @@
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-jspc-maven-plugin</artifactId>
-                <version>9.4.28.v20200408</version>
+                <version>9.4.31.v20200723</version>
                 <executions>
                     <execution>
                         <id>jspc</id>
@@ -726,15 +724,15 @@
     <profiles>
         <profile>
             <id>tomcat-embed</id>
+            <properties>
+                <tomcat.server.scope>provided</tomcat.server.scope>
+            </properties>
+        </profile>
+        <profile>
+            <id>standalone</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-        </profile>
-        <profile>
-            <id>ide-tomcat-embed</id>
-            <properties>
-                <tomcat.server.scope>compile</tomcat.server.scope>
-            </properties>
         </profile>
     </profiles>
 </project>
