@@ -44,7 +44,7 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/websocket")
-                .setAllowedOrigins("*")
+                // .setAllowedOrigins("*")
                 .addInterceptors(new ServletRequestCaptureHandshakeInterceptor())
                 .withSockJS()
                 .setClientLibraryUrl("../../script/sockjs-client-1.4.0.min.js");
