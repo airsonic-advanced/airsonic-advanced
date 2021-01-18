@@ -1106,9 +1106,9 @@
     </div>
   </c:if>
 
-    <div class="player-tech player-tech-web" style="white-space:nowrap;">
-        <div id="player" style="width:340px; height:40px">
-            <audio id="audioPlayer" width="340px" height="40px" tabindex="-1" ></audio>
+    <div class="player-tech player-tech-web" style="white-space:nowrap;flex:1 1 300px;">
+        <div id="player" style="height:40px">
+            <audio id="audioPlayer" style="width:100%; height:40px" tabindex="-1" ></audio>
         </div>
         <div id="castPlayer" style="display: none">
             <div style="float:left">
@@ -1244,7 +1244,7 @@
     </div>
 
   <c:if test="${not model.autoHide}">
-    <div style="white-space:nowrap; text-align:right; width:100%; padding-right:1.5em">
+    <div style="white-space:nowrap; text-align:right; padding-left:1.5em; padding-right:1.5em">
         <a href="javascript:playQueue.onTogglePlayQueue(!playQueue.isVisible)">
             <img class="playqueue-shown" src="<spring:theme code='playQueueHide'/>" alt="Hide play queue" title="Hide play queue" style="cursor:pointer; height:18px;"/>
             <img class="playqueue-hidden" src="<spring:theme code='playQueueShow'/>" alt="Show play queue" title="Show play queue" style="cursor:pointer; height:18px; display: none;"/>
