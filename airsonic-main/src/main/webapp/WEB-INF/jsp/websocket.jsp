@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=utf-8" pageEncoding="utf-8" %>
-<script type="text/javascript" src="<c:url value='/script/sockjs-client-1.4.0.min.js'/>"></script>
+<script type="text/javascript" src="<c:url value='/script/sockjs-1.5.0.min.js'/>"></script>
 <script type="text/javascript" src="<c:url value='/script/stomp-4.0.8.min.js'/>"></script>
 <script type="text/javascript">
     var csrfheaderName = "${_csrf.headerName}";

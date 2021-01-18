@@ -47,7 +47,7 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
                 // .setAllowedOrigins("*")
                 .addInterceptors(new ServletRequestCaptureHandshakeInterceptor())
                 .withSockJS()
-                .setClientLibraryUrl("../../script/sockjs-client-1.4.0.min.js");
+                .setClientLibraryUrl("../../script/sockjs-1.5.0.min.js");
     }
 
     public static class ServletRequestCaptureHandshakeInterceptor implements HandshakeInterceptor {
