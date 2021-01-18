@@ -7,9 +7,6 @@ ENV AIRSONIC_PORT=4040 AIRSONIC_DIR=/var CONTEXT_PATH=/ UPNP_PORT=4041 PUID=0 PG
 
 WORKDIR $AIRSONIC_DIR
 
-ADD https://github.com/krallin/tini/releases/download/v0.19.0/tini /usr/local/bin/tini
-RUN chmod +x /usr/local/bin/tini
-
 RUN apt-get update && \
     apt-get install -y software-properties-common && \
     add-apt-repository -y ppa:savoury1/ffmpeg4 && \
@@ -41,4 +38,4 @@ VOLUME $AIRSONIC_DIR/airsonic $AIRSONIC_DIR/music $AIRSONIC_DIR/playlists $AIRSO
 
 HEALTHCHECK --interval=15s --timeout=3s CMD curl -f http://localhost:"$AIRSONIC_PORT""$CONTEXT_PATH"rest/ping || false
 
-ENTRYPOINT ["tini", "--", "entry.sh"]
+ENTRYPOINT ["entry.sh"]
