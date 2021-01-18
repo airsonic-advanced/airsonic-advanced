@@ -45,7 +45,7 @@ jobs:
       - run: docker run --rm mplatform/mquery airsonicadvanced/airsonic-advanced:latest
       - run: docker build --platform linux/amd64,linux/arm64,linux/arm/v7 -f install/docker/Dockerfile -t why/why:latest .
       - run: docker run --rm mplatform/mquery why/why:latest
-      - docker buildx imagetools inspect why/why
+      - run: docker buildx imagetools inspect why/why
 
     strategy:
       fail-fast: false
