@@ -32,8 +32,8 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic", "/queue")
-                .setHeartbeatValue(new long[] { 25000, 25000 })
-                .setTaskScheduler(messageBrokerTaskScheduler);
+                .setTaskScheduler(messageBrokerTaskScheduler)
+                .setHeartbeatValue(new long[] { 20000, 20000 });
         config.setApplicationDestinationPrefixes("/app");
 
         // this ensures publish order is serial at the cost of no parallelization and

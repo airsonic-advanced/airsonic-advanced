@@ -41,8 +41,8 @@
             if (stompclient.stompClient == null) {
                 var socket = new SockJS("<c:url value='/websocket'/>");
                 stompclient.stompClient = Stomp.over(socket);
-                stompclient.stompClient.heartbeat.incoming = 25000;
-                stompclient.stompClient.heartbeat.outgoing = 25000;
+                stompclient.stompClient.heartbeat.incoming = 20000;
+                stompclient.stompClient.heartbeat.outgoing = 20000;
                 // resubscribe to everything again
                 stompclient.resubscriptionCallback = function() {
                     for (var topic in stompclient.subscriptions) {
