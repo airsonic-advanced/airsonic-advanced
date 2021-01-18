@@ -43,7 +43,7 @@ jobs:
       - name: Build with Maven
         run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} -Dtest=foo -Dit.test=foo -DfailIfNoTests=false verify -B -P integration-test
       - run: docker run --rm mplatform/mquery airsonicadvanced/airsonic-advanced:latest
-      - run: docker build --platform linux/amd64,linux/arm64,linux/arm/v7 -f install/docker/Dockerfile -t why/why:latest install/docker
+      - run: docker build --platform linux/amd64,linux/arm64,linux/arm/v7 --load -f install/docker/Dockerfile -t why/why:latest install/docker
       - run: docker run --rm mplatform/mquery why/why:latest
       - run: docker buildx imagetools inspect why/why
 
