@@ -34,14 +34,11 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
-                            <buildArgs><platform>linux/amd64,linux/arm64,linux/arm/v7</platform></buildArgs>
                             <showLogs>true</showLogs>
                             <images>
                                 <image>
                                     <name>${docker.container.repo}</name>
                                     <build>
-                                        <args><platform>linux/amd64,linux/arm64,linux/arm/v7</platform></args>
-                                        <buildOptions><platform>linux/amd64,linux/arm64,linux/arm/v7</platform></buildOptions>
                                         <dockerFile>${project.basedir}/Dockerfile</dockerFile>
                                         <tags>latest</tags>
                                     </build>
