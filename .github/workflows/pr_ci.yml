@@ -41,7 +41,7 @@ jobs:
       - run: ${{ matrix.cfg.run }}
         if: matrix.cfg.executeManualcommand
       - name: Build with Maven
-        run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
+        run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} -Dtest=foo -DfailIfNoTests=false verify -B -P integration-test
       - run: docker run --rm mplatform/mquery airsonicadvanced/airsonic-advanced:latest
       - run: docker build --platform linux/amd64,linux/arm64,linux/arm/v7 -f install/docker/Dockerfile -t why/why:latest .
       - run: docker run --rm mplatform/mquery why/why:latest
