@@ -6,6 +6,7 @@ import chameleon.playlist.xspf.Playlist;
 import chameleon.playlist.xspf.StringContainer;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.SettingsService;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,9 @@ public class XspfPlaylistImportHandler implements PlaylistImportHandler {
     @Autowired
     MediaFileService mediaFileService;
 
+    @Autowired
+    SettingsService settingsService;
+
     @Override
     public boolean canHandle(Class<? extends SpecificPlaylist> playlistClass) {
         return Playlist.class.equals(playlistClass);
@@ -33,6 +37,11 @@ public class XspfPlaylistImportHandler implements PlaylistImportHandler {
         List<MediaFile> mediaFiles = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         Playlist xspfPlaylist = (Playlist) inputSpecificPlaylist;
+        String playlistFolderPath = settingsService.getPlaylistFolder();
+        if (playlistFolderPath == null) {
+            playlistFolderPath = "/";
+        }
+        Path playlistFolder = Paths.get(playlistFolderPath);
         xspfPlaylist.getTracks().forEach(track -> {
             MediaFile mediaFile = null;
             for (StringContainer sc : track.getStringContainers()) {
@@ -40,13 +49,15 @@ public class XspfPlaylistImportHandler implements PlaylistImportHandler {
                     Location location = (Location) sc;
                     try {
                         Path file = Paths.get(new URI(location.getText()));
-                        mediaFile = mediaFileService.getMediaFile(file);
+                        Path resolvedFile = playlistFolder.resolve(file).normalize();
+                        mediaFile = mediaFileService.getMediaFile(resolvedFile);
                     } catch (Exception ignored) {}
 
                     if (mediaFile == null) {
                         try {
                             Path file = Paths.get(sc.getText());
-                            mediaFile = mediaFileService.getMediaFile(file);
+                            Path resolvedFile = playlistFolder.resolve(file).normalize();
+                            mediaFile = mediaFileService.getMediaFile(resolvedFile);
                         } catch (Exception ignored) {}
                     }
                 }
