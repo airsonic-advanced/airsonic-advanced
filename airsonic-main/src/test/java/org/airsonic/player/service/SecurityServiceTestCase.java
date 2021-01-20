@@ -39,6 +39,12 @@ public class SecurityServiceTestCase {
 
         assertTrue(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("/music")));
         assertTrue(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("/music/")));
+        System.out.println(Paths.get("\\music\\foo.mp3"));
+        System.out.println(Paths.get("/music"));
+        System.out.println(Paths.get("\\music"));
+        System.out.println(Paths.get("\\music\\foo.mp3").normalize());
+        System.out.println(Paths.get("\\music\\foo.mp3").getRoot());
+        System.out.println(Paths.get("\\music\\foo.mp3").getParent());
         assertTrue(SecurityService.isFileInFolder(Paths.get("\\music\\foo.mp3"), Paths.get("\\music")));
         assertTrue(SecurityService.isFileInFolder(Paths.get("\\music\\foo.mp3"), Paths.get("\\music\\")));
         assertTrue(SecurityService.isFileInFolder(Paths.get("music/foo.mp3"), Paths.get("music")));
