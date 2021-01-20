@@ -35,18 +35,22 @@ public class SecurityServiceTestCase {
 
     @Test
     public void testIsFileInFolder() {
-        assertTrue(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("\\")));
         assertTrue(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("/")));
 
         assertTrue(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("/music")));
-        assertTrue(SecurityService.isFileInFolder(Paths.get("\\music\\foo.mp3"), Paths.get("/music")));
-        assertTrue(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("\\music")));
-        assertTrue(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("\\music\\")));
+        assertTrue(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("/music/")));
+        assertTrue(SecurityService.isFileInFolder(Paths.get("\\music\\foo.mp3"), Paths.get("\\music")));
+        assertTrue(SecurityService.isFileInFolder(Paths.get("\\music\\foo.mp3"), Paths.get("\\music\\")));
+        assertTrue(SecurityService.isFileInFolder(Paths.get("music/foo.mp3"), Paths.get("music")));
+        assertTrue(SecurityService.isFileInFolder(Paths.get("music\\foo.mp3"), Paths.get("music")));
+        assertTrue(SecurityService.isFileInFolder(Paths.get("music/foo.mp3"), Paths.get("music/")));
+        assertTrue(SecurityService.isFileInFolder(Paths.get("music\\foo.mp3"), Paths.get("music\\")));
 
         assertFalse(SecurityService.isFileInFolder(Paths.get(""), Paths.get("/tmp")));
         assertFalse(SecurityService.isFileInFolder(Paths.get("foo.mp3"), Paths.get("/tmp")));
         assertFalse(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("/tmp")));
         assertFalse(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("/tmp/music")));
+        assertFalse(SecurityService.isFileInFolder(Paths.get("music/foo.mp3"), Paths.get("/music")));
 
         // identity tests
         assertTrue(SecurityService.isFileInFolder(Paths.get("/music/a"), Paths.get("/music/a")));
@@ -65,9 +69,10 @@ public class SecurityServiceTestCase {
         assertTrue(SecurityService.isFileInFolder(Paths.get("/../music/foo"), Paths.get("/music")));
         assertFalse(SecurityService.isFileInFolder(Paths.get("/music/../foo"), Paths.get("/music")));
         assertFalse(SecurityService.isFileInFolder(Paths.get("/music/../bar/../foo"), Paths.get("/music")));
-        assertTrue(SecurityService.isFileInFolder(Paths.get("/music\\foo\\.."), Paths.get("/music")));
-        assertFalse(SecurityService.isFileInFolder(Paths.get("..\\music/foo"), Paths.get("/music")));
-        assertFalse(SecurityService.isFileInFolder(Paths.get("/music\\../foo"), Paths.get("/music")));
-        assertFalse(SecurityService.isFileInFolder(Paths.get("/music/..\\bar/../foo"), Paths.get("/music")));
+        assertTrue(SecurityService.isFileInFolder(Paths.get("\\music\\foo\\.."), Paths.get("\\music")));
+        assertFalse(SecurityService.isFileInFolder(Paths.get("..\\music\\foo"), Paths.get("\\music")));
+        assertTrue(SecurityService.isFileInFolder(Paths.get("\\..\\music\\foo"), Paths.get("\\music")));
+        assertFalse(SecurityService.isFileInFolder(Paths.get("/music/../foo"), Paths.get("/music")));
+        assertFalse(SecurityService.isFileInFolder(Paths.get("/music/../bar/../foo"), Paths.get("/music")));
     }
 }
