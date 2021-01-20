@@ -19,10 +19,8 @@
  */
 package org.airsonic.player.service;
 
-import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertFalse;
@@ -36,19 +34,11 @@ import static org.junit.Assert.assertTrue;
 public class SecurityServiceTestCase {
 
     @Test
-    public void testIsFileInFolder() throws IOException {
+    public void testIsFileInFolder() {
         assertTrue(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("/")));
+
         assertTrue(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("/music")));
         assertTrue(SecurityService.isFileInFolder(Paths.get("/music/foo.mp3"), Paths.get("/music/")));
-        System.out.println(Paths.get("\\music\\foo.mp3"));
-        System.out.println(Paths.get("/music"));
-        System.out.println(Paths.get("\\music"));
-        System.out.println(Paths.get("\\music\\foo.mp3").normalize());
-        System.out.println(FilenameUtils.normalize("\\music\\foo.mp3"));
-        System.out.println(FilenameUtils.directoryContains(FilenameUtils.normalize("\\music"),
-                FilenameUtils.normalize("\\music\\baz\\..\\foo.mp3")));
-        System.out.println(Paths.get("\\music\\foo.mp3").getRoot());
-        System.out.println(Paths.get("\\music\\foo.mp3").getParent());
         assertTrue(SecurityService.isFileInFolder(Paths.get("\\music\\foo.mp3"), Paths.get("\\music")));
         assertTrue(SecurityService.isFileInFolder(Paths.get("\\music\\foo.mp3"), Paths.get("\\music\\")));
         assertTrue(SecurityService.isFileInFolder(Paths.get("music/foo.mp3"), Paths.get("music")));
@@ -79,10 +69,9 @@ public class SecurityServiceTestCase {
         assertTrue(SecurityService.isFileInFolder(Paths.get("/../music/foo"), Paths.get("/music")));
         assertFalse(SecurityService.isFileInFolder(Paths.get("/music/../foo"), Paths.get("/music")));
         assertFalse(SecurityService.isFileInFolder(Paths.get("/music/../bar/../foo"), Paths.get("/music")));
-        assertTrue(SecurityService.isFileInFolder(Paths.get("\\music\\foo\\.."), Paths.get("\\music")));
-        assertFalse(SecurityService.isFileInFolder(Paths.get("..\\music\\foo"), Paths.get("\\music")));
-        assertTrue(SecurityService.isFileInFolder(Paths.get("\\..\\music\\foo"), Paths.get("\\music")));
-        assertFalse(SecurityService.isFileInFolder(Paths.get("/music/../foo"), Paths.get("/music")));
-        assertFalse(SecurityService.isFileInFolder(Paths.get("/music/../bar/../foo"), Paths.get("/music")));
+        assertTrue(SecurityService.isFileInFolder(Paths.get("/music\\foo\\.."), Paths.get("/music")));
+        assertFalse(SecurityService.isFileInFolder(Paths.get("..\\music/foo"), Paths.get("/music")));
+        assertFalse(SecurityService.isFileInFolder(Paths.get("/music\\../foo"), Paths.get("/music")));
+        assertFalse(SecurityService.isFileInFolder(Paths.get("/music/..\\bar/../foo"), Paths.get("/music")));
     }
 }

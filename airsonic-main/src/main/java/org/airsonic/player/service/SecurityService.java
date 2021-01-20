@@ -28,6 +28,7 @@ import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.security.GlobalSecurityConfig;
 import org.airsonic.player.security.PasswordDecoder;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -455,7 +456,10 @@ public class SecurityService implements UserDetailsService {
     }
 
     protected static boolean isFileInFolder(Path file, Path folder) {
-        return file.normalize().startsWith(folder.normalize());
+        // not using this to account for / and \\ issues in linux
+        // return file.normalize().startsWith(folder.normalize());
+        return Paths.get(FilenameUtils.separatorsToUnix(file.toString())).normalize()
+                .startsWith(Paths.get(FilenameUtils.separatorsToUnix(folder.toString())).normalize());
     }
 
     public void setSettingsService(SettingsService settingsService) {
