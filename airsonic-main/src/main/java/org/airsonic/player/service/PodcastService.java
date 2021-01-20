@@ -23,6 +23,7 @@ import org.airsonic.player.dao.PodcastDao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.PodcastChannel;
 import org.airsonic.player.domain.PodcastEpisode;
+import org.airsonic.player.domain.PodcastExportOPML;
 import org.airsonic.player.domain.PodcastStatus;
 import org.airsonic.player.service.metadata.MetaData;
 import org.airsonic.player.service.metadata.MetaDataParser;
@@ -279,6 +280,18 @@ public class PodcastService {
         }).collect(Collectors.toList());
     }
 
+    public PodcastExportOPML export(List<PodcastChannel> channels) {
+        PodcastExportOPML opml = new PodcastExportOPML();
+        channels.forEach(c -> {
+            PodcastExportOPML.Outline outline = new PodcastExportOPML.Outline();
+            outline.setText(c.getTitle());
+            outline.setXmlUrl(c.getUrl());
+            opml.getBody().getOutline().get(0).getOutline().add(outline);
+        });
+
+        return opml;
+    }
+
     public void refreshChannel(int channelId, boolean downloadEpisodes) {
         refreshChannels(Arrays.asList(getChannel(channelId)), downloadEpisodes);
     }
@@ -457,7 +470,7 @@ public class PodcastService {
         try {
             return OffsetDateTime.parse(s, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
         } catch (Exception x) {
-            LOG.warn("Failed to parse publish date: '" + s + "'.");
+            LOG.warn("Failed to parse publish date: {}", s);
             return null;
         }
     }
