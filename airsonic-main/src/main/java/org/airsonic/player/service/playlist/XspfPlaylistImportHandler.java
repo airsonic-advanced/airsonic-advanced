@@ -1,7 +1,6 @@
 package org.airsonic.player.service.playlist;
 
 import chameleon.playlist.SpecificPlaylist;
-import chameleon.playlist.xspf.Location;
 import chameleon.playlist.xspf.Playlist;
 import chameleon.playlist.xspf.StringContainer;
 import org.airsonic.player.domain.MediaFile;
@@ -11,7 +10,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -45,21 +43,11 @@ public class XspfPlaylistImportHandler implements PlaylistImportHandler {
         xspfPlaylist.getTracks().forEach(track -> {
             MediaFile mediaFile = null;
             for (StringContainer sc : track.getStringContainers()) {
-                if (sc instanceof Location) {
-                    Location location = (Location) sc;
-                    try {
-                        Path file = Paths.get(new URI(location.getText()));
-                        Path resolvedFile = playlistFolder.resolve(file).normalize();
-                        mediaFile = mediaFileService.getMediaFile(resolvedFile);
-                    } catch (Exception ignored) {}
-
-                    if (mediaFile == null) {
-                        try {
-                            Path file = Paths.get(sc.getText());
-                            Path resolvedFile = playlistFolder.resolve(file).normalize();
-                            mediaFile = mediaFileService.getMediaFile(resolvedFile);
-                        } catch (Exception ignored) {}
-                    }
+                try {
+                    Path file = Paths.get(sc.getText());
+                    Path resolvedFile = playlistFolder.resolve(file).normalize();
+                    mediaFile = mediaFileService.getMediaFile(resolvedFile);
+                } catch (Exception ignored) {
                 }
             }
             if (mediaFile != null) {

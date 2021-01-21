@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -35,6 +34,11 @@ public class DefaultPlaylistImportHandler implements PlaylistImportHandler {
     ) {
         List<MediaFile> mediaFiles = new ArrayList<>();
         List<String> errors = new ArrayList<>();
+        String playlistFolderPath = settingsService.getPlaylistFolder();
+        if (playlistFolderPath == null) {
+            playlistFolderPath = "/";
+        }
+        Path playlistFolder = Paths.get(playlistFolderPath);
         try {
             inputSpecificPlaylist.toPlaylist().acceptDown(new PlaylistVisitor() {
                 @Override
@@ -70,13 +74,10 @@ public class DefaultPlaylistImportHandler implements PlaylistImportHandler {
                 @Override
                 public void beginVisitMedia(Media media) {
                     try {
-                        URI uri = media.getSource().getURI();
+                        // Cannot use uri directly because it resolves against war root
+                        // URI uri = media.getSource().getURI();
+                        String uri = media.getSource().toString();
                         Path file = Paths.get(uri);
-                        String playlistFolderPath = settingsService.getPlaylistFolder();
-                        if (playlistFolderPath == null) {
-                            playlistFolderPath = "/";
-                        }
-                        Path playlistFolder = Paths.get(playlistFolderPath);
                         Path resolvedFile = playlistFolder.resolve(file).normalize();
                         MediaFile mediaFile = mediaFileService.getMediaFile(resolvedFile);
                         if (mediaFile != null) {

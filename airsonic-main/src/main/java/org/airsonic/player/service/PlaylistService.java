@@ -239,7 +239,7 @@ public class PlaylistService {
             throw new Exception("Unsupported playlist " + fileName);
         }
         PlaylistImportHandler importHandler = getImportHandler(inputSpecificPlaylist);
-        LOG.debug("Using " + importHandler.getClass().getSimpleName() + " playlist import handler");
+        LOG.debug("Using {} playlist import handler", importHandler.getClass().getSimpleName());
 
         Pair<List<MediaFile>, List<String>> result = importHandler.handle(inputSpecificPlaylist);
 
@@ -248,7 +248,7 @@ public class PlaylistService {
         }
 
         for (String error : result.getRight()) {
-            LOG.warn("File in playlist '" + fileName + "' not found: " + error);
+            LOG.warn("File in playlist '{}' not found: {}", fileName, error);
         }
         Instant now = Instant.now();
         Playlist playlist;
