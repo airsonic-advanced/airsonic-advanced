@@ -26,6 +26,7 @@ import org.airsonic.player.service.SearchService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.search.IndexType;
+import org.airsonic.player.util.LambdaUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -39,6 +40,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Controller for the search page.
@@ -89,10 +92,16 @@ public class SearchController {
             criteria.setQuery(query);
 
             SearchResult artists = searchService.search(criteria, musicFolders, IndexType.ARTIST);
-            command.setArtists(artists.getMediaFiles());
+            SearchResult artistsId3 = searchService.search(criteria, musicFolders, IndexType.ARTIST_ID3);
+            command.setArtists(Stream.concat(artistsId3.getMediaFiles().stream(), artists.getMediaFiles().stream())
+                    .filter(LambdaUtils.distinctByKey(MediaFile::getId))
+                    .collect(Collectors.toList()));
 
             SearchResult albums = searchService.search(criteria, musicFolders, IndexType.ALBUM);
-            command.setAlbums(albums.getMediaFiles());
+            SearchResult albumsId3 = searchService.search(criteria, musicFolders, IndexType.ALBUM_ID3);
+            command.setAlbums(Stream.concat(albumsId3.getMediaFiles().stream(), albums.getMediaFiles().stream())
+                    .filter(LambdaUtils.distinctByKey(MediaFile::getId))
+                    .collect(Collectors.toList()));
 
             SearchResult songs = searchService.search(criteria, musicFolders, IndexType.SONG);
             command.setSongs(songs.getMediaFiles());
