@@ -17,7 +17,7 @@
                 deferRender: true,
                 ordering: true,
                 order: [],
-                orderFixed: [ 4, 'asc' ],
+                orderFixed: [ 0, 'asc' ],
                 orderMulti: false,
                 pageLength: ${model.initialPaginationSize},
               <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSize)) ? '' : ', '.concat(model.initialPaginationSize)}" />
@@ -112,8 +112,10 @@
                           return present ? "available" : "missing";
                       }
                     },
+                    { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
                     { data: "title",
                       className: "detail songTitle truncate",
+                      title: "<fmt:message key='edittags.songtitle'/>",
                       render: function(title, type, row) {
                           if (type == "display" && title != null) {
                               return $("<span>").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
@@ -124,6 +126,7 @@
                     { data: "album",
                       className: "detail truncate",
                       visible: ${model.visibility.albumVisible},
+                      title: "<fmt:message key='personalsettings.album'/>",
                       render: function(album, type, row) {
                           if (type == "display" && album != null) {
                               return $("<a>").attr("href", "main.view?id=" + row.id).attr("target", "main").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
@@ -134,6 +137,7 @@
                     { data: "artist",
                       className: "detail truncate",
                       visible: ${model.visibility.artistVisible},
+                      title: "<fmt:message key='personalsettings.artist'/>",
                       render: function(artist, type, row) {
                           if (type == "display" && artist != null) {
                               return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
@@ -144,6 +148,7 @@
                     { data: "genre",
                       className: "detail truncate",
                       visible: ${model.visibility.genreVisible},
+                      title: "<fmt:message key='personalsettings.genre'/>",
                       render(genre, type) {
                           if (type == "display" && genre != null) {
                               return $("<span>").attr("title", genre).attr("alt", genre).text(genre)[0].outerHTML;
@@ -151,12 +156,13 @@
                           return genre;
                       }
                     },
-                    { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
-                    { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
-                    { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
+                    { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible}, title: "<fmt:message key='personalsettings.year'/>" },
+                    { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible}, title: "<fmt:message key='personalsettings.format'/>" },
+                    { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible}, title: "<fmt:message key='personalsettings.filesize'/>" },
                     { data: "duration",
                       className: "detail fit rightalign",
                       visible: ${model.visibility.durationVisible},
+                      title: "<fmt:message key='personalsettings.duration'/>",
                       render: function(data, type, row) {
                           if (type == "display" && data != null) {
                               return formatDuration(Math.round(data));
@@ -164,7 +170,7 @@
                           return data;
                       }
                     },
-                    { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible} },
+                    { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible}, title: "<fmt:message key='personalsettings.bitrate'/>" },
                     { data: null,
                       searchable: false,
                       name: "remove",

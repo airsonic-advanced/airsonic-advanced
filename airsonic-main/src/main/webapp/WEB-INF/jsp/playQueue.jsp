@@ -194,9 +194,10 @@
                       className: "fit not-draggable",
                       defaultContent: "<input type='checkbox' class='songIndex'>"
                     },
-                    { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible} },
+                    { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
                     { data: "title",
                       className: "detail songTitle truncate",
+                      title: "<fmt:message key='edittags.songtitle'/>",
                       render(title, type, row) {
                           if (type == "display") {
                               var img = "<img class='currentImage' src=\"<spring:theme code='currentImage'/>\" alt='' style='display: none; padding-right: 0.5em' />";
@@ -212,6 +213,7 @@
                     { data: "album",
                       className: "detail truncate",
                       visible: ${model.visibility.albumVisible},
+                      title: "<fmt:message key='personalsettings.album'/>",
                       render(album, type, row) {
                           if (type == "display" && album != null) {
                               return $("<a>").attr("href", row.albumUrl).attr("target", !pq.internetRadioEnabled ? "main" : "_blank").attr("rel", !pq.internetRadioEnabled ? "" : "noopener noreferrer").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
@@ -222,6 +224,7 @@
                     { data: "artist",
                       className: "detail truncate",
                       visible: ${model.visibility.artistVisible},
+                      title: "<fmt:message key='personalsettings.artist'/>",
                       render(artist, type) {
                           if (type == "display" && artist != null) {
                               return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
@@ -232,6 +235,7 @@
                     { data: "genre",
                       className: "detail truncate",
                       visible: ${model.visibility.genreVisible},
+                      title: "<fmt:message key='personalsettings.genre'/>",
                       render(genre, type) {
                           if (type == "display" && genre != null) {
                               return $("<span>").attr("title", genre).attr("alt", genre).text(genre)[0].outerHTML;
@@ -239,12 +243,13 @@
                           return genre;
                       }
                     },
-                    { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
-                    { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
-                    { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
+                    { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible}, title: "<fmt:message key='personalsettings.year'/>" },
+                    { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible}, title: "<fmt:message key='personalsettings.format'/>" },
+                    { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible}, title: "<fmt:message key='personalsettings.filesize'/>" },
                     { data: "duration",
                       className: "detail fit rightalign",
                       visible: ${model.visibility.durationVisible},
+                      title: "<fmt:message key='personalsettings.duration'/>",
                       render: function(data, type, row) {
                           if (type == "display" && data != null) {
                               return formatDuration(Math.round(data));
@@ -252,7 +257,7 @@
                           return data;
                       }
                     },
-                    { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible} }
+                    { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible}, title: "<fmt:message key='personalsettings.bitrate'/>" }
                 ]
             } );
 

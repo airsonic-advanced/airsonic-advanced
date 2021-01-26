@@ -336,9 +336,10 @@
                   className: "fit not-draggable songIndex",
                   defaultContent: "<input type='checkbox'>"
                 },
-                { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible} },
+                { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
                 { data: "title",
                   className: "detail songTitle truncate",
+                  title: "<fmt:message key='edittags.songtitle'/>",
                   render: function(title, type, row) {
                       if (type == "display" && title != null) {
                           return "<span title='" + title + "' + alt='" + title + "'>" + title + "</span>";
@@ -349,6 +350,7 @@
                 { data: "album",
                   className: "detail truncate",
                   visible: ${model.visibility.albumVisible},
+                  title: "<fmt:message key='personalsettings.album'/>",
                   render: function(album, type, row) {
                       if (type == "display" && album != null) {
                           return "<span title='" + album + "' + alt='" + album + "'>" + album + "</span>";
@@ -359,6 +361,7 @@
                 { data: "artist",
                   className: "detail truncate",
                   visible: ${model.visibility.artistVisible},
+                  title: "<fmt:message key='personalsettings.artist'/>",
                   render: function(artist, type) {
                       if (type == "display" && artist != null) {
                           return "<span title='" + artist + "' + alt='" + artist + "'>" + artist + "</span>";
@@ -369,6 +372,7 @@
                 { data: "genre",
                   className: "detail truncate",
                   visible: ${model.visibility.genreVisible},
+                  title: "<fmt:message key='personalsettings.genre'/>",
                   render: function(genre, type) {
                       if (type == "display" && genre != null) {
                           return "<span title='" + genre + "' + alt='" + genre + "'>" + genre + "</span>";
@@ -376,12 +380,13 @@
                       return genre;
                   }
                 },
-                { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
-                { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
-                { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
+                { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible}, title: "<fmt:message key='personalsettings.year'/>" },
+                { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible}, title: "<fmt:message key='personalsettings.format'/>" },
+                { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible}, title: "<fmt:message key='personalsettings.filesize'/>" },
                 { data: "duration",
                   className: "detail fit rightalign",
                   visible: ${model.visibility.durationVisible},
+                  title: "<fmt:message key='personalsettings.duration'/>",
                   render: function(data, type, row) {
                       if (type == "display" && data != null) {
                           return formatDuration(Math.round(data));
@@ -389,7 +394,7 @@
                       return data;
                   }
                 },
-                { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible} },
+                { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible}, title: "<fmt:message key='personalsettings.bitrate'/>" },
                 { data: "entryType",
                   className: "detail fit rightalign truncate",
                   visible: ${model.visibility.bitRateVisible},
