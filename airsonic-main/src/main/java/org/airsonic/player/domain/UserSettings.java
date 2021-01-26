@@ -312,6 +312,7 @@ public class UserSettings {
         private boolean durationVisible = true;
         private boolean formatVisible;
         private boolean fileSizeVisible;
+        private boolean headerVisible;
 
         public Visibility() {}
 
@@ -399,6 +400,14 @@ public class UserSettings {
 
         public void setFileSizeVisible(boolean fileSizeVisible) {
             this.fileSizeVisible = fileSizeVisible;
+        }
+
+        public boolean getHeaderVisible() {
+            return headerVisible;
+        }
+
+        public void setHeaderVisible(boolean headerVisible) {
+            this.headerVisible = headerVisible;
         }
     }
 }

@@ -401,7 +401,7 @@
 
 <div style="height:0.7em;clear:both"></div>
 
-<table class="music indent hover nowrap stripe compact hide-table-header" id="playlistMusic" style="cursor: pointer; width: 100%;">
+<table class="music indent hover nowrap stripe compact <c:if test='${!model.visibility.headerVisible}'>hide-table-header</c:if>" id="playlistMusic" style="cursor: pointer; width: 100%;">
 </table>
 
 <c:if test="${model.editAllowed}">

@@ -1036,7 +1036,7 @@
 
 <div class="tableSpacer"></div>
 
-<table id="filesTable" class="music indent hover nowrap stripe compact hide-table-header" style="width: 100%;">
+<table id="filesTable" class="music indent hover nowrap stripe compact <c:if test='${!model.visibility.headerVisible}'>hide-table-header</c:if>" style="width: 100%;">
 </table>
 
 <select id="moreActions" class="pagetype-dependent type-album type-video" onchange="actionSelected(this.options[selectedIndex].id);" style="margin-bottom:1.0em">

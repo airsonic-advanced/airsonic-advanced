@@ -84,6 +84,12 @@
             </th>
         </tr>
         <tr>
+            <td><fmt:message key="personalsettings.header"/></td>
+            <td style="text-align:center"><form:checkbox path="mainVisibility.headerVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playlistVisibility.headerVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playqueueVisibility.headerVisible" cssClass="checkbox"/></td>
+        </tr>
+        <tr>
             <td><fmt:message key="personalsettings.tracknumber"/></td>
             <td style="text-align:center"><form:checkbox path="mainVisibility.trackNumberVisible" cssClass="checkbox"/></td>
             <td style="text-align:center"><form:checkbox path="playlistVisibility.trackNumberVisible" cssClass="checkbox"/></td>

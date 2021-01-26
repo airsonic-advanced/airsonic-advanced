@@ -1098,7 +1098,7 @@
     $(document).ready(() => playQueue.init());
 </script>
 
-<table class="music indent hover nowrap stripe compact hide-table-header" id="playQueueMusic" style="cursor:pointer; width: 100%;"></table>
+<table class="music indent hover nowrap stripe compact <c:if test='${!model.visibility.headerVisible}'>hide-table-header</c:if>" id="playQueueMusic" style="cursor:pointer; width: 100%;"></table>
 
 <div class="bgcolor2 playqueue-controlbar">
   <c:if test="${model.user.settingsRole and model.players.size() > 1}">
