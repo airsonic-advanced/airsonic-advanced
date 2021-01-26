@@ -45,6 +45,7 @@ public class UserSettings {
     private AlbumListType defaultAlbumList = AlbumListType.RANDOM;
     private Visibility mainVisibility = new Visibility();
     private Visibility playlistVisibility = new Visibility();
+    private Visibility playqueueVisibility = new Visibility();
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
     private String listenBrainzUrl;
@@ -142,6 +143,14 @@ public class UserSettings {
 
     public void setPlaylistVisibility(Visibility playlistVisibility) {
         this.playlistVisibility = playlistVisibility;
+    }
+
+    public Visibility getPlayqueueVisibility() {
+        return playqueueVisibility;
+    }
+
+    public void setPlayqueueVisibility(Visibility playqueueVisibility) {
+        this.playqueueVisibility = playqueueVisibility;
     }
 
     public boolean getLastFmEnabled() {
@@ -295,12 +304,12 @@ public class UserSettings {
      */
     public static class Visibility {
         private boolean trackNumberVisible;
-        private boolean artistVisible;
-        private boolean albumVisible;
+        private boolean artistVisible = true;
+        private boolean albumVisible = true;
         private boolean genreVisible;
         private boolean yearVisible;
         private boolean bitRateVisible;
-        private boolean durationVisible;
+        private boolean durationVisible = true;
         private boolean formatVisible;
         private boolean fileSizeVisible;
 

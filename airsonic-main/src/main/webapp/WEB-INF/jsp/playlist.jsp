@@ -123,6 +123,7 @@
                     },
                     { data: "album",
                       className: "detail truncate",
+                      visible: ${model.visibility.albumVisible},
                       render: function(album, type, row) {
                           if (type == "display" && album != null) {
                               return $("<a>").attr("href", "main.view?id=" + row.id).attr("target", "main").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
@@ -132,6 +133,7 @@
                     },
                     { data: "artist",
                       className: "detail truncate",
+                      visible: ${model.visibility.artistVisible},
                       render: function(artist, type, row) {
                           if (type == "display" && artist != null) {
                               return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
@@ -139,8 +141,22 @@
                           return artist;
                       }
                     },
+                    { data: "genre",
+                      className: "detail truncate",
+                      visible: ${model.visibility.genreVisible},
+                      render(genre, type) {
+                          if (type == "display" && genre != null) {
+                              return $("<span>").attr("title", genre).attr("alt", genre).text(genre)[0].outerHTML;
+                          }
+                          return genre;
+                      }
+                    },
+                    { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
+                    { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
+                    { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
                     { data: "duration",
                       className: "detail fit rightalign",
+                      visible: ${model.visibility.durationVisible},
                       render: function(data, type, row) {
                           if (type == "display" && data != null) {
                               return formatDuration(Math.round(data));
@@ -148,6 +164,7 @@
                           return data;
                       }
                     },
+                    { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible} },
                     { data: null,
                       searchable: false,
                       name: "remove",

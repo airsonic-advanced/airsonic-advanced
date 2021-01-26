@@ -42,6 +42,7 @@ public class PersonalSettingsCommand {
     private Avatar customAvatar;
     private UserSettings.Visibility mainVisibility;
     private UserSettings.Visibility playlistVisibility;
+    private UserSettings.Visibility playqueueVisibility;
     private boolean partyModeEnabled;
     private boolean showNowPlayingEnabled;
     private boolean showArtistInfoEnabled;
@@ -151,6 +152,14 @@ public class PersonalSettingsCommand {
 
     public void setPlaylistVisibility(UserSettings.Visibility playlistVisibility) {
         this.playlistVisibility = playlistVisibility;
+    }
+
+    public UserSettings.Visibility getPlayqueueVisibility() {
+        return playqueueVisibility;
+    }
+
+    public void setPlayqueueVisibility(UserSettings.Visibility playqueueVisibility) {
+        this.playqueueVisibility = playqueueVisibility;
     }
 
     public boolean isPartyModeEnabled() {

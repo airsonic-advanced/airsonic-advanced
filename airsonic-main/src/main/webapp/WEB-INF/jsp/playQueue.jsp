@@ -210,8 +210,8 @@
                       }
                     },
                     { data: "album",
-                      visible: ${model.visibility.albumVisible},
                       className: "detail truncate",
+                      visible: ${model.visibility.albumVisible},
                       render(album, type, row) {
                           if (type == "display" && album != null) {
                               return $("<a>").attr("href", row.albumUrl).attr("target", !pq.internetRadioEnabled ? "main" : "_blank").attr("rel", !pq.internetRadioEnabled ? "" : "noopener noreferrer").attr("title", album).attr("alt", album).text(album)[0].outerHTML;

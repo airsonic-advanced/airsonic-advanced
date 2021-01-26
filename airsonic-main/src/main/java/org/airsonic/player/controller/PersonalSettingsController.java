@@ -76,6 +76,7 @@ public class PersonalSettingsController {
         command.setNowPlayingAllowed(userSettings.getNowPlayingAllowed());
         command.setMainVisibility(userSettings.getMainVisibility());
         command.setPlaylistVisibility(userSettings.getPlaylistVisibility());
+        command.setPlayqueueVisibility(userSettings.getPlayqueueVisibility());
         command.setFinalVersionNotificationEnabled(userSettings.getFinalVersionNotificationEnabled());
         command.setBetaVersionNotificationEnabled(userSettings.getBetaVersionNotificationEnabled());
         command.setSongNotificationEnabled(userSettings.getSongNotificationEnabled());
@@ -148,6 +149,7 @@ public class PersonalSettingsController {
         settings.setNowPlayingAllowed(command.isNowPlayingAllowed());
         settings.setMainVisibility(command.getMainVisibility());
         settings.setPlaylistVisibility(command.getPlaylistVisibility());
+        settings.setPlayqueueVisibility(command.getPlayqueueVisibility());
         settings.setFinalVersionNotificationEnabled(command.isFinalVersionNotificationEnabled());
         settings.setBetaVersionNotificationEnabled(command.isBetaVersionNotificationEnabled());
         settings.setSongNotificationEnabled(command.isSongNotificationEnabled());
