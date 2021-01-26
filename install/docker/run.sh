@@ -13,7 +13,7 @@ echo "JAVA_OPTS=$JAVA_OPTS"
 $AIRSONIC_DIR/airsonic/transcode/ffmpeg -version
 curl --version
 echo "PATH=$PATH"
-
+echo "CONTEXT_PATH=$CONTEXT_PATH"
 if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
 
     java_opts_array=()
