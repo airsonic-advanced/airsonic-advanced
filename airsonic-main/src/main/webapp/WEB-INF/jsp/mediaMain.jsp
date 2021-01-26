@@ -266,8 +266,8 @@
             },
             ordering: true,
             order: [],
-            orderFixed: [ 0, 'asc' ],
-            orderMulti: false,
+            //orderFixed: [ 0, 'asc' ],
+            orderMulti: true,
             pageLength: ${model.initialPaginationSize},
           <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSize)) ? '' : ', '.concat(model.initialPaginationSize)}" />
             lengthMenu: [[10, 20, 50, 100, -1 ${paginationaddition}], [10, 20, 50, 100, "All" ${paginationaddition}]],
@@ -286,7 +286,7 @@
                 callback({data: mediaDir.files});
             },
             stripeClasses: ["bgcolor2", "bgcolor1"],
-            columnDefs: [{ targets: "_all", orderable: false }],
+            columnDefs: [{ targets: "_all", orderable: true }],
             columns: [
                 { data: "seq", className: "detail fit", visible: true },
                 { data: "starred",
