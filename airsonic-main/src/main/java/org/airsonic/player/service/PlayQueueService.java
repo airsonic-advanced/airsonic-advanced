@@ -554,6 +554,7 @@ public class PlayQueueService {
 
         final String radioHomepageUrl = radio.getHomepageUrl();
         final String radioName = radio.getName();
+        Instant now = Instant.now();
 
         List<InternetRadioSource> sources = internetRadioService.getInternetRadioSources(radio);
         List<MediaFileEntry> entries = new ArrayList<>(sources.size());
@@ -576,6 +577,11 @@ public class PlayQueueService {
                     "", // Content Type
                     "", // Entry Type
                     "", // File size
+                    0, // Play count
+                    now, // Last played
+                    now, // Created
+                    now, // Changed
+                    now, // Last scanned
                     false, // Starred
                     true, // Present
                     radioHomepageUrl, // Album URL (use radio home page URL)
