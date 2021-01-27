@@ -63,6 +63,9 @@ The following is an incomplete list of features that are enhanced from Airsonic:
         - Play queue that took about 800s to render in the browser, can now render in < 1s
       - Allow optional paging and accessible searching within tables
     - Customize generated cover art thumbnail quality
+    - Ability to show and display more track fields in playlists, playqueue and file browse mode
+    - Sort tracks in browse mode
+    - Option to show header row for track fields
 - Bugfixes:
   - Several race condition fixes
   - Consistency checks and refactors
@@ -74,7 +77,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Ability to pass properties via environment or system variables. You can but do not need to modify `airsonic.properties` to change preferences
   - Ability to use custom URLs to scrobble on ListenBrainz servers
   - Ability to use Repeat-One in play queues in web-clients
-  - Ability to support, pair with and play to Sonos devices
+  - Sonos support: [read documentation](https://github.com/airsonic-advanced/airsonic-advanced/blob/master/SONOS.md)
   - Ability to upload multiple files simultaneously
   - Ability to upload and extract more archive formats:
     - rar
