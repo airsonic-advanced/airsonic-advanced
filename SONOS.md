@@ -80,8 +80,8 @@ You should now see the message 'Success' from the Sonos player.
 
 Complete registration using the Sonos app as per [Adding the music service in the Sonos app](#2-adding-the-music-service-in-the-sonos-app) above.
 
-### Troubleshooting.
-#### Unable to browse music when linked **One User** link method.
+## Troubleshooting.
+### Unable to browse music when linked **One User** link method.
 Addressed here: https://github.com/airsonic-advanced/airsonic-advanced/issues/299#issuecomment-640160127
 
 It's not a bug, it's a deliberate security feature.
@@ -92,5 +92,5 @@ Thus, they are able to browse public stuff (like, for instance, if you make your
 
 If you'd like to be able to browse all your non-public music, either use one of your existing accounts or create a new user account in airsonic-advanced for the explicit purpose of linking with sonos (like an account named "sonos").
 
-#### Other issues
+### Other issues
 Check the status of your link in Settings->Sonos. Check logs for exceptions.
