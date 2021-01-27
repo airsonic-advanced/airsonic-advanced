@@ -78,7 +78,7 @@ Submit.
 
 You should now see the message 'Success' from the Sonos player.
 
-Complete registration using the Sonos app as per [Adding the music service in the Sonos app](#2.adding-the-music-service-in-the-sonos-app.) above.
+Complete registration using the Sonos app as per [Adding the music service in the Sonos app](#2-adding-the-music-service-in-the-sonos-app) above.
 
 ### Troubleshooting.
 #### Unable to browse music when linked **One User** link method.
