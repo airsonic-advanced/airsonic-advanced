@@ -143,6 +143,42 @@
             <td style="text-align:center"><form:checkbox path="playlistVisibility.fileSizeVisible" cssClass="checkbox"/></td>
             <td style="text-align:center"><form:checkbox path="playqueueVisibility.fileSizeVisible" cssClass="checkbox"/></td>
         </tr>
+        <tr>
+            <td><fmt:message key="personalsettings.playcount"/></td>
+            <td style="text-align:center"><form:checkbox path="mainVisibility.playCountVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playlistVisibility.playCountVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playqueueVisibility.playCountVisible" cssClass="checkbox"/></td>
+        </tr>
+        <tr>
+            <td><fmt:message key="personalsettings.lastplayed"/></td>
+            <td style="text-align:center"><form:checkbox path="mainVisibility.lastPlayedVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playlistVisibility.lastPlayedVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playqueueVisibility.lastPlayedVisible" cssClass="checkbox"/></td>
+        </tr>
+        <tr>
+            <td><fmt:message key="personalsettings.lastscanned"/></td>
+            <td style="text-align:center"><form:checkbox path="mainVisibility.lastScannedVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playlistVisibility.lastScannedVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playqueueVisibility.lastScannedVisible" cssClass="checkbox"/></td>
+        </tr>
+        <tr>
+            <td><fmt:message key="personalsettings.created"/></td>
+            <td style="text-align:center"><form:checkbox path="mainVisibility.createdVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playlistVisibility.createdVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playqueueVisibility.createdVisible" cssClass="checkbox"/></td>
+        </tr>
+        <tr>
+            <td><fmt:message key="personalsettings.changed"/></td>
+            <td style="text-align:center"><form:checkbox path="mainVisibility.changedVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playlistVisibility.changedVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playqueueVisibility.changedVisible" cssClass="checkbox"/></td>
+        </tr>
+        <tr>
+            <td><fmt:message key="personalsettings.entrytype"/></td>
+            <td style="text-align:center"><form:checkbox path="mainVisibility.entryTypeVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"></td>
+            <td style="text-align:center"></td>
+        </tr>
     </table>
 
     <table class="indent">

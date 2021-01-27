@@ -395,9 +395,67 @@
                   }
                 },
                 { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible}, title: "<fmt:message key='personalsettings.bitrate'/>" },
+                { data: "playCount", className: "detail fit rightalign", visible: ${model.visibility.playCountVisible}, title: "<fmt:message key='personalsettings.playcount'/>" },
+                { data: "lastPlayed",
+                  className: "detail fit rightalign",
+                  visible: ${model.visibility.lastPlayedVisible},
+                  title: "<fmt:message key='personalsettings.lastplayed'/>",
+                  render: function(data, type, row) {
+                      if (data != null) {
+                          if (type == "display") {
+                              return new Date(data).toLocaleString();
+                          }
+                          return new Date(data).getTime();
+                      }
+                      return data;
+                  }
+                },
+                { data: "lastScanned",
+                  className: "detail fit rightalign",
+                  visible: ${model.visibility.lastScannedVisible},
+                  title: "<fmt:message key='personalsettings.lastscanned'/>",
+                  render: function(data, type, row) {
+                      if (data != null) {
+                          if (type == "display") {
+                              return new Date(data).toLocaleString();
+                          }
+                          return new Date(data).getTime();
+                      }
+                      return data;
+                  }
+                },
+                { data: "created",
+                  className: "detail fit rightalign",
+                  visible: ${model.visibility.createdVisible},
+                  title: "<fmt:message key='personalsettings.created'/>",
+                  render: function(data, type, row) {
+                      if (data != null) {
+                          if (type == "display") {
+                              return new Date(data).toLocaleString();
+                          }
+                          return new Date(data).getTime();
+                      }
+                      return data;
+                  }
+                },
+                { data: "changed",
+                  className: "detail fit rightalign",
+                  visible: ${model.visibility.changedVisible},
+                  title: "<fmt:message key='personalsettings.changed'/>",
+                  render: function(data, type, row) {
+                      if (data != null) {
+                          if (type == "display") {
+                              return new Date(data).toLocaleString();
+                          }
+                          return new Date(data).getTime();
+                      }
+                      return data;
+                  }
+                },
                 { data: "entryType",
                   className: "detail fit rightalign truncate",
-                  visible: ${model.visibility.bitRateVisible},
+                  visible: ${model.visibility.entryTypeVisible},
+                  title: "<fmt:message key='personalsettings.entrytype'/>",
                   render: function(entryType, type, row) {
                       if (type == "display" && entryType != null) {
                           var media = entryType.toLowerCase();

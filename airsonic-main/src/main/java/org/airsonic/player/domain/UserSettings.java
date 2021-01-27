@@ -313,22 +313,14 @@ public class UserSettings {
         private boolean formatVisible;
         private boolean fileSizeVisible;
         private boolean headerVisible;
+        private boolean playCountVisible;
+        private boolean lastPlayedVisible;
+        private boolean createdVisible;
+        private boolean changedVisible;
+        private boolean lastScannedVisible;
+        private boolean entryTypeVisible;
 
         public Visibility() {}
-
-        public Visibility(boolean trackNumberVisible, boolean artistVisible, boolean albumVisible,
-                          boolean genreVisible, boolean yearVisible, boolean bitRateVisible,
-                          boolean durationVisible, boolean formatVisible, boolean fileSizeVisible) {
-            this.trackNumberVisible = trackNumberVisible;
-            this.artistVisible = artistVisible;
-            this.albumVisible = albumVisible;
-            this.genreVisible = genreVisible;
-            this.yearVisible = yearVisible;
-            this.bitRateVisible = bitRateVisible;
-            this.durationVisible = durationVisible;
-            this.formatVisible = formatVisible;
-            this.fileSizeVisible = fileSizeVisible;
-        }
 
         public boolean getTrackNumberVisible() {
             return trackNumberVisible;
@@ -409,5 +401,54 @@ public class UserSettings {
         public void setHeaderVisible(boolean headerVisible) {
             this.headerVisible = headerVisible;
         }
+
+        public boolean getPlayCountVisible() {
+            return playCountVisible;
+        }
+
+        public void setPlayCountVisible(boolean playCountVisible) {
+            this.playCountVisible = playCountVisible;
+        }
+
+        public boolean getLastPlayedVisible() {
+            return lastPlayedVisible;
+        }
+
+        public void setLastPlayedVisible(boolean lastPlayedVisible) {
+            this.lastPlayedVisible = lastPlayedVisible;
+        }
+
+        public boolean getCreatedVisible() {
+            return createdVisible;
+        }
+
+        public void setCreatedVisible(boolean createdVisible) {
+            this.createdVisible = createdVisible;
+        }
+
+        public boolean getChangedVisible() {
+            return changedVisible;
+        }
+
+        public void setChangedVisible(boolean changedVisible) {
+            this.changedVisible = changedVisible;
+        }
+
+        public boolean getLastScannedVisible() {
+            return lastScannedVisible;
+        }
+
+        public void setLastScannedVisible(boolean lastScannedVisible) {
+            this.lastScannedVisible = lastScannedVisible;
+        }
+
+        public boolean getEntryTypeVisible() {
+            return entryTypeVisible;
+        }
+
+        public void setEntryTypeVisible(boolean entryTypeVisible) {
+            this.entryTypeVisible = entryTypeVisible;
+        }
+
     }
 }
