@@ -90,11 +90,11 @@ public class SonosLinkSecurityInterceptor extends AbstractSoapInterceptor {
         String action = null;
         HttpServletRequest request = (HttpServletRequest) message.get(AbstractHTTPDestination.HTTP_REQUEST);
 
-        try {
-            if (!settingsService.isSonosEnabled()) {
-                throw new SonosSoapFault.LoginUnauthorized();
-            }
+        if (!settingsService.isSonosEnabled()) {
+            throw new SonosSoapFault.LoginUnauthorized();
+        }
 
+        try {
             action = getAction(message);
             AuthenticationType authenticationType = AuthenticationType.valueOf(settingsService.getSonosLinkMethod());
 
@@ -130,7 +130,10 @@ public class SonosLinkSecurityInterceptor extends AbstractSoapInterceptor {
             } catch (Exception e1) {
                 throw new SonosSoapFault.AuthTokenExpired();
             }
-        } catch (Exception e) {
+        } catch (SonosSoapFault.LoginUnauthorized e2) {
+            throw e2;
+        } catch (Exception e3) {
+            LOG.warn("Error with Sonos", e3);
             throw new SonosSoapFault.LoginUnauthorized();
         }
     }
