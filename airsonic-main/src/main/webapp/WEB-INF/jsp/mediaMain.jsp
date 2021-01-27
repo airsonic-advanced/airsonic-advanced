@@ -266,8 +266,8 @@
             },
             ordering: true,
             order: [],
-            orderFixed: [ 0, 'asc' ],
-            orderMulti: false,
+            //orderFixed: [ 0, 'asc' ],
+            orderMulti: true,
             pageLength: ${model.initialPaginationSize},
           <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSize)) ? '' : ', '.concat(model.initialPaginationSize)}" />
             lengthMenu: [[10, 20, 50, 100, -1 ${paginationaddition}], [10, 20, 50, 100, "All" ${paginationaddition}]],
@@ -286,7 +286,7 @@
                 callback({data: mediaDir.files});
             },
             stripeClasses: ["bgcolor2", "bgcolor1"],
-            columnDefs: [{ targets: "_all", orderable: false }],
+            columnDefs: [{ targets: "_all", orderable: true }],
             columns: [
                 { data: "seq", className: "detail fit", visible: true },
                 { data: "starred",
@@ -336,9 +336,10 @@
                   className: "fit not-draggable songIndex",
                   defaultContent: "<input type='checkbox'>"
                 },
-                { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible} },
+                { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
                 { data: "title",
                   className: "detail songTitle truncate",
+                  title: "<fmt:message key='edittags.songtitle'/>",
                   render: function(title, type, row) {
                       if (type == "display" && title != null) {
                           return "<span title='" + title + "' + alt='" + title + "'>" + title + "</span>";
@@ -349,6 +350,7 @@
                 { data: "album",
                   className: "detail truncate",
                   visible: ${model.visibility.albumVisible},
+                  title: "<fmt:message key='personalsettings.album'/>",
                   render: function(album, type, row) {
                       if (type == "display" && album != null) {
                           return "<span title='" + album + "' + alt='" + album + "'>" + album + "</span>";
@@ -359,6 +361,7 @@
                 { data: "artist",
                   className: "detail truncate",
                   visible: ${model.visibility.artistVisible},
+                  title: "<fmt:message key='personalsettings.artist'/>",
                   render: function(artist, type) {
                       if (type == "display" && artist != null) {
                           return "<span title='" + artist + "' + alt='" + artist + "'>" + artist + "</span>";
@@ -369,6 +372,7 @@
                 { data: "genre",
                   className: "detail truncate",
                   visible: ${model.visibility.genreVisible},
+                  title: "<fmt:message key='personalsettings.genre'/>",
                   render: function(genre, type) {
                       if (type == "display" && genre != null) {
                           return "<span title='" + genre + "' + alt='" + genre + "'>" + genre + "</span>";
@@ -376,12 +380,13 @@
                       return genre;
                   }
                 },
-                { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
-                { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
-                { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
+                { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible}, title: "<fmt:message key='personalsettings.year'/>" },
+                { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible}, title: "<fmt:message key='personalsettings.format'/>" },
+                { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible}, title: "<fmt:message key='personalsettings.filesize'/>" },
                 { data: "duration",
                   className: "detail fit rightalign",
                   visible: ${model.visibility.durationVisible},
+                  title: "<fmt:message key='personalsettings.duration'/>",
                   render: function(data, type, row) {
                       if (type == "display" && data != null) {
                           return formatDuration(Math.round(data));
@@ -389,10 +394,68 @@
                       return data;
                   }
                 },
-                { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible} },
+                { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible}, title: "<fmt:message key='personalsettings.bitrate'/>" },
+                { data: "playCount", className: "detail fit rightalign", visible: ${model.visibility.playCountVisible}, title: "<fmt:message key='personalsettings.playcount'/>" },
+                { data: "lastPlayed",
+                  className: "detail fit rightalign",
+                  visible: ${model.visibility.lastPlayedVisible},
+                  title: "<fmt:message key='personalsettings.lastplayed'/>",
+                  render: function(data, type, row) {
+                      if (data != null) {
+                          if (type == "display") {
+                              return new Date(data).toLocaleString();
+                          }
+                          return new Date(data).getTime();
+                      }
+                      return data;
+                  }
+                },
+                { data: "lastScanned",
+                  className: "detail fit rightalign",
+                  visible: ${model.visibility.lastScannedVisible},
+                  title: "<fmt:message key='personalsettings.lastscanned'/>",
+                  render: function(data, type, row) {
+                      if (data != null) {
+                          if (type == "display") {
+                              return new Date(data).toLocaleString();
+                          }
+                          return new Date(data).getTime();
+                      }
+                      return data;
+                  }
+                },
+                { data: "created",
+                  className: "detail fit rightalign",
+                  visible: ${model.visibility.createdVisible},
+                  title: "<fmt:message key='personalsettings.created'/>",
+                  render: function(data, type, row) {
+                      if (data != null) {
+                          if (type == "display") {
+                              return new Date(data).toLocaleString();
+                          }
+                          return new Date(data).getTime();
+                      }
+                      return data;
+                  }
+                },
+                { data: "changed",
+                  className: "detail fit rightalign",
+                  visible: ${model.visibility.changedVisible},
+                  title: "<fmt:message key='personalsettings.changed'/>",
+                  render: function(data, type, row) {
+                      if (data != null) {
+                          if (type == "display") {
+                              return new Date(data).toLocaleString();
+                          }
+                          return new Date(data).getTime();
+                      }
+                      return data;
+                  }
+                },
                 { data: "entryType",
                   className: "detail fit rightalign truncate",
-                  visible: ${model.visibility.bitRateVisible},
+                  visible: ${model.visibility.entryTypeVisible},
+                  title: "<fmt:message key='personalsettings.entrytype'/>",
                   render: function(entryType, type, row) {
                       if (type == "display" && entryType != null) {
                           var media = entryType.toLowerCase();
@@ -1031,7 +1094,7 @@
 
 <div class="tableSpacer"></div>
 
-<table id="filesTable" class="music indent hover nowrap stripe compact hide-table-header" style="width: 100%;">
+<table id="filesTable" class="music indent hover nowrap stripe compact <c:if test='${!model.visibility.headerVisible}'>hide-table-header</c:if>" style="width: 100%;">
 </table>
 
 <select id="moreActions" class="pagetype-dependent type-album type-video" onchange="actionSelected(this.options[selectedIndex].id);" style="margin-bottom:1.0em">

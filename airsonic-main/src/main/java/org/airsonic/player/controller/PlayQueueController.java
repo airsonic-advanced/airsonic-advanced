@@ -64,7 +64,7 @@ public class PlayQueueController {
         Map<String, Object> map = new HashMap<>();
         map.put("user", user);
         map.put("players", playerService.getPlayersForUserAndClientId(user.getUsername(), null));
-        map.put("visibility", userSettings.getPlaylistVisibility());
+        map.put("visibility", userSettings.getPlayqueueVisibility());
         map.put("partyMode", userSettings.getPartyModeEnabled());
         map.put("notify", userSettings.getSongNotificationEnabled());
         map.put("autoHide", userSettings.getAutoHidePlayQueue());
