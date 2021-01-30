@@ -496,7 +496,7 @@ public class SubsonicRESTController {
     private <T extends ArtistID3> T createJaxbArtist(T jaxbArtist, org.airsonic.player.domain.Artist artist, String username) {
         jaxbArtist.setId(String.valueOf(artist.getId()));
         jaxbArtist.setName(artist.getName());
-        jaxbArtist.setStarred(jaxbWriter.convertDate(mediaFileDao.getMediaFileStarredDate(artist.getId(), username)));
+        jaxbArtist.setStarred(jaxbWriter.convertDate(artistDao.getArtistStarredDate(artist.getId(), username)));
         jaxbArtist.setAlbumCount(artist.getAlbumCount());
         if (artist.getCoverArtPath() != null) {
             jaxbArtist.setCoverArt(CoverArtController.ARTIST_COVERART_PREFIX + artist.getId());
