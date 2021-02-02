@@ -64,8 +64,8 @@ The following is an incomplete list of features that are enhanced from Airsonic:
       - Allow optional paging and accessible searching within tables
     - Customize generated cover art thumbnail quality
     - Ability to show and display more track fields in playlists, playqueue and file browse mode
-    - Sort tracks in browse mode
     - Option to show header row for track fields
+    - Sort tracks in browse mode (such as show most recently scanned files etc.)
 - Bugfixes:
   - Several race condition fixes
   - Consistency checks and refactors
@@ -95,6 +95,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Uses failsafe for integration testing instead of cucumber
 - Build and deployment
   - An updated Docker image with JRE 14 base layer.
+  - Multiplatform builds, including for ARM v7 and ARM64
   - A more advanced build pipeline including automatic releases and deploys at merge
     - Allows people to grab the newest build without compiling from source as soon as features/enhancements are merged, instead of waiting for the next stable build (which may be months away)
 
@@ -107,6 +108,8 @@ Usage
 Airsonic-Advanced v10.6.x series (and its snapshots) are intercompatible with vanilla Airsonic 10.6.x series. This may not necessarily be the case with 11.x versions.
 
 Also note that Airsonic-Advanced 11.x (and its snapshots) are *breaking* (non-backwards-compatible) version changes. You will not be able to revert back to 10.6.x after upgrading (the system _does_ create a backup of the DB in case such revert is necessary, but it must be manually restored).
+
+Airsonic-Advanced snapshots are generally pretty stable and recommended for use over the stable releases (which may be extremely outdated).
 
 ### Stand-alone binaries
 Airsonic-Advanced can be downloaded from
@@ -123,7 +126,7 @@ Airsonic-Advanced is run similarly to (and in lieu of) vanilla Airsonic.
 Read the [compatibility notes](#compatibility-notes).
 
 ### Docker
-Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced).
+Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced). Docker releases are recently multiplatform, which means ARMv7 and ARM64 are also released to Dockerhub. However, automated testing for those archs is not currently done in the CI/CD pipeline (only Linux platform is tested).
 
 Please note that for Docker images, the volume mounting points have changed and are different from Airsonic. Airsonic mount points are at `/airsonic/*` inside the container. Airsonic-Advanced tries to use the same volume locations as the default war image at `/var/*` in order to remain consistent if people want to switch between the containers and non-containers.
   - `Music:/airsonic/music` -> `Music:/var/music`
