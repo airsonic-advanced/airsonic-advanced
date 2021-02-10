@@ -47,6 +47,7 @@
             <div id="audio_on"></div>
             <div id="audio_off"></div>
             <div id="volume_slider"></div>
+            <div id="fullscreen"></div>
             <select name="bitrate_menu" id="bitrate_menu">
                 <c:forEach items="${model.bitRates}" var="bitRate">
                     <c:choose>
