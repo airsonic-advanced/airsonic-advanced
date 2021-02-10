@@ -98,6 +98,8 @@ public class PodcastService {
     private MediaFileService mediaFileService;
     @Autowired
     private MetaDataParserFactory metaDataParserFactory;
+    @Autowired
+    private VersionService versionService;
 
     public PodcastService() {
         ThreadFactory threadFactory = r -> {
@@ -153,7 +155,7 @@ public class PodcastService {
 
         scheduledRefresh = scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS);
         Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
-        LOG.info("Automatic Podcast update scheduled to run every " + hoursBetween + " hour(s), starting at " + firstTime);
+        LOG.info("Automatic Podcast update scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);
     }
 
     /**
@@ -274,7 +276,7 @@ public class PodcastService {
                 }
 
             } catch (Exception x) {
-                LOG.warn("Failed to resolve media file ID for podcast channel '" + channel.getTitle() + "': " + x, x);
+                LOG.warn("Failed to resolve media file ID for podcast channel '{}'", channel.getTitle(), x);
             }
 
             return channel;
@@ -318,7 +320,7 @@ public class PodcastService {
                 .build();
         HttpGet method = new HttpGet(channel.getUrl());
         method.setConfig(requestConfig);
-
+        method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
         try (CloseableHttpClient client = HttpClients.createDefault();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent()) {
@@ -336,7 +338,7 @@ public class PodcastService {
             downloadImage(channel);
             refreshEpisodes(channel, channelElement.getChildren("item"));
         } catch (Exception x) {
-            LOG.warn("Failed to get/parse RSS file for Podcast channel " + channel.getUrl(), x);
+            LOG.warn("Failed to get/parse RSS file for Podcast channel {}", channel.getUrl(), x);
             channel.setStatus(PodcastStatus.ERROR);
             channel.setErrorMessage(getErrorMessage(x));
             podcastDao.updateChannel(channel);
@@ -365,13 +367,14 @@ public class PodcastService {
         }
 
         HttpGet method = new HttpGet(imageUrl);
+        method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
         try (CloseableHttpClient client = HttpClients.createDefault();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent()) {
             Files.copy(in, dir.resolve("cover." + getCoverArtSuffix(response)), StandardCopyOption.REPLACE_EXISTING);
             mediaFileService.refreshMediaFile(channelMediaFile);
         } catch (Exception x) {
-            LOG.warn("Failed to download cover art for podcast channel '" + channel.getTitle() + "': " + x, x);
+            LOG.warn("Failed to download cover art for podcast channel '{}'", channel.getTitle(), x);
         }
     }
 
@@ -525,6 +528,7 @@ public class PodcastService {
                 .build();
         HttpGet method = new HttpGet(episode.getUrl());
         method.setConfig(requestConfig);
+        method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
         Path file = getFile(channel, episode);
 
         try (CloseableHttpClient client = HttpClients.createDefault();
