@@ -5,7 +5,6 @@
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
     <link rel="stylesheet" type="text/css" href="<c:url value='/style/videoPlayer.css'/>">
-    <script type="text/javascript" src="<c:url value='/script/cast_sender-v1.js'/>"></script>
 
     <script type="text/javascript" language="javascript">
         function toggleStar(mediaFileId, imageId) {
@@ -83,6 +82,7 @@
 
 <div class="back" style="float:left;padding-right:2em"><a href="${backUrl}"><fmt:message key="common.back"/></a></div>
 <div style="clear: both"></div>
+<script type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
 
 </body>
 </html>
