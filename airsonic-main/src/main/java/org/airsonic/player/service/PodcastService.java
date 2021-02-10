@@ -55,6 +55,8 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -160,15 +162,14 @@ public class PodcastService {
      * @param url The URL of the Podcast channel.
      */
     public void createChannel(String url) {
-        url = sanitizeUrl(url);
-        PodcastChannel channel = new PodcastChannel(url);
+        PodcastChannel channel = new PodcastChannel(sanitizeUrl(url));
         int channelId = podcastDao.createChannel(channel);
 
         refreshChannels(Collections.singletonList(getChannel(channelId)), true);
     }
 
-    private String sanitizeUrl(String url) {
-        return StringUtils.replace(url, " ", "%20");
+    private static String sanitizeUrl(String url) {
+        return URLDecoder.decode(url, StandardCharsets.UTF_8);
     }
 
     /**
@@ -327,7 +328,7 @@ public class PodcastService {
 
             channel.setTitle(StringUtil.removeMarkup(channelElement.getChildTextTrim("title")));
             channel.setDescription(StringUtil.removeMarkup(channelElement.getChildTextTrim("description")));
-            channel.setImageUrl(getChannelImageUrl(channelElement));
+            channel.setImageUrl(sanitizeUrl(getChannelImageUrl(channelElement)));
             channel.setStatus(PodcastStatus.COMPLETED);
             channel.setErrorMessage(null);
             podcastDao.updateChannel(channel);
@@ -420,18 +421,18 @@ public class PodcastService {
 
                     Element enclosure = episodeElement.getChild("enclosure");
                     if (enclosure == null) {
-                        LOG.info("No enclosure found for episode " + title);
+                        LOG.info("No enclosure found for episode {}", title);
                         return null;
                     }
 
                     String url = sanitizeUrl(enclosure.getAttributeValue("url"));
                     if (url == null) {
-                        LOG.info("No enclosure URL found for episode " + title);
+                        LOG.info("No enclosure URL found for episode {}", title);
                         return null;
                     }
 
                     if (getEpisodeByUrl(url) != null) {
-                        LOG.info("Episode already exists for episode " + title);
+                        LOG.info("Episode already exists for episode {}", title);
                         return null;
                     }
 
@@ -451,7 +452,7 @@ public class PodcastService {
                     Instant date = parseDate(episodeElement.getChildTextTrim("pubDate"));
                     PodcastEpisode episode = new PodcastEpisode(null, channel.getId(), url, null, title, description, date,
                             duration, length, 0L, PodcastStatus.NEW, null);
-                    LOG.info("Created Podcast episode " + title);
+                    LOG.info("Created Podcast episode {}", title);
 
                     return episode;
                 })
@@ -507,11 +508,11 @@ public class PodcastService {
 
     private void doDownloadEpisode(PodcastEpisode episode) {
         if (isEpisodeDeleted(episode)) {
-            LOG.info("Podcast " + episode.getUrl() + " was deleted. Aborting download.");
+            LOG.info("Podcast {} was deleted. Aborting download.", episode.getUrl());
             return;
         }
 
-        LOG.info("Starting to download Podcast from " + episode.getUrl());
+        LOG.info("Starting to download Podcast from {}", episode.getUrl());
 
         PodcastChannel channel = getChannel(episode.getChannelId());
         RequestConfig requestConfig = RequestConfig.custom()
@@ -559,14 +560,14 @@ public class PodcastService {
             }
 
             if (isEpisodeDeleted(episode)) {
-                LOG.info("Podcast " + episode.getUrl() + " was deleted. Aborting download.");
+                LOG.info("Podcast {} was deleted. Aborting download.", episode.getUrl());
                 FileUtil.closeQuietly(out);
                 FileUtil.delete(file);
             } else {
                 addMediaFileIdToEpisodes(Collections.singletonList(episode));
                 episode.setBytesDownloaded(bytesDownloaded);
                 podcastDao.updateEpisode(episode);
-                LOG.info("Downloaded " + bytesDownloaded + " bytes from Podcast " + episode.getUrl());
+                LOG.info("Downloaded {} bytes from Podcast {}", bytesDownloaded, episode.getUrl());
                 FileUtil.closeQuietly(out);
                 updateTags(file, episode);
                 episode.setStatus(PodcastStatus.COMPLETED);
@@ -574,7 +575,7 @@ public class PodcastService {
                 deleteObsoleteEpisodes(channel);
             }
         } catch (Exception x) {
-            LOG.warn("Failed to download Podcast from " + episode.getUrl(), x);
+            LOG.warn("Failed to download Podcast from {}", episode.getUrl(), x);
             episode.setStatus(PodcastStatus.ERROR);
             episode.setErrorMessage(getErrorMessage(x));
             podcastDao.updateEpisode(episode);
@@ -600,7 +601,7 @@ public class PodcastService {
                 mediaFileService.refreshMediaFile(mediaFile);
             }
         } catch (Exception x) {
-            LOG.warn("Failed to update tags for podcast " + episode.getUrl(), x);
+            LOG.warn("Failed to update tags for podcast {}", episode.getUrl(), x);
         }
     }
 
