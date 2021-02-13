@@ -268,8 +268,8 @@
             order: [],
             //orderFixed: [ 0, 'asc' ],
             orderMulti: true,
-            pageLength: ${model.initialPaginationSize},
-          <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSize)) ? '' : ', '.concat(model.initialPaginationSize)}" />
+            pageLength: ${model.initialPaginationSizeFiles},
+          <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSizeFiles)) ? '' : ', '.concat(model.initialPaginationSizeFiles)}" />
             lengthMenu: [[10, 20, 50, 100, -1 ${paginationaddition}], [10, 20, 50, 100, "All" ${paginationaddition}]],
             processing: true,
             autoWidth: true,
@@ -498,8 +498,9 @@
             order: [],
             orderFixed: [ 0, 'asc' ],
             orderMulti: false,
-            pageLength: 7,
-            lengthMenu: [[5, 7, 20, 50, 100, -1], [5, 7, 20, 50, 100, "All"]],
+            pageLength: ${model.initialPaginationSizeFolders},
+          <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSizeFolders)) ? '' : ', '.concat(model.initialPaginationSizeFolders)}" />
+            lengthMenu: [[10, 20, 50, 100, -1 ${paginationaddition}], [10, 20, 50, 100, "All" ${paginationaddition}]],
             processing: true,
             autoWidth: true,
             scrollCollapse: true,
@@ -579,8 +580,8 @@
             order: [],
             orderFixed: [ 0, 'asc' ],
             orderMulti: false,
-            pageLength: ${model.initialPaginationSize},
-          <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSize)) ? '' : ', '.concat(model.initialPaginationSize)}" />
+            pageLength: ${model.initialPaginationSizeFolders},
+          <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSizeFolders)) ? '' : ', '.concat(model.initialPaginationSizeFolders)}" />
             lengthMenu: [[10, 20, 50, 100, -1 ${paginationaddition}], [10, 20, 50, 100, "All" ${paginationaddition}]],
             processing: true,
             autoWidth: true,

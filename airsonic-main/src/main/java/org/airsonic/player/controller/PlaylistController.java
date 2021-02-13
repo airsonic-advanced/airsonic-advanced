@@ -79,7 +79,7 @@ public class PlaylistController {
         map.put("visibility", userSettings.getPlaylistVisibility());
         map.put("editAllowed", username.equals(playlist.getUsername()) || securityService.isAdmin(username));
         map.put("partyMode", userSettings.getPartyModeEnabled());
-        map.put("initialPaginationSize", userSettings.getPaginationSize());
+        map.put("initialPaginationSize", userSettings.getPaginationSizePlaylist());
 
         return new ModelAndView("playlist","model",map);
     }

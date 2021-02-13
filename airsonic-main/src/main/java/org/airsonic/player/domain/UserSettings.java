@@ -56,7 +56,10 @@ public class UserSettings {
     private AvatarScheme avatarScheme = AvatarScheme.NONE;
     private Integer systemAvatarId;
     private Instant changed = Instant.now();
-    private int paginationSize;
+    private int paginationSizeFiles = 10;
+    private int paginationSizeFolders = 7;
+    private int paginationSizePlaylist = 10;
+    private int paginationSizePlayqueue = 10;
 
     public UserSettings() {
     }
@@ -291,12 +294,36 @@ public class UserSettings {
         this.queueFollowingSongs = queueFollowingSongs;
     }
 
-    public int getPaginationSize() {
-        return paginationSize;
+    public int getPaginationSizeFiles() {
+        return paginationSizeFiles;
     }
 
-    public void setPaginationSize(int paginationSize) {
-        this.paginationSize = paginationSize;
+    public void setPaginationSizeFiles(int paginationSizeFiles) {
+        this.paginationSizeFiles = paginationSizeFiles;
+    }
+
+    public int getPaginationSizeFolders() {
+        return paginationSizeFolders;
+    }
+
+    public void setPaginationSizeFolders(int paginationSizeFolders) {
+        this.paginationSizeFolders = paginationSizeFolders;
+    }
+
+    public int getPaginationSizePlaylist() {
+        return paginationSizePlaylist;
+    }
+
+    public void setPaginationSizePlaylist(int paginationSizePlaylist) {
+        this.paginationSizePlaylist = paginationSizePlaylist;
+    }
+
+    public int getPaginationSizePlayqueue() {
+        return paginationSizePlayqueue;
+    }
+
+    public void setPaginationSizePlayqueue(int paginationSizePlayqueue) {
+        this.paginationSizePlayqueue = paginationSizePlayqueue;
     }
 
     /**

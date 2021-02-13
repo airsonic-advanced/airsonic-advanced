@@ -56,7 +56,10 @@ public class PersonalSettingsCommand {
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
     private String listenBrainzUrl;
-    private int paginationSize;
+    private int paginationSizeFiles;
+    private int paginationSizeFolders;
+    private int paginationSizePlayqueue;
+    private int paginationSizePlaylist;
 
     public User getUser() {
         return user;
@@ -266,11 +269,35 @@ public class PersonalSettingsCommand {
         this.queueFollowingSongs = queueFollowingSongs;
     }
 
-    public int getPaginationSize() {
-        return paginationSize;
+    public int getPaginationSizeFiles() {
+        return paginationSizeFiles;
     }
 
-    public void setPaginationSize(int paginationSize) {
-        this.paginationSize = paginationSize;
+    public void setPaginationSizeFiles(int paginationSizeFiles) {
+        this.paginationSizeFiles = paginationSizeFiles;
+    }
+
+    public int getPaginationSizeFolders() {
+        return paginationSizeFolders;
+    }
+
+    public void setPaginationSizeFolders(int paginationSizeFolders) {
+        this.paginationSizeFolders = paginationSizeFolders;
+    }
+
+    public int getPaginationSizePlayqueue() {
+        return paginationSizePlayqueue;
+    }
+
+    public void setPaginationSizePlayqueue(int paginationSizePlayqueue) {
+        this.paginationSizePlayqueue = paginationSizePlayqueue;
+    }
+
+    public int getPaginationSizePlaylist() {
+        return paginationSizePlaylist;
+    }
+
+    public void setPaginationSizePlaylist(int paginationSizePlaylist) {
+        this.paginationSizePlaylist = paginationSizePlaylist;
     }
 }
