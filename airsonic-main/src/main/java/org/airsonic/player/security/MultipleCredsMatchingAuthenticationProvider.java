@@ -1,5 +1,7 @@
 package org.airsonic.player.security;
 
+import org.airsonic.player.controller.SubsonicRESTController.APIException;
+import org.airsonic.player.controller.SubsonicRESTController.ErrorCode;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SecurityService.UserDetail;
@@ -34,7 +36,7 @@ public class MultipleCredsMatchingAuthenticationProvider extends DaoAuthenticati
 
         String presentedPassword = authentication.getCredentials().toString();
 
-        String encoderSpecialization = (authentication.getCredentials() instanceof SaltToken)
+        String encoderSpecialization = (authentication instanceof UsernameSaltedTokenAuthenticationToken)
                 ? SALT_TOKEN_MECHANISM_SPECIALIZATION
                 : "";
 
@@ -51,7 +53,14 @@ public class MultipleCredsMatchingAuthenticationProvider extends DaoAuthenticati
         if (!matchedCred.isPresent()) {
             logger.debug("Authentication failed: password does not match any stored values");
 
-            throw new BadCredentialsException(messages.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
+            // If failure via tokens, try and signal to automatically upgrade to a non-token (password) method
+            // This custom error code exists for DSub client to automatically switch authentication mechanism
+            APIException rootCause = null;
+            if (encoderSpecialization.equals(SALT_TOKEN_MECHANISM_SPECIALIZATION)) {
+                logger.debug("Authentication attempted via hashed password (salted token), can retry with normal means");
+                rootCause = new APIException(ErrorCode.NOT_AUTHENTICATED_UPGRADE_TO_NON_HASHED);
+            }
+            throw new BadCredentialsException(messages.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"), rootCause);
         }
 
         Instant expiration = matchedCred.map(UserCredential::getExpiration).orElse(null);

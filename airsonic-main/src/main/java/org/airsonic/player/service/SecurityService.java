@@ -220,7 +220,7 @@ public class SecurityService implements UserDetailsService {
         }
     }
 
-    public List<GrantedAuthority> getGrantedAuthorities(User user) {
+    public static List<GrantedAuthority> getGrantedAuthorities(User user) {
         return Stream.concat(
                 Stream.of(
                         new SimpleGrantedAuthority("IS_AUTHENTICATED_ANONYMOUSLY"),

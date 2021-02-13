@@ -100,7 +100,7 @@ public class RESTRequestParameterProcessingFilter extends AbstractAuthentication
 
         UsernamePasswordAuthenticationToken authRequest = null;
         if (salt != null && token != null) {
-            authRequest = new UsernamePasswordAuthenticationToken(username, new SaltToken(salt, token));
+            authRequest = new UsernameSaltedTokenAuthenticationToken(username, salt, token);
         } else if (password != null) {
             authRequest = new UsernamePasswordAuthenticationToken(username, password);
         }
