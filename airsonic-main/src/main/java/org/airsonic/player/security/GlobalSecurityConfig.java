@@ -66,7 +66,8 @@ public class GlobalSecurityConfig {
             .put("ldap", new org.springframework.security.crypto.password.LdapShaPasswordEncoder())
             .put("MD4", new org.springframework.security.crypto.password.Md4PasswordEncoder())
             .put("MD5", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("MD5"))
-            .put("pbkdf2", new Pbkdf2PasswordEncoder()).put("scrypt", new SCryptPasswordEncoder())
+            .put("pbkdf2", new Pbkdf2PasswordEncoder())
+            .put("scrypt", new SCryptPasswordEncoder())
             .put("SHA-1", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-1"))
             .put("SHA-256", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-256"))
             .put("sha256", new org.springframework.security.crypto.password.StandardPasswordEncoder())
@@ -106,9 +107,6 @@ public class GlobalSecurityConfig {
 
     @Autowired
     SettingsService settingsService;
-
-    @Autowired
-    CustomUserDetailsContextMapper customUserDetailsContextMapper;
 
     @Autowired
     MultipleCredsMatchingAuthenticationProvider multipleCredsProvider;
@@ -195,7 +193,9 @@ public class GlobalSecurityConfig {
                         .url(settingsService.getLdapUrl())
                     .and()
                     .userSearchFilter(settingsService.getLdapSearchFilter())
-                    .userDetailsContextMapper(customUserDetailsContextMapper);
+                    .userDetailsContextMapper(new CustomUserDetailsContextMapper())
+                    .ldapAuthoritiesPopulator(new CustomLDAPAuthenticatorPostProcessor.CustomLDAPAuthoritiesPopulator())
+                    .addObjectPostProcessor(new CustomLDAPAuthenticatorPostProcessor(securityService, settingsService));
         }
         String jwtKey = settingsService.getJWTKey();
         if (StringUtils.isBlank(jwtKey)) {
