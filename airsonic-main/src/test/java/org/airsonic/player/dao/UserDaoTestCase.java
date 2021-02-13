@@ -208,7 +208,10 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         settings.setSystemAvatarId(1);
         settings.setChanged(Instant.ofEpochMilli(9412L));
         settings.setKeyboardShortcutsEnabled(true);
-        settings.setPaginationSize(120);
+        settings.setPaginationSizeFiles(120);
+        settings.setPaginationSizeFolders(9);
+        settings.setPaginationSizePlayqueue(121);
+        settings.setPaginationSizePlaylist(122);
 
         userDao.updateUserSettings(settings);
         userSettings = userDao.getUserSettings("sindre");
