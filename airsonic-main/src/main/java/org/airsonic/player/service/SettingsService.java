@@ -1304,7 +1304,6 @@ public class SettingsService {
         settings.setLastFmEnabled(false);
         settings.setListenBrainzEnabled(false);
         settings.setChanged(Instant.now());
-        settings.setPaginationSize(10);
 
         UserSettings.Visibility playlist = settings.getPlaylistVisibility();
         playlist.setArtistVisible(true);

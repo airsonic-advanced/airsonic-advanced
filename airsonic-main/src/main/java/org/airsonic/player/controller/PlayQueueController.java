@@ -68,7 +68,7 @@ public class PlayQueueController {
         map.put("partyMode", userSettings.getPartyModeEnabled());
         map.put("notify", userSettings.getSongNotificationEnabled());
         map.put("autoHide", userSettings.getAutoHidePlayQueue());
-        map.put("initialPaginationSize", userSettings.getPaginationSize());
+        map.put("initialPaginationSize", userSettings.getPaginationSizePlayqueue());
         return new ModelAndView("playQueue", "model", map);
     }
 

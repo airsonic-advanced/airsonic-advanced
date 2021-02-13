@@ -243,8 +243,18 @@
 
     <table class="indent">
         <tr>
+            <th></th>
+            <th style="padding:0 0.5em 0.5em 0.5em;text-align:center;"><fmt:message key="personalsettings.browse"/> (<fmt:message key="personalsettings.files"/>)</th>
+            <th style="padding:0 0.5em 0.5em 0.5em;text-align:center;"><fmt:message key="personalsettings.browse"/> (<fmt:message key="personalsettings.folders"/>)</th>
+            <th style="padding:0 0 0.5em 0.5em;text-align:center;"><fmt:message key="personalsettings.playlist"/></th>
+            <th style="padding:0 0 0.5em 0.5em;text-align:center;"><fmt:message key="personalsettings.playqueue"/></th>
+        </tr>
+        <tr>
             <td><fmt:message key="personalsettings.paginationsize"/></td>
-            <td><form:input path="paginationSize" size="24"/></td>
+            <td style="text-align:center"><form:input path="paginationSizeFiles" size="10"/></td>
+            <td style="text-align:center"><form:input path="paginationSizeFolders" size="10"/></td>
+            <td style="text-align:center"><form:input path="paginationSizePlaylist" size="10"/></td>
+            <td style="text-align:center"><form:input path="paginationSizePlayqueue" size="10"/></td>
         </tr>
     </table>
 

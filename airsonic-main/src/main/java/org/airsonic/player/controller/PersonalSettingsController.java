@@ -85,7 +85,10 @@ public class PersonalSettingsController {
         command.setLastFmEnabled(userSettings.getLastFmEnabled());
         command.setListenBrainzEnabled(userSettings.getListenBrainzEnabled());
         command.setListenBrainzUrl(userSettings.getListenBrainzUrl());
-        command.setPaginationSize(userSettings.getPaginationSize());
+        command.setPaginationSizeFiles(userSettings.getPaginationSizeFiles());
+        command.setPaginationSizeFolders(userSettings.getPaginationSizeFolders());
+        command.setPaginationSizePlaylist(userSettings.getPaginationSizePlaylist());
+        command.setPaginationSizePlayqueue(userSettings.getPaginationSizePlayqueue());
 
         Locale currentLocale = userSettings.getLocale();
         Locale[] locales = settingsService.getAvailableLocales();
@@ -160,7 +163,10 @@ public class PersonalSettingsController {
         settings.setListenBrainzUrl(StringUtils.trimToNull(command.getListenBrainzUrl()));
         settings.setSystemAvatarId(getSystemAvatarId(command));
         settings.setAvatarScheme(getAvatarScheme(command));
-        settings.setPaginationSize(command.getPaginationSize());
+        settings.setPaginationSizeFiles(command.getPaginationSizeFiles());
+        settings.setPaginationSizeFolders(command.getPaginationSizeFolders());
+        settings.setPaginationSizePlaylist(command.getPaginationSizePlaylist());
+        settings.setPaginationSizePlayqueue(command.getPaginationSizePlayqueue());
 
         settings.setChanged(Instant.now());
         settingsService.updateUserSettings(settings);
