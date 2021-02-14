@@ -13,6 +13,6 @@ import javax.servlet.http.HttpServletResponse;
 public class RatingJspController {
     @GetMapping
     public ModelAndView get(HttpServletRequest request, HttpServletResponse response) {
-        return new ModelAndView("rating");
+        return new ModelAndView("rating", request.getParameterMap());
     }
 }
