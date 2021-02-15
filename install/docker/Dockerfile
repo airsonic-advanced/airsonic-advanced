@@ -15,6 +15,7 @@ RUN apt-get update && \
                        x264 \
                        x265 \
                        lame \
+                       xmp \
                        bash \
                        ttf-dejavu \
                        gosu
