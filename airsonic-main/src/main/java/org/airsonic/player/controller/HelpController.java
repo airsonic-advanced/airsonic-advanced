@@ -109,7 +109,7 @@ public class HelpController {
             }
             return lines;
         } catch (IOException e) {
-            LOG.warn("Could not open log file " + logFile, e);
+            LOG.warn("Could not open log file {}", logFile, e);
             return null;
         }
     }

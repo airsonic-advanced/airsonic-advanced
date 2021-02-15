@@ -7,6 +7,7 @@ import com.google.common.io.BaseEncoding;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.sonos.SonosLinkSecurityInterceptor.SonosJWTVerification;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -32,9 +34,16 @@ import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
 import org.springframework.security.crypto.scrypt.SCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import javax.servlet.ServletContext;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -58,7 +67,8 @@ public class GlobalSecurityConfig {
             .put("ldap", new org.springframework.security.crypto.password.LdapShaPasswordEncoder())
             .put("MD4", new org.springframework.security.crypto.password.Md4PasswordEncoder())
             .put("MD5", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("MD5"))
-            .put("pbkdf2", new Pbkdf2PasswordEncoder()).put("scrypt", new SCryptPasswordEncoder())
+            .put("pbkdf2", new Pbkdf2PasswordEncoder())
+            .put("scrypt", new SCryptPasswordEncoder())
             .put("SHA-1", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-1"))
             .put("SHA-256", new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("SHA-256"))
             .put("sha256", new org.springframework.security.crypto.password.StandardPasswordEncoder())
@@ -100,10 +110,13 @@ public class GlobalSecurityConfig {
     SettingsService settingsService;
 
     @Autowired
-    CustomUserDetailsContextMapper customUserDetailsContextMapper;
+    MultipleCredsMatchingAuthenticationProvider multipleCredsProvider;
 
     @Autowired
-    MultipleCredsMatchingAuthenticationProvider multipleCredsProvider;
+    SonosJWTVerification sonosJwtVerification;
+
+    @Autowired
+    private ServletContext servletContext;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -181,7 +194,9 @@ public class GlobalSecurityConfig {
                         .url(settingsService.getLdapUrl())
                     .and()
                     .userSearchFilter(settingsService.getLdapSearchFilter())
-                    .userDetailsContextMapper(customUserDetailsContextMapper);
+                    .userDetailsContextMapper(new CustomUserDetailsContextMapper())
+                    .ldapAuthoritiesPopulator(new CustomLDAPAuthenticatorPostProcessor.CustomLDAPAuthoritiesPopulator())
+                    .addObjectPostProcessor(new CustomLDAPAuthenticatorPostProcessor(securityService, settingsService));
         }
         String jwtKey = settingsService.getJWTKey();
         if (StringUtils.isBlank(jwtKey)) {
@@ -190,7 +205,9 @@ public class GlobalSecurityConfig {
             settingsService.setJWTKey(jwtKey);
             settingsService.save();
         }
-        auth.authenticationProvider(new JWTAuthenticationProvider(jwtKey));
+        JWTAuthenticationProvider jwtAuth = new JWTAuthenticationProvider(jwtKey);
+        jwtAuth.addAdditionalCheck(servletContext.getContextPath() + "/ws/Sonos", sonosJwtVerification);
+        auth.authenticationProvider(jwtAuth);
         auth.authenticationProvider(multipleCredsProvider);
     }
 
@@ -200,6 +217,12 @@ public class GlobalSecurityConfig {
 
         public ExtSecurityConfiguration() {
             super(true);
+        }
+
+        @Override
+        @Bean
+        public AuthenticationManager authenticationManagerBean() throws Exception {
+            return super.authenticationManagerBean();
         }
 
         @Bean(name = "jwtAuthenticationFilter")
@@ -218,7 +241,11 @@ public class GlobalSecurityConfig {
                     .csrf().requireCsrfProtectionMatcher(csrfSecurityRequestMatcher).and()
                     .headers().frameOptions().sameOrigin().and()
                     .authorizeRequests()
-                    .antMatchers("/ext/stream/**", "/ext/coverArt*", "/ext/share/**", "/ext/hls/**")
+                    .antMatchers(
+                            "/ext/stream/**",
+                            "/ext/coverArt*",
+                            "/ext/share/**",
+                            "/ext/hls/**")
                     .hasAnyRole("TEMP", "USER").and()
                     .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                     .exceptionHandling().and()
@@ -235,10 +262,8 @@ public class GlobalSecurityConfig {
 
         @Override
         protected void configure(HttpSecurity http) throws Exception {
-
             RESTRequestParameterProcessingFilter restAuthenticationFilter = new RESTRequestParameterProcessingFilter();
             restAuthenticationFilter.setAuthenticationManager(authenticationManagerBean());
-            http = http.addFilterBefore(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
             // Try to load the 'remember me' key.
             //
@@ -256,15 +281,20 @@ public class GlobalSecurityConfig {
             }
 
             http
+                    .cors()
+                    .and()
+                    .httpBasic()
+                    .and()
+                    .addFilterAfter(restAuthenticationFilter, BasicAuthenticationFilter.class)
                     .csrf()
+                    .ignoringAntMatchers("/ws/Sonos/**")
                     .requireCsrfProtectionMatcher(csrfSecurityRequestMatcher)
                     .and().headers()
                     .frameOptions()
                     .sameOrigin()
                     .and().authorizeRequests()
-                    .antMatchers("/recover*", "/accessDenied*",
-                            "/style/**", "/icons/**", "/flash/**", "/script/**",
-                            "/sonos/**", "/login", "/error")
+                    .antMatchers("/recover*", "/accessDenied*", "/style/**", "/icons/**", "/flash/**", "/script/**",
+                            "/login", "/error", "/sonos/**", "/sonoslink/**", "/ws/Sonos/**")
                     .permitAll()
                     .antMatchers("/personalSettings*",
                             "/playerSettings*", "/shareSettings*", "/credentialsSettings*")
@@ -300,5 +330,19 @@ public class GlobalSecurityConfig {
                     .and().logout().deleteCookies("JSESSIONID").logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")).logoutSuccessUrl("/login?logout")
                     .and().rememberMe().key(rememberMeKey).userDetailsService(securityService);
         }
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Collections.singletonList("*"));
+        configuration.setAllowedMethods(Collections.singletonList("*"));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/rest/**", configuration);
+        source.registerCorsConfiguration("/stream/**", configuration);
+        source.registerCorsConfiguration("/ext/stream/**", configuration);
+        source.registerCorsConfiguration("/ext/hls/**", configuration);
+        source.registerCorsConfiguration("/ext/hls/**", configuration);
+        return source;
     }
 }

@@ -677,6 +677,7 @@
         $("#bitrate_menu").on('change', this.changeBitRate.bind(this));
         $("#share").on('click', this.share.bind(this));
         $("#download").on('click', this.download.bind(this));
+        $("#fullscreen").on('click', this.requestFullScreen.bind(this));
 
         if (model.hide_share) {
           $("#share").hide();
@@ -686,6 +687,19 @@
         }
 
 //        setInterval(this.updateDebug.bind(this), 100);
+    };
+
+    CastPlayer.prototype.requestFullScreen = function () {
+        var elem = this.localPlayer;
+        if (elem.requestFullscreen) {
+		  elem.requestFullscreen();
+		} else if (elem.msRequestFullscreen) {
+		  elem.msRequestFullscreen();
+		} else if (elem.mozRequestFullScreen) {
+		  elem.mozRequestFullScreen();
+		} else if (elem.webkitRequestFullscreen) {
+		  elem.webkitRequestFullscreen();
+		}
     };
 
     window.CastPlayer = CastPlayer;

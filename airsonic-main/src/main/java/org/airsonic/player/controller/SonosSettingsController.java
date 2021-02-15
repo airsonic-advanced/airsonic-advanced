@@ -21,7 +21,7 @@ package org.airsonic.player.controller;
 import org.airsonic.player.service.NetworkService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.SonosService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -29,15 +29,16 @@ import org.springframework.web.bind.ServletRequestUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Controller for the page used to administrate the Sonos music service settings.
+ * Controller for the page used to administer the Sonos music service settings.
  *
  * @author Sindre Mehus
  */
@@ -51,46 +52,42 @@ public class SonosSettingsController {
     private SonosService sonosService;
 
     @GetMapping
-    public String doGet(Model model) {
-
-        Map<String, Object> map = new HashMap<String, Object>();
-
-        map.put("sonosEnabled", settingsService.isSonosEnabled());
-        map.put("sonosServiceName", settingsService.getSonosServiceName());
-
-        model.addAttribute("model", map);
-        return "sonosSettings";
+    public ModelAndView doGet(HttpServletRequest request, Model model) throws Exception {
+        return new ModelAndView("sonosSettings", "model", getModel(request));
     }
 
     @PostMapping
-    public String doPost(HttpServletRequest request, RedirectAttributes redirectAttributes) {
-        handleParameters(request);
+    public ModelAndView doPost(HttpServletRequest request) throws Exception {
 
-        redirectAttributes.addFlashAttribute("settings_toast", true);
-
-        return "redirect:sonosSettings.view";
-    }
-
-    private void handleParameters(HttpServletRequest request) {
         boolean sonosEnabled = ServletRequestUtils.getBooleanParameter(request, "sonosEnabled", false);
         String sonosServiceName = StringUtils.trimToNull(request.getParameter("sonosServiceName"));
-        if (sonosServiceName == null) {
+        if (StringUtils.isBlank(sonosServiceName)) {
             sonosServiceName = "Airsonic";
         }
 
+        settingsService.setSonosLinkMethod(request.getParameter("sonosLinkMethod"));
         settingsService.setSonosEnabled(sonosEnabled);
         settingsService.setSonosServiceName(sonosServiceName);
+        settingsService.setSonosCallbackHostAddress(StringUtils.appendIfMissing(StringUtils.trimToNull(request.getParameter("callbackHostAddress")), "/"));
         settingsService.save();
 
-        sonosService.setMusicServiceEnabled(false, NetworkService.getBaseUrl(request));
-        sonosService.setMusicServiceEnabled(sonosEnabled, NetworkService.getBaseUrl(request));
+        List<String> returnCodes = sonosService.updateMusicServiceRegistration();
+
+        Map<String, Object> map = getModel(request);
+
+        map.put("returnCodes", returnCodes);
+
+        return new ModelAndView("sonosSettings", "model", map);
     }
 
-    public void setSettingsService(SettingsService settingsService) {
-        this.settingsService = settingsService;
-    }
-
-    public void setSonosService(SonosService sonosService) {
-        this.sonosService = sonosService;
+    private Map<String, Object> getModel(HttpServletRequest request) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("sonosEnabled", settingsService.isSonosEnabled());
+        map.put("sonosServiceName", settingsService.getSonosServiceName());
+        map.put("sonosLinkMethod", settingsService.getSonosLinkMethod());
+        map.put("callbackHostAddress", settingsService.getSonosCallbackHostAddress(NetworkService.getBaseUrl(request)));
+        map.put("existingLinks", sonosService.getExistingSonosLinks());
+        map.put("pendingLinks", sonosService.getPendingSonosLinks());
+        return map;
     }
 }

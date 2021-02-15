@@ -22,7 +22,6 @@ import org.airsonic.player.domain.PodcastChannel;
 import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.service.PodcastService;
 import org.airsonic.player.service.SecurityService;
-import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,8 +49,6 @@ public class PodcastChannelsController {
     private PodcastService podcastService;
     @Autowired
     private SecurityService securityService;
-    @Autowired
-    private SettingsService settingsService;
 
     @GetMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) {

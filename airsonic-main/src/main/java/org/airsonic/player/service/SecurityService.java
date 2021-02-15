@@ -28,6 +28,7 @@ import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.security.GlobalSecurityConfig;
 import org.airsonic.player.security.PasswordDecoder;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -218,7 +220,7 @@ public class SecurityService implements UserDetailsService {
         }
     }
 
-    public List<GrantedAuthority> getGrantedAuthorities(User user) {
+    public static List<GrantedAuthority> getGrantedAuthorities(User user) {
         return Stream.concat(
                 Stream.of(
                         new SimpleGrantedAuthority("IS_AUTHENTICATED_ANONYMOUSLY"),
@@ -417,8 +419,9 @@ public class SecurityService implements UserDetailsService {
     }
 
     private MusicFolder getMusicFolderForFile(Path file) {
-        String path = file.toString();
-        return settingsService.getAllMusicFolders(false, true).stream().filter(folder -> isFileInFolder(path, folder.getPath().toString())).findFirst().orElse(null);
+        return settingsService.getAllMusicFolders(false, true).stream()
+                .filter(folder -> isFileInFolder(file, folder.getPath()))
+                .findFirst().orElse(null);
     }
 
     /**
@@ -429,7 +432,7 @@ public class SecurityService implements UserDetailsService {
      */
     private boolean isInPodcastFolder(Path file) {
         String podcastFolder = settingsService.getPodcastFolder();
-        return isFileInFolder(file.toString(), podcastFolder);
+        return isFileInFolder(file, Paths.get(podcastFolder));
     }
 
     public String getRootFolderForFile(Path file) {
@@ -452,34 +455,11 @@ public class SecurityService implements UserDetailsService {
         return settingsService.getMusicFoldersForUser(username).parallelStream().anyMatch(musicFolder -> musicFolder.getPath().toString().equals(file.getFolder()));
     }
 
-    /**
-     * Returns whether the given file is located in the given folder (or any of its sub-folders).
-     * If the given file contains the expression ".." (indicating a reference to the parent directory),
-     * this method will return <code>false</code>.
-     *
-     * @param file   The file in question.
-     * @param folder The folder in question.
-     * @return Whether the given file is located in the given folder.
-     */
-    protected static boolean isFileInFolder(String file, String folder) {
-        // Deny access if file contains ".." surrounded by slashes (or end of line).
-        if (file.matches(".*(/|\\\\)\\.\\.(/|\\\\|$).*")) {
-            return false;
-        }
-
-        // Convert slashes.
-        file = file.replace('\\', '/');
-        folder = folder.replace('\\', '/');
-
-        return
-                // identity matches
-                // /a/ == /a, /a == /a/, /a == /a, /a/ == /a/
-                StringUtils.equalsIgnoreCase(file, folder)
-                || StringUtils.equalsIgnoreCase(file, StringUtils.appendIfMissing(folder, "/"))
-                || StringUtils.equalsIgnoreCase(StringUtils.appendIfMissing(file, "/"), folder)
-                || StringUtils.equalsIgnoreCase(StringUtils.appendIfMissing(file, "/"), StringUtils.appendIfMissing(folder, "/"))
-                // file prefix is folder (MUST append '/', otherwise /a/b2 startswith /a/b)
-                || StringUtils.startsWithIgnoreCase(file, StringUtils.appendIfMissing(folder, "/"));
+    protected static boolean isFileInFolder(Path file, Path folder) {
+        // not using this to account for / and \\ issues in linux
+        // return file.normalize().startsWith(folder.normalize());
+        return Paths.get(FilenameUtils.separatorsToUnix(file.toString())).normalize()
+                .startsWith(Paths.get(FilenameUtils.separatorsToUnix(folder.toString())).normalize());
     }
 
     public void setSettingsService(SettingsService settingsService) {

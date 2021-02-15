@@ -93,6 +93,9 @@
     <c:if test="${model.user.podcastRole}">
         <td style="padding-right:2em"><div class="forward"><a href="podcastReceiverAdmin.view?refresh"><fmt:message key="podcastreceiver.check"/></a></div></td>
     </c:if>
+    <c:if test="${model.user.podcastRole}">
+        <td style="padding-right:2em"><div class="forward"><a href="rest/exportPodcasts/opml" download><fmt:message key="podcastreceiver.export"/></a></div></td>
+    </c:if>
     <c:if test="${model.user.adminRole}">
         <td style="padding-right:2em"><div class="forward"><a href="podcastSettings.view?"><fmt:message key="podcastreceiver.settings"/></a></div></td>
     </c:if>

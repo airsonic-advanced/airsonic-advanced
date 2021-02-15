@@ -32,8 +32,8 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic", "/queue")
-                .setHeartbeatValue(new long[] { 25000, 25000 })
-                .setTaskScheduler(messageBrokerTaskScheduler);
+                .setTaskScheduler(messageBrokerTaskScheduler)
+                .setHeartbeatValue(new long[] { 20000, 20000 });
         config.setApplicationDestinationPrefixes("/app");
 
         // this ensures publish order is serial at the cost of no parallelization and
@@ -44,10 +44,10 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/websocket")
-                .setAllowedOrigins("*")
+                .setAllowedOriginPatterns("*")
                 .addInterceptors(new ServletRequestCaptureHandshakeInterceptor())
                 .withSockJS()
-                .setClientLibraryUrl("../../script/sockjs-client-1.4.0.min.js");
+                .setClientLibraryUrl("../../script/sockjs-1.5.0.min.js");
     }
 
     public static class ServletRequestCaptureHandshakeInterceptor implements HandshakeInterceptor {

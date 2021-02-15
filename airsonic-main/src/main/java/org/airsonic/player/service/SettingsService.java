@@ -25,6 +25,7 @@ import org.airsonic.player.dao.InternetRadioDao;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.service.sonos.SonosServiceRegistration;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
@@ -73,6 +74,7 @@ public class SettingsService {
     private static final String KEY_MUSIC_FILE_TYPES = "MusicFileTypes";
     private static final String KEY_VIDEO_FILE_TYPES = "VideoFileTypes";
     private static final String KEY_COVER_ART_FILE_TYPES = "CoverArtFileTypes2";
+    private static final String KEY_COVER_ART_SOURCE = "CoverArtSource";
     private static final String KEY_COVER_ART_CONCURRENCY = "CoverArtConcurrency";
     private static final String KEY_COVER_ART_QUALITY = "CoverArtQuality";
     private static final String KEY_WELCOME_TITLE = "WelcomeTitle";
@@ -86,7 +88,10 @@ public class SettingsService {
     private static final String KEY_INDEX_CREATION_INTERVAL = "IndexCreationInterval";
     private static final String KEY_INDEX_CREATION_HOUR = "IndexCreationHour";
     private static final String KEY_FAST_CACHE_ENABLED = "FastCacheEnabled";
-    private static final String KEY_IGNORE_FILE_TIMESTAMPS = "IgnoreFileTimestamps";
+    private static final String KEY_FULL_SCAN = "FullScan";
+    private static final String KEY_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN = "ClearFullScanSettingAfterScan";
+    private static final String KEY_TRANSCODE_ESTIMATE_TIME_PADDING = "TranscodeEstimateTimePadding";
+    private static final String KEY_TRANSCODE_ESTIMATE_BYTE_PADDING = "TranscodeEstimateBytePadding";
     private static final String KEY_PODCAST_UPDATE_INTERVAL = "PodcastUpdateInterval";
     private static final String KEY_PODCAST_FOLDER = "PodcastFolder";
     private static final String KEY_PODCAST_EPISODE_RETENTION_COUNT = "PodcastEpisodeRetentionCount";
@@ -114,6 +119,8 @@ public class SettingsService {
     private static final String KEY_SONOS_ENABLED = "SonosEnabled";
     private static final String KEY_SONOS_SERVICE_NAME = "SonosServiceName";
     private static final String KEY_SONOS_SERVICE_ID = "SonosServiceId";
+    private static final String KEY_SONOS_CALLBACK_HOST_ADDRESS = "SonosCallbackHostAddress";
+    private static final String KEY_SONOS_LINK_METHOD = "SonosLinkMethod";
     private static final String KEY_JWT_KEY = "JWTKey";
     private static final String KEY_REMEMBER_ME_KEY = "RememberMeKey";
     private static final String KEY_ENCRYPTION_PASSWORD = "EncryptionKeyPassword";
@@ -155,9 +162,10 @@ public class SettingsService {
     private static final String DEFAULT_IGNORED_ARTICLES = "The El La Los Las Le Les";
     private static final String DEFAULT_SHORTCUTS = "New Incoming Podcast";
     private static final String DEFAULT_PLAYLIST_FOLDER = Util.getDefaultPlaylistFolder();
-    private static final String DEFAULT_MUSIC_FILE_TYPES = "mp3 ogg oga aac m4a m4b flac wav wma aif aiff ape mpc shn mka opus";
+    private static final String DEFAULT_MUSIC_FILE_TYPES = "mp3 ogg oga aac m4a m4b flac wav wma aif aiff ape mpc shn mka opus alm 669 mdl far xm mod fnk imf it liq wow mtm ptm rtm stm s3m ult dmf dbm med okt emod sfx m15 mtn amf gdm stx gmc psm j2b umx amd rad hsc flx gtk mgt mtp";
     private static final String DEFAULT_VIDEO_FILE_TYPES = "flv avi mpg mpeg mp4 m4v mkv mov wmv ogv divx m2ts webm";
     private static final String DEFAULT_COVER_ART_FILE_TYPES = "cover.jpg cover.png cover.gif folder.jpg jpg jpeg gif png";
+    private static final String DEFAULT_COVER_ART_SOURCE = CoverArtSource.FILETAG.name();
     private static final int DEFAULT_COVER_ART_CONCURRENCY = 4;
     private static final int DEFAULT_COVER_ART_QUALITY = 90;
     private static final String DEFAULT_WELCOME_TITLE = "Welcome to Airsonic!";
@@ -178,7 +186,10 @@ public class SettingsService {
     private static final int DEFAULT_INDEX_CREATION_INTERVAL = 1;
     private static final int DEFAULT_INDEX_CREATION_HOUR = 3;
     private static final boolean DEFAULT_FAST_CACHE_ENABLED = false;
-    private static final boolean DEFAULT_IGNORE_FILE_TIMESTAMPS = false;
+    private static final boolean DEFAULT_FULL_SCAN = false;
+    private static final boolean DEFAULT_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN = false;
+    private static final long DEFAULT_TRANSCODE_ESTIMATE_TIME_PADDING = 2000;
+    private static final long DEFAULT_TRANSCODE_ESTIMATE_BYTE_PADDING = 0;
     private static final int DEFAULT_PODCAST_UPDATE_INTERVAL = 24;
     private static final String DEFAULT_PODCAST_FOLDER = Util.getDefaultPodcastFolder();
     private static final int DEFAULT_PODCAST_EPISODE_RETENTION_COUNT = 10;
@@ -206,6 +217,7 @@ public class SettingsService {
     private static final boolean DEFAULT_SONOS_ENABLED = false;
     private static final String DEFAULT_SONOS_SERVICE_NAME = "Airsonic";
     private static final int DEFAULT_SONOS_SERVICE_ID = 242;
+    private static final String DEFAULT_SONOS_LINK_METHOD = SonosServiceRegistration.AuthenticationType.APPLICATION_LINK.name();
     private static final String DEFAULT_EXPORT_PLAYLIST_FORMAT = "m3u";
     private static final boolean DEFAULT_IGNORE_SYMLINKS = false;
     private static final String DEFAULT_EXCLUDE_PATTERN_STRING = null;
@@ -295,6 +307,7 @@ public class SettingsService {
         keyMaps.put("DatabaseUsertableQuote", KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
 
         keyMaps.put("airsonic.rememberMeKey", KEY_REMEMBER_ME_KEY);
+        keyMaps.put("IgnoreFileTimestamps", KEY_FULL_SCAN);
 
         return keyMaps;
     }
@@ -424,8 +437,9 @@ public class SettingsService {
     }
 
     private static void logServerInfo() {
-        LOG.info("Java: " + System.getProperty("java.version") +
-                ", OS: " + System.getProperty("os.name"));
+        LOG.info("Java: " + Runtime.version() +
+                ", OS: " + System.getProperty("os.name") +
+                ", Memory (max bytes): " + Runtime.getRuntime().maxMemory());
     }
 
     public void save() {
@@ -573,6 +587,18 @@ public class SettingsService {
         return cachedCoverArtFileTypes;
     }
 
+    public CoverArtSource getCoverArtSource() {
+        try {
+            return CoverArtSource.valueOf(getString(KEY_COVER_ART_SOURCE, DEFAULT_COVER_ART_SOURCE));
+        } catch (Exception exception) {
+            return CoverArtSource.valueOf(DEFAULT_COVER_ART_SOURCE);
+        }
+    }
+
+    public void setCoverArtSource(CoverArtSource source) {
+        setProperty(KEY_COVER_ART_SOURCE, source.name());
+    }
+
     public int getCoverArtConcurrency() {
         return getInt(KEY_COVER_ART_CONCURRENCY, DEFAULT_COVER_ART_CONCURRENCY);
     }
@@ -659,13 +685,37 @@ public class SettingsService {
         setBoolean(KEY_FAST_CACHE_ENABLED, enabled);
     }
 
-    public boolean isIgnoreFileTimestamps() {
-        return getBoolean(KEY_IGNORE_FILE_TIMESTAMPS, DEFAULT_IGNORE_FILE_TIMESTAMPS);
+    public boolean getFullScan() {
+        return getBoolean(KEY_FULL_SCAN, DEFAULT_FULL_SCAN);
     }
 
-    public void setIgnoreFileTimestamps(boolean ignore) {
-        setBoolean(KEY_IGNORE_FILE_TIMESTAMPS, ignore);
+    public void setFullScan(Boolean fullscan) {
+        setBoolean(KEY_FULL_SCAN, fullscan);
     }
+
+    public boolean getClearFullScanSettingAfterScan() {
+        return getBoolean(KEY_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN, DEFAULT_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN);
+    }
+
+    public void setClearFullScanSettingAfterScan(Boolean clear) {
+        setBoolean(KEY_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN, clear);
+    }
+
+    public long getTranscodeEstimateTimePadding() {
+        return getLong(KEY_TRANSCODE_ESTIMATE_TIME_PADDING, DEFAULT_TRANSCODE_ESTIMATE_TIME_PADDING);
+    };
+
+    public void setTranscodeEstimateTimePadding(Long timeInMillis) {
+        setLong(KEY_TRANSCODE_ESTIMATE_TIME_PADDING, timeInMillis);
+    };
+
+    public long getTranscodeEstimateBytePadding() {
+        return getLong(KEY_TRANSCODE_ESTIMATE_BYTE_PADDING, DEFAULT_TRANSCODE_ESTIMATE_BYTE_PADDING);
+    };
+
+    public void setTranscodeEstimateBytePadding(Long bytes) {
+        setLong(KEY_TRANSCODE_ESTIMATE_BYTE_PADDING, bytes);
+    };
 
     /**
      * Returns the number of hours between Podcast updates, of -1 if automatic updates
@@ -800,6 +850,7 @@ public class SettingsService {
     String getJukeboxCommand() {
         return getProperty(KEY_JUKEBOX_COMMAND, DEFAULT_JUKEBOX_COMMAND);
     }
+
     public String getVideoImageCommand() {
         return getProperty(KEY_VIDEO_IMAGE_COMMAND, DEFAULT_VIDEO_IMAGE_COMMAND);
     }
@@ -1057,7 +1108,7 @@ public class SettingsService {
     /**
      * Returns all music folders.
      *
-     * @param includeDisabled Whether to include disabled folders.
+     * @param includeDisabled    Whether to include disabled folders.
      * @param includeNonExisting Whether to include non-existing folders.
      * @return Possibly empty list of all music folders.
      */
@@ -1253,7 +1304,6 @@ public class SettingsService {
         settings.setLastFmEnabled(false);
         settings.setListenBrainzEnabled(false);
         settings.setChanged(Instant.now());
-        settings.setPaginationSize(10);
 
         UserSettings.Visibility playlist = settings.getPlaylistVisibility();
         playlist.setArtistVisible(true);
@@ -1365,6 +1415,26 @@ public class SettingsService {
         return getInt(KEY_SONOS_SERVICE_ID, DEFAULT_SONOS_SERVICE_ID);
     }
 
+    public String getSonosLinkMethod() {
+        return getString(KEY_SONOS_LINK_METHOD, DEFAULT_SONOS_LINK_METHOD);
+    }
+
+    public void setSonosLinkMethod(String linkMethod) {
+        setString(KEY_SONOS_LINK_METHOD, linkMethod);
+    }
+
+    public String getSonosCallbackHostAddress() {
+        return getSonosCallbackHostAddress(null);
+    }
+
+    public String getSonosCallbackHostAddress(String def) {
+        return getString(KEY_SONOS_CALLBACK_HOST_ADDRESS, def);
+    }
+
+    public void setSonosCallbackHostAddress(String hostAddress) {
+        setString(KEY_SONOS_CALLBACK_HOST_ADDRESS, hostAddress);
+    }
+
     private void setProperty(String key, Object value) {
         if (value == null) {
             ConfigurationPropertiesService.getInstance().clearProperty(key);
@@ -1435,6 +1505,7 @@ public class SettingsService {
             return s;
         }
     }
+
     public void setSmtpPassword(String smtpPassword) {
         try {
             smtpPassword = StringUtil.utf8HexEncode(smtpPassword);

@@ -6,14 +6,14 @@ echo "Process will run as:"
 echo "User: $(id -u)"
 echo "Group: $(id -g)"
 mkdir -p $AIRSONIC_DIR/airsonic/transcode
-ln -fs /usr/bin/ffmpeg $AIRSONIC_DIR/airsonic/transcode/ffmpeg
-ln -fs /usr/bin/lame $AIRSONIC_DIR/airsonic/transcode/lame
+[[ ! -f $AIRSONIC_DIR/airsonic/transcode/ffmpeg ]] && ln -fs /usr/bin/ffmpeg $AIRSONIC_DIR/airsonic/transcode/ffmpeg
+[[ ! -f $AIRSONIC_DIR/airsonic/transcode/lame ]] && ln -fs /usr/bin/lame $AIRSONIC_DIR/airsonic/transcode/lame
 java --version
 echo "JAVA_OPTS=$JAVA_OPTS"
-/usr/bin/ffmpeg -version
+$AIRSONIC_DIR/airsonic/transcode/ffmpeg -version
 curl --version
 echo "PATH=$PATH"
-
+echo "CONTEXT_PATH=$CONTEXT_PATH"
 if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
 
     java_opts_array=()
@@ -22,7 +22,7 @@ if [[ $# -lt 1 ]] || [[ ! "$1" == "java"* ]]; then
     done < <([[ $JAVA_OPTS ]] && xargs printf '%s\0' <<<"$JAVA_OPTS")
     exec java -Xmx256m \
      -cp /app/WEB-INF/classes:/app/WEB-INF/lib/*:/app/WEB-INF/lib-provided/* \
-     -Dserver.host=0.0.0.0 \
+     -Dserver.address=0.0.0.0 \
      -Dserver.port=$AIRSONIC_PORT \
      -Dserver.servlet.context-path=$CONTEXT_PATH \
      -Dairsonic.home=$AIRSONIC_DIR/airsonic \

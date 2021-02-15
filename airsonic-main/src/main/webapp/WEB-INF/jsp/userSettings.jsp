@@ -189,7 +189,8 @@
             <table id="passwordChangeCheckboxTable">
                 <tr>
                     <td><form:checkbox path="passwordChange" id="passwordChange" onclick="enablePasswordChangeFields();" cssClass="checkbox"/></td>
-                    <td><label for="passwordChange"><fmt:message key="credentialsettings.addcredentials"/></label></td>
+                    <td><label for="passwordChange"><fmt:message key="credentialsettings.addcredentials"/> <fmt:message key="credentialsettings.credentialsnotremoved"/></label></td>
+                    <td><c:import url="helpToolTip.jsp"><c:param name="topic" value="credentialsadd"/></c:import></td>
                 </tr>
             </table>
 

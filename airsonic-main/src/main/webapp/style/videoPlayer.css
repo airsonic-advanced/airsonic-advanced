@@ -172,6 +172,17 @@ body {
     cursor: pointer;
 }
 
+#fullscreen {
+    float: left;
+    width: 24px;
+    height: 24px;
+    margin-top: -2px;
+    margin-left: 5px;
+    margin-right: 5px;
+    background-image: url('../icons/video/maximize.svg');
+    cursor: pointer;
+}
+
 .ui-slider .ui-slider-handle {
     width: 11px;
     height: 11px;

@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=utf-8" pageEncoding="utf-8" %>
-<script type="text/javascript" src="<c:url value='/script/sockjs-client-1.4.0.min.js'/>"></script>
+<script type="text/javascript" src="<c:url value='/script/sockjs-1.5.0.min.js'/>"></script>
 <script type="text/javascript" src="<c:url value='/script/stomp-4.0.8.min.js'/>"></script>
 <script type="text/javascript">
     var csrfheaderName = "${_csrf.headerName}";
@@ -41,8 +41,8 @@
             if (stompclient.stompClient == null) {
                 var socket = new SockJS("<c:url value='/websocket'/>");
                 stompclient.stompClient = Stomp.over(socket);
-                stompclient.stompClient.heartbeat.incoming = 25000;
-                stompclient.stompClient.heartbeat.outgoing = 25000;
+                stompclient.stompClient.heartbeat.incoming = 20000;
+                stompclient.stompClient.heartbeat.outgoing = 20000;
                 // resubscribe to everything again
                 stompclient.resubscriptionCallback = function() {
                     for (var topic in stompclient.subscriptions) {

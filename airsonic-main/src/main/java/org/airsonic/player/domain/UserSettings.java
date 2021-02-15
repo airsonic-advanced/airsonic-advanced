@@ -45,6 +45,7 @@ public class UserSettings {
     private AlbumListType defaultAlbumList = AlbumListType.RANDOM;
     private Visibility mainVisibility = new Visibility();
     private Visibility playlistVisibility = new Visibility();
+    private Visibility playqueueVisibility = new Visibility();
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
     private String listenBrainzUrl;
@@ -55,7 +56,10 @@ public class UserSettings {
     private AvatarScheme avatarScheme = AvatarScheme.NONE;
     private Integer systemAvatarId;
     private Instant changed = Instant.now();
-    private int paginationSize;
+    private int paginationSizeFiles = 10;
+    private int paginationSizeFolders = 7;
+    private int paginationSizePlaylist = 10;
+    private int paginationSizePlayqueue = 10;
 
     public UserSettings() {
     }
@@ -142,6 +146,14 @@ public class UserSettings {
 
     public void setPlaylistVisibility(Visibility playlistVisibility) {
         this.playlistVisibility = playlistVisibility;
+    }
+
+    public Visibility getPlayqueueVisibility() {
+        return playqueueVisibility;
+    }
+
+    public void setPlayqueueVisibility(Visibility playqueueVisibility) {
+        this.playqueueVisibility = playqueueVisibility;
     }
 
     public boolean getLastFmEnabled() {
@@ -282,12 +294,36 @@ public class UserSettings {
         this.queueFollowingSongs = queueFollowingSongs;
     }
 
-    public int getPaginationSize() {
-        return paginationSize;
+    public int getPaginationSizeFiles() {
+        return paginationSizeFiles;
     }
 
-    public void setPaginationSize(int paginationSize) {
-        this.paginationSize = paginationSize;
+    public void setPaginationSizeFiles(int paginationSizeFiles) {
+        this.paginationSizeFiles = paginationSizeFiles;
+    }
+
+    public int getPaginationSizeFolders() {
+        return paginationSizeFolders;
+    }
+
+    public void setPaginationSizeFolders(int paginationSizeFolders) {
+        this.paginationSizeFolders = paginationSizeFolders;
+    }
+
+    public int getPaginationSizePlaylist() {
+        return paginationSizePlaylist;
+    }
+
+    public void setPaginationSizePlaylist(int paginationSizePlaylist) {
+        this.paginationSizePlaylist = paginationSizePlaylist;
+    }
+
+    public int getPaginationSizePlayqueue() {
+        return paginationSizePlayqueue;
+    }
+
+    public void setPaginationSizePlayqueue(int paginationSizePlayqueue) {
+        this.paginationSizePlayqueue = paginationSizePlayqueue;
     }
 
     /**
@@ -295,30 +331,23 @@ public class UserSettings {
      */
     public static class Visibility {
         private boolean trackNumberVisible;
-        private boolean artistVisible;
-        private boolean albumVisible;
+        private boolean artistVisible = true;
+        private boolean albumVisible = true;
         private boolean genreVisible;
         private boolean yearVisible;
         private boolean bitRateVisible;
-        private boolean durationVisible;
+        private boolean durationVisible = true;
         private boolean formatVisible;
         private boolean fileSizeVisible;
+        private boolean headerVisible;
+        private boolean playCountVisible;
+        private boolean lastPlayedVisible;
+        private boolean createdVisible;
+        private boolean changedVisible;
+        private boolean lastScannedVisible;
+        private boolean entryTypeVisible;
 
         public Visibility() {}
-
-        public Visibility(boolean trackNumberVisible, boolean artistVisible, boolean albumVisible,
-                          boolean genreVisible, boolean yearVisible, boolean bitRateVisible,
-                          boolean durationVisible, boolean formatVisible, boolean fileSizeVisible) {
-            this.trackNumberVisible = trackNumberVisible;
-            this.artistVisible = artistVisible;
-            this.albumVisible = albumVisible;
-            this.genreVisible = genreVisible;
-            this.yearVisible = yearVisible;
-            this.bitRateVisible = bitRateVisible;
-            this.durationVisible = durationVisible;
-            this.formatVisible = formatVisible;
-            this.fileSizeVisible = fileSizeVisible;
-        }
 
         public boolean getTrackNumberVisible() {
             return trackNumberVisible;
@@ -391,5 +420,62 @@ public class UserSettings {
         public void setFileSizeVisible(boolean fileSizeVisible) {
             this.fileSizeVisible = fileSizeVisible;
         }
+
+        public boolean getHeaderVisible() {
+            return headerVisible;
+        }
+
+        public void setHeaderVisible(boolean headerVisible) {
+            this.headerVisible = headerVisible;
+        }
+
+        public boolean getPlayCountVisible() {
+            return playCountVisible;
+        }
+
+        public void setPlayCountVisible(boolean playCountVisible) {
+            this.playCountVisible = playCountVisible;
+        }
+
+        public boolean getLastPlayedVisible() {
+            return lastPlayedVisible;
+        }
+
+        public void setLastPlayedVisible(boolean lastPlayedVisible) {
+            this.lastPlayedVisible = lastPlayedVisible;
+        }
+
+        public boolean getCreatedVisible() {
+            return createdVisible;
+        }
+
+        public void setCreatedVisible(boolean createdVisible) {
+            this.createdVisible = createdVisible;
+        }
+
+        public boolean getChangedVisible() {
+            return changedVisible;
+        }
+
+        public void setChangedVisible(boolean changedVisible) {
+            this.changedVisible = changedVisible;
+        }
+
+        public boolean getLastScannedVisible() {
+            return lastScannedVisible;
+        }
+
+        public void setLastScannedVisible(boolean lastScannedVisible) {
+            this.lastScannedVisible = lastScannedVisible;
+        }
+
+        public boolean getEntryTypeVisible() {
+            return entryTypeVisible;
+        }
+
+        public void setEntryTypeVisible(boolean entryTypeVisible) {
+            this.entryTypeVisible = entryTypeVisible;
+        }
+
     }
 }

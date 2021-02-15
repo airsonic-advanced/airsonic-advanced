@@ -38,7 +38,6 @@ public class JWTSecurityServiceTest {
         this.expectedClaimString = expectedClaimString;
     }
 
-
     @Test
     public void addJWTToken() {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(uriString);

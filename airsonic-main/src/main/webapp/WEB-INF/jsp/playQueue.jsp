@@ -150,6 +150,7 @@
                 autoWidth: true,
                 scrollCollapse: true,
                 scrollY: "calc(80vh - 350px)",
+                scrollX: true,
                 dom: "<'#playQueueHeading'><'#playQueueInfo'><'#playQueueSpacer'>lfrtipB",
                 select: {
                     style: "multi",
@@ -194,9 +195,10 @@
                       className: "fit not-draggable",
                       defaultContent: "<input type='checkbox' class='songIndex'>"
                     },
-                    { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible} },
+                    { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
                     { data: "title",
                       className: "detail songTitle truncate",
+                      title: "<fmt:message key='edittags.songtitle'/>",
                       render(title, type, row) {
                           if (type == "display") {
                               var img = "<img class='currentImage' src=\"<spring:theme code='currentImage'/>\" alt='' style='display: none; padding-right: 0.5em' />";
@@ -210,8 +212,9 @@
                       }
                     },
                     { data: "album",
-                      visible: ${model.visibility.albumVisible},
                       className: "detail truncate",
+                      visible: ${model.visibility.albumVisible},
+                      title: "<fmt:message key='personalsettings.album'/>",
                       render(album, type, row) {
                           if (type == "display" && album != null) {
                               return $("<a>").attr("href", row.albumUrl).attr("target", !pq.internetRadioEnabled ? "main" : "_blank").attr("rel", !pq.internetRadioEnabled ? "" : "noopener noreferrer").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
@@ -222,6 +225,7 @@
                     { data: "artist",
                       className: "detail truncate",
                       visible: ${model.visibility.artistVisible},
+                      title: "<fmt:message key='personalsettings.artist'/>",
                       render(artist, type) {
                           if (type == "display" && artist != null) {
                               return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
@@ -232,6 +236,7 @@
                     { data: "genre",
                       className: "detail truncate",
                       visible: ${model.visibility.genreVisible},
+                      title: "<fmt:message key='personalsettings.genre'/>",
                       render(genre, type) {
                           if (type == "display" && genre != null) {
                               return $("<span>").attr("title", genre).attr("alt", genre).text(genre)[0].outerHTML;
@@ -239,12 +244,13 @@
                           return genre;
                       }
                     },
-                    { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible} },
-                    { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible} },
-                    { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible} },
+                    { data: "year", className: "detail fit rightalign", visible: ${model.visibility.yearVisible}, title: "<fmt:message key='personalsettings.year'/>" },
+                    { data: "format", className: "detail fit rightalign", visible: ${model.visibility.formatVisible}, title: "<fmt:message key='personalsettings.format'/>" },
+                    { data: "fileSize", className: "detail fit rightalign", visible: ${model.visibility.fileSizeVisible}, title: "<fmt:message key='personalsettings.filesize'/>" },
                     { data: "duration",
                       className: "detail fit rightalign",
                       visible: ${model.visibility.durationVisible},
+                      title: "<fmt:message key='personalsettings.duration'/>",
                       render: function(data, type, row) {
                           if (type == "display" && data != null) {
                               return formatDuration(Math.round(data));
@@ -252,7 +258,64 @@
                           return data;
                       }
                     },
-                    { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible} }
+                    { data: "bitRate", className: "detail fit rightalign", visible: ${model.visibility.bitRateVisible}, title: "<fmt:message key='personalsettings.bitrate'/>" },
+                    { data: "playCount", className: "detail fit rightalign", visible: ${model.visibility.playCountVisible}, title: "<fmt:message key='personalsettings.playcount'/>" },
+	                { data: "lastPlayed",
+	                  className: "detail fit rightalign",
+	                  visible: ${model.visibility.lastPlayedVisible},
+	                  title: "<fmt:message key='personalsettings.lastplayed'/>",
+	                  render: function(data, type, row) {
+	                      if (data != null) {
+	                          if (type == "display") {
+	                              return new Date(data).toLocaleString();
+	                          }
+	                          return new Date(data).getTime();
+	                      }
+	                      return data;
+	                  }
+	                },
+	                { data: "lastScanned",
+	                  className: "detail fit rightalign",
+	                  visible: ${model.visibility.lastScannedVisible},
+	                  title: "<fmt:message key='personalsettings.lastscanned'/>",
+	                  render: function(data, type, row) {
+	                      if (data != null) {
+	                          if (type == "display") {
+	                              return new Date(data).toLocaleString();
+	                          }
+	                          return new Date(data).getTime();
+	                      }
+	                      return data;
+	                  }
+	                },
+	                { data: "created",
+	                  className: "detail fit rightalign",
+	                  visible: ${model.visibility.createdVisible},
+	                  title: "<fmt:message key='personalsettings.created'/>",
+	                  render: function(data, type, row) {
+	                      if (data != null) {
+	                          if (type == "display") {
+	                              return new Date(data).toLocaleString();
+	                          }
+	                          return new Date(data).getTime();
+	                      }
+	                      return data;
+	                  }
+	                },
+	                { data: "changed",
+	                  className: "detail fit rightalign",
+	                  visible: ${model.visibility.changedVisible},
+	                  title: "<fmt:message key='personalsettings.changed'/>",
+	                  render: function(data, type, row) {
+	                      if (data != null) {
+	                          if (type == "display") {
+	                              return new Date(data).toLocaleString();
+	                          }
+	                          return new Date(data).getTime();
+	                      }
+	                      return data;
+	                  }
+	                }
                 ]
             } );
 
@@ -1093,7 +1156,7 @@
     $(document).ready(() => playQueue.init());
 </script>
 
-<table class="music indent hover nowrap stripe compact hide-table-header" id="playQueueMusic" style="cursor:pointer; width: 100%;"></table>
+<table class="music indent hover nowrap stripe compact <c:if test='${!model.visibility.headerVisible}'>hide-table-header</c:if>" id="playQueueMusic" style="cursor:pointer; width: 100%;"></table>
 
 <div class="bgcolor2 playqueue-controlbar">
   <c:if test="${model.user.settingsRole and model.players.size() > 1}">
@@ -1106,9 +1169,9 @@
     </div>
   </c:if>
 
-    <div class="player-tech player-tech-web" style="white-space:nowrap;">
-        <div id="player" style="width:340px; height:40px">
-            <audio id="audioPlayer" width="340px" height="40px" tabindex="-1" ></audio>
+    <div class="player-tech player-tech-web" style="white-space:nowrap;flex:1 1 300px;">
+        <div id="player" style="height:40px">
+            <audio id="audioPlayer" style="width:100%; height:40px" tabindex="-1" ></audio>
         </div>
         <div id="castPlayer" style="display: none">
             <div style="float:left">
@@ -1244,7 +1307,7 @@
     </div>
 
   <c:if test="${not model.autoHide}">
-    <div style="white-space:nowrap; text-align:right; width:100%; padding-right:1.5em">
+    <div style="white-space:nowrap; text-align:right; padding-left:1.5em; padding-right:1.5em">
         <a href="javascript:playQueue.onTogglePlayQueue(!playQueue.isVisible)">
             <img class="playqueue-shown" src="<spring:theme code='playQueueHide'/>" alt="Hide play queue" title="Hide play queue" style="cursor:pointer; height:18px;"/>
             <img class="playqueue-hidden" src="<spring:theme code='playQueueShow'/>" alt="Show play queue" title="Show play queue" style="cursor:pointer; height:18px; display: none;"/>

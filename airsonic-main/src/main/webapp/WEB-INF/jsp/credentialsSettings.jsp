@@ -234,6 +234,7 @@
     </c:if>
   </c:forEach>
 </table>
+<p style="padding-top:1em"><fmt:message key="credentialsettings.immutable"/></p>
 <p style="padding-top:1em;padding-bottom:1em">
     <input type="submit" value="<fmt:message key='common.save'/>" style="margin-right:0.3em"/>
     <input type="button" id="createcredsbutton" value="<fmt:message key='credentialsettings.addcredentials'/>" onclick="createNewCredsFnc(event)"/>

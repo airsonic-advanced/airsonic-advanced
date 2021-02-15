@@ -14,7 +14,6 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -75,8 +74,6 @@ public class MediaFileWSController {
         entry.setFiles(mediaFileService.toMediaFileEntryList(files, user.getName(), true, false, null, null, null));
         entry.setSubDirs(mediaFileService.toMediaFileEntryList(subDirs, user.getName(), false, false, null, null, null));
         entry.setAncestors(mediaFileService.toMediaFileEntryList(getAncestors(dir), user.getName(), false, false, null, null, null));
-        entry.setLastPlayed(dir.getLastPlayed());
-        entry.setPlayCount(dir.getPlayCount());
         entry.setComment(dir.getComment());
         if (dir.isAlbum()) {
             List<MediaFile> siblingAlbums = getSiblingAlbums(dir);
@@ -220,8 +217,6 @@ public class MediaFileWSController {
         private List<MediaFileEntry> ancestors;
         private Integer userRating;
         private Double averageRating;
-        private long playCount;
-        private Instant lastPlayed;
         private String comment;
 
         // Albums only
@@ -231,7 +226,8 @@ public class MediaFileWSController {
         public MediaFileDirectoryEntry(MediaFileEntry mfe) {
             super(mfe.getId(), mfe.getTrackNumber(), mfe.getTitle(), mfe.getArtist(), mfe.getAlbum(), mfe.getGenre(),
                     mfe.getYear(), mfe.getBitRate(), mfe.getDimensions(), mfe.getDuration(),
-                    mfe.getFormat(), mfe.getContentType(), mfe.getEntryType(), mfe.getFileSize(), mfe.getStarred(), mfe.getPresent(),
+                    mfe.getFormat(), mfe.getContentType(), mfe.getEntryType(), mfe.getFileSize(), mfe.getPlayCount(),
+                    mfe.getLastPlayed(), mfe.getCreated(), mfe.getChanged(), mfe.getLastScanned(), mfe.getStarred(), mfe.getPresent(),
                     mfe.getAlbumUrl(), mfe.getStreamUrl(), mfe.getRemoteStreamUrl(), mfe.getCoverArtUrl(), mfe.getRemoteCoverArtUrl());
         }
 
@@ -257,22 +253,6 @@ public class MediaFileWSController {
 
         public void setAverageRating(Double averageRating) {
             this.averageRating = averageRating;
-        }
-
-        public long getPlayCount() {
-            return playCount;
-        }
-
-        public void setPlayCount(long playCount) {
-            this.playCount = playCount;
-        }
-
-        public Instant getLastPlayed() {
-            return lastPlayed;
-        }
-
-        public void setLastPlayed(Instant lastPlayed) {
-            this.lastPlayed = lastPlayed;
         }
 
         public String getComment() {

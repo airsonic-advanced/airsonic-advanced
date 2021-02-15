@@ -76,6 +76,7 @@ public class PersonalSettingsController {
         command.setNowPlayingAllowed(userSettings.getNowPlayingAllowed());
         command.setMainVisibility(userSettings.getMainVisibility());
         command.setPlaylistVisibility(userSettings.getPlaylistVisibility());
+        command.setPlayqueueVisibility(userSettings.getPlayqueueVisibility());
         command.setFinalVersionNotificationEnabled(userSettings.getFinalVersionNotificationEnabled());
         command.setBetaVersionNotificationEnabled(userSettings.getBetaVersionNotificationEnabled());
         command.setSongNotificationEnabled(userSettings.getSongNotificationEnabled());
@@ -84,7 +85,10 @@ public class PersonalSettingsController {
         command.setLastFmEnabled(userSettings.getLastFmEnabled());
         command.setListenBrainzEnabled(userSettings.getListenBrainzEnabled());
         command.setListenBrainzUrl(userSettings.getListenBrainzUrl());
-        command.setPaginationSize(userSettings.getPaginationSize());
+        command.setPaginationSizeFiles(userSettings.getPaginationSizeFiles());
+        command.setPaginationSizeFolders(userSettings.getPaginationSizeFolders());
+        command.setPaginationSizePlaylist(userSettings.getPaginationSizePlaylist());
+        command.setPaginationSizePlayqueue(userSettings.getPaginationSizePlayqueue());
 
         Locale currentLocale = userSettings.getLocale();
         Locale[] locales = settingsService.getAvailableLocales();
@@ -148,6 +152,7 @@ public class PersonalSettingsController {
         settings.setNowPlayingAllowed(command.isNowPlayingAllowed());
         settings.setMainVisibility(command.getMainVisibility());
         settings.setPlaylistVisibility(command.getPlaylistVisibility());
+        settings.setPlayqueueVisibility(command.getPlayqueueVisibility());
         settings.setFinalVersionNotificationEnabled(command.isFinalVersionNotificationEnabled());
         settings.setBetaVersionNotificationEnabled(command.isBetaVersionNotificationEnabled());
         settings.setSongNotificationEnabled(command.isSongNotificationEnabled());
@@ -158,7 +163,10 @@ public class PersonalSettingsController {
         settings.setListenBrainzUrl(StringUtils.trimToNull(command.getListenBrainzUrl()));
         settings.setSystemAvatarId(getSystemAvatarId(command));
         settings.setAvatarScheme(getAvatarScheme(command));
-        settings.setPaginationSize(command.getPaginationSize());
+        settings.setPaginationSizeFiles(command.getPaginationSizeFiles());
+        settings.setPaginationSizeFolders(command.getPaginationSizeFolders());
+        settings.setPaginationSizePlaylist(command.getPaginationSizePlaylist());
+        settings.setPaginationSizePlayqueue(command.getPaginationSizePlayqueue());
 
         settings.setChanged(Instant.now());
         settingsService.updateUserSettings(settings);

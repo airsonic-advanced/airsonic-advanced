@@ -23,6 +23,7 @@ import org.airsonic.player.dao.PodcastDao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.PodcastChannel;
 import org.airsonic.player.domain.PodcastEpisode;
+import org.airsonic.player.domain.PodcastExportOPML;
 import org.airsonic.player.domain.PodcastStatus;
 import org.airsonic.player.service.metadata.MetaData;
 import org.airsonic.player.service.metadata.MetaDataParser;
@@ -54,6 +55,8 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -95,6 +98,8 @@ public class PodcastService {
     private MediaFileService mediaFileService;
     @Autowired
     private MetaDataParserFactory metaDataParserFactory;
+    @Autowired
+    private VersionService versionService;
 
     public PodcastService() {
         ThreadFactory threadFactory = r -> {
@@ -150,7 +155,7 @@ public class PodcastService {
 
         scheduledRefresh = scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS);
         Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
-        LOG.info("Automatic Podcast update scheduled to run every " + hoursBetween + " hour(s), starting at " + firstTime);
+        LOG.info("Automatic Podcast update scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);
     }
 
     /**
@@ -159,15 +164,14 @@ public class PodcastService {
      * @param url The URL of the Podcast channel.
      */
     public void createChannel(String url) {
-        url = sanitizeUrl(url);
-        PodcastChannel channel = new PodcastChannel(url);
+        PodcastChannel channel = new PodcastChannel(sanitizeUrl(url));
         int channelId = podcastDao.createChannel(channel);
 
         refreshChannels(Collections.singletonList(getChannel(channelId)), true);
     }
 
-    private String sanitizeUrl(String url) {
-        return StringUtils.replace(url, " ", "%20");
+    private static String sanitizeUrl(String url) {
+        return URLDecoder.decode(url, StandardCharsets.UTF_8);
     }
 
     /**
@@ -272,11 +276,23 @@ public class PodcastService {
                 }
 
             } catch (Exception x) {
-                LOG.warn("Failed to resolve media file ID for podcast channel '" + channel.getTitle() + "': " + x, x);
+                LOG.warn("Failed to resolve media file ID for podcast channel '{}'", channel.getTitle(), x);
             }
 
             return channel;
         }).collect(Collectors.toList());
+    }
+
+    public PodcastExportOPML export(List<PodcastChannel> channels) {
+        PodcastExportOPML opml = new PodcastExportOPML();
+        channels.forEach(c -> {
+            PodcastExportOPML.Outline outline = new PodcastExportOPML.Outline();
+            outline.setText(c.getTitle());
+            outline.setXmlUrl(c.getUrl());
+            opml.getBody().getOutline().get(0).getOutline().add(outline);
+        });
+
+        return opml;
     }
 
     public void refreshChannel(int channelId, boolean downloadEpisodes) {
@@ -304,7 +320,7 @@ public class PodcastService {
                 .build();
         HttpGet method = new HttpGet(channel.getUrl());
         method.setConfig(requestConfig);
-
+        method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
         try (CloseableHttpClient client = HttpClients.createDefault();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent()) {
@@ -314,7 +330,7 @@ public class PodcastService {
 
             channel.setTitle(StringUtil.removeMarkup(channelElement.getChildTextTrim("title")));
             channel.setDescription(StringUtil.removeMarkup(channelElement.getChildTextTrim("description")));
-            channel.setImageUrl(getChannelImageUrl(channelElement));
+            channel.setImageUrl(sanitizeUrl(getChannelImageUrl(channelElement)));
             channel.setStatus(PodcastStatus.COMPLETED);
             channel.setErrorMessage(null);
             podcastDao.updateChannel(channel);
@@ -322,7 +338,7 @@ public class PodcastService {
             downloadImage(channel);
             refreshEpisodes(channel, channelElement.getChildren("item"));
         } catch (Exception x) {
-            LOG.warn("Failed to get/parse RSS file for Podcast channel " + channel.getUrl(), x);
+            LOG.warn("Failed to get/parse RSS file for Podcast channel {}", channel.getUrl(), x);
             channel.setStatus(PodcastStatus.ERROR);
             channel.setErrorMessage(getErrorMessage(x));
             podcastDao.updateChannel(channel);
@@ -351,13 +367,14 @@ public class PodcastService {
         }
 
         HttpGet method = new HttpGet(imageUrl);
+        method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
         try (CloseableHttpClient client = HttpClients.createDefault();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent()) {
             Files.copy(in, dir.resolve("cover." + getCoverArtSuffix(response)), StandardCopyOption.REPLACE_EXISTING);
             mediaFileService.refreshMediaFile(channelMediaFile);
         } catch (Exception x) {
-            LOG.warn("Failed to download cover art for podcast channel '" + channel.getTitle() + "': " + x, x);
+            LOG.warn("Failed to download cover art for podcast channel '{}'", channel.getTitle(), x);
         }
     }
 
@@ -407,18 +424,18 @@ public class PodcastService {
 
                     Element enclosure = episodeElement.getChild("enclosure");
                     if (enclosure == null) {
-                        LOG.info("No enclosure found for episode " + title);
+                        LOG.info("No enclosure found for episode {}", title);
                         return null;
                     }
 
                     String url = sanitizeUrl(enclosure.getAttributeValue("url"));
                     if (url == null) {
-                        LOG.info("No enclosure URL found for episode " + title);
+                        LOG.info("No enclosure URL found for episode {}", title);
                         return null;
                     }
 
                     if (getEpisodeByUrl(url) != null) {
-                        LOG.info("Episode already exists for episode " + title);
+                        LOG.info("Episode already exists for episode {}", title);
                         return null;
                     }
 
@@ -438,7 +455,7 @@ public class PodcastService {
                     Instant date = parseDate(episodeElement.getChildTextTrim("pubDate"));
                     PodcastEpisode episode = new PodcastEpisode(null, channel.getId(), url, null, title, description, date,
                             duration, length, 0L, PodcastStatus.NEW, null);
-                    LOG.info("Created Podcast episode " + title);
+                    LOG.info("Created Podcast episode {}", title);
 
                     return episode;
                 })
@@ -457,7 +474,7 @@ public class PodcastService {
         try {
             return OffsetDateTime.parse(s, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
         } catch (Exception x) {
-            LOG.warn("Failed to parse publish date: '" + s + "'.");
+            LOG.warn("Failed to parse publish date: {}", s);
             return null;
         }
     }
@@ -494,11 +511,11 @@ public class PodcastService {
 
     private void doDownloadEpisode(PodcastEpisode episode) {
         if (isEpisodeDeleted(episode)) {
-            LOG.info("Podcast " + episode.getUrl() + " was deleted. Aborting download.");
+            LOG.info("Podcast {} was deleted. Aborting download.", episode.getUrl());
             return;
         }
 
-        LOG.info("Starting to download Podcast from " + episode.getUrl());
+        LOG.info("Starting to download Podcast from {}", episode.getUrl());
 
         PodcastChannel channel = getChannel(episode.getChannelId());
         RequestConfig requestConfig = RequestConfig.custom()
@@ -511,6 +528,7 @@ public class PodcastService {
                 .build();
         HttpGet method = new HttpGet(episode.getUrl());
         method.setConfig(requestConfig);
+        method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
         Path file = getFile(channel, episode);
 
         try (CloseableHttpClient client = HttpClients.createDefault();
@@ -546,14 +564,14 @@ public class PodcastService {
             }
 
             if (isEpisodeDeleted(episode)) {
-                LOG.info("Podcast " + episode.getUrl() + " was deleted. Aborting download.");
+                LOG.info("Podcast {} was deleted. Aborting download.", episode.getUrl());
                 FileUtil.closeQuietly(out);
                 FileUtil.delete(file);
             } else {
                 addMediaFileIdToEpisodes(Collections.singletonList(episode));
                 episode.setBytesDownloaded(bytesDownloaded);
                 podcastDao.updateEpisode(episode);
-                LOG.info("Downloaded " + bytesDownloaded + " bytes from Podcast " + episode.getUrl());
+                LOG.info("Downloaded {} bytes from Podcast {}", bytesDownloaded, episode.getUrl());
                 FileUtil.closeQuietly(out);
                 updateTags(file, episode);
                 episode.setStatus(PodcastStatus.COMPLETED);
@@ -561,7 +579,7 @@ public class PodcastService {
                 deleteObsoleteEpisodes(channel);
             }
         } catch (Exception x) {
-            LOG.warn("Failed to download Podcast from " + episode.getUrl(), x);
+            LOG.warn("Failed to download Podcast from {}", episode.getUrl(), x);
             episode.setStatus(PodcastStatus.ERROR);
             episode.setErrorMessage(getErrorMessage(x));
             podcastDao.updateEpisode(episode);
@@ -587,7 +605,7 @@ public class PodcastService {
                 mediaFileService.refreshMediaFile(mediaFile);
             }
         } catch (Exception x) {
-            LOG.warn("Failed to update tags for podcast " + episode.getUrl(), x);
+            LOG.warn("Failed to update tags for podcast {}", episode.getUrl(), x);
         }
     }
 

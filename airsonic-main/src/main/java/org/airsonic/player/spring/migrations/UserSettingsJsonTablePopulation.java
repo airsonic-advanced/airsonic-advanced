@@ -118,7 +118,10 @@ public class UserSettingsJsonTablePopulation implements CustomSqlChange {
         settings.setQueueFollowingSongs(rs.getBoolean("queue_following_songs"));
         settings.setShowSideBar(rs.getBoolean("show_side_bar"));
         settings.setKeyboardShortcutsEnabled(rs.getBoolean("keyboard_shortcuts_enabled"));
-        settings.setPaginationSize(rs.getInt("pagination_size"));
+        settings.setPaginationSizeFiles(rs.getInt("pagination_size"));
+        settings.setPaginationSizeFolders(rs.getInt("pagination_size"));
+        settings.setPaginationSizePlaylist(rs.getInt("pagination_size"));
+        settings.setPaginationSizePlayqueue(rs.getInt("pagination_size"));
 
         return settings;
     }

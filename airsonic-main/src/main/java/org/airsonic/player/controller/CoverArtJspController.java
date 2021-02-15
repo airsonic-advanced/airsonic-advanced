@@ -13,6 +13,6 @@ import javax.servlet.http.HttpServletResponse;
 public class CoverArtJspController {
     @GetMapping
     public ModelAndView get(HttpServletRequest request, HttpServletResponse response) {
-        return new ModelAndView("coverArt");
+        return new ModelAndView("coverArt", request.getParameterMap());
     }
 }

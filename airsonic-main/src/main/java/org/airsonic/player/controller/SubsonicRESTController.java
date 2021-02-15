@@ -43,6 +43,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -61,6 +63,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.datatype.XMLGregorianCalendar;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -493,7 +496,7 @@ public class SubsonicRESTController {
     private <T extends ArtistID3> T createJaxbArtist(T jaxbArtist, org.airsonic.player.domain.Artist artist, String username) {
         jaxbArtist.setId(String.valueOf(artist.getId()));
         jaxbArtist.setName(artist.getName());
-        jaxbArtist.setStarred(jaxbWriter.convertDate(mediaFileDao.getMediaFileStarredDate(artist.getId(), username)));
+        jaxbArtist.setStarred(jaxbWriter.convertDate(artistDao.getArtistStarredDate(artist.getId(), username)));
         jaxbArtist.setAlbumCount(artist.getAlbumCount());
         if (artist.getCoverArtPath() != null) {
             jaxbArtist.setCoverArt(CoverArtController.ARTIST_COVERART_PREFIX + artist.getId());
@@ -1285,16 +1288,16 @@ public class SubsonicRESTController {
             }
             switch (mediaFile.getMediaType()) {
                 case MUSIC:
-                    child.setType(MediaType.MUSIC);
+                    child.setType(org.subsonic.restapi.MediaType.MUSIC);
                     break;
                 case PODCAST:
-                    child.setType(MediaType.PODCAST);
+                    child.setType(org.subsonic.restapi.MediaType.PODCAST);
                     break;
                 case AUDIOBOOK:
-                    child.setType(MediaType.AUDIOBOOK);
+                    child.setType(org.subsonic.restapi.MediaType.AUDIOBOOK);
                     break;
                 case VIDEO:
-                    child.setType(MediaType.VIDEO);
+                    child.setType(org.subsonic.restapi.MediaType.VIDEO);
                     child.setOriginalWidth(mediaFile.getWidth());
                     child.setOriginalHeight(mediaFile.getHeight());
                     break;
@@ -1717,6 +1720,24 @@ public class SubsonicRESTController {
 
         podcastService.downloadEpisode(episode);
         writeEmptyResponse(request, response);
+    }
+
+    @RequestMapping("/exportPodcasts/opml")
+    public ResponseEntity<PodcastExportOPML> exportPodcastOPML(HttpServletRequest request, HttpServletResponse response)
+            throws Exception {
+        request = wrapRequest(request);
+        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
+        if (!user.isPodcastRole()) {
+            error(request, response, ErrorCode.NOT_AUTHORIZED,
+                    user.getUsername() + " is not authorized to administrate podcasts.");
+            return null;
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.builder("attachment").filename("airsonic.opml", StandardCharsets.UTF_8).build());
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_XML);
+
+        return ResponseEntity.ok().headers(headers).body(podcastService.export(podcastService.getAllChannels()));
     }
 
     @RequestMapping("/getInternetRadioStations")
@@ -2397,6 +2418,7 @@ public class SubsonicRESTController {
         PROTOCOL_MISMATCH_CLIENT_TOO_OLD(20, "Incompatible Airsonic REST protocol version. Client must upgrade."),
         PROTOCOL_MISMATCH_SERVER_TOO_OLD(30, "Incompatible Airsonic REST protocol version. Server must upgrade."),
         NOT_AUTHENTICATED(40, "Wrong username or password."),
+        NOT_AUTHENTICATED_UPGRADE_TO_NON_HASHED(41, "Wrong username or password, but try authenticating via non-hashed password."),
         NOT_AUTHORIZED(50, "User is not authorized for the given operation."),
         NOT_FOUND(70, "Requested data was not found.");
 

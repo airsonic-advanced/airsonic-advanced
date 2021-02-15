@@ -42,6 +42,7 @@ public class PersonalSettingsCommand {
     private Avatar customAvatar;
     private UserSettings.Visibility mainVisibility;
     private UserSettings.Visibility playlistVisibility;
+    private UserSettings.Visibility playqueueVisibility;
     private boolean partyModeEnabled;
     private boolean showNowPlayingEnabled;
     private boolean showArtistInfoEnabled;
@@ -55,7 +56,10 @@ public class PersonalSettingsCommand {
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
     private String listenBrainzUrl;
-    private int paginationSize;
+    private int paginationSizeFiles;
+    private int paginationSizeFolders;
+    private int paginationSizePlayqueue;
+    private int paginationSizePlaylist;
 
     public User getUser() {
         return user;
@@ -151,6 +155,14 @@ public class PersonalSettingsCommand {
 
     public void setPlaylistVisibility(UserSettings.Visibility playlistVisibility) {
         this.playlistVisibility = playlistVisibility;
+    }
+
+    public UserSettings.Visibility getPlayqueueVisibility() {
+        return playqueueVisibility;
+    }
+
+    public void setPlayqueueVisibility(UserSettings.Visibility playqueueVisibility) {
+        this.playqueueVisibility = playqueueVisibility;
     }
 
     public boolean isPartyModeEnabled() {
@@ -257,11 +269,35 @@ public class PersonalSettingsCommand {
         this.queueFollowingSongs = queueFollowingSongs;
     }
 
-    public int getPaginationSize() {
-        return paginationSize;
+    public int getPaginationSizeFiles() {
+        return paginationSizeFiles;
     }
 
-    public void setPaginationSize(int paginationSize) {
-        this.paginationSize = paginationSize;
+    public void setPaginationSizeFiles(int paginationSizeFiles) {
+        this.paginationSizeFiles = paginationSizeFiles;
+    }
+
+    public int getPaginationSizeFolders() {
+        return paginationSizeFolders;
+    }
+
+    public void setPaginationSizeFolders(int paginationSizeFolders) {
+        this.paginationSizeFolders = paginationSizeFolders;
+    }
+
+    public int getPaginationSizePlayqueue() {
+        return paginationSizePlayqueue;
+    }
+
+    public void setPaginationSizePlayqueue(int paginationSizePlayqueue) {
+        this.paginationSizePlayqueue = paginationSizePlayqueue;
+    }
+
+    public int getPaginationSizePlaylist() {
+        return paginationSizePlaylist;
+    }
+
+    public void setPaginationSizePlaylist(int paginationSizePlaylist) {
+        this.paginationSizePlaylist = paginationSizePlaylist;
     }
 }

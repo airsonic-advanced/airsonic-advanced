@@ -24,6 +24,15 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          install: true
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
       - run: mkdir -p ${DEFAULT_MUSIC_FOLDER}
       - name: Build with Maven
         run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
@@ -51,19 +60,7 @@ jobs:
           files: |
             airsonic-main/target/airsonic.war
             airsonic-main/target/artifacts-checksums.sha
-      - name: Tag Docker Images
-        run: |
-          # Tag the docker image
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge-${{ steps.tagcalc.outputs.tag }};
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:edge-latest;
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitcommit-${{ github.sha }};
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitrun-${{ github.run_id }};
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-      - name: Deploy to DockerHub
-        run: |
-          docker push airsonicadvanced/airsonic-advanced:latest;
-          docker push airsonicadvanced/airsonic-advanced:edge-latest;
-          docker push airsonicadvanced/airsonic-advanced:edge-${{ steps.tagcalc.outputs.tag }};
-          docker push airsonicadvanced/airsonic-advanced:gitcommit-${{ github.sha }};
-          docker push airsonicadvanced/airsonic-advanced:gitrun-${{ github.run_id }};
+      - name: Build and push multiplatform images to Dockerhub
+        run: docker build --platform linux/amd64,linux/arm64,linux/arm/v7 --push -f install/docker/Dockerfile -t airsonicadvanced/airsonic-advanced:latest -t airsonicadvanced/airsonic-advanced:edge-latest -t airsonicadvanced/airsonic-advanced:edge-${{ steps.tagcalc.outputs.tag }} -t airsonicadvanced/airsonic-advanced:gitcommit-${{ github.sha }} -t airsonicadvanced/airsonic-advanced:gitrun-${{ github.run_id }} install/docker

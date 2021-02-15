@@ -63,6 +63,9 @@ The following is an incomplete list of features that are enhanced from Airsonic:
         - Play queue that took about 800s to render in the browser, can now render in < 1s
       - Allow optional paging and accessible searching within tables
     - Customize generated cover art thumbnail quality
+    - Ability to show and display more track fields in playlists, playqueue and file browse mode
+    - Option to show header row for track fields
+    - Sort tracks in browse mode (such as show most recently scanned files etc.)
 - Bugfixes:
   - Several race condition fixes
   - Consistency checks and refactors
@@ -74,11 +77,15 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Ability to pass properties via environment or system variables. You can but do not need to modify `airsonic.properties` to change preferences
   - Ability to use custom URLs to scrobble on ListenBrainz servers
   - Ability to use Repeat-One in play queues in web-clients
+  - Sonos support: [read documentation](https://github.com/airsonic-advanced/airsonic-advanced/blob/master/SONOS.md)
   - Ability to upload multiple files simultaneously
   - Ability to upload and extract more archive formats:
     - rar
     - 7z
     - tar
+  - Ability to export Podcasts to OPML
+  - Ability to import playlists with relative file paths (resolved relative to Playlists folder)
+  - Support direct binary internet radio stream urls
 - Testing
   - Various fixes to make it compatible with multiple external DBs
   - Automated tests are performed against external DBs
@@ -88,6 +95,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Uses failsafe for integration testing instead of cucumber
 - Build and deployment
   - An updated Docker image with JRE 14 base layer.
+  - Multiplatform builds, including for ARM v7 and ARM64
   - A more advanced build pipeline including automatic releases and deploys at merge
     - Allows people to grab the newest build without compiling from source as soon as features/enhancements are merged, instead of waiting for the next stable build (which may be months away)
 
@@ -99,7 +107,9 @@ Usage
 -----
 Airsonic-Advanced v10.6.x series (and its snapshots) are intercompatible with vanilla Airsonic 10.6.x series. This may not necessarily be the case with 11.x versions.
 
-Also note that Airsonic-Advanced 11.x (and its snapshots) are *breaking* non-backwards-compatible version changes. You will not be able to revert back to 10.6.x after upgrading (the system _does_ create a backup of the DB in case such revert is necessary, but it must be manually restored).
+Also note that Airsonic-Advanced 11.x (and its snapshots) are *breaking* (non-backwards-compatible) version changes. You will not be able to revert back to 10.6.x after upgrading (the system _does_ create a backup of the DB in case such revert is necessary, but it must be manually restored).
+
+Airsonic-Advanced snapshots are generally pretty stable and recommended for use over the stable releases (which may be extremely outdated).
 
 ### Stand-alone binaries
 Airsonic-Advanced can be downloaded from
@@ -107,12 +117,16 @@ Airsonic-Advanced can be downloaded from
 
 The release signature may be verified using the [public key](https://github.com/airsonic-advanced/airsonic-advanced/blob/master/releases_public_key.asc).
 
-You need a _minimum_ Java Runtime Environment (JRE) of 1.8 for 10.6.x series and 11 for 11.x onwards (including snapshots). It is run similarly to (and in lieu of) vanilla Airsonic.
+You need a _minimum_ Java Runtime Environment (JRE) of 1.8 for 10.6.x series, and 11 for 11.x onwards (including snapshots).
+- For 10.6.x releases -> Java 8
+- For 11.x releases and onwards -> Java 11
+
+Airsonic-Advanced is run similarly to (and in lieu of) vanilla Airsonic.
 
 Read the [compatibility notes](#compatibility-notes).
 
 ### Docker
-Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced).
+Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced). Docker releases are recently multiplatform, which means ARMv7 and ARM64 are also released to Dockerhub. However, automated testing for those archs is not currently done in the CI/CD pipeline (only Linux platform is tested).
 
 Please note that for Docker images, the volume mounting points have changed and are different from Airsonic. Airsonic mount points are at `/airsonic/*` inside the container. Airsonic-Advanced tries to use the same volume locations as the default war image at `/var/*` in order to remain consistent if people want to switch between the containers and non-containers.
   - `Music:/airsonic/music` -> `Music:/var/music`
@@ -133,10 +147,12 @@ Compatibility Notes:
 ------
 The following properties are new in Airsonic-Advanced:
   - `MediaScannerParallelism`: (default: number of available processors + 1) The parallelism to use when scanning media
+  - `ClearFullScanSettingAfterScan`: (default: false) Whether to clear FullScan setting after the next SUCCESSFUL scan (useful for doing full scan once and then reverting to default scan)
 
 The following property names are different between Airsonic and Airsonic-Advanced:
   - `UPNP_PORT` -> `UPnpPort`
   - `server.context-path` -> `server.servlet.context-path` (Airsonic will use the latter from 11.0 onwards)
+  - `IgnoreFileTimestamps` -> `FullScan`
 
 Note that Airsonic-Advanced communicates with its Web UI via websockets. If you're behind a proxy, you need to enable websockets and allow UPGRADE http requests through the proxy. A sample configuration is posted here: [nginx sample](https://github.com/airsonic-advanced/airsonic-advanced/issues/145)
 

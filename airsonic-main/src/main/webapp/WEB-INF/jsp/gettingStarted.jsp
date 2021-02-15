@@ -5,7 +5,7 @@
     <%@ include file="head.jsp" %>
     <script type="text/javascript" language="javascript">
         function hideGettingStarted() {
-            alert("<fmt:message key="gettingStarted.hidealert"/>");
+            alert("<spring:message code='gettingStarted.hidealert' javaScriptEscape='true'/>");
             location.href = "gettingStarted.view?hide";
         }
     </script>
