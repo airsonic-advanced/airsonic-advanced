@@ -1,0 +1,20 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="insert-mod-transcoding" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="transcoding"/>
+        </preConditions>
+        <insert tableName="transcoding">
+            <column name="name" value="mod > mp3" />
+            <column name="source_formats" value="alm 669 mdl far xm mod fnk imf it liq wow mtm ptm rtm stm s3m ult dmf dbm med okt emod sfx m15 mtn amf gdm stx gmc psm j2b umx amd rad hsc flx gtk mgt mtp" />
+            <column name="target_format" value="mp3" />
+            <column name="step1" value="xmp -Dlittle-endian -q -c %s"/>
+            <column name="step2" value="lame -r -b %b -S --resample 44.1 - -"/>
+        </insert>
+        <rollback>
+            <delete tableName="transcoding"><where>name = 'mod > mp3'</where></delete>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
