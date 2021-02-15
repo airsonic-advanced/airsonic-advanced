@@ -42,7 +42,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - A more efficient and compliant streaming engine, utilizing piping and threading
   - Removal of pessimistic locking throughout the software in favor of more modern concurrency techniques
   - Upgraded internal database that uses connection pooling and uses MVCC control mode for dealing with concurrent updates
-    - Massive throughput boost (100K mrdia library scan times reduced from ~40 min to ~3 mins)
+    - Massive throughput boost (100K media library scan times reduced from ~40 min to ~3 mins)
   - Much faster UI rendering for browsers, especially for massive playlists
   - Aggressively uses multi-threading and parallelization for most operations, including but not limited to:
     - Massively parallelized engine for media scanning (media scanning is done much much faster, ~8x)
@@ -95,6 +95,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Uses failsafe for integration testing instead of cucumber
 - Build and deployment
   - An updated Docker image with JRE 14 base layer.
+    - Add support for XMP to support playing MOD files out of the box
   - Multiplatform builds, including for ARM v7 and ARM64
   - A more advanced build pipeline including automatic releases and deploys at merge
     - Allows people to grab the newest build without compiling from source as soon as features/enhancements are merged, instead of waiting for the next stable build (which may be months away)
