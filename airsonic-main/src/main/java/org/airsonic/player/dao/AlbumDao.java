@@ -254,7 +254,7 @@ public class AlbumDao extends AbstractDao {
         args.put("count", count);
         args.put("offset", offset);
         return namedQuery("select " + QUERY_COLUMNS + " from album where present and folder_id in (:folders) " +
-                          "order by created desc limit :count offset :offset", rowMapper, args);
+                "order by created desc, id desc limit :count offset :offset", rowMapper, args);
     }
 
     /**
