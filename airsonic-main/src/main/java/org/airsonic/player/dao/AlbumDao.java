@@ -176,7 +176,7 @@ public class AlbumDao extends AbstractDao {
         }
 
         return namedQuery("select " + QUERY_COLUMNS + " from album where present and folder_id in (:folders) " +
-                          "order by " + orderBy + " limit :count offset :offset", rowMapper, args);
+                          "order by " + orderBy + ", id limit :count offset :offset", rowMapper, args);
     }
 
     /**
@@ -213,7 +213,7 @@ public class AlbumDao extends AbstractDao {
         args.put("offset", offset);
         return namedQuery("select " + QUERY_COLUMNS
                           + " from album where play_count > 0 and present and folder_id in (:folders) " +
-                          "order by play_count desc limit :count offset :offset", rowMapper, args);
+                          "order by play_count desc, id limit :count offset :offset", rowMapper, args);
     }
 
     /**
@@ -234,7 +234,7 @@ public class AlbumDao extends AbstractDao {
         args.put("offset", offset);
         return namedQuery("select " + QUERY_COLUMNS
                           + " from album where last_played is not null and present and folder_id in (:folders) " +
-                          "order by last_played desc limit :count offset :offset", rowMapper, args);
+                          "order by last_played desc, id limit :count offset :offset", rowMapper, args);
     }
 
     /**
@@ -277,7 +277,7 @@ public class AlbumDao extends AbstractDao {
         args.put("username", username);
         return namedQuery("select " + prefix(QUERY_COLUMNS, "album") + " from starred_album, album where album.id = starred_album.album_id and " +
                           "album.present and album.folder_id in (:folders) and starred_album.username = :username " +
-                          "order by starred_album.created desc limit :count offset :offset",
+                          "order by starred_album.created desc, id limit :count offset :offset",
                           rowMapper, args);
     }
 
@@ -300,7 +300,7 @@ public class AlbumDao extends AbstractDao {
         args.put("offset", offset);
         args.put("genre", genre);
         return namedQuery("select " + QUERY_COLUMNS + " from album where present and folder_id in (:folders) " +
-                          "and genre = :genre limit :count offset :offset", rowMapper, args);
+                          "and genre = :genre order by id limit :count offset :offset", rowMapper, args);
     }
 
     /**
@@ -326,11 +326,11 @@ public class AlbumDao extends AbstractDao {
         args.put("toYear", toYear);
         if (fromYear <= toYear) {
             return namedQuery("select " + QUERY_COLUMNS + " from album where present and folder_id in (:folders) " +
-                              "and year between :fromYear and :toYear order by year limit :count offset :offset",
+                              "and year between :fromYear and :toYear order by year, id limit :count offset :offset",
                               rowMapper, args);
         } else {
             return namedQuery("select " + QUERY_COLUMNS + " from album where present and folder_id in (:folders) " +
-                              "and year between :toYear and :fromYear order by year desc limit :count offset :offset",
+                              "and year between :toYear and :fromYear order by year desc, id limit :count offset :offset",
                               rowMapper, args);
         }
     }
