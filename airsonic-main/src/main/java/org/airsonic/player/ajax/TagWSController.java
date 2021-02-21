@@ -69,7 +69,7 @@ public class TagWSController {
             return "UPDATED";
 
         } catch (Exception x) {
-            LOG.warn("Failed to update tags for " + data.getMediaFileId(), x);
+            LOG.warn("Failed to update tags for {}", data.getMediaFileId(), x);
             return x.getMessage();
         }
     }
