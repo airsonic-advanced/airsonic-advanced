@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -55,7 +55,7 @@ public class MetaDataFactoryTestCase {
         assertThat(parser, instanceOf(FFmpegParser.class));
 
         parser = metaDataParserFactory.getParser(someJunk);
-        assertThat(parser, instanceOf(DefaultMetaDataParser.class));
+        assertThat(parser, instanceOf(FFmpegParser.class));
     }
 
 }
