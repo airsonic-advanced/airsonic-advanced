@@ -21,7 +21,6 @@ package org.airsonic.player.service.metadata;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.MoreFiles;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
@@ -96,6 +95,21 @@ public class FFmpegParser extends MetaDataParser {
             // Bitrate is in Kb/s
             metaData.setBitRate(result.at("/format/bit_rate").asInt() / 1000);
 
+            metaData.setAlbumArtist(result.at("/format/tags/album_artist").asText());
+            metaData.setArtist(result.at("/format/tags/artist").asText());
+            metaData.setAlbumName(result.at("/format/tags/album").asText());
+            metaData.setGenre(result.at("/format/tags/genre").asText());
+            metaData.setTitle(result.at("/format/tags/title").asText());
+
+            // avoid setting 0s for ints
+            if (result.at("/format/tags/track").asText() != null) {
+                metaData.setTrackNumber(result.at("/format/tags/track").asInt());
+            }
+
+            if (result.at("/format/tags/date").asText() != null) {
+                metaData.setYear(result.at("/format/tags/date").asInt());
+            }
+
             // Find the first (if any) stream that has dimensions and use those.
             // 'width' and 'height' are display dimensions; compare to 'coded_width', 'coded_height'.
             for (JsonNode stream : result.at("/streams")) {
@@ -106,7 +120,7 @@ public class FFmpegParser extends MetaDataParser {
                 }
             }
         } catch (Throwable x) {
-            LOG.warn("Error when parsing metadata in " + file, x);
+            LOG.warn("Error when parsing metadata in {}", file, x);
         }
 
         return metaData;
@@ -143,8 +157,7 @@ public class FFmpegParser extends MetaDataParser {
      */
     @Override
     public boolean isApplicable(Path path) {
-        String format = MoreFiles.getFileExtension(path).toLowerCase();
-        return settingsService.getVideoFileTypesSet().contains(format);
+        return Files.isRegularFile(path);
     }
 
     public void setTranscodingService(TranscodingService transcodingService) {

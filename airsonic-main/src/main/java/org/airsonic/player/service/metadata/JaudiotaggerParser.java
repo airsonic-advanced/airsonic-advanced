@@ -121,7 +121,7 @@ public class JaudiotaggerParser extends MetaDataParser {
 
 
         } catch (Throwable x) {
-            LOG.warn("Error when parsing tags in " + file, x);
+            LOG.warn("Error when parsing tags in {}", file, x);
         }
 
         return metaData;
@@ -232,7 +232,7 @@ public class JaudiotaggerParser extends MetaDataParser {
             audioFile.commit();
 
         } catch (Throwable x) {
-            LOG.warn("Failed to update tags for file " + file, x);
+            LOG.warn("Failed to update tags for file {}", file, x);
             throw new RuntimeException("Failed to update tags for file " + file + ". " + x.getMessage(), x);
         }
     }
@@ -275,7 +275,7 @@ public class JaudiotaggerParser extends MetaDataParser {
         try {
             return getArtwork(file) != null;
         } catch (Throwable x) {
-            LOG.info("Failed to find cover art tag in " + file, x);
+            LOG.info("Failed to find cover art tag in {}", file, x);
             return false;
         }
     }

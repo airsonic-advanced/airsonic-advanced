@@ -19,29 +19,35 @@
  */
 package org.airsonic.player.service.metadata;
 
-import junit.framework.TestCase;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
+import org.junit.Test;
 
 import java.nio.file.Path;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit test of {@link MetaDataParser}.
  *
  * @author Sindre Mehus
  */
-public class MetaDataParserTestCase extends TestCase {
+public class MetaDataParserTestCase {
 
+    @Test
     public void testRemoveTrackNumberFromTitle() {
 
         MetaDataParser parser = new MetaDataParser() {
+            @Override
             public MetaData getRawMetaData(Path file) {
                 return null;
             }
 
+            @Override
             public void setMetaData(MediaFile file, MetaData metaData) {
             }
 
+            @Override
             public boolean isEditingSupported() {
                 return false;
             }
@@ -51,6 +57,7 @@ public class MetaDataParserTestCase extends TestCase {
                 return null;
             }
 
+            @Override
             public boolean isApplicable(Path path) {
                 return false;
             }
