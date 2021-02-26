@@ -21,10 +21,13 @@ package org.airsonic.player.service.metadata;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
 import org.airsonic.player.util.Util;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +39,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Parses meta data from video files using FFmpeg (http://ffmpeg.org/).
@@ -95,24 +99,30 @@ public class FFmpegParser extends MetaDataParser {
             // Bitrate is in Kb/s
             metaData.setBitRate(result.at("/format/bit_rate").asInt() / 1000);
 
-            metaData.setAlbumArtist(result.at("/format/tags/album_artist").asText());
-            metaData.setArtist(result.at("/format/tags/artist").asText());
-            metaData.setAlbumName(result.at("/format/tags/album").asText());
-            metaData.setGenre(result.at("/format/tags/genre").asText());
-            metaData.setTitle(result.at("/format/tags/title").asText());
+            metaData.setAlbumArtist(getData(result, "album_artist"));
+            metaData.setArtist(getData(result, "artist"));
+            metaData.setAlbumName(getData(result, "album"));
+            metaData.setGenre(getData(result, "genre"));
+            metaData.setTitle(getData(result, "title"));
 
-            // avoid setting 0s for ints
-            if (result.at("/format/tags/track").asText() != null) {
-                metaData.setTrackNumber(result.at("/format/tags/track").asInt());
+            String data = getData(result, "track");
+            if (data != null) {
+                metaData.setTrackNumber(Integer.valueOf(data));
             }
 
-            if (result.at("/format/tags/date").asText() != null) {
-                metaData.setYear(result.at("/format/tags/date").asInt());
+            data = getData(result, "date");
+            if (data != null) {
+                metaData.setYear(Integer.valueOf(data));
             }
 
             // Find the first (if any) stream that has dimensions and use those.
             // 'width' and 'height' are display dimensions; compare to 'coded_width', 'coded_height'.
             for (JsonNode stream : result.at("/streams")) {
+
+                // skip coverart streams
+                if (stream.hasNonNull("codec_name") && stream.get("codec_name").asText().equalsIgnoreCase("mjpeg")) {
+                    continue;
+                }
                 if (stream.has("width") && stream.has("height")) {
                     metaData.setWidth(stream.get("width").asInt());
                     metaData.setHeight(stream.get("height").asInt());
@@ -124,6 +134,27 @@ public class FFmpegParser extends MetaDataParser {
         }
 
         return metaData;
+    }
+
+    private static String getData(JsonNode node, String keyName) {
+        List<String> keys = ImmutableList.of("/tags/" + keyName, "/tags/" + keyName.toUpperCase(), "/tags/" + keyName.toLowerCase());
+        Optional<String> nonNullKey = keys.stream().map(k -> node.at("/format" + k).asText()).filter(StringUtils::isNotBlank).findFirst();
+        if (nonNullKey.isPresent()) {
+            return nonNullKey.get();
+        } else {
+            for (JsonNode stream : node.at("/streams")) {
+                // skip coverart streams
+                if (stream.hasNonNull("codec_name") && stream.get("codec_name").asText().equalsIgnoreCase("mjpeg")) {
+                    continue;
+                }
+                nonNullKey = keys.stream().map(k -> stream.at(k).asText()).filter(StringUtils::isNotBlank).findFirst();
+                if (nonNullKey.isPresent()) {
+                    return nonNullKey.get();
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
