@@ -170,8 +170,10 @@
         $('#thumbs').html('');
 
         thumbsData.filter(t => t.entryType != 'VIDEO').forEach((t,i) => {
+            //append container first to keep order intact when async callback happens
+            $('#thumbs').append('<div class="albumThumb"></div>');
             $.get(urlBase + '?hideOverflow=true&showLink=true&appearAfter=' + (i * 30) + '&coverArtSize=${model.coverArtSizeMedium}&captionCount=2&caption2=' + (t.year ? t.year : '') + '&caption1=' + encodeURIComponent(t.title) +'&albumId=' + t.id, data => {
-                $('#thumbs').append('<div class="albumThumb">' + data + '</div>');
+                $('#thumbs .albumThumb:nth-child(' + (i + 1) + ')').append(data);
             });
         });
 
