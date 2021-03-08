@@ -167,6 +167,9 @@ Certain property names have been changed from 10.6 to recent snapshots of 11.0 a
   - `DatabaseMysqlMaxlength` -> `spring.liquibase.parameters.mysqlVarcharLimit`
   - `DatabaseUsertableQuote` -> `spring.liquibase.parameters.userTableQuote`
 
+The following property names have been changed from 10.6 to recent snapshots of 11.0 and will NOT be _automigrated_. Make sure you switch the property names if you use them.
+  - `server.use-forward-headers=true` -> `server.forward-headers-strategy=native` (due to [Spring Boot 2.2 deprecation](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-2.2-Release-Notes#deprecations-in-spring-boot-22), verified in [comment](https://github.com/airsonic-advanced/airsonic-advanced/issues/359#issuecomment-772724722))
+
 Other properties are obsolete and have been removed:
   - `DatabaseConfigType`
 
