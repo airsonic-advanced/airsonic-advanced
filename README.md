@@ -155,7 +155,11 @@ The following property names are different between Airsonic and Airsonic-Advance
   - `server.context-path` -> `server.servlet.context-path` (Airsonic will use the latter from 11.0 onwards)
   - `IgnoreFileTimestamps` -> `FullScan`
 
-Note that Airsonic-Advanced communicates with its Web UI via websockets. If you're behind a proxy, you need to enable websockets and allow UPGRADE http requests through the proxy. A sample configuration is posted here: [nginx sample](https://github.com/airsonic-advanced/airsonic-advanced/issues/145)
+Note that Airsonic-Advanced communicates with its Web UI via websockets. If you're behind a proxy, you need to enable websockets and allow UPGRADE http requests through the proxy. A sample configuration is posted here: [nginx sample](https://github.com/airsonic-advanced/airsonic-advanced/issues/145).
+
+Additionally, if placed behind a proxy, the Airsonic server needs to forward headers, for which the following property is necessary (either in `/path/to/airsonic-data/airsonic.properties` or as a jvm argument):
+  - After and including *Edge Release 11.0.0-SNAPSHOT.20210117214044*: `server.forward-headers-strategy=native`
+  - Prior to *Edge Release 11.0.0-SNAPSHOT.20210117214044*: `server.use-forward-headers=true`
 
 ### 11.x series
 Certain property names have been changed from 10.6 to recent snapshots of 11.0 and will be _automigrated_. When modifying properties, use the modern name.
@@ -168,7 +172,7 @@ Certain property names have been changed from 10.6 to recent snapshots of 11.0 a
   - `DatabaseUsertableQuote` -> `spring.liquibase.parameters.userTableQuote`
 
 The following property names have been changed from 10.6 to recent snapshots of 11.0 and will NOT be _automigrated_. Make sure you switch the property names if you use them.
-  - `server.use-forward-headers=true` -> `server.forward-headers-strategy=native` (due to [Spring Boot 2.2 deprecation](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-2.2-Release-Notes#deprecations-in-spring-boot-22), verified in [comment](https://github.com/airsonic-advanced/airsonic-advanced/issues/359#issuecomment-772724722))
+  - `server.use-forward-headers=true` -> `server.forward-headers-strategy=native` (due to [Spring Boot 2.2 deprecation](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-2.2-Release-Notes#deprecations-in-spring-boot-22), verified in [comment](https://github.com/airsonic-advanced/airsonic-advanced/issues/359#issuecomment-772724722), changed enacted in [#428](https://github.com/airsonic-advanced/airsonic-advanced/pull/428) and released in [Edge Release 11.0.0-SNAPSHOT.20210117214044](https://github.com/airsonic-advanced/airsonic-advanced/releases/tag/11.0.0-SNAPSHOT.20210117214044))
 
 Other properties are obsolete and have been removed:
   - `DatabaseConfigType`
