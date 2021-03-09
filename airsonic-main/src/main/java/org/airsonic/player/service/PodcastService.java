@@ -164,14 +164,17 @@ public class PodcastService {
      * @param url The URL of the Podcast channel.
      */
     public void createChannel(String url) {
-        PodcastChannel channel = new PodcastChannel(sanitizeUrl(url));
+        PodcastChannel channel = new PodcastChannel(sanitizeUrl(url, false));
         int channelId = podcastDao.createChannel(channel);
 
         refreshChannels(Collections.singletonList(getChannel(channelId)), true);
     }
 
-    private static String sanitizeUrl(String url) {
-        return URLDecoder.decode(url, StandardCharsets.UTF_8);
+    private static String sanitizeUrl(String url, boolean force) {
+        if (!StringUtils.contains(url, "://") || force) {
+            return URLDecoder.decode(url, StandardCharsets.UTF_8);
+        }
+        return url;
     }
 
     /**
@@ -330,7 +333,7 @@ public class PodcastService {
 
             channel.setTitle(StringUtil.removeMarkup(channelElement.getChildTextTrim("title")));
             channel.setDescription(StringUtil.removeMarkup(channelElement.getChildTextTrim("description")));
-            channel.setImageUrl(sanitizeUrl(getChannelImageUrl(channelElement)));
+            channel.setImageUrl(sanitizeUrl(getChannelImageUrl(channelElement), false));
             channel.setStatus(PodcastStatus.COMPLETED);
             channel.setErrorMessage(null);
             podcastDao.updateChannel(channel);
@@ -428,7 +431,7 @@ public class PodcastService {
                         return null;
                     }
 
-                    String url = sanitizeUrl(enclosure.getAttributeValue("url"));
+                    String url = sanitizeUrl(enclosure.getAttributeValue("url"), false);
                     if (url == null) {
                         LOG.info("No enclosure URL found for episode {}", title);
                         return null;
@@ -635,7 +638,7 @@ public class PodcastService {
 
         Path channelDir = getChannelDirectory(channel);
 
-        String filename = StringUtil.getUrlFile(episode.getUrl());
+        String filename = StringUtil.getUrlFile(sanitizeUrl(episode.getUrl(), true));
         if (filename == null) {
             filename = episode.getTitle();
         }
