@@ -4,7 +4,32 @@
 <head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
+    <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/quality/quality.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/quality/quality-i18n.js'/>"></script>
     <link rel="stylesheet" type="text/css" href="<c:url value='/style/videoPlayer.css'/>">
+    <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/speed/speed.min.css'/>">
+    <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/quality/quality.min.css'/>">
+
+    <style type="text/css">
+        .ui-slider .ui-slider-handle {
+            width: 11px;
+            height: 11px;
+            cursor: pointer;
+        }
+        .ui-slider a {
+            outline:none;
+        }
+        .ui-slider {
+            cursor: pointer;
+        }
+        #videoPlayer {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
 
     <script type="text/javascript" language="javascript">
         function toggleStar(mediaFileId, imageId) {
@@ -27,18 +52,43 @@
           hide_share: ${model.user.shareRole ? 1: 0},
           hide_download: ${model.user.downloadRole ? 1: 0}
         }
+        function init() {
+            var videoPlayer = new MediaElementPlayer("videoPlayer", {
+                alwaysShowControls: true,
+                enableKeyboard: false,
+                useDefaultControls: true,
+                features: ["speed", "fullscreen", "quality"],
+                defaultSpeed: "1.00",
+                speeds: ["8.00", "2.00", "1.50", "1.25", "1.00", "0.75", "0.5"],
+                defaultQuality: "${model.defaultBitRate} Kbps",
+                qualityChangeCallback( media, node, newQuality, source ) {
+                    console.log(media, node, newQuality, source);
+                },
+                success(mediaElement, originalNode, instance) {
+                    // "hack" html5 renderer and reinitialize speed
+                    instance.media.rendererName = "html5";
+                    instance.buildspeed(instance, instance.getElement(instance.controls), instance.getElement(instance.layers), instance.media);
+                }
+            });
+            //var initVidSrc = "${model.streamUrl}";
+            //videoPlayer.src = initVidSrc + "&maxBitRate=${model.defaultBitRate}";
+        }
     </script>
-    <script type="text/javascript" src="<c:url value='/script/videoPlayerCast.js'/>"></script>
+    <!--<script type="text/javascript" src="<c:url value='/script/videoPlayerCast.js'/>"></script>-->
 </head>
 
-<body class="mainframe bgcolor1" style="padding-bottom:0.5em">
+<body class="mainframe bgcolor1" style="padding-bottom:0.5em" onload="init();">
 
     <div>
-        <div id="overlay">
+        <!--<div id="overlay">
             <div id="overlay_text">Playing on Chromecast</div>
-        </div>
-        <video id="videoPlayer" width="640" height="360"></video>
-        <div id="media_control">
+        </div>-->
+        <video id="videoPlayer">
+          <c:forEach items="${model.bitRates}" var="bitRate">
+            <source src="${model.streamUrl}&maxBitRate=${bitRate}" data-quality="${bitRate} Kbps">
+          </c:forEach>
+        </video>
+        <!--<div id="media_control">
             <div id="progress_slider"></div>
             <div id="play"></div>
             <div id="pause"></div>
@@ -71,7 +121,7 @@
     <script type="text/javascript">
         var CastPlayer = new CastPlayer();
     </script>
-
+-->
 
 <h1 style="padding-top:1em;padding-bottom:0.5em;">
     <img id="starImage" src="<spring:theme code='${not empty model.video.starredDate ? \'ratingOnImage\' : \'ratingOffImage\'}'/>"
