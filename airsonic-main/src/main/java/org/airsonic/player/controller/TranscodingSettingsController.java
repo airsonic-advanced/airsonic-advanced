@@ -56,7 +56,7 @@ public class TranscodingSettingsController {
         Map<String, Object> map = new HashMap<String, Object>();
 
         map.put("transcodings", transcodingService.getAllTranscodings());
-        map.put("transcodeDirectory", transcodingService.getTranscodeDirectory());
+        map.put("transcodeDirectory", SettingsService.getTranscodeDirectory());
         map.put("downsampleCommand", settingsService.getDownsamplingCommand());
         map.put("hlsCommand", settingsService.getHlsCommand());
         map.put("transcodeEstimateTimePadding", settingsService.getTranscodeEstimateTimePadding());

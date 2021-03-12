@@ -1,14 +1,10 @@
 package org.airsonic.player.controller;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.MoreFiles;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.io.InputStreamReaderThread;
-import org.airsonic.player.io.PipeStreams;
-import org.airsonic.player.io.PipeStreams.PipedInputStream;
-import org.airsonic.player.io.PipeStreams.PipedOutputStream;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.SecurityService;
@@ -16,7 +12,6 @@ import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.metadata.MetaData;
 import org.airsonic.player.service.metadata.MetaDataParser;
 import org.airsonic.player.service.metadata.MetaDataParserFactory;
-import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -37,24 +32,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -113,32 +100,13 @@ public class CaptionsController {
             if (effectiveFormat.equalsIgnoreCase(res.getFormat())) {
                 resource = getExternalResource(captionsFile, res.getFormat());
             } else if ("srt".equals(res.getFormat()) && "vtt".equals(requiredFormat)) {
-                Process process = new ProcessBuilder(
-                        ImmutableList.of(SettingsService.getTranscodeDirectory().resolve("ffmpeg").toString(), "-i",
-                                captionsFile.toString(), "-map", "0:0", "-f", getForceFormat(effectiveFormat), "-"))
-                                        .start();
-
-                resource = new InputStreamResource(process.getInputStream());
-
-                // Must read stderr from the process, otherwise it may block.
-                new InputStreamReaderThread(process.getErrorStream(), "ffmpeg-error-stream-" + UUID.randomUUID(), true)
-                        .start();
-
-                // resource = getConvertedResource(captionsFile);
+                resource = getConvertedResource(captionsFile, "0", effectiveFormat);
             } else {
                 throw new NotFoundException("No captions found for file id: " + id);
             }
             time = Files.getLastModifiedTime(captionsFile).toInstant();
         } else {
-            Process process = new ProcessBuilder(
-                    ImmutableList.of(SettingsService.getTranscodeDirectory().resolve("ffmpeg").toString(), "-i",
-                            video.getFile().toString(), "-map",
-                    "0:" + res.getIdentifier(), "-f", getForceFormat(effectiveFormat), "-")).start();
-
-            resource = new InputStreamResource(process.getInputStream());
-
-            // Must read stderr from the process, otherwise it may block.
-            new InputStreamReaderThread(process.getErrorStream(), "ffmpeg-error-stream-" + UUID.randomUUID(), true).start();
+            resource = getConvertedResource(video.getFile(), res.getIdentifier(), effectiveFormat);
             time = Files.getLastModifiedTime(video.getFile()).toInstant();
         }
 
@@ -153,6 +121,32 @@ public class CaptionsController {
                 .lastModified(time)
                 .headers(headers)
                 .body(resource);
+    }
+
+    public Resource getConvertedResource(Path inputFile, String identifier, String format) throws IOException {
+        String[] split = StringUtils.split(settingsService.getSubtitlesExtractionCommand());
+        List<String> command = Arrays.stream(split).sequential()
+                .map(i -> {
+                    if (i.equals(split[0])) {
+                        return SettingsService.getTranscodeDirectory().resolve(i).toString();
+                    }
+                    if (i.contains("%s")) {
+                        return i.replace("%s", inputFile.toString());
+                    }
+                    if (i.contains("%i")) {
+                        return i.replace("%i", identifier);
+                    }
+                    if (i.contains("%f")) {
+                        return i.replace("%f", getForceFormat(format));
+                    }
+
+                    return i;
+                }).collect(Collectors.toList());
+        Process process = new ProcessBuilder(command).start();
+        Resource resource = new InputStreamResource(process.getInputStream());
+        // Must read stderr from the process, otherwise it may block.
+        new InputStreamReaderThread(process.getErrorStream(), "subs-extraction-error-stream-" + inputFile.toString(), true).start();
+        return resource;
     }
 
     public static String getForceFormat(String format) {
@@ -214,47 +208,6 @@ public class CaptionsController {
         } else {
             return new InputStreamResource(new BOMInputStream(Files.newInputStream(captionsFile)));
         }
-    }
-
-    // srt -> vtt
-    private Resource getConvertedResource(Path captionsFile) throws IOException {
-        Consumer<InputStream> poutInit = (input) -> {
-            PipedInputStream pin = (PipedInputStream) input;
-
-            // start a new thread to feed data in
-            new Thread(() -> {
-                try (BOMInputStream bomInputStream = new BOMInputStream(Files.newInputStream(captionsFile));
-                        Reader reader = new InputStreamReader(bomInputStream,
-                                ByteOrderMark.UTF_8.equals(bomInputStream.getBOM()) ? "UTF-8" : "ISO-8859-1");
-                        BufferedReader bufferedReader = new BufferedReader(reader);
-                        PipedOutputStream po = new PipedOutputStream(pin);
-                        Writer writer = new OutputStreamWriter(po, "UTF-8");
-                        BufferedWriter bufferedWriter = new BufferedWriter(writer);) {
-                    bufferedWriter.append("WEBVTT");
-                    bufferedWriter.newLine();
-                    bufferedWriter.newLine();
-                    String line = bufferedReader.readLine();
-                    while (line != null) {
-                        line = line.replaceFirst("(\\d+:\\d+:\\d+),(\\d+) --> (\\d+:\\d+:\\d+),(\\d+)",
-                                "$1.$2 --> $3.$4");
-                        bufferedWriter.append(line);
-                        bufferedWriter.newLine();
-                        line = bufferedReader.readLine();
-                    }
-                    bufferedWriter.flush();
-                } catch (Exception e) {
-                    LOG.warn("Error writing to subtitles stream for {}", captionsFile, e);
-                }
-            }, "CaptionsControllerDatafeed").start();
-
-            // wait for src data thread to connect
-            while (pin.source == null) {
-                // sit and wait and ponder life
-            }
-        };
-
-        PipedInputStream in = new PipedInputStream();
-        return new PipeStreams.DelayedResource(new InputStreamResource(in), poutInit);
     }
 
     public List<Path> findExternalCaptionsForVideo(MediaFile video) {

@@ -41,6 +41,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -84,7 +85,7 @@ public class VideoPlayerController {
         String coverArtUrl = url + "coverArt.view?id=" + file.getId();
         boolean streamable = isStreamable(file);
         boolean castable = isCastable(file);
-        boolean captions = !captionsController.findExternalCaptionsForVideo(file).isEmpty();
+        List<CaptionsController.CaptionInfo> captions = captionsController.listCaptions(file);
 
         map.put("video", file);
         map.put("streamable", streamable);

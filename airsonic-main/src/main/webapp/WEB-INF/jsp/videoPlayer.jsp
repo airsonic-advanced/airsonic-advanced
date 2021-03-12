@@ -4,7 +4,7 @@
 <head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.js'/>"></script>
+    <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/quality/quality.js'/>"></script>
@@ -46,7 +46,6 @@
           duration: ${empty model.video.duration ? 0: model.video.duration},
           remoteStreamUrl: "${model.remoteStreamUrl}",
           video_title: "${model.video.title}",
-          captions: ${model.captions},
           streamable: ${model.streamable},
           castable: ${model.castable},
           remoteCoverArtUrl: "${model.remoteCoverArtUrl}",
@@ -71,27 +70,6 @@
                     // "hack" html5 renderer and reinitialize speed
                     instance.media.rendererName = "html5";
                     instance.buildspeed(instance, instance.getElement(instance.controls), instance.getElement(instance.layers), instance.media);
-
-		            if (model.captions) {
-			            const track = document.createElement('track');
-						track.kind = 'subtitles';
-						track.label = 'Default';
-						track.src = 'captions.view?id='+model.video_id;
-						track.srclang = 'en';
-
-						// We are assuming there is only one `track` tag;
-						// if there are more, implement logic to override the necessary one(s)
-						if (instance.trackFiles !== null) {
-							instance.trackFiles = [track];
-						}
-						instance.trackFiles = [track];
-						instance.rebuildtracks();
-						//instance.tracks = [track];
-						//instance.findTracks();
-						// This way we are ensuring ALL tracks are being loaded, starting from the first one
-						//instance.loadTrack(0);
-						//instance.setTrack('mep_0_track_0_subtitles_en');
-		            }
                 }
             });
 
@@ -111,6 +89,13 @@
         <video id="videoPlayer">
           <c:forEach items="${model.bitRates}" var="bitRate">
             <source src="${model.streamUrl}&maxBitRate=${bitRate}" data-quality="${bitRate} Kbps">
+          </c:forEach>
+          <c:forEach items="${model.captions}" var="caption">
+            <c:url value="/captions" var="suburl">
+                <c:param name="id" value="${model.video.id}" />
+                <c:param name="captionId" value="${caption.identifier}" />
+            </c:url>
+            <track src="${suburl}" label="${caption.identifier} (${caption.language})" srclang="${caption.language}" kind="subtitles">
           </c:forEach>
         </video>
         <!--<div id="media_control">

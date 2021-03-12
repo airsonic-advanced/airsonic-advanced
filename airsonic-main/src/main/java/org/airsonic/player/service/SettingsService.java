@@ -102,7 +102,7 @@ public class SettingsService {
     private static final String KEY_HLS_COMMAND = "HlsCommand3";
     private static final String KEY_JUKEBOX_COMMAND = "JukeboxCommand2";
     private static final String KEY_VIDEO_IMAGE_COMMAND = "VideoImageCommand";
-    private static final String KEY_SUBTITLE_EXTRACTION_COMMAND = "SubtitleExtractionCommand";
+    private static final String KEY_SUBTITLES_EXTRACTION_COMMAND = "SubtitlesExtractionCommand";
     private static final String KEY_LDAP_ENABLED = "LdapEnabled";
     private static final String KEY_LDAP_URL = "LdapUrl";
     private static final String KEY_LDAP_MANAGER_DN = "LdapManagerDn";
@@ -873,12 +873,12 @@ public class SettingsService {
         return getProperty(KEY_VIDEO_IMAGE_COMMAND, DEFAULT_VIDEO_IMAGE_COMMAND);
     }
 
-    public String getSubtitleExtractionCommand() {
-        return getProperty(KEY_SUBTITLE_EXTRACTION_COMMAND, DEFAULT_SUBTITLES_EXTRACTION_COMMAND);
+    public String getSubtitlesExtractionCommand() {
+        return getProperty(KEY_SUBTITLES_EXTRACTION_COMMAND, DEFAULT_SUBTITLES_EXTRACTION_COMMAND);
     }
 
-    public void setSubtitleExtractionCommand(String command) {
-        setProperty(KEY_SUBTITLE_EXTRACTION_COMMAND, command);
+    public void setSubtitlesExtractionCommand(String command) {
+        setProperty(KEY_SUBTITLES_EXTRACTION_COMMAND, command);
     }
 
     public boolean isLdapEnabled() {
