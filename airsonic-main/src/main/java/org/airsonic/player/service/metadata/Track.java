@@ -1,7 +1,6 @@
 package org.airsonic.player.service.metadata;
 
 import com.google.common.collect.ImmutableSet;
-
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Locale;
@@ -60,6 +59,10 @@ public class Track {
 
     public boolean isVideo() {
         return ("video".equals(this.type) && !"mjpeg".equals(this.codec) && !"bmp".equals(this.codec));
+    }
+
+    public boolean isSubtitle() {
+        return "subtitle".equals(this.type);
     }
 
     public boolean isStreamable() {

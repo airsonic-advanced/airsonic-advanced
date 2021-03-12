@@ -182,4 +182,8 @@ public class MetaData {
     public List<Track> getVideoTracks() {
         return this.getTracks().stream().filter(i -> i.isVideo()).collect(Collectors.toList());
     }
+
+    public List<Track> getSubtitleTracks() {
+        return this.getTracks().stream().filter(i -> i.isSubtitle()).collect(Collectors.toList());
+    }
 }

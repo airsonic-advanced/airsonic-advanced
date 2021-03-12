@@ -78,8 +78,8 @@ public class FFmpegParser extends MetaDataParser {
             // Use `ffprobe` in the transcode directory if it exists, otherwise let the system sort it out.
             String ffprobe;
             Path inTranscodeDirectory = Util.isWindows() ?
-                transcodingService.getTranscodeDirectory().resolve("ffprobe.exe") :
-                transcodingService.getTranscodeDirectory().resolve("ffprobe");
+                SettingsService.getTranscodeDirectory().resolve("ffprobe.exe") :
+                SettingsService.getTranscodeDirectory().resolve("ffprobe");
             if (Files.exists(inTranscodeDirectory)) {
                 ffprobe = inTranscodeDirectory.toAbsolutePath().toString();
             } else {
