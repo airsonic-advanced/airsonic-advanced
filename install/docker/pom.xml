@@ -12,6 +12,10 @@
     <artifactId>airsonic-docker</artifactId>
     <name>Airsonic Docker Image</name>
 
+    <properties>
+        <docker.image.save.skip>true</docker.image.save.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.airsonic.player</groupId>
@@ -32,9 +36,11 @@
                         <phase>package</phase>
                         <goals>
                             <goal>build</goal>
+                            <goal>save</goal>
                         </goals>
                         <configuration>
                             <showLogs>true</showLogs>
+                            <skipSave>${docker.image.save.skip}</skipSave>
                             <images>
                                 <image>
                                     <name>${docker.container.repo}</name>
