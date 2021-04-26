@@ -43,7 +43,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * Provides services for transcoding media. Transcoding is the process of
@@ -338,8 +337,8 @@ public class TranscodingService {
             artist = "Unknown Artist";
         }
 
-        List<String> result = new LinkedList<String>(Arrays.asList(StringUtil.split(command)));
-        result.set(0, SettingsService.getTranscodeDirectory().resolve(result.get(0)).toString());
+        List<String> result = new LinkedList<>(Arrays.asList(StringUtil.split(command)));
+        result.set(0, SettingsService.resolveTranscodeExecutable(result.get(0)));
 
         Path tmpFile = null;
 
@@ -484,11 +483,7 @@ public class TranscodingService {
             return true;
         }
         String executable = StringUtil.split(step)[0];
-        try (Stream<Path> files = Files.list(SettingsService.getTranscodeDirectory())) {
-            return files.anyMatch(p -> p.getFileName().toString().startsWith(executable));
-        } catch (IOException e) {
-            return false;
-        }
+        return SettingsService.isTranscodeExecutableInstalled(executable);
     }
 
     /**

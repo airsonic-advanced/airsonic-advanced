@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.RateLimiter;
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
@@ -418,6 +419,18 @@ public class SettingsService {
             }
         }
         return dir;
+    }
+
+    public static boolean isTranscodeExecutableInstalled(String executable) {
+        try (Stream<Path> files = Files.list(getTranscodeDirectory())) {
+            return files.anyMatch(p -> MoreFiles.getNameWithoutExtension(p).equals(executable));
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public static String resolveTranscodeExecutable(String executable) {
+        return isTranscodeExecutableInstalled(executable) ? getTranscodeDirectory().resolve(executable).toString() : executable;
     }
 
     private static String getFileSystemAppName() {
