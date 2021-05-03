@@ -20,6 +20,7 @@
 package org.airsonic.player.controller;
 
 import junit.framework.TestCase;
+import org.airsonic.player.service.hls.FFmpegHlsSession;
 
 import java.awt.*;
 
@@ -113,8 +114,7 @@ public class StreamControllerTestCase extends TestCase {
     }
 
     private void doTestGetSuitableVideoSize(Integer existingWidth, Integer existingHeight, Integer maxBitRate, int expectedWidth, int expectedHeight) {
-        StreamController controller = new StreamController();
-        Dimension dimension = controller.getSuitableVideoSize(existingWidth, existingHeight, maxBitRate);
+        Dimension dimension = FFmpegHlsSession.getSuitableVideoSize(existingWidth, existingHeight, maxBitRate);
         assertEquals("Wrong width.", expectedWidth, dimension.width);
         assertEquals("Wrong height.", expectedHeight, dimension.height);
     }
