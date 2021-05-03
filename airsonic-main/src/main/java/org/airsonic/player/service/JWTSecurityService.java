@@ -92,8 +92,7 @@ public class JWTSecurityService {
                 builder.toUriString(),
                 expires,
                 additionalClaims);
-        builder.queryParam(JWTSecurityService.JWT_PARAM_NAME, token);
-        return builder;
+        return builder.queryParam(JWTSecurityService.JWT_PARAM_NAME, token);
     }
 
     public static DecodedJWT verify(String jwtKey, String token) {
