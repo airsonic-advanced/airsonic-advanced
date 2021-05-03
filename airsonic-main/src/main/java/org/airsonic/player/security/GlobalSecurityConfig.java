@@ -245,7 +245,8 @@ public class GlobalSecurityConfig {
                             "/ext/stream/**",
                             "/ext/coverArt*",
                             "/ext/share/**",
-                            "/ext/hls/**")
+                            "/ext/hls/**",
+                            "/ext/segment/**")
                     .hasAnyRole("TEMP", "USER").and()
                     .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                     .exceptionHandling().and()
@@ -342,7 +343,7 @@ public class GlobalSecurityConfig {
         source.registerCorsConfiguration("/stream/**", configuration);
         source.registerCorsConfiguration("/ext/stream/**", configuration);
         source.registerCorsConfiguration("/ext/hls/**", configuration);
-        source.registerCorsConfiguration("/ext/hls/**", configuration);
+        source.registerCorsConfiguration("/ext/segment/**", configuration);
         return source;
     }
 }
