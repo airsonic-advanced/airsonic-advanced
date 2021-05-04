@@ -130,6 +130,8 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
             cleanupId = ScanningTestUtils.before(MusicFolderTestData.getTestMusicFolders(), settingsService,mediaScannerService);
 
+            staticTestDao.getJdbcTemplate().execute("delete from player");
+
             assertThat(playerDao.getAllPlayers().size()).isEqualTo(0);
             createTestPlayer();
             assertThat(playerDao.getAllPlayers().size()).isEqualTo(1);
