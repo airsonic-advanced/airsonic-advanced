@@ -31,6 +31,7 @@ import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.images.Artwork;
 import org.jaudiotagger.tag.reference.GenreTypes;
+import org.jaudiotagger.tag.reference.PictureTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -283,6 +285,11 @@ public class JaudiotaggerParser extends MetaDataParser {
     public Artwork getArtwork(MediaFile file) throws Exception {
         AudioFile audioFile = AudioFileIO.read(file.getFile().toFile());
         Tag tag = audioFile.getTag();
-        return tag == null ? null : tag.getFirstArtwork();
+        Artwork artwork = null;
+        if (tag != null) {
+            Optional<Artwork> artworkOptional = tag.getArtworkList().stream().filter(art -> art.getPictureType() == PictureTypes.DEFAULT_ID).findAny();
+            artwork = artworkOptional.orElse(tag.getFirstArtwork());
+        }
+        return artwork;
     }
 }
