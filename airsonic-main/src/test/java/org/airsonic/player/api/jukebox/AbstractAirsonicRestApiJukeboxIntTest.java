@@ -101,7 +101,6 @@ public abstract class AbstractAirsonicRestApiJukeboxIntTest {
 
     @BeforeClass
     public static void setupClass() {
-        staticTestDao.getJdbcTemplate().execute("delete from player");
         dataBasePopulated = false;
     }
 
