@@ -234,8 +234,8 @@ public class FFmpegHlsSession {
             return new Dimension(w, h);
         if (existingWidth.intValue() < w || existingHeight.intValue() < h)
             return new Dimension(even(existingWidth.intValue()), even(existingHeight.intValue()));
-        double aspectRate = existingWidth.doubleValue() / existingHeight.doubleValue();
-        h = (int) Math.round(w / aspectRate);
+        double aspectRatio = existingWidth.doubleValue() / existingHeight.doubleValue();
+        h = (int) Math.round(w / aspectRatio);
         return new Dimension(even(w), even(h));
     }
 
