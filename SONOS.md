@@ -81,12 +81,12 @@ You should now see the message 'Success' from the Sonos player.
 Complete registration using the Sonos app as per [Adding the music service in the Sonos app](#2-adding-the-music-service-in-the-sonos-app) above.
 
 ## Troubleshooting.
-### Unable to browse music when linked **One User** link method.
+### Unable to browse music when linked **One User/Anonymous** link method.
 Addressed here: https://github.com/airsonic-advanced/airsonic-advanced/issues/299#issuecomment-640160127
 
 It's not a bug, it's a deliberate security feature.
 
-An anonymous use is not able to browse through music because they shouldn't by definition have any permissions: they're anonymous; they're unverified, unknown, untrusted. If they have access to everything, then there's no point of security. They should only have access to things that are public (and therefore have been explicitly made available to everyone, including anonymous).
+An anonymous user is not able to browse through music because they shouldn't by definition have any permissions: they're anonymous; they're unverified, unknown, untrusted. If they have access to everything, then there's no point of security. They should only have access to things that are public (and therefore have been explicitly made available to everyone, including anonymous).
 
 Thus, they are able to browse public stuff (like, for instance, if you make your playlist public, they should be able to see it), but have no rights to see non-public stuff.
 
