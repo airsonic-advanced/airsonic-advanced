@@ -6,6 +6,7 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.io.InputStreamReaderThread;
 import org.airsonic.player.security.JWTAuthenticationToken;
+import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
@@ -31,8 +32,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import javax.servlet.ServletContext;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,7 +51,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Controller
-@RequestMapping("/captions")
+@RequestMapping({ "/captions", "/ext/captions" })
 public class CaptionsController {
     private static final Logger LOG = LoggerFactory.getLogger(CaptionsController.class);
 
@@ -62,6 +67,10 @@ public class CaptionsController {
     private SettingsService settingsService;
     @Autowired
     private MetaDataParserFactory metaDataParserFactory;
+    @Autowired
+    private JWTSecurityService jwtSecurityService;
+    @Autowired
+    private ServletContext servletContext;
 
     @GetMapping
     public ResponseEntity<Resource> handleRequest(
@@ -170,11 +179,30 @@ public class CaptionsController {
     }
 
     @GetMapping("/list")
-    public @ResponseBody List<CaptionInfo> listCaptions(@RequestParam int id) {
-        return listCaptions(mediaFileService.getMediaFile(id));
+    public @ResponseBody List<CaptionInfo> listCaptions(Authentication authentication, @RequestParam int id) {
+        MediaFile video = mediaFileService.getMediaFile(id);
+        if (!(authentication instanceof JWTAuthenticationToken)
+                && !securityService.isFolderAccessAllowed(video, authentication.getName())) {
+            throw new AccessDeniedException(
+                    "Access to file " + id + " is forbidden for user " + authentication.getName());
+        }
+
+        String user = null;
+        Instant expiration = null;
+
+        if (authentication instanceof JWTAuthenticationToken) {
+            user = authentication.getName();
+            expiration = JWTSecurityService.getExpiration((JWTAuthenticationToken) authentication);
+        }
+
+        return listCaptions(video, user, expiration);
     }
 
     public List<CaptionInfo> listCaptions(MediaFile video) {
+        return listCaptions(video, null, null);
+    }
+
+    public List<CaptionInfo> listCaptions(MediaFile video, String externalUser, Instant externalExpiration) {
         MetaData metaData = getVideoMetaData(video);
         Stream<CaptionInfo> internalCaptions;
         if (metaData == null || metaData.getSubtitleTracks().isEmpty()) {
@@ -185,14 +213,18 @@ public class CaptionsController {
                             String.valueOf(c.getId()),
                             CaptionInfo.Location.internal,
                             getDisplayFormat(c.getCodec()),
-                            c.getLanguage()));
+                            c.getLanguage(),
+                            getUrl(externalUser, externalExpiration, video.getId(),
+                                    String.valueOf(c.getId()))));
         }
 
         Stream<CaptionInfo> externalCaptions = findExternalCaptionsForVideo(video).stream()
                 .map(c -> new CaptionInfo(c.toString(), // leaks internal structure for now
                         CaptionInfo.Location.external,
                         MoreFiles.getFileExtension(c),
-                        c.getFileName().toString()));
+                        c.getFileName().toString(),
+                        getUrl(externalUser, externalExpiration, video.getId(),
+                                URLEncoder.encode(c.toString(), StandardCharsets.UTF_8))));
 
         return Stream.concat(internalCaptions, externalCaptions).collect(Collectors.toList());
     }
@@ -200,6 +232,19 @@ public class CaptionsController {
     public MetaData getVideoMetaData(MediaFile video) {
         MetaDataParser parser = this.metaDataParserFactory.getParser(video.getFile());
         return (parser != null) ? parser.getMetaData(video.getFile()) : null;
+    }
+
+    public String getUrl(String externalUser, Instant externalExpiration, int mediaId, String captionId) {
+        boolean ext = !StringUtils.isBlank(externalUser);
+        UriComponentsBuilder builder = UriComponentsBuilder
+                .fromUriString(servletContext.getContextPath() + (ext ? "/ext" : "") + "/captions")
+                .queryParam("id", mediaId)
+                .queryParam("captionId", captionId);
+
+        if (ext) {
+            builder = jwtSecurityService.addJWTToken(externalUser, builder, externalExpiration);
+        }
+        return builder.build().toUriString();
     }
 
     private Resource getExternalResource(Path captionsFile, String format) throws IOException {
@@ -234,12 +279,14 @@ public class CaptionsController {
         private final Location location;
         private final String format;
         private final String language;
+        private final String url;
 
-        public CaptionInfo(String identifier, Location location, String format, String language) {
+        public CaptionInfo(String identifier, Location location, String format, String language, String url) {
             this.identifier = identifier;
             this.location = location;
             this.format = format;
             this.language = language;
+            this.url = url;
         }
 
         public String getIdentifier() {
@@ -256,6 +303,10 @@ public class CaptionsController {
 
         public String getLanguage() {
             return language;
+        }
+
+        public String getUrl() {
+            return url;
         }
     }
 

@@ -246,7 +246,8 @@ public class GlobalSecurityConfig {
                             "/ext/coverArt*",
                             "/ext/share/**",
                             "/ext/hls/**",
-                            "/ext/segment/**")
+                            "/ext/segment/**",
+                            "/ext/captions*")
                     .hasAnyRole("TEMP", "USER").and()
                     .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                     .exceptionHandling().and()

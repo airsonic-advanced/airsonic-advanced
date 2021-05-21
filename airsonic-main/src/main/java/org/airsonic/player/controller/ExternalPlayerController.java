@@ -19,7 +19,6 @@
  */
 package org.airsonic.player.controller;
 
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.io.MoreFiles;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.security.JWTAuthenticationToken;
@@ -30,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,7 +43,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
@@ -74,11 +71,14 @@ public class ExternalPlayerController {
     private JWTSecurityService jwtSecurityService;
     @Autowired
     private VideoPlayerController videoPlayerController;
-    @Autowired
-    private CaptionsController captionsController;
 
     @GetMapping("/{shareName}")
-    protected ModelAndView handleRequestInternal(@PathVariable("shareName") String shareName, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    protected ModelAndView handleRequestInternal(
+            Authentication authentication,
+            @PathVariable("shareName") String shareName,
+            HttpServletRequest request,
+            HttpServletResponse response)
+            throws Exception {
         LOG.debug("Share name is {}", shareName);
 
         if (StringUtils.isBlank(shareName)) {
@@ -102,9 +102,11 @@ public class ExternalPlayerController {
 
         Player player = playerService.getGuestPlayer(request);
 
+        Instant expires = authentication instanceof JWTAuthenticationToken ? JWTSecurityService.getExpiration((JWTAuthenticationToken) authentication) : null;
+
         Map<String, Object> map = new HashMap<>();
 
-        List<MediaFileWithUrlInfo> media = getMedia(request, share, player);
+        List<MediaFileWithUrlInfo> media = getMedia(request, share, player, expires);
         map.put("share", share);
         map.put("media", media);
         map.put("videoPresent", media.stream().anyMatch(mf -> mf.getFile().isVideo()));
@@ -112,15 +114,7 @@ public class ExternalPlayerController {
         return new ModelAndView("externalPlayer", "model", map);
     }
 
-    private List<MediaFileWithUrlInfo> getMedia(HttpServletRequest request, Share share, Player player) {
-        Instant expires = null;
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication instanceof JWTAuthenticationToken) {
-            DecodedJWT token = (DecodedJWT) authentication.getDetails();
-            expires = Optional.ofNullable(token).map(x -> x.getExpiresAt()).map(x -> x.toInstant()).orElse(null);
-        }
-        Instant finalExpires = expires;
-
+    private List<MediaFileWithUrlInfo> getMedia(HttpServletRequest request, Share share, Player player, Instant expires) {
         List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(player.getUsername());
 
         if (share != null) {
@@ -129,9 +123,10 @@ public class ExternalPlayerController {
                     .filter(MediaFile::exists)
                     .flatMap(f -> {
                         if (f.isDirectory()) {
-                            return mediaFileService.getChildrenOf(f, true, false, true).stream().map(fc -> addUrlInfo(request, player, fc, finalExpires));
+                            return mediaFileService.getChildrenOf(f, true, false, true).stream()
+                                    .map(fc -> addUrlInfo(request, player, fc, expires));
                         } else {
-                            return Stream.of(addUrlInfo(request, player, f, finalExpires));
+                            return Stream.of(addUrlInfo(request, player, f, expires));
                         }
                     })
                     .collect(toList());
@@ -145,7 +140,7 @@ public class ExternalPlayerController {
 
         boolean streamable = true;
         String contentType = StringUtil.getMimeType(MoreFiles.getFileExtension(mediaFile.getFile()));
-        String streamUrl = jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS,
+        String streamUrl = jwtSecurityService.addJWTToken(User.USERNAME_GUEST,
                 UriComponentsBuilder.fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/stream")
                         .queryParam("id", mediaFile.getId())
                         .queryParam("player", player.getId())
@@ -155,7 +150,7 @@ public class ExternalPlayerController {
             streamable = videoPlayerController.isStreamable(mediaFile);
             if (!streamable) {
                 contentType = "application/x-mpegurl";
-                streamUrl = jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS,
+                streamUrl = jwtSecurityService.addJWTToken(User.USERNAME_GUEST,
                         UriComponentsBuilder.fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/hls/hls.m3u8")
                                 .queryParam("id", mediaFile.getId()).queryParam("player", player.getId())
                                 .queryParam("maxBitRate", VideoPlayerController.BIT_RATES),
@@ -163,16 +158,20 @@ public class ExternalPlayerController {
             }
         }
 
-        List<CaptionsController.CaptionInfo> captions = captionsController.listCaptions(mediaFile);
+        String captionsUrl = jwtSecurityService.addJWTToken(
+                User.USERNAME_GUEST,
+                UriComponentsBuilder.fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/captions/list").queryParam("id", mediaFile.getId()),
+                expires)
+            .build().toUriString();
 
         String coverArtUrl = jwtSecurityService.addJWTToken(
-                User.USERNAME_ANONYMOUS,
+                User.USERNAME_GUEST,
                 UriComponentsBuilder
                         .fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/coverArt.view")
                         .queryParam("id", mediaFile.getId())
                         .queryParam("size", "500"),
                 expires)
             .build().toUriString();
-        return new MediaFileWithUrlInfo(mediaFile, streamable, coverArtUrl, streamUrl, captions, contentType);
+        return new MediaFileWithUrlInfo(mediaFile, streamable, coverArtUrl, streamUrl, captionsUrl, contentType);
     }
 }

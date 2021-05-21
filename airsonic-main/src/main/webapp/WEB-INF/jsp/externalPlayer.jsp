@@ -4,10 +4,19 @@
 <html>
 <head>
     <%@ include file="head.jsp" %>
+    <%@ include file="jquery.jsp" %>
     <meta name="og:type" content="album"/>
     <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
-    <script type="text/javascript" src="<c:url value='/script/mediaelement/plugins/playlist/playlist.min.js'/>"></script>
+    <script type="text/javascript" src="<c:url value='/script/mediaelement/plugins/playlist/playlist.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/quality/quality.min.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/quality/quality-i18n.js'/>"></script>
+
     <link type="text/css" rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/playlist/playlist.min.css'/>">
+    <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/speed/speed.min.css'/>">
+    <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/quality/quality.min.css'/>">
+
     <c:if test="${not empty model.media}">
         <meta name="og:title"
               content="${fn:escapeXml(model.media[0].file.artist)} &mdash; ${fn:escapeXml(model.media[0].file.albumName)}"/>
@@ -38,7 +47,7 @@
     </audio>
   </c:if>
   <c:if test="${model.videoPresent}">
-    <video id='player'>
+    <video id='player' style="width:100%; height:100%;">
     </video>
   </c:if>
 
@@ -49,10 +58,12 @@
 </div>
 
 <script type="text/javascript">
-    new MediaElementPlayer('player', {
+    var player = new MediaElementPlayer('player', {
         useDefaultControls: true,
-        features: ['playlist', 'loop'],
+        features: ['playlist', 'prevtrack', 'nexttrack', 'shuffle', 'loop', 'speed', 'quality'],
         currentMessage: "",
+        defaultSpeed: "1.00",
+        speeds: ["8.00", "2.00", "1.50", "1.25", "1.00", "0.75", "0.5"],
         playlistTitle: "${model.share.description}",
         playlist: [
           <c:forEach items="${model.media}" var="song">
@@ -61,11 +72,32 @@
                 "title": "${fn:escapeXml(song.file.title)}",
                 "type": "${song.contentType}",
                 "data-playlist-thumbnail": "${song.coverArtUrl}",
-                "data-playlist-description": "${fn:escapeXml(song.file.artist)}"
+                "data-playlist-description": "${fn:escapeXml(song.file.artist)}",
+                "data-playlist-caption": "${song.captionsUrl}"
             },
           </c:forEach>
         ],
-        audioWidth: 600
+        audioWidth: 600,
+        success: function(m, n, p, i) {
+            $(p.playlistLayer).on('newplaylistsrc', e => {
+                $.get(e.detail['data-playlist-caption'], data => {
+                    const tracks = data.map(s => {
+                        const track = document.createElement('track');
+                        track.kind = 'subtitles';
+                        track.label = s.identifier + " (" + s.language + ")";
+                        track.src = s.url;
+                        track.srclang = s.language;
+
+                        return track;
+                    });
+
+                    p.trackFiles = tracks;
+                    p.rebuildtracks();
+                });
+
+                i.buildspeed(i, i.getElement(i.controls), i.getElement(i.layers), i.media);
+            });
+        }
     });
 </script>
 <style>
