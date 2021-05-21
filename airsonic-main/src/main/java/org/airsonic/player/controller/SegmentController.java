@@ -37,8 +37,8 @@ import javax.annotation.PostConstruct;
 
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -60,7 +60,7 @@ public class SegmentController {
     @Autowired
     private SettingsService settingsService;
 
-    private final Map<FFmpegHlsSession.Key, FFmpegHlsSession> sessions = new HashMap<>();
+    private final Map<FFmpegHlsSession.Key, FFmpegHlsSession> sessions = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
@@ -118,20 +118,16 @@ public class SegmentController {
     }
 
     private FFmpegHlsSession getOrCreateSession(FFmpegHlsSession.Key sessionKey, MediaFile mediaFile) {
-        synchronized (this.sessions) {
-            FFmpegHlsSession session = this.sessions.get(sessionKey);
-            if (session == null) {
-                this.sessions.keySet().parallelStream()
-                        .filter(k -> k.getMediaFileId() == sessionKey.getMediaFileId())
-                        .filter(k -> StringUtils.equals(k.getPlayerId(), sessionKey.getPlayerId()))
-                        .filter(k -> this.sessions.get(k) != null)
-                        .forEach(k -> this.sessions.remove(k).destroySession());
-
-                session = new FFmpegHlsSession(sessionKey, mediaFile);
-                this.sessions.put(sessionKey, session);
+        return this.sessions.computeIfAbsent(sessionKey, k -> {
+            for (FFmpegHlsSession.Key k1 : sessions.keySet()) {
+                if (k1.getMediaFileId() == k.getMediaFileId()
+                        && StringUtils.equals(k1.getPlayerId(), k.getPlayerId())) {
+                    sessions.remove(k1).destroySession();
+                }
             }
-            return session;
-        }
+
+            return new FFmpegHlsSession(k, mediaFile);
+        });
     }
 
     public void setMediaFileService(MediaFileService mediaFileService) {
