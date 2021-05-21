@@ -136,6 +136,7 @@ Object.assign(MediaElementPlayer.prototype, {
 					mejs.Utils.addClass(this.closest('.' + player.options.classPrefix + 'playlist-selector-list-item'), player.options.classPrefix + 'playlist-selected');
 					player.currentPlaylistItem = this.getAttribute('data-playlist-index');
 					player.setSrc(this.value);
+					player.playlistLayer.dispatchEvent(new CustomEvent('newplaylistsrc', { detail: player.playlist[player.currentPlaylistItem] }));
 					player.load();
 					player.play();
 
