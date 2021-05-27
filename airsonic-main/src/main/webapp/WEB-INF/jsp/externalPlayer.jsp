@@ -12,10 +12,13 @@
     <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/quality/quality.min.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/quality/quality-i18n.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/chromecast/chromecast.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/chromecast/chromecast-i18n.js'/>"></script>
 
     <link type="text/css" rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/playlist/playlist.min.css'/>">
     <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/speed/speed.min.css'/>">
     <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/quality/quality.min.css'/>">
+    <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/chromecast/chromecast.min.css'/>">
 
     <c:if test="${not empty model.media}">
         <meta name="og:title"
@@ -43,11 +46,17 @@
     </div>
 
   <c:if test="${!model.videoPresent}">
-    <audio id='player'>
+    <audio id='player'
+        data-cast-title="[Your title]"
+        data-cast-description="[Your optional description]"
+        poster="/path/to/poster.jpg">
     </audio>
   </c:if>
   <c:if test="${model.videoPresent}">
-    <video id='player' style="width:100%; height:100%;">
+    <video id='player' style="width:100%; height:100%;"
+        data-cast-title="[Your title]"
+        data-cast-description="[Your optional description]"
+        poster="/path/to/poster.jpg">
     </video>
   </c:if>
 
@@ -60,10 +69,14 @@
 <script type="text/javascript">
     var player = new MediaElementPlayer('player', {
         useDefaultControls: true,
-        features: ['playlist', 'prevtrack', 'nexttrack', 'shuffle', 'loop', 'speed', 'quality'],
+        features: ['speed', 'quality', 'chromecast', 'playlist', 'prevtrack', 'nexttrack', 'shuffle', 'loop'],
         currentMessage: "",
         defaultSpeed: "1.00",
         speeds: ["8.00", "2.00", "1.50", "1.25", "1.00", "0.75", "0.5"],
+        castTitle: "Airsonic",
+        castAppID: "4FBFE470",
+        castPolicy: "tab",
+        castEnableTracks: true,
         playlistTitle: "${model.share.description}",
         playlist: [
           <c:forEach items="${model.media}" var="song">
