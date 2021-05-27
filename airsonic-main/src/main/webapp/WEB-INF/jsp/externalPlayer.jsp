@@ -78,8 +78,9 @@
           </c:forEach>
         ],
         audioWidth: 600,
-        success: function(m, n, p, i) {
+        success: function(m, n, p) {
             $(p.playlistLayer).on('newplaylistsrc', e => {
+                m.originalNode.setAttribute('type', e.detail['type']);
                 $.get(e.detail['data-playlist-caption'], data => {
                     const tracks = data.map(s => {
                         const track = document.createElement('track');
@@ -95,7 +96,7 @@
                     p.rebuildtracks();
                 });
 
-                i.buildspeed(i, i.getElement(i.controls), i.getElement(i.layers), i.media);
+                p.buildspeed(p, p.getElement(p.controls), p.getElement(p.layers), m);
             });
         }
     });
