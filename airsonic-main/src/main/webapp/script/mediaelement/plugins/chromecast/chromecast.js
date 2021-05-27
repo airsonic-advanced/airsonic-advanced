@@ -75,8 +75,8 @@ Object.assign(MediaElementPlayer.prototype, {
 		}
 
 		window.__onGCastApiAvailable = function (isAvailable) {
-			var mediaType = mejs.Utils.getTypeFromFile(media.originalNode.src).toLowerCase(),
-			    canPlay = mediaType && ['application/x-mpegurl', 'application/vnd.apple.mpegurl', 'application/dash+xml', 'video/mp4', 'audio/mp3', 'audio/mp4'].indexOf(mediaType) > -1;
+			var mediaType = t._getType(media.originalNode).toLowerCase(),
+			    canPlay = mediaType && ['application/x-mpegurl', 'application/vnd.apple.mpegurl', 'application/dash+xml', 'video/mp4', 'audio/mp3', 'audio/mp4', 'audio/mpeg'].indexOf(mediaType) > -1;
 
 			if (isAvailable && canPlay) {
 				t._initializeCastPlayer();
@@ -92,6 +92,13 @@ Object.assign(MediaElementPlayer.prototype, {
 			return;
 		}
 		mejs.Utils.loadScript('https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1');
+	},
+	_getType: function _getType(node) {
+		var mt = node.getAttribute('type');
+		if (mt == null) {
+		    mt = mejs.Utils.getTypeFromFile(node.src);
+		}
+		return mt;
 	},
 	cleanchromecast: function cleanchromecast(player) {
 		if (window.cast) {
@@ -376,7 +383,7 @@ var ChromecastPlayer = function () {
 		value: function load() {
 			var t = this,
 			    url = this.media.originalNode.src,
-			    type = mejs.Utils.getTypeFromFile(url),
+			    type = this.media.originalNode.getAttribute('type') || mejs.Utils.getTypeFromFile(url),
 			    mediaInfo = new chrome.cast.media.MediaInfo(url, type),
 			    castSession = cast.framework.CastContext.getInstance().getCurrentSession();
 
