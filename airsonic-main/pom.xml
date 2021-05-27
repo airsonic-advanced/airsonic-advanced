@@ -78,13 +78,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
-            <!-- Remove for Boot 2.5 as it switches to org.apache.tomcat.embed:tomcat-embed-el by default -->
-            <exclusions>
-                <exclusion>
-                    <groupId>org.glassfish</groupId>
-                    <artifactId>jakarta.el</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -298,7 +291,7 @@
         <dependency>
             <groupId>org.eclipse.persistence</groupId>
             <artifactId>org.eclipse.persistence.moxy</artifactId>
-            <version>2.7.5</version>
+            <version>2.7.8</version>
         </dependency>
 
         <dependency>
@@ -310,7 +303,7 @@
         <dependency>
             <groupId>org.glassfish.web</groupId>
             <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-            <version>1.2.6</version>
+            <version>2.0.0</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -529,13 +522,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-tomcat</artifactId>
             <scope>${tomcat.server.scope}</scope>
-            <!-- Remove for Boot 2.5 as it switches to org.apache.tomcat.embed:tomcat-embed-el by default -->
-            <exclusions>
-                <exclusion>
-                    <groupId>org.glassfish</groupId>
-                    <artifactId>jakarta.el</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
@@ -717,7 +703,7 @@
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-jspc-maven-plugin</artifactId>
-                <version>9.4.28.v20200408</version>
+                <version>9.4.41.v20210516</version>
                 <executions>
                     <execution>
                         <id>jspc</id>
