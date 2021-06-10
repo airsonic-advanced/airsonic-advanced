@@ -20,11 +20,12 @@ jobs:
         with:
           java-version: ${{ matrix.cfg.jdk }}
       - name: Cache Maven packages
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
-          path: ~/.m2
+          path: ~/.m2/repository
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          restore-keys: |
+            ${{ runner.os }}-m2-
       - run: mkdir -p ${DEFAULT_MUSIC_FOLDER}
       - run: ${{ matrix.cfg.run }}
         if: matrix.cfg.executeManualcommand
