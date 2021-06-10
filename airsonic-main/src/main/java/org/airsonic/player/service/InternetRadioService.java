@@ -145,6 +145,8 @@ public class InternetRadioService {
         );
     }
 
+    private static final Set<String> DIRECT_PLAYABLE_TYPES = Set.of("audio/mpeg", "audio/aac", "audio/aacp");
+
     /**
      * Retrieve a list of sources from the given internet radio.
      *
@@ -163,7 +165,7 @@ public class InternetRadioService {
         try (InputStream in = urlConnection.getInputStream();
                 BoundedInputStream bin = new BoundedInputStream(in, maxByteSize);) {
             String contentType = urlConnection.getContentType();
-            if ("audio/mpeg".equals(contentType)) {
+            if (DIRECT_PLAYABLE_TYPES.contains(contentType)) {
                 //for direct binary streams, just return a collection with a single internet radio source
                 LOG.debug("Got direct source media at {}", streamUrl);
                 return Collections.singletonList(new InternetRadioSource(streamUrl));
