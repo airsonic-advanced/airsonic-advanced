@@ -1,5 +1,7 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Fri Jun 11 13:46:30 PDT 2021
+#Fri Jun 11 14:47:03 PDT 2021
 playlist-xspf-2.0.0-RELEASE.jar>=
+playlist-xspf-2.0.0-RELEASE.pom>local1=
 playlist-xspf-2.0.0-RELEASE-sources.jar>=
 playlist-xspf-2.0.0-RELEASE.pom>=
+playlist-xspf-2.0.0-RELEASE.jar>local1=
