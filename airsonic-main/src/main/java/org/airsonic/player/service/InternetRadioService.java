@@ -165,7 +165,7 @@ public class InternetRadioService {
         try (InputStream in = urlConnection.getInputStream();
                 BoundedInputStream bin = new BoundedInputStream(in, maxByteSize);) {
             String contentType = urlConnection.getContentType();
-            if (DIRECT_PLAYABLE_TYPES.contains(contentType)) {
+            if (contentType != null && DIRECT_PLAYABLE_TYPES.contains(contentType)) {
                 //for direct binary streams, just return a collection with a single internet radio source
                 LOG.debug("Got direct source media at {}", streamUrl);
                 return Collections.singletonList(new InternetRadioSource(streamUrl));
