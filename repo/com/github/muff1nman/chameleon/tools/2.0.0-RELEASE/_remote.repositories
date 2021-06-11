@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Fri Jun 11 13:46:34 PDT 2021
+tools-2.0.0-RELEASE.pom>=
+tools-2.0.0-RELEASE-sources.jar>=
+tools-2.0.0-RELEASE.jar>=
