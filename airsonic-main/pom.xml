@@ -13,7 +13,7 @@
     </parent>
 
     <properties>
-        <chameleon.version>1.2.1-RELEASE</chameleon.version>
+        <chameleon.version>2.0.0-RELEASE</chameleon.version>
         <tomcat.server.scope>provided</tomcat.server.scope>
     </properties>
 
@@ -471,12 +471,16 @@
                     <artifactId>commons-logging</artifactId>
                 </exclusion>
                 <exclusion>
-                 <groupId>javax.xml.stream</groupId>
-                 <artifactId>stax-api</artifactId>
+                    <groupId>javax.xml.stream</groupId>
+                    <artifactId>stax-api</artifactId>
                 </exclusion>
                 <exclusion>
-                 <groupId>stax</groupId>
-                 <artifactId>stax-api</artifactId>
+                    <groupId>stax</groupId>
+                    <artifactId>stax-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-context</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -485,7 +489,6 @@
             <groupId>com.github.muff1nman.chameleon</groupId>
             <artifactId>playlist-xspf</artifactId>
             <version>${chameleon.version}</version>
-            <scope>compile</scope>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -503,6 +506,10 @@
                 <exclusion>
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-collections</groupId>
+                    <artifactId>commons-collections</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
