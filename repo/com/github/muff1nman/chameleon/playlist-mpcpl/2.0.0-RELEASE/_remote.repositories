@@ -1,7 +1,0 @@
-#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Fri Jun 11 14:46:52 PDT 2021
-playlist-mpcpl-2.0.0-RELEASE.pom>=
-playlist-mpcpl-2.0.0-RELEASE-sources.jar>=
-playlist-mpcpl-2.0.0-RELEASE.jar>=
-playlist-mpcpl-2.0.0-RELEASE.pom>local1=
-playlist-mpcpl-2.0.0-RELEASE.jar>local1=
