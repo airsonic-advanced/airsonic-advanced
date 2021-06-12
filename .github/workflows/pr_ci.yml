@@ -23,9 +23,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-mvn-
+            ${{ runner.os }}-m2-
       - run: mkdir -p ${DEFAULT_MUSIC_FOLDER}
       - run: ${{ matrix.cfg.run }}
         if: matrix.cfg.executeManualcommand
