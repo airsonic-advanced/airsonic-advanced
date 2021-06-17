@@ -122,6 +122,7 @@
                         rowNode.find(".songIndex input").prop("checked", true);
                     }
                 },
+                colReorder: true,
                 stateSave: true,
                 stateDuration: 60 * 60 * 24 * 365,
                 ordering: true,

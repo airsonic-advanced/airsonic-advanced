@@ -15,6 +15,7 @@
 
             playlistMusicTable = $("#playlistMusic").DataTable( {
                 deferRender: true,
+                colReorder: true,
                 stateSave: true,
                 stateDuration: 60 * 60 * 24 * 365,
                 ordering: true,
