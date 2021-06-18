@@ -135,7 +135,7 @@
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
-            <version>3.12.0</version>
+            <version>3.15.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.ldap</groupId>
@@ -269,7 +269,7 @@
         <dependency>
             <groupId>org.jfree</groupId>
             <artifactId>jfreechart</artifactId>
-            <version>1.5.0</version>
+            <version>1.5.3</version>
             <exclusions>
                 <exclusion>
                     <groupId>junit</groupId>
@@ -378,7 +378,7 @@
         <dependency>
             <groupId>de.triology.recaptchav2-java</groupId>
             <artifactId>recaptchav2-java</artifactId>
-            <version>1.0.2</version>
+            <version>1.0.4</version>
         </dependency>
 
         <!-- SONOS API / WSDL SUPPORT -->
@@ -433,7 +433,7 @@
         <dependency>
             <groupId>com.mattbertolini</groupId>
             <artifactId>liquibase-slf4j</artifactId>
-            <version>2.0.0</version>
+            <version>4.0.0</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
