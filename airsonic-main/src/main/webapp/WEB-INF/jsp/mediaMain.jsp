@@ -266,6 +266,9 @@
                     rowNode.find(".songIndex input").prop("checked", true);
                 }
             },
+            colReorder: true,
+            stateSave: true,
+            stateDuration: 60 * 60 * 24 * 365,
             ordering: true,
             order: [],
             //orderFixed: [ 0, 'asc' ],
@@ -496,6 +499,9 @@
         /** SUBDIRS **/
         subDirsTable = $("#subDirsTable").DataTable( {
             deferRender: true,
+            colReorder: true,
+            stateSave: true,
+            stateDuration: 60 * 60 * 24 * 365,
             ordering: true,
             order: [],
             orderFixed: [ 0, 'asc' ],
@@ -578,6 +584,9 @@
         /** ARTIST TOP SONGS **/
         artistTopSongsTable = $("#artistTopSongsTable").DataTable( {
             deferRender: true,
+            colReorder: true,
+            stateSave: true,
+            stateDuration: 60 * 60 * 24 * 365,
             ordering: true,
             order: [],
             orderFixed: [ 0, 'asc' ],
