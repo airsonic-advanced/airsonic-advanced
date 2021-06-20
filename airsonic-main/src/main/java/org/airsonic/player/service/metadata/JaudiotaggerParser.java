@@ -30,7 +30,6 @@ import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.images.Artwork;
-import org.jaudiotagger.tag.reference.GenreTypes;
 import org.jaudiotagger.tag.reference.PictureTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,11 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.logging.LogManager;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Parses meta data from audio files using the Jaudiotagger library
@@ -59,9 +54,6 @@ import java.util.regex.Pattern;
 public class JaudiotaggerParser extends MetaDataParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(JaudiotaggerParser.class);
-    private static final Pattern GENRE_PATTERN = Pattern.compile("\\((\\d+)\\).*");
-    private static final Pattern TRACK_NUMBER_PATTERN = Pattern.compile("(\\d+)/\\d+");
-    private static final Pattern YEAR_NUMBER_PATTERN = Pattern.compile("(\\d{4}).*");
     @Autowired
     private final SettingsService settingsService;
 
@@ -139,62 +131,6 @@ public class JaudiotaggerParser extends MetaDataParser {
     }
 
     /**
-     * Returns all tags supported by id3v1.
-     */
-    public static SortedSet<String> getID3V1Genres() {
-        return new TreeSet<>(GenreTypes.getInstanceOf().getAlphabeticalValueList());
-    }
-
-    /**
-     * Sometimes the genre is returned as "(17)" or "(17)Rock", instead of "Rock".  This method
-     * maps the genre ID to the corresponding text.
-     */
-    private static String mapGenre(String genre) {
-        if (genre == null) {
-            return null;
-        }
-        Matcher matcher = GENRE_PATTERN.matcher(genre);
-        if (matcher.matches()) {
-            int genreId = Integer.parseInt(matcher.group(1));
-            if (genreId >= 0 && genreId < GenreTypes.getInstanceOf().getSize()) {
-                return GenreTypes.getInstanceOf().getValueForId(genreId);
-            }
-        }
-        return genre;
-    }
-
-    private static Integer parseIntegerPattern(String str, Pattern pattern) {
-        str = StringUtils.trimToNull(str);
-
-        if (str == null) {
-            return null;
-        }
-
-        Integer result = null;
-
-        try {
-            result = Integer.valueOf(str);
-        } catch (NumberFormatException x) {
-            if (pattern == null) {
-                return null;
-            }
-            Matcher matcher = pattern.matcher(str);
-            if (matcher.matches()) {
-                try {
-                    result = Integer.valueOf(matcher.group(1));
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            }
-        }
-
-        if (Integer.valueOf(0).equals(result)) {
-            return null;
-        }
-        return result;
-    }
-
-    /**
      * Updates the given file with the given meta data.
      *
      * @param file     The music file to update.
@@ -254,7 +190,7 @@ public class JaudiotaggerParser extends MetaDataParser {
         return settingsService;
     }
 
-    private static Set<String> applicableFormats = ImmutableSet.of("mp3", "m4a", "m4b", "aac", "ogg", "flac", "wav", "mpc", "mp+", "ape", "wma");
+    private static Set<String> applicableFormats = ImmutableSet.of("mp3", "m4a", "m4b", "m4p", "aac", "ogg", "flac", "wav", "mpc", "mp+", "ape", "aif", "dsf", "aiff", "wma");
 
     /**
      * Returns whether this parser is applicable to the given file.
