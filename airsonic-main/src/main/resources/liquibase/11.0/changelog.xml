@@ -13,4 +13,6 @@
     <include file="add-sonos-table-link.xml" relativeToChangelogFile="true"/>
     <include file="podcast-description-text.xml" relativeToChangelogFile="true"/>
     <include file="insert-mod-transcoding.xml" relativeToChangelogFile="true"/>
+    <include file="mediafile-add-start-position.xml" relativeToChangelogFile="true"/>
+    <!-- <include file="mediafile-modify-path-index.xml" relativeToChangelogFile="true"/> -->
 </databaseChangeLog>

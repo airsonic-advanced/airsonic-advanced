@@ -69,6 +69,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
         assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> createTestUser(user, uc));
         assertThat(userDao.getUserByName("muff1nman5", true)).isNull();
 
+        /*
         User user2 = new User("muff1nman6", "noemail");
         UserCredential uc2 = new UserCredential("muff1nman6", "muff1nman6", "secret", "noop", App.AIRSONIC) {
             @Override
@@ -79,6 +80,7 @@ public class UserDaoTestCase extends DaoTestCaseBean2 {
 
         assertThatExceptionOfType(RuntimeException.class).isThrownBy(() -> createTestUser(user2, uc2));
         assertThat(userDao.getUserByName("muff1nman6", true)).isNull();
+        */
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

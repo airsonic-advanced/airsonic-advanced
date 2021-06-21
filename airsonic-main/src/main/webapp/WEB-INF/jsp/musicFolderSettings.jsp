@@ -87,8 +87,14 @@
     </div>
 
     <div>
-	<form:checkbox path="ignoreSymLinks" id="ignoreSymLinks"/>
-     	<form:label path="ignoreSymLinks"><fmt:message key="musicfoldersettings.ignoresymlinks"/></form:label>
+        <form:checkbox path="ignoreSymLinks" id="ignoreSymLinks"/>
+        <form:label path="ignoreSymLinks"><fmt:message key="musicfoldersettings.ignoresymlinks"/></form:label>
+    </div>
+
+    <div>
+        <form:checkbox path="hideSingleFileAlbumFiles" id="hideSingleFileAlbumFiles"/>
+        <form:label path="hideSingleFileAlbumFiles"><fmt:message key="musicfoldersettings.hidesinglefilealbumfiles"/></form:label>
+        <c:import url="helpToolTip.jsp"><c:param name="topic" value="hidesinglefilealbumfiles"/></c:import>
     </div>
 
     <div>

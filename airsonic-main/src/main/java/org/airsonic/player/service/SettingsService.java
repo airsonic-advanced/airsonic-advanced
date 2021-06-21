@@ -98,6 +98,7 @@ public class SettingsService {
     private static final String KEY_PODCAST_EPISODE_DOWNLOAD_COUNT = "PodcastEpisodeDownloadCount";
     private static final String KEY_DOWNLOAD_BITRATE_LIMIT = "DownloadBitrateLimit";
     private static final String KEY_UPLOAD_BITRATE_LIMIT = "UploadBitrateLimit";
+    private static final String KEY_SPLIT_COMMAND = "SplitCommand";
     private static final String KEY_DOWNSAMPLING_COMMAND = "DownsamplingCommand4";
     private static final String KEY_HLS_COMMAND = "HlsCommand3";
     private static final String KEY_JUKEBOX_COMMAND = "JukeboxCommand2";
@@ -137,6 +138,7 @@ public class SettingsService {
     private static final String KEY_SMTP_FROM = "SmtpFrom";
     private static final String KEY_EXPORT_PLAYLIST_FORMAT = "PlaylistExportFormat";
     private static final String KEY_IGNORE_SYMLINKS = "IgnoreSymLinks";
+    private static final String KEY_HIDE_SINGLE_FILE_ALBUM_FILES = "HideSingleFileAlbumFiles";
     private static final String KEY_EXCLUDE_PATTERN_STRING = "ExcludePattern";
 
     private static final String KEY_CAPTCHA_ENABLED = "CaptchaEnabled";
@@ -196,6 +198,7 @@ public class SettingsService {
     private static final int DEFAULT_PODCAST_EPISODE_DOWNLOAD_COUNT = 1;
     private static final long DEFAULT_DOWNLOAD_BITRATE_LIMIT = 0;
     private static final long DEFAULT_UPLOAD_BITRATE_LIMIT = 0;
+    private static final String DEFAULT_SPLIT_COMMAND = "ffmpeg -ss %o -t %d -i %s -vcodec copy -acodec copy -f %f -";
     private static final String DEFAULT_DOWNSAMPLING_COMMAND = "ffmpeg -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -";
     private static final String DEFAULT_HLS_COMMAND = "ffmpeg -ss %o -t %d -i %s -async 1 -b:v %bk -s %wx%h -ar 44100 -ac 2 -v 0 -f mpegts -c:v libx264 -preset superfast -c:a libmp3lame -threads 0 -";
     private static final String DEFAULT_JUKEBOX_COMMAND = "ffmpeg -ss %o -i %s -map 0:0 -v 0 -ar 44100 -ac 2 -f s16be -";
@@ -220,6 +223,7 @@ public class SettingsService {
     private static final String DEFAULT_SONOS_LINK_METHOD = SonosServiceRegistration.AuthenticationType.APPLICATION_LINK.name();
     private static final String DEFAULT_EXPORT_PLAYLIST_FORMAT = "m3u";
     private static final boolean DEFAULT_IGNORE_SYMLINKS = false;
+    private static final boolean DEFAULT_HIDE_SINGLE_FILE_ALBUM_FILES = false;
     private static final String DEFAULT_EXCLUDE_PATTERN_STRING = null;
     private static final String DEFAULT_PREFERRED_NONDECODABLE_PASSWORD_ENCODER = "bcrypt";
     private static final String DEFAULT_PREFERRED_DECODABLE_PASSWORD_ENCODER = "encrypted-AES-GCM";
@@ -265,6 +269,7 @@ public class SettingsService {
     private Set<String> cachedCoverArtFileTypes;
     private Set<String> cachedMusicFileTypes;
     private Set<String> cachedVideoFileTypes;
+    private Set<String> cachedPlayableFileTypes;
     private List<MusicFolder> cachedMusicFolders;
     private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
     private RateLimiter downloadRateLimiter;
@@ -572,6 +577,19 @@ public class SettingsService {
         return cachedVideoFileTypes;
     }
 
+    public Set<String> getPlayableFileTypesSet() {
+        // make sure to regenerate cached result if either KEY_VIDEO_FILE_TYPES or KEY_MUSIC_FILE_TYPES
+        // has been changed
+        if (cachedPlayableFileTypes == null
+            || cachedMusicFileTypes == null
+            || cachedVideoFileTypes == null) {
+            cachedPlayableFileTypes = splitLowerString(getMusicFileTypes().join(" ", getVideoFileTypes()), " ");
+        }
+        return cachedPlayableFileTypes;
+    }
+
+
+
     public String getCoverArtFileTypes() {
         return getProperty(KEY_COVER_ART_FILE_TYPES, DEFAULT_COVER_ART_FILE_TYPES);
     }
@@ -831,6 +849,14 @@ public class SettingsService {
         getUploadBitrateLimiter().setRate(adjustBitrateLimit(limit));
     }
 
+    public String getSplitCommand() {
+        return getProperty(KEY_SPLIT_COMMAND, DEFAULT_SPLIT_COMMAND);
+    }
+
+    public void setSplitCommand(String command) {
+        setProperty(KEY_SPLIT_COMMAND, command);
+    }
+
     public String getDownsamplingCommand() {
         return getProperty(KEY_DOWNSAMPLING_COMMAND, DEFAULT_DOWNSAMPLING_COMMAND);
     }
@@ -949,6 +975,15 @@ public class SettingsService {
     public void setIgnoreSymLinks(boolean b) {
         setBoolean(KEY_IGNORE_SYMLINKS, b);
     }
+
+    public boolean getHideSingleFileAlbumFiles() {
+        return getBoolean(KEY_HIDE_SINGLE_FILE_ALBUM_FILES, DEFAULT_HIDE_SINGLE_FILE_ALBUM_FILES);
+    }
+
+    public void setHideSingleFileAlbumFiles(boolean b) {
+        setBoolean(KEY_HIDE_SINGLE_FILE_ALBUM_FILES, b);
+    }
+
 
     public String getExcludePatternString() {
         return getString(KEY_EXCLUDE_PATTERN_STRING, DEFAULT_EXCLUDE_PATTERN_STRING);

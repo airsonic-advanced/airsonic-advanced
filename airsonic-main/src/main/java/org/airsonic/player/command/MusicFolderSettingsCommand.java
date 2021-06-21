@@ -45,6 +45,7 @@ public class MusicFolderSettingsCommand {
     private MusicFolderInfo newMusicFolder;
     private String excludePatternString;
     private boolean ignoreSymLinks;
+    private boolean hideSingleFileAlbumFiles;
     private Boolean fullScan;
     private Boolean clearFullScanSettingAfterScan;
 
@@ -119,6 +120,15 @@ public class MusicFolderSettingsCommand {
     public void setIgnoreSymLinks(boolean ignoreSymLinks) {
         this.ignoreSymLinks = ignoreSymLinks;
     }
+
+    public boolean getHideSingleFileAlbumFiles() {
+        return hideSingleFileAlbumFiles;
+    }
+
+    public void setHideSingleFileAlbumFiles(boolean hideSingleFileAlbumFiles) {
+        this.hideSingleFileAlbumFiles = hideSingleFileAlbumFiles;
+    }
+
 
     public Boolean getFullScan() {
         return fullScan;
