@@ -2,10 +2,10 @@
 <link rel="stylesheet" href="<c:url value='/script/DataTables/datatables.min.css'/>" type="text/css" >
 <style type="text/css">
     table.dataTable thead .sorting, table.dataTable thead .sorting_asc, table.dataTable thead .sorting_desc, table.dataTable thead .sorting_asc_disabled, table.dataTable thead .sorting_desc_disabled {
-        background: none;
+        background: none !important;
     }
     table.dataTable.hide-table-header thead {
-        display: none;
+        display: none !important;
     }
 </style>
 <c:set var="styleSheet"><spring:theme code="styleSheet"/></c:set>
