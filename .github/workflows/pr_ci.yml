@@ -45,6 +45,9 @@ jobs:
           - jdk: 14
             services: {}
             env: {}
+          - jdk: 16
+            services: {}
+            env: {}
           # external dbs
           - jdk: 11
             services:
