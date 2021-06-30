@@ -94,3 +94,17 @@
 .mejs-speed-button>button, .mejs__speed-button>button {
     color: #000 !important;
 }
+
+.mejs__playlist-button > button,
+.mejs-playlist-button > button,
+.mejs__next-button > button,
+.mejs-next-button > button,
+.mejs__prev-button > button,
+.mejs-prev-button > button,
+.mejs__loop-button > button,
+.mejs-loop-button > button,
+.mejs__shuffle-button > button,
+.mejs-shuffle-button > button {
+	background-image: url('playlist-controls-dark.svg') !important;
+    background-repeat: no-repeat;
+}

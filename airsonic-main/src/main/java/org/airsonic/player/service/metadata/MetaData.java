@@ -19,6 +19,11 @@
  */
 package org.airsonic.player.service.metadata;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * Contains meta-data (song title, artist, album etc) for a music file.
  * @author Sindre Mehus
@@ -40,6 +45,7 @@ public class MetaData {
     private Integer height;
     private String musicBrainzReleaseId;
     private String musicBrainzRecordingId;
+    private final List<Track> tracks = new ArrayList<>();
 
     public Integer getDiscNumber() {
         return discNumber;
@@ -159,5 +165,25 @@ public class MetaData {
 
     public void setMusicBrainzRecordingId(String musicBrainzRecordingId) {
         this.musicBrainzRecordingId = musicBrainzRecordingId;
+    }
+
+    public void addTrack(Track track) {
+        this.tracks.add(track);
+    }
+
+    public List<Track> getTracks() {
+        return Collections.unmodifiableList(this.tracks);
+    }
+
+    public List<Track> getAudioTracks() {
+        return this.getTracks().stream().filter(i -> i.isAudio()).collect(Collectors.toList());
+    }
+
+    public List<Track> getVideoTracks() {
+        return this.getTracks().stream().filter(i -> i.isVideo()).collect(Collectors.toList());
+    }
+
+    public List<Track> getSubtitleTracks() {
+        return this.getTracks().stream().filter(i -> i.isSubtitle()).collect(Collectors.toList());
     }
 }

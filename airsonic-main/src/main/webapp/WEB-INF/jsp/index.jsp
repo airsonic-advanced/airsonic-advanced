@@ -73,7 +73,7 @@
             </div>
             <div class="non-left-navigation-container">
                 <div class="main-right-container">
-                    <iframe id="main" name="main" src="${empty param.main? 'nowPlaying.view' : param.main}" class="bgcolor1 main-panel"></iframe>
+                    <iframe id="main" name="main" src="${empty param.main? 'nowPlaying.view' : param.main}" class="bgcolor1 main-panel" allowfullscreen></iframe>
                     <div class="bgcolor1 right-info-container" ${!model.showRight ? "style='display: none;'" : ""}>
                         <iframe id="right" name="right" src="right.view?" class="right-info"></iframe>
                     </div>

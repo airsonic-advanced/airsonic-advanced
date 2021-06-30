@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableList;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
-import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,15 +75,7 @@ public class FFmpegParser extends MetaDataParser {
 
         try {
             // Use `ffprobe` in the transcode directory if it exists, otherwise let the system sort it out.
-            String ffprobe;
-            Path inTranscodeDirectory = Util.isWindows() ?
-                transcodingService.getTranscodeDirectory().resolve("ffprobe.exe") :
-                transcodingService.getTranscodeDirectory().resolve("ffprobe");
-            if (Files.exists(inTranscodeDirectory)) {
-                ffprobe = inTranscodeDirectory.toAbsolutePath().toString();
-            } else {
-                ffprobe = "ffprobe";
-            }
+            String ffprobe = SettingsService.resolveTranscodeExecutable("ffprobe");
 
             List<String> command = new ArrayList<>();
             command.add(ffprobe);
@@ -117,15 +108,12 @@ public class FFmpegParser extends MetaDataParser {
             // Find the first (if any) stream that has dimensions and use those.
             // 'width' and 'height' are display dimensions; compare to 'coded_width', 'coded_height'.
             for (JsonNode stream : result.at("/streams")) {
+                Track track = new Track(stream.get("index").asInt(), stream.get("codec_type").asText(), stream.at("/tags/language").asText(), stream.get("codec_name").asText());
+                metaData.addTrack(track);
 
-                // skip coverart streams
-                if (stream.hasNonNull("codec_name") && stream.get("codec_name").asText().equalsIgnoreCase("mjpeg")) {
-                    continue;
-                }
-                if (stream.has("width") && stream.has("height")) {
+                if (track.isVideo() && stream.has("width") && stream.has("height")) {
                     metaData.setWidth(stream.get("width").asInt());
                     metaData.setHeight(stream.get("height").asInt());
-                    break;
                 }
             }
         } catch (Throwable x) {

@@ -43,7 +43,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * Provides services for transcoding media. Transcoding is the process of
@@ -307,11 +306,11 @@ public class TranscodingService {
      * <li>Replacing occurrences of "%t" with the title of the given music file.</li>
      * <li>Replacing occurrences of "%l" with the album name of the given music file.</li>
      * <li>Replacing occurrences of "%a" with the artist name of the given music file.</li>
-     * <li>Replacing occurrcences of "%b" with the max bitrate.</li>
-     * <li>Replacing occurrcences of "%o" with the video time offset (used for scrubbing).</li>
-     * <li>Replacing occurrcences of "%d" with the video duration (used for HLS).</li>
-     * <li>Replacing occurrcences of "%w" with the video image width.</li>
-     * <li>Replacing occurrcences of "%h" with the video image height.</li>
+     * <li>Replacing occurrences of "%b" with the max bitrate.</li>
+     * <li>Replacing occurrences of "%o" with the video time offset (used for scrubbing).</li>
+     * <li>Replacing occurrences of "%d" with the video duration (used for HLS).</li>
+     * <li>Replacing occurrences of "%w" with the video image width.</li>
+     * <li>Replacing occurrences of "%h" with the video image height.</li>
      * <li>Prepending the path of the transcoder directory if the transcoder is found there.</li>
      * </ul>
      *
@@ -338,8 +337,8 @@ public class TranscodingService {
             artist = "Unknown Artist";
         }
 
-        List<String> result = new LinkedList<String>(Arrays.asList(StringUtil.split(command)));
-        result.set(0, getTranscodeDirectory().resolve(result.get(0)).toString());
+        List<String> result = new LinkedList<>(Arrays.asList(StringUtil.split(command)));
+        result.set(0, SettingsService.resolveTranscodeExecutable(result.get(0)));
 
         Path tmpFile = null;
 
@@ -484,11 +483,7 @@ public class TranscodingService {
             return true;
         }
         String executable = StringUtil.split(step)[0];
-        try (Stream<Path> files = Files.list(getTranscodeDirectory())) {
-            return files.anyMatch(p -> p.getFileName().toString().startsWith(executable));
-        } catch (IOException e) {
-            return false;
-        }
+        return SettingsService.isTranscodeExecutableInstalled(executable);
     }
 
     /**
@@ -541,22 +536,6 @@ public class TranscodingService {
             }
         }
         return false;
-    }
-
-    /**
-     * Returns the directory in which all transcoders are installed.
-     */
-    public Path getTranscodeDirectory() {
-        Path dir = SettingsService.getAirsonicHome().resolve("transcode");
-        if (!Files.exists(dir)) {
-            try {
-                dir = Files.createDirectory(dir);
-                LOG.info("Created directory {}", dir);
-            } catch (Exception e) {
-                LOG.warn("Failed to create directory {}", dir);
-            }
-        }
-        return dir;
     }
 
     public void setTranscodingDao(TranscodingDao transcodingDao) {

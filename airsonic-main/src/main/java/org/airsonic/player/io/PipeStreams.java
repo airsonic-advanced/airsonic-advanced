@@ -350,6 +350,68 @@ public class PipeStreams {
 
     } // PipedOutputStream
 
+    public static class DelayedResource implements Resource {
+        private final Resource delegate;
+        private final Consumer<InputStream> inputStreamInit;
+
+        public DelayedResource(Resource delegate, Consumer<InputStream> inputStreamInit) {
+            this.delegate = delegate;
+            this.inputStreamInit = inputStreamInit;
+        }
+
+        @Override
+        public InputStream getInputStream() throws IOException {
+            InputStream is = delegate.getInputStream();
+            inputStreamInit.accept(is);
+            return is;
+        }
+
+        @Override
+        public boolean exists() {
+            return delegate.exists();
+        }
+
+        @Override
+        public URL getURL() throws IOException {
+            return delegate.getURL();
+        }
+
+        @Override
+        public URI getURI() throws IOException {
+            return delegate.getURI();
+        }
+
+        @Override
+        public File getFile() throws IOException {
+            return delegate.getFile();
+        }
+
+        @Override
+        public long contentLength() throws IOException {
+            return delegate.contentLength();
+        }
+
+        @Override
+        public long lastModified() throws IOException {
+            return delegate.lastModified();
+        }
+
+        @Override
+        public Resource createRelative(String relativePath) throws IOException {
+            return delegate.createRelative(relativePath);
+        }
+
+        @Override
+        public String getFilename() {
+            return delegate.getFilename();
+        }
+
+        @Override
+        public String getDescription() {
+            return delegate.getDescription();
+        }
+    }
+
     public static class MonitoredInputStream extends FilterInputStream {
         private final RateLimiter rateLimiter;
         private final TransferStatus status;
