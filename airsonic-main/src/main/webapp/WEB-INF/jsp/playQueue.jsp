@@ -231,7 +231,7 @@
                       title: "<fmt:message key='personalsettings.artist'/>",
                       render(artist, type) {
                           if (type == "display" && artist != null) {
-                              return $("<span>", {title: artist, alt: artist, text: artist})[0]..outerHTML;
+                              return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
                           }
                           return artist;
                       }
@@ -242,7 +242,7 @@
                       title: "<fmt:message key='personalsettings.genre'/>",
                       render(genre, type) {
                           if (type == "display" && genre != null) {
-                              return $("<span>", {title: genre, alt: genre, text: genre})[0]..outerHTML;
+                              return $("<span>", {title: genre, alt: genre, text: genre})[0].outerHTML;
                           }
                           return genre;
                       }
