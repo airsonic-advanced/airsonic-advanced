@@ -721,7 +721,7 @@
 
   <c:if test="${model.showArtistInfo}">
     function loadArtistInfo() {
-        top.StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: mediaDir.id, maxSimilarArtists: 8, maxTopSongs: 0}));
+        top.StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: mediaDir.id, maxSimilarArtists: 8, maxTopSongs: 100}));
     }
 
     function loadArtistInfoCallback(artistInfo) {
@@ -738,7 +738,6 @@
             $("#similarArtists").html(html);
         } else {
             $('#similarArtistsContainer').hide();
-            $("#similarArtistsRadio").hide();
         }
 
         if (artistInfo.artistBio && artistInfo.artistBio.biography) {
@@ -761,6 +760,7 @@
 
         if (topSongs.length > 0 && mediaDir.contentType == 'artist') {
             $("#artistTopSongsTable_wrapper").show();
+            $("#playTopSongs").show();
         } else {
             $("#playTopSongs").hide();
             $("#artistTopSongsTable_wrapper").hide();
@@ -1150,8 +1150,10 @@
         <span id="similarArtists"></span>
     </td></tr>
     <tr><td style="text-align:center">
-        <button id="similarArtistsRadio" class="pagetype-dependent type-album type-artist" style="margin-top:1em;margin-right:0.3em;cursor:pointer" onclick="playSimilar()"><fmt:message key='main.startradio'/></button>
-        <button id="playTopSongs" class="pagetype-dependent type-artist" style="margin-top:1em;margin-left:0.3em;cursor:pointer" onclick="playAllTopSongs()"><fmt:message key='main.playtopsongs'/></button>
+        <div>
+            <div class="pagetype-dependent type-album type-artist" style="display: inline-block"><button id="similarArtistsRadio" style="margin-top:1em;margin-right:0.3em;cursor:pointer" onclick="playSimilar()"><fmt:message key='main.startradio'/></button></div>
+            <div class="pagetype-dependent type-artist" style="display: inline-block"><button id="playTopSongs" style="margin-top:1em;margin-left:0.3em;cursor:pointer" onclick="playAllTopSongs()"><fmt:message key='main.playtopsongs'/></button></div>
+        </div>
     </td></tr>
     <tr><td style="height: 100%"></td></tr>
 </table>
