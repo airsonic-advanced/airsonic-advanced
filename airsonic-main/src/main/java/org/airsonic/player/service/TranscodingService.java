@@ -176,7 +176,8 @@ public class TranscodingService {
      * Creates parameters for a possibly transcoded or downsampled input stream for the given media file and player combination.
      * <p/>
      * A transcoding is applied if it is applicable for the format of the given file, and is activated for the
-     * given player.
+     * given player and either the desired format or bitrate needs changing or only a section of the file should be
+     * returned.
      * <p/>
      * If no transcoding is applicable, the file may still be downsampled, given that the player is configured
      * with a bit rate limit which is higher than the actual bit rate of the file.
@@ -215,6 +216,10 @@ public class TranscodingService {
             }
         }
 
+        if (mediaFile.isSingleFile()) {
+            parameters.setTranscoding(insertSplit(mediaFile, parameters.getTranscoding()));
+        }
+
         parameters.setMaxBitRate(maxBitRate);
         parameters.setExpectedLength(getExpectedLength(parameters));
         parameters.setRangeAllowed(isRangeAllowed(parameters));
@@ -225,7 +230,8 @@ public class TranscodingService {
      * Returns a possibly transcoded or downsampled input stream for the given music file and player combination.
      * <p/>
      * A transcoding is applied if it is applicable for the format of the given file, and is activated for the
-     * given player.
+     * given player and either the desired format or bitrate needs changing or only a section of the file should be
+     * returned.
      * <p/>
      * If no transcoding is applicable, the file may still be downsampled, given that the player is configured
      * with a bit rate limit which is higher than the actual bit rate of the file.
@@ -295,6 +301,10 @@ public class TranscodingService {
             in = createTranscodeInputStream(transcoding.getStep3(), maxBitRate, videoTranscodingSettings, mediaFile, in);
         }
 
+        if (transcoding.getStep4() != null) {
+            in = createTranscodeInputStream(transcoding.getStep4(), maxBitRate, videoTranscodingSettings, mediaFile, in);
+        }
+
         return in;
     }
 
@@ -308,8 +318,9 @@ public class TranscodingService {
      * <li>Replacing occurrences of "%l" with the album name of the given music file.</li>
      * <li>Replacing occurrences of "%a" with the artist name of the given music file.</li>
      * <li>Replacing occurrcences of "%b" with the max bitrate.</li>
-     * <li>Replacing occurrcences of "%o" with the video time offset (used for scrubbing).</li>
-     * <li>Replacing occurrcences of "%d" with the video duration (used for HLS).</li>
+     * <li>Replacing occurrcences of "%f" with the input file format (used for indexed tracks)</li>
+     * <li>Replacing occurrcences of "%o" with the video time offset (used for scrubbing video and indexed tracks).</li>
+     * <li>Replacing occurrcences of "%d" with the video duration (used for HLS and indexed tracks).</li>
      * <li>Replacing occurrcences of "%w" with the video image width.</li>
      * <li>Replacing occurrcences of "%h" with the video image height.</li>
      * <li>Prepending the path of the transcoder directory if the transcoder is found there.</li>
@@ -322,7 +333,8 @@ public class TranscodingService {
      * @param in                       Data to feed to the process.  May be {@code null}.  @return The newly created input stream.
      */
     private TranscodeInputStream createTranscodeInputStream(String command, Integer maxBitRate,
-                                                            VideoTranscodingSettings videoTranscodingSettings, MediaFile mediaFile, InputStream in) throws IOException {
+                                                            VideoTranscodingSettings videoTranscodingSettings, MediaFile mediaFile,
+                                                            InputStream in) throws IOException {
 
         String title = mediaFile.getTitle();
         String album = mediaFile.getAlbumName();
@@ -345,6 +357,10 @@ public class TranscodingService {
 
         for (int i = 1; i < result.size(); i++) {
             String cmd = result.get(i);
+
+            if (cmd.contains("%f")) {
+                cmd = cmd.replace("%f", mediaFile.getFormat());
+            }
             if (cmd.contains("%b")) {
                 cmd = cmd.replace("%b", String.valueOf(maxBitRate));
             }
@@ -357,11 +373,19 @@ public class TranscodingService {
             if (cmd.contains("%a")) {
                 cmd = cmd.replace("%a", artist);
             }
-            if (cmd.contains("%o") && videoTranscodingSettings != null) {
-                cmd = cmd.replace("%o", String.valueOf(videoTranscodingSettings.getTimeOffset()));
+            if (cmd.contains("%d")) {
+                if (videoTranscodingSettings != null) {
+                    cmd = cmd.replace("%d", String.valueOf(videoTranscodingSettings.getDuration()));
+                } else {
+                    cmd = cmd.replace("%d", String.valueOf(mediaFile.getDuration()));
+                }
             }
-            if (cmd.contains("%d") && videoTranscodingSettings != null) {
-                cmd = cmd.replace("%d", String.valueOf(videoTranscodingSettings.getDuration()));
+            if (cmd.contains("%o")) {
+                if (videoTranscodingSettings != null) {
+                    cmd = cmd.replace("%o", String.valueOf(videoTranscodingSettings.getTimeOffset()));
+                } else {
+                    cmd = cmd.replace("%o", String.valueOf(mediaFile.getStartPosition()));
+                }
             }
             if (cmd.contains("%w") && videoTranscodingSettings != null) {
                 cmd = cmd.replace("%w", String.valueOf(videoTranscodingSettings.getWidth()));
@@ -395,52 +419,69 @@ public class TranscodingService {
      * transcoding should be done.
      */
     private Transcoding getTranscoding(MediaFile mediaFile, Player player, String preferredTargetFormat, boolean hls) {
-
-        if (hls) {
-            return new Transcoding(null, "hls", mediaFile.getFormat(), "ts", settingsService.getHlsCommand(), null, null, true);
-        }
-
-        if (FORMAT_RAW.equals(preferredTargetFormat)) {
-            return null;
-        }
-
-        List<Transcoding> applicableTranscodings = new LinkedList<Transcoding>();
+        Transcoding transcoding = null;
         String suffix = mediaFile.getFormat();
 
-        // This is what I'd like todo, but this will most likely break video transcoding as video transcoding is
-        // never expected to be null
-//        if(StringUtils.equalsIgnoreCase(preferredTargetFormat, suffix)) {
-//            LOG.debug("Target formats are the same, returning no transcoding");
-//            return null;
-//        }
+        if (hls) {
+            // HLS can not be combined with cue-indexed files
+            transcoding = new Transcoding(null, "hls", mediaFile.getFormat(), "ts", settingsService.getHlsCommand(), null, null, true);
+        } else {
+            if (FORMAT_RAW.equals(preferredTargetFormat)) {
+                // RAW and cue-indexed files can be combined since the split command does not re-encode audio or video
+                transcoding = null;
+            } else {
 
-        List<Transcoding> transcodingsForPlayer = getTranscodingsForPlayer(player);
-        for (Transcoding transcoding : transcodingsForPlayer) {
-            // special case for now as video must have a transcoding
-            if (mediaFile.isVideo() && StringUtils.equalsIgnoreCase(preferredTargetFormat, transcoding.getTargetFormat())) {
-                LOG.debug("Detected source to target format match for video");
-                return transcoding;
-            }
-            for (String sourceFormat : transcoding.getSourceFormatsAsArray()) {
-                if (sourceFormat.equalsIgnoreCase(suffix)) {
-                    if (isTranscodingInstalled(transcoding)) {
-                        applicableTranscodings.add(transcoding);
+                List<Transcoding> applicableTranscodings = new LinkedList<Transcoding>();
+
+                List<Transcoding> transcodingsForPlayer = getTranscodingsForPlayer(player);
+                for (Transcoding tr : transcodingsForPlayer) {
+                    // special case for now as video must have a transcoding
+                    if (mediaFile.isVideo() && tr.getTargetFormat().equalsIgnoreCase(preferredTargetFormat) && isTranscodingInstalled(tr)) {
+                        LOG.debug("Detected source to target format match for video");
+                        applicableTranscodings.add(tr);
+                        break;
+                    }
+                    for (String sourceFormat : tr.getSourceFormatsAsArray()) {
+                        if (sourceFormat.equalsIgnoreCase(suffix) && isTranscodingInstalled(tr)) {
+                            applicableTranscodings.add(tr);
+                        }
+                    }
+                }
+
+                if (!applicableTranscodings.isEmpty()) {
+                    for (Transcoding tr : applicableTranscodings) {
+                        if (tr.getTargetFormat().equalsIgnoreCase(preferredTargetFormat)) {
+                            transcoding = tr;
+                            break;
+                        }
+                    }
+
+                    if (transcoding == null) {
+                        transcoding = applicableTranscodings.get(0);
                     }
                 }
             }
         }
 
-        if (applicableTranscodings.isEmpty()) {
-            return null;
+        return transcoding;
+    }
+
+    /**
+     * Returns a transcoding with a split command as the first step, moving any existing steps down the line
+     * @param mediaFile                The media file.
+     * @param transcoding              The transcoding into which a split command is to be inserted (may be {@code null})
+     * @return a transcoding with a split command as the first step followed by up to 3 following steps from the input transcoding
+     */
+    private Transcoding insertSplit(MediaFile mediaFile, Transcoding transcoding) {
+        if (transcoding != null) {
+            transcoding = new Transcoding(null, transcoding.getName(), transcoding.getSourceFormats(), transcoding.getTargetFormat(),
+                settingsService.getSplitCommand(), transcoding.getStep1(), transcoding.getStep2(), transcoding.getStep3(), true);
+        } else {
+            String suffix = mediaFile.getFormat();
+            transcoding = new Transcoding(null, "split", suffix, suffix, settingsService.getSplitCommand(), null, null, true);
         }
 
-        for (Transcoding transcoding : applicableTranscodings) {
-            if (transcoding.getTargetFormat().equalsIgnoreCase(preferredTargetFormat)) {
-                return transcoding;
-            }
-        }
-
-        return applicableTranscodings.get(0);
+        return transcoding;
     }
 
     /**
@@ -476,7 +517,8 @@ public class TranscodingService {
     private boolean isTranscodingInstalled(Transcoding transcoding) {
         return isTranscodingStepInstalled(transcoding.getStep1()) &&
                 isTranscodingStepInstalled(transcoding.getStep2()) &&
-                isTranscodingStepInstalled(transcoding.getStep3());
+                isTranscodingStepInstalled(transcoding.getStep3()) &&
+                isTranscodingStepInstalled(transcoding.getStep4());
     }
 
     private boolean isTranscodingStepInstalled(String step) {
@@ -522,7 +564,7 @@ public class TranscodingService {
         Transcoding transcoding = parameters.getTranscoding();
         List<String> steps = Arrays.asList();
         if (transcoding != null) {
-            steps = Arrays.asList(transcoding.getStep3(), transcoding.getStep2(), transcoding.getStep1());
+            steps = Arrays.asList(transcoding.getStep4(), transcoding.getStep3(), transcoding.getStep2(), transcoding.getStep1());
         } else if (parameters.isDownsample()) {
             steps = Arrays.asList(settingsService.getDownsamplingCommand());
         } else {

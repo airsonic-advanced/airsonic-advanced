@@ -96,6 +96,7 @@ public class MusicFolderSettingsController {
         command.setNewMusicFolder(new MusicFolderSettingsCommand.MusicFolderInfo());
         command.setExcludePatternString(settingsService.getExcludePatternString());
         command.setIgnoreSymLinks(settingsService.getIgnoreSymLinks());
+        command.setHideSingleFileAlbumFiles(settingsService.getHideSingleFileAlbumFiles());
         command.setFullScan(settingsService.getFullScan());
         command.setClearFullScanSettingAfterScan(!settingsService.getFullScan() ? settingsService.getFullScan() : settingsService.getClearFullScanSettingAfterScan());
 
@@ -155,6 +156,7 @@ public class MusicFolderSettingsController {
         settingsService.setOrganizeByFolderStructure(command.isOrganizeByFolderStructure());
         settingsService.setExcludePatternString(command.getExcludePatternString());
         settingsService.setIgnoreSymLinks(command.getIgnoreSymLinks());
+        settingsService.setHideSingleFileAlbumFiles(command.getHideSingleFileAlbumFiles());
         settingsService.setFullScan(command.getFullScan());
         settingsService.setClearFullScanSettingAfterScan(!command.getFullScan() ? command.getFullScan() : command.getClearFullScanSettingAfterScan());
         settingsService.save();

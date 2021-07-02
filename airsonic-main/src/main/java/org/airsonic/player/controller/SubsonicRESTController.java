@@ -1288,12 +1288,14 @@ public class SubsonicRESTController {
             }
             switch (mediaFile.getMediaType()) {
                 case MUSIC:
+                case MUSIC_SINGLE_FILE:
                     child.setType(org.subsonic.restapi.MediaType.MUSIC);
                     break;
                 case PODCAST:
                     child.setType(org.subsonic.restapi.MediaType.PODCAST);
                     break;
                 case AUDIOBOOK:
+                case AUDIOBOOK_SINGLE_FILE:
                     child.setType(org.subsonic.restapi.MediaType.AUDIOBOOK);
                     break;
                 case VIDEO:
