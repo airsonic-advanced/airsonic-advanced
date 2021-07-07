@@ -385,12 +385,15 @@
                 }
             });
 
-            $("#dialog-select-playlist").dialog({resizable: true, height: 220, autoOpen: false,
+            var dialogSize = getJQueryUiDialogPlaylistSize("playQueue");
+            $("#dialog-select-playlist").dialog({resizable: true, height: dialogSize.height, width: dialogSize.width, autoOpen: false,
                 buttons: {
                     "<fmt:message key="common.cancel"/>"() {
                         $(this).dialog("close");
                     }
-                }});
+                },
+                resizeStop: function (event, ui) { setJQueryUiDialogPlaylistSize("playQueue", ui.size) }
+            });
 
             pq.createMediaElementPlayer();
             JavaJukeBox.initJavaJukeboxPlayerControlBar();
