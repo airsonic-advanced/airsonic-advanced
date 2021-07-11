@@ -433,9 +433,9 @@ public class LastFmService {
          User-contributed text is available under the Creative Commons By-SA License and may also be available under the GNU FDL.
          */
 
-        text = text.replaceAll("User-contributed text.*", "");
-        text = text.replaceAll("<a ", "<a target='_blank' ");
-        text = text.replace("\n", " ");
+        text = StringUtils.replace(text, "User-contributed text.*", "");
+        text = StringUtils.replace(text, "<a ", "<a target='_blank' ");
+        text = StringUtils.replace(text, "\n", " ");
         text = StringUtils.trimToNull(text);
 
         if (text != null && text.startsWith("This is an incorrect tag")) {
