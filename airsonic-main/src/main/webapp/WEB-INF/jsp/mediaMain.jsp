@@ -266,6 +266,9 @@
                     rowNode.find(".songIndex input").prop("checked", true);
                 }
             },
+            colReorder: true,
+            stateSave: true,
+            stateDuration: 60 * 60 * 24 * 365,
             ordering: true,
             order: [],
             //orderFixed: [ 0, 'asc' ],
@@ -344,7 +347,7 @@
                   title: "<fmt:message key='edittags.songtitle'/>",
                   render: function(title, type, row) {
                       if (type == "display" && title != null) {
-                          return "<span title='" + title + "' + alt='" + title + "'>" + title + "</span>";
+                          return $("<span>", {title: title, alt: title, text: title})[0].outerHTML;
                       }
                       return title;
                   }
@@ -355,7 +358,7 @@
                   title: "<fmt:message key='personalsettings.album'/>",
                   render: function(album, type, row) {
                       if (type == "display" && album != null) {
-                          return "<span title='" + album + "' + alt='" + album + "'>" + album + "</span>";
+                          return $("<span>", {title: album, alt: album, text: album})[0].outerHTML;
                       }
                       return album;
                   }
@@ -366,7 +369,7 @@
                   title: "<fmt:message key='personalsettings.artist'/>",
                   render: function(artist, type) {
                       if (type == "display" && artist != null) {
-                          return "<span title='" + artist + "' + alt='" + artist + "'>" + artist + "</span>";
+                          return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
                       }
                       return artist;
                   }
@@ -377,7 +380,7 @@
                   title: "<fmt:message key='personalsettings.genre'/>",
                   render: function(genre, type) {
                       if (type == "display" && genre != null) {
-                          return "<span title='" + genre + "' + alt='" + genre + "'>" + genre + "</span>";
+                          return $("<span>", {title: genre, alt: genre, text: genre})[0].outerHTML;
                       }
                       return genre;
                   }
@@ -464,7 +467,7 @@
                           if (entryType == 'VIDEO') {
                               media += " " + row.dimensions
                           }
-                          return "<span title='" + media + "' + alt='" + media + "'>" + media + "</span>";
+                          return $("<span>", {title: media, alt: media, text: media})[0].outerHTML;
                       }
                       return entryType;
                   }
@@ -496,6 +499,9 @@
         /** SUBDIRS **/
         subDirsTable = $("#subDirsTable").DataTable( {
             deferRender: true,
+            colReorder: true,
+            stateSave: true,
+            stateDuration: 60 * 60 * 24 * 365,
             ordering: true,
             order: [],
             orderFixed: [ 0, 'asc' ],
@@ -553,7 +559,7 @@
                   className: "detail songTitle truncate",
                   render: function(title, type, row) {
                       if (type == "display" && title != null) {
-                          return "<a href='#' title='" + title + "' + alt='" + title + "'>" + title + "</a>";
+                          return $("<a>", {title: title, alt: title, text: title, href: "#"})[0].outerHTML;
                       }
                       return title;
                   }
@@ -578,6 +584,9 @@
         /** ARTIST TOP SONGS **/
         artistTopSongsTable = $("#artistTopSongsTable").DataTable( {
             deferRender: true,
+            colReorder: true,
+            stateSave: true,
+            stateDuration: 60 * 60 * 24 * 365,
             ordering: true,
             order: [],
             orderFixed: [ 0, 'asc' ],
@@ -632,7 +641,7 @@
                   className: "detail songTitle truncate",
                   render: function(title, type, row) {
                       if (type == "display" && title != null) {
-                          return $("<span>").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
+                          return $("<span>", {title: title, alt: title, text: title})[0].outerHTML;
                       }
                       return title;
                   }
@@ -641,7 +650,7 @@
                   className: "detail truncate",
                   render: function(album, type, row) {
                       if (type == "display" && album != null) {
-                          return $("<a>").attr("href", "main.view?id=" + row.id).attr("target", "main").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
+                          return $("<a>", {title: album, alt: album, text: album, target: "main"}).attr("href", "main.view?id=" + row.id)[0].outerHTML;
                       }
                       return album;
                   }
@@ -650,7 +659,7 @@
                   className: "detail truncate",
                   render: function(artist, type, row) {
                       if (type == "display" && artist != null) {
-                          return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
+                          return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
                       }
                       return artist;
                   }
@@ -712,7 +721,7 @@
 
   <c:if test="${model.showArtistInfo}">
     function loadArtistInfo() {
-        top.StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: mediaDir.id, maxSimilarArtists: 8, maxTopSongs: 0}));
+        top.StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: mediaDir.id, maxSimilarArtists: 8, maxTopSongs: 100}));
     }
 
     function loadArtistInfoCallback(artistInfo) {
@@ -729,7 +738,6 @@
             $("#similarArtists").html(html);
         } else {
             $('#similarArtistsContainer').hide();
-            $("#similarArtistsRadio").hide();
         }
 
         if (artistInfo.artistBio && artistInfo.artistBio.biography) {
@@ -752,6 +760,7 @@
 
         if (topSongs.length > 0 && mediaDir.contentType == 'artist') {
             $("#artistTopSongsTable_wrapper").show();
+            $("#playTopSongs").show();
         } else {
             $("#playTopSongs").hide();
             $("#artistTopSongsTable_wrapper").hide();
@@ -1141,8 +1150,10 @@
         <span id="similarArtists"></span>
     </td></tr>
     <tr><td style="text-align:center">
-        <button id="similarArtistsRadio" class="pagetype-dependent type-album type-artist" style="margin-top:1em;margin-right:0.3em;cursor:pointer" onclick="playSimilar()"><fmt:message key='main.startradio'/></button>
-        <button id="playTopSongs" class="pagetype-dependent type-artist" style="margin-top:1em;margin-left:0.3em;cursor:pointer" onclick="playAllTopSongs()"><fmt:message key='main.playtopsongs'/></button>
+        <div>
+            <div class="pagetype-dependent type-album type-artist" style="display: inline-block"><button id="similarArtistsRadio" style="margin-top:1em;margin-right:0.3em;cursor:pointer" onclick="playSimilar()"><fmt:message key='main.startradio'/></button></div>
+            <div class="pagetype-dependent type-artist" style="display: inline-block"><button id="playTopSongs" style="margin-top:1em;margin-left:0.3em;cursor:pointer" onclick="playAllTopSongs()"><fmt:message key='main.playtopsongs'/></button></div>
+        </div>
     </td></tr>
     <tr><td style="height: 100%"></td></tr>
 </table>

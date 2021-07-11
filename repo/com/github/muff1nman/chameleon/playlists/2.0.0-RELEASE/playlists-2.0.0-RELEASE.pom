@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>playlists</artifactId>
+    <parent>
+        <groupId>com.github.muff1nman.chameleon</groupId>
+        <artifactId>chameleon-parent</artifactId>
+        <version>2.0.0-RELEASE</version>
+    </parent>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>asx</module>
+        <module>atom</module>
+        <module>b4s</module>
+        <module>hypetape</module>
+        <module>kpl</module>
+        <module>m3u</module>
+        <module>mpcpl</module>
+        <module>pla</module>
+        <module>plist</module>
+        <module>plp</module>
+        <module>pls</module>
+        <module>rmp</module>
+        <module>rss</module>
+        <module>smil</module>
+        <module>wpl</module>
+        <module>xspf</module>
+        <module>all</module>
+    </modules>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>1.8</version>
+                    <executions>
+                        <execution>
+                            <phase>generate-sources</phase>
+                            <configuration>
+                                <target>
+                                    <property name="ant.lib.path" value="${project.basedir}/../ant-lib" />
+                                    <property name="mapping.out.dir" value="${project.build.outputDirectory}/${playlist.package}" />
+                                    <property name="src.in.dir" value="${project.build.sourceDirectory}/${playlist.package}" />
+                                    <ant antfile="${project.basedir}/../castor.xml"/>
+                                </target>
+                            </configuration>
+                            <goals>
+                                <goal>run</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.muff1nman.chameleon</groupId>
+            <artifactId>core</artifactId>
+        </dependency>
+    </dependencies>
+</project>

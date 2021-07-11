@@ -356,7 +356,7 @@ public class SecurityService implements UserDetailsService {
      * @param bytesDownloadedDelta Increment bytes downloaded count with this value.
      * @param bytesUploadedDelta   Increment bytes uploaded count with this value.
      */
-    @CacheEvict(key = "#user.username", condition = "#root.args[0]==null")
+    @CacheEvict(key = "#user.username", condition = "#user != null")
     public void updateUserByteCounts(User user, long bytesStreamedDelta, long bytesDownloadedDelta, long bytesUploadedDelta) {
         if (user == null) {
             return;

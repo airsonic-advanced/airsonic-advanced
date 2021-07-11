@@ -122,6 +122,9 @@
                         rowNode.find(".songIndex input").prop("checked", true);
                     }
                 },
+                colReorder: true,
+                stateSave: true,
+                stateDuration: 60 * 60 * 24 * 365,
                 ordering: true,
                 order: [],
                 orderFixed: [ 0, 'asc' ],
@@ -203,9 +206,9 @@
                           if (type == "display") {
                               var img = "<img class='currentImage' src=\"<spring:theme code='currentImage'/>\" alt='' style='display: none; padding-right: 0.5em' />";
                               if (playQueue.player.tech != "EXTERNAL_WITH_PLAYLIST") {
-                                  return img + $("<a>").addClass("titleUrl").attr("href", "javascript:void(0)").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
+                                  return img + $("<a>", {title: title, alt: title, text: title}).addClass("titleUrl").attr("href", "javascript:void(0)")[0].outerHTML;
                               } else {
-                                  return img + $("<span>").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
+                                  return img + $("<span>", {title: title, alt: title, text: title})[0].outerHTML;
                               }
                           }
                           return title;
@@ -217,7 +220,7 @@
                       title: "<fmt:message key='personalsettings.album'/>",
                       render(album, type, row) {
                           if (type == "display" && album != null) {
-                              return $("<a>").attr("href", row.albumUrl).attr("target", !pq.internetRadioEnabled ? "main" : "_blank").attr("rel", !pq.internetRadioEnabled ? "" : "noopener noreferrer").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
+                              return $("<a>", {title: album, alt: album, text: album}).attr("href", row.albumUrl).attr("target", !pq.internetRadioEnabled ? "main" : "_blank").attr("rel", !pq.internetRadioEnabled ? "" : "noopener noreferrer")[0].outerHTML;
                           }
                           return album;
                       }
@@ -228,7 +231,7 @@
                       title: "<fmt:message key='personalsettings.artist'/>",
                       render(artist, type) {
                           if (type == "display" && artist != null) {
-                              return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
+                              return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
                           }
                           return artist;
                       }
@@ -239,7 +242,7 @@
                       title: "<fmt:message key='personalsettings.genre'/>",
                       render(genre, type) {
                           if (type == "display" && genre != null) {
-                              return $("<span>").attr("title", genre).attr("alt", genre).text(genre)[0].outerHTML;
+                              return $("<span>", {title: genre, alt: genre, text: genre})[0].outerHTML;
                           }
                           return genre;
                       }
