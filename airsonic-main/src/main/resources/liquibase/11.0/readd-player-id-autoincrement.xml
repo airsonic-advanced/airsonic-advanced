@@ -6,7 +6,7 @@
         <preConditions onFail="HALT">
             <columnExists tableName="player" columnName="id"/>
         </preConditions>
-        <addAutoIncrement tableName="player" columnName="id" columnDataType="int" generationType="BY DEFAULT"/>
+        <addAutoIncrement tableName="player" columnName="id" columnDataType="int"/>
         <rollback></rollback>
     </changeSet>
 </databaseChangeLog>
