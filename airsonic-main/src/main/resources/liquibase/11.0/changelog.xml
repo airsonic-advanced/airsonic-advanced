@@ -13,4 +13,5 @@
     <include file="add-sonos-table-link.xml" relativeToChangelogFile="true"/>
     <include file="podcast-description-text.xml" relativeToChangelogFile="true"/>
     <include file="insert-mod-transcoding.xml" relativeToChangelogFile="true"/>
+    <include file="add-player-id-autoincrement.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
