@@ -1,9 +1,9 @@
 <databaseChangeLog
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
-    <changeSet id="readd-player-id-autoincrement" author="anon">
-        <preConditions onFail="HALT">
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <changeSet id="add-player-id-autoincrement" author="anon" dbms="hsqldb">
+        <preConditions onFail="WARN">
             <columnExists tableName="player" columnName="id"/>
         </preConditions>
         <addAutoIncrement tableName="player" columnName="id" columnDataType="int"/>
