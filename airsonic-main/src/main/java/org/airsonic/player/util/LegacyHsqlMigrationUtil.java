@@ -48,11 +48,11 @@ public class LegacyHsqlMigrationUtil {
     /**
      * Check if a HSQLDB database upgrade will occur and backups are needed.
      *
-     * DB   Driver      Likely reason                                Decision
-     * null -           new db or non-legacy                         false
-     * -    null or !2  something went wrong, we better make copies  true
-     * 1.x  2.x         this is the big upgrade                      true
-     * 2.x  2.x         already up to date                           false
+     * DB      Driver        Likely reason                                Decision
+     * null    -             new db or non-legacy                         false
+     * -       null or !2    something went wrong, we better make copies  true
+     * 2.5.1   2.5.1         already up to date                           false
+     * !2.5.1  2.5.1         this is the big upgrade                      true
      *
      * all else true (default)
      *
@@ -80,16 +80,12 @@ public class LegacyHsqlMigrationUtil {
             return true;
         }
 
-        if (currentVersion.startsWith("2.")) {
-            // If the database version is 2.x, it matches the driver major version, the upgrade should be relatively painless.
+        if (currentVersion.startsWith("2.5.1")) {
+            // If the database version is 2.5.1, it matches the driver major version, the upgrade should be relatively painless.
             LOG.debug("HSQLDB database backup not required for driver version {} connecting (and if needed, upgrading) DB version {}", currentVersion, driverVersion);
             return false;
-        } else if (currentVersion.startsWith("1.")) {
-            // If we're on a 1.x database, we're upgrading to 2.x and need to back up files.
-            LOG.info("HSQLDB database upgrade needed, from version {} to {}", currentVersion, driverVersion);
-            return true;
         } else {
-            // If this happens we're on a completely untested version and we don't know what will happen.
+            // Our DB and our driver are misaligned, we're going to upgrade: need to back up files
             LOG.warn("HSQLDB database upgrade needed, from version {} to {}", currentVersion, driverVersion);
             return true;
         }
