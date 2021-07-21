@@ -20,7 +20,6 @@
                 stateDuration: 60 * 60 * 24 * 365,
                 ordering: true,
                 order: [],
-                orderFixed: [ 0, 'asc' ],
                 orderMulti: false,
                 pageLength: ${model.initialPaginationSize},
               <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSize)) ? '' : ', '.concat(model.initialPaginationSize)}" />
@@ -44,7 +43,7 @@
                     callback({data: songs});
                 },
                 stripeClasses: ["bgcolor2", "bgcolor1"],
-                columnDefs: [{ targets: "_all", orderable: false }],
+                columnDefs: [{ targets: "_all", orderable: true }],
                 columns: [
                     { data: "seq", className: "detail fit", visible: true },
                     { data: "starred",
