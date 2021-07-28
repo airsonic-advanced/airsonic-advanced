@@ -9,6 +9,8 @@
         var playlistId = ${model.playlist.id};
         var songs = [];
 
+        let previousSortingOrder = { "col": 0, "dir": "asc", "indexes": [] };
+
         function init() {
             var ratingOnImage = "<spring:theme code='ratingOnImage'/>";
             var ratingOffImage = "<spring:theme code='ratingOffImage'/>";
@@ -284,6 +286,16 @@
                     playlistMusicTable.one( "draw", function () {
                         onRearrange(playlistMusicTable.rows().indexes().toArray());
                     });
+                    playlistMusicTable.order([0, "asc"]);
+                }
+            });
+            playlistMusicTable.on("order", (e, settings, ordArr) => {
+                if (previousSortingOrder.col !== ordArr[0].col || previousSortingOrder.dir !== ordArr[0].dir) {
+                    playlistMusicTable.order([ordArr[0].col, ordArr[0].dir]);
+                    playlistMusicTable.one( "draw", function () {
+                        onRearrange(playlistMusicTable.rows().indexes().toArray());
+                    });
+                    previousSortingOrder = { "col": ordArr[0].col, "dir": ordArr[0].dir };
                 }
             });
 
