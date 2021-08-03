@@ -144,7 +144,7 @@ public class DownloadController {
             defaultDownloadName = "download.zip";
         }
 
-        if (swr.checkNotModified(String.valueOf(response.getSize()), response.getChanged())) {
+        if (response == null || swr.checkNotModified(String.valueOf(response.getSize()), response.getChanged())) {
             return null;
         }
 

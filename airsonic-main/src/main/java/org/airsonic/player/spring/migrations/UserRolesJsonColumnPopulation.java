@@ -53,9 +53,9 @@ public class UserRolesJsonColumnPopulation implements CustomSqlChange {
         }
 
         if (conn != null) {
-            try (Statement st = conn.createStatement()) {
-                ResultSet result = st
-                        .executeQuery("select ur.username, r.name from role r, user_role ur WHERE r.id=ur.role_id");
+            try (Statement st = conn.createStatement();
+                    ResultSet result = st.executeQuery("select ur.username, r.name from role r, user_role ur WHERE r.id=ur.role_id");) {
+
                 while (result.next()) {
                     try {
                         Set<Role> userRoles = roles.computeIfAbsent(result.getString("username"), k -> new HashSet<Role>());
