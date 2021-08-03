@@ -247,12 +247,15 @@
             minBorder: 30
         });
 
-        $("#dialog-select-playlist").dialog({resizable: true, height: 350, autoOpen: false,
+        var dialogSize = getJQueryUiDialogPlaylistSize("mediaMain");
+        $("#dialog-select-playlist").dialog({resizable: true, height: dialogSize.height, width: dialogSize.width, autoOpen: false,
             buttons: {
                 "<fmt:message key="common.cancel"/>": function() {
                     $(this).dialog("close");
                 }
-            }});
+            },
+            resizeStop: function (event, ui) { setJQueryUiDialogPlaylistSize("mediaMain", ui.size) }
+        });
 
         var ratingOnImage = "<spring:theme code='ratingOnImage'/>";
         var ratingOffImage = "<spring:theme code='ratingOffImage'/>";
