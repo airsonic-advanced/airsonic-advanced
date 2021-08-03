@@ -107,7 +107,7 @@ public class PlayStatus {
             if (other.player == null || other.player.getId() != null) {
                 return false;
             }
-        } else if (!player.getId().equals(other.player.getId()))
+        } else if (other.player == null || !player.getId().equals(other.player.getId()))
             return false;
         if (transferId == null) {
             if (other.transferId != null)
