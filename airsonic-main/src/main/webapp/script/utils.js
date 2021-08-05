@@ -76,18 +76,18 @@ function formatDuration(seconds) {
 }
 
 function getJQueryUiDialogPlaylistSize(origin) {
-    var width = window.localStorage.getItem("dialog-select-playlist-" + origin + "-width");
-    var height = window.localStorage.getItem("dialog-select-playlist-" + origin + "-height");
-    if (!width) {
-        width = 300;
+    var size = null;
+    if (window && window.localStorage) {
+        size = JSON.parse(window.localStorage.getItem("jqueryui-dialog-select-playlist-size-" + origin));
     }
-    if (!height) {
-        height = 250;
+    if (!size) {
+        size = {width: 300, height: 250};
     }
-    return {width: width, height: height};
+    return size;
 }
 
 function setJQueryUiDialogPlaylistSize(origin, size) {
-    window.localStorage.setItem("dialog-select-playlist-" + origin + "-width", parseInt(size.width));
-    window.localStorage.setItem("dialog-select-playlist-" + origin + "-height", parseInt(size.height));
+    if (window && window.localStorage) {
+        window.localStorage.setItem("jqueryui-dialog-select-playlist-size-" + origin, JSON.stringify({width: parseInt(size.width), height: parseInt(size.height)}));
+    }
 }
