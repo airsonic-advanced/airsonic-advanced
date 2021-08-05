@@ -1075,7 +1075,6 @@
                 this.createNotification(song);
             } else if (Notification.permission !== 'denied') {
                 Notification.requestPermission(function (permission) {
-                    Notification.permission = permission;
                     if (permission === "granted") {
                         this.createNotification(song);
                     }
