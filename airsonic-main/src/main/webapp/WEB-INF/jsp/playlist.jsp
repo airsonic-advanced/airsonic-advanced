@@ -22,6 +22,9 @@
                 stateDuration: 60 * 60 * 24 * 365,
                 ordering: true,
                 order: [],
+              <c:if test="${!model.editAllowed}">
+                orderFixed: [ 0, 'asc' ],
+              </c:if>
                 orderMulti: false,
                 pageLength: ${model.initialPaginationSize},
               <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSize)) ? '' : ', '.concat(model.initialPaginationSize)}" />
@@ -45,7 +48,14 @@
                     callback({data: songs});
                 },
                 stripeClasses: ["bgcolor2", "bgcolor1"],
+              <c:choose>
+                <c:when test="${model.editAllowed}">
                 columnDefs: [{ targets: "_all", orderable: true }],
+                </c:when>
+                <c:otherwise>
+                columnDefs: [{ targets: "_all", orderable: false }],
+                </c:otherwise>
+              </c:choose>
                 columns: [
                     { data: "seq", className: "detail fit", visible: true },
                     { data: "starred",
