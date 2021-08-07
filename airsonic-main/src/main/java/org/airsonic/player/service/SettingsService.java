@@ -69,6 +69,7 @@ public class SettingsService {
     // Global settings.
     private static final String KEY_INDEX_STRING = "IndexString";
     private static final String KEY_IGNORED_ARTICLES = "IgnoredArticles";
+    private static final String KEY_GENRE_SEPARATORS = "GenreSeparators";
     private static final String KEY_SHORTCUTS = "Shortcuts";
     private static final String KEY_PLAYLIST_FOLDER = "PlaylistFolder";
     private static final String KEY_MUSIC_FILE_TYPES = "MusicFileTypes";
@@ -160,6 +161,7 @@ public class SettingsService {
     private static final String DEFAULT_JWT_KEY = null;
     private static final String DEFAULT_INDEX_STRING = "A B C D E F G H I J K L M N O P Q R S T U V W X-Z(XYZ)";
     private static final String DEFAULT_IGNORED_ARTICLES = "The El La Los Las Le Les";
+    private static final String DEFAULT_GENRE_SEPARATORS = ";";
     private static final String DEFAULT_SHORTCUTS = "New Incoming Podcast";
     private static final String DEFAULT_PLAYLIST_FOLDER = Util.getDefaultPlaylistFolder();
     private static final String DEFAULT_MUSIC_FILE_TYPES = "mp3 ogg oga aac m4a m4b flac wav wma aif aiff ape mpc shn mka opus alm 669 mdl far xm mod fnk imf it liq wow mtm ptm rtm stm s3m ult dmf dbm med okt emod sfx m15 mtn amf gdm stx gmc psm j2b umx amd rad hsc flx gtk mgt mtp";
@@ -520,6 +522,14 @@ public class SettingsService {
 
     public void setIgnoredArticles(String ignoredArticles) {
         setProperty(KEY_IGNORED_ARTICLES, ignoredArticles);
+    }
+
+    public String getGenreSeparators() {
+        return getProperty(KEY_GENRE_SEPARATORS, DEFAULT_GENRE_SEPARATORS);
+    }
+
+    public void setGenreSeparators(String genreSeparators) {
+        setProperty(KEY_GENRE_SEPARATORS, genreSeparators);
     }
 
     public String getShortcuts() {
