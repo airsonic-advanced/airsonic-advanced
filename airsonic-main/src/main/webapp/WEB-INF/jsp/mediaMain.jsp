@@ -485,7 +485,7 @@
              filesTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
         } );
         $("#filesTable tbody").on( "click", ".starSong", function () {
-            onStar(filesTable.row( $(this).parents('tr') ), filesTable);
+            onToggleStar(filesTable.row( $(this).parents('tr') ));
         } );
         $("#filesTable tbody").on( "click", ".playSong", function () {
             onPlay(filesTable.row( $(this).parents('tr') ));
@@ -680,7 +680,7 @@
         } );
 
         $("#artistTopSongsTable tbody").on( "click", ".starSong", function () {
-            onStar(artistTopSongsTable.row( $(this).parents('tr') ), artistTopSongsTable);
+            onToggleStar(artistTopSongsTable.row( $(this).parents('tr') ));
         } );
         $("#artistTopSongsTable tbody").on( "click", ".playSong", function () {
             playTopSong(artistTopSongsTable.row( $(this).parents('tr') ).index());
@@ -784,13 +784,13 @@
         ancestors.append(mediaDir.title);
     }
 
-    function toggleStar(status) {
+    function toggleMediaDirStar(status) {
         if (mediaDir.starred != status) {
             mediaDir.starred = status;
             if (mediaDir.starred) {
-                top.StompClient.send("/app/rate/mediafile/star", mediaDir.id);
+                top.StompClient.send("/app/rate/mediafile/star", [mediaDir.id]);
             } else {
-                top.StompClient.send("/app/rate/mediafile/unstar", mediaDir.id);
+                top.StompClient.send("/app/rate/mediafile/unstar", [mediaDir.id]);
             }
 
             updateStarImage();
@@ -805,16 +805,21 @@
         }
     }
 
-    function onStar(row, table) {
-        var data = row.data();
-        data.starred = !data.starred;
+    function onStar(table, indices, status) {
+        var ids = table.rows(indices).data().map(data => {
+            data.starred = status;
+            table.cell(data.seq, "starred:name").invalidate();
+            return data.id;
+        }).toArray();
 
-        if (data.starred) {
-            top.StompClient.send("/app/rate/mediafile/star", data.id);
+        if (status) {
+            top.StompClient.send("/app/rate/mediafile/star", ids);
         } else {
-            top.StompClient.send("/app/rate/mediafile/unstar", data.id);
+            top.StompClient.send("/app/rate/mediafile/unstar", ids);
         }
-        table.cell(row, "starred:name").invalidate();
+    }
+    function onToggleStar(row) {
+        onStar(row.table(), [row.data().seq], !row.data().starred);
     }
     function onPlay(row) {
         var data = row.data();
@@ -859,26 +864,32 @@
     /** Albums Only **/
     // actionSelected() is invoked when the users selects from the "More actions..." combo box.
     function actionSelected(id) {
-        var selectedIndexes = getSelectedIndexes();
-
         if (id == "top") {
             return;
         } else if (id == "selectAll") {
             selectAll(true);
         } else if (id == "selectNone") {
             selectAll(false);
-        } else if (id == "share" && selectedIndexes != "") {
-            location.href = "createShare.view?id=" + mediaDir.id  + "&" + selectedIndexes;
-        } else if (id == "download" && selectedIndexes != "") {
-            location.href = "download.view?id=" + mediaDir.id  + "&" + selectedIndexes;
-        } else if (id == "appendPlaylist" && selectedIndexes != "") {
+        } else if (id == "star" && (selectedIndexes = getSelectedIndexes()).length > 0) {
+            onStar(filesTable, selectedIndexes, true);
+        } else if (id == "unstar" && selectedIndexes.length > 0) {
+            onStar(filesTable, selectedIndexes, false);
+        } else if (id == "share" && selectedIndexes.length > 0) {
+            location.href = "createShare.view?id=" + mediaDir.id  + "&" + querize(selectedIndexes, "i");
+        } else if (id == "download" && selectedIndexes.length > 0) {
+            location.href = "download.view?id=" + mediaDir.id  + "&" + querize(selectedIndexes, "i");
+        } else if (id == "appendPlaylist" && selectedIndexes.length > 0) {
             onAppendPlaylist();
         }
         $("#moreActions").prop("selectedIndex", 0);
     }
 
     function getSelectedIndexes() {
-        return filesTable.rows({ selected: true }).indexes().map(function(i) { return "i=" + i; }).join("&");
+        return filesTable.rows({ selected: true }).indexes().toArray();
+    }
+
+    function querize(arr, queryVar) {
+        return arr.map(i => queryVar + "=" + i).join("&");
     }
 
     function selectAll(b) {
@@ -1033,7 +1044,7 @@
 <div style="float:left">
     <h1>
         <img id="starImage" src="<spring:theme code='ratingOffImage'/>"
-             onclick="toggleStar(!mediaDir.starred); return false;" style="cursor:pointer;height:18px;" alt="">
+             onclick="toggleMediaDirStar(!mediaDir.starred); return false;" style="cursor:pointer;height:18px;" alt="">
 
         <span id="ancestors" style="vertical-align: middle"></span>
 
@@ -1123,6 +1134,8 @@
         <option id="share">&nbsp;&nbsp;<fmt:message key="main.more.share"/></option>
     </c:if>
     <option id="appendPlaylist">&nbsp;&nbsp;<fmt:message key="playlist.append"/></option>
+    <option id="star">&nbsp;&nbsp;<fmt:message key="playlist.more.star"/></option>
+    <option id="unstar">&nbsp;&nbsp;<fmt:message key="playlist.more.unstar"/></option>
 </select>
 
 <div class="tableSpacer"></div>

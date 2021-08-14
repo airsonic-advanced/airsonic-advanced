@@ -329,7 +329,7 @@
                 pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
             } );
             $("#playQueueMusic tbody").on( "click", ".starSong", function () {
-                pq.onStar(pq.musicTable.row( $(this).parents('tr') ).index());
+                pq.onToggleStar(pq.musicTable.row( $(this).parents('tr') ).index());
             } );
             $("#playQueueMusic tbody").on( "click", ".removeSong", function () {
                 pq.onRemove(pq.musicTable.row( $(this).parents('tr') ).index());
@@ -873,18 +873,23 @@
         onShuffle() {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/shuffle", "");
         },
-        onStar(index) {
-            this.songs[index].starred = !this.songs[index].starred;
-
-            if (this.songs[index].starred) {
-                top.StompClient.send("/app/rate/mediafile/star", this.songs[index].id);
+        onStar(indices, status) {
+            var par = this;
+            var ids = indices.map(index => {
+                par.songs[index].starred = status;
+                par.musicTable.cell(index, "starred:name").invalidate();
+                return par.songs[index].id;
+            });
+            
+            if (status) {
+                top.StompClient.send("/app/rate/mediafile/star", ids);
             } else {
-                top.StompClient.send("/app/rate/mediafile/unstar", this.songs[index].id);
+                top.StompClient.send("/app/rate/mediafile/unstar", ids);
             }
-            this.musicTable.cell(index, "starred:name").invalidate();
+            
         },
-        onStarCurrent() {
-            this.onStar(this.currentSongIndex);
+        onToggleStar(index) {
+            this.onStar([index], !this.songs[index].starred);
         },
         onRemove(index) {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/remove", JSON.stringify([index]));
@@ -1108,7 +1113,6 @@
 
         <!-- actionSelected() is invoked when the users selects from the "More actions..." combo box. -->
         actionSelected(id) {
-            var selectedIndexes = this.getSelectedIndexes();
             if (id == "top") {
                 return;
             } else if (id == "savePlayQueue") {
@@ -1120,7 +1124,7 @@
             } else if (id == "downloadPlaylist") {
                 location.href = "download.view?player=" + this.player.id;
             } else if (id == "sharePlaylist") {
-                parent.frames.main.location.href = "createShare.view?player=" + this.player.id + "&" + selectedIndexes;
+                parent.frames.main.location.href = "createShare.view?player=" + this.player.id + "&" + this.querize(this.getSelectedIndexes(), "i");
             } else if (id == "sortByTrack") {
                 this.onSortByTrack();
             } else if (id == "sortByArtist") {
@@ -1133,16 +1137,22 @@
                 this.selectAll(false);
             } else if (id == "removeSelected") {
                 this.onRemoveSelected();
-            } else if (id == "download" && selectedIndexes != "") {
-                location.href = "download.view?player=" + this.player.id + "&" + selectedIndexes;
-            } else if (id == "appendPlaylist" && selectedIndexes != "") {
+            } else if (id == "star" && (selectedIndexes = this.getSelectedIndexes()).length > 0) {
+                this.onStar(selectedIndexes, true);
+            } else if (id == "unstar" && selectedIndexes.length > 0) {
+                this.onStar(selectedIndexes, false);
+            } else if (id == "download" && selectedIndexes.length > 0) {
+                location.href = "download.view?player=" + this.player.id + "&" + querize(selectedIndexes, "i");
+            } else if (id == "appendPlaylist" && selectedIndexes.length > 0) {
                 this.onAppendPlaylist();
             }
             $("#moreActions").prop("selectedIndex", 0);
         },
-
         getSelectedIndexes() {
-            return this.musicTable.rows({ selected: true }).indexes().map(function(i) { return "i=" + i; }).join("&");
+            return this.musicTable.rows({ selected: true }).indexes().toArray();
+        },
+        querize(arr, queryVar) {
+            return arr.map(i => queryVar + "=" + i).join("&");
         },
 
         selectAll(b) {
@@ -1306,6 +1316,8 @@
                     <option id="download"><fmt:message key="common.download"/></option>
                   </c:if>
                     <option id="appendPlaylist"><fmt:message key="playlist.append"/></option>
+                    <option id="star"><fmt:message key="playlist.more.star"/></option>
+                    <option id="unstar"><fmt:message key="playlist.more.unstar"/></option>
                 </optgroup>
             </select>
         </span>

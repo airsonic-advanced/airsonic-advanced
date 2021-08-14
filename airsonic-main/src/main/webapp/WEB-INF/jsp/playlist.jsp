@@ -376,9 +376,9 @@
             songs[index].starred = !songs[index].starred;
 
             if (songs[index].starred) {
-                top.StompClient.send("/app/rate/mediafile/star", songs[index].id);
+                top.StompClient.send("/app/rate/mediafile/star", [songs[index].id]);
             } else {
-                top.StompClient.send("/app/rate/mediafile/unstar", songs[index].id);
+                top.StompClient.send("/app/rate/mediafile/unstar", [songs[index].id]);
             }
             playlistMusicTable.cell(index, "starred:name").invalidate();
         }
