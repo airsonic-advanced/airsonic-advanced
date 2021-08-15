@@ -882,9 +882,9 @@
             });
             
             if (status) {
-                top.StompClient.send("/app/rate/mediafile/star", ids);
+                top.StompClient.send("/app/rate/mediafile/star", JSON.stringify(ids));
             } else {
-                top.StompClient.send("/app/rate/mediafile/unstar", ids);
+                top.StompClient.send("/app/rate/mediafile/unstar", JSON.stringify(ids));
             }
             
         },
@@ -1020,6 +1020,8 @@
             $("select#moreActions #removeSelected").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #download").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #appendPlaylist").prop("disabled", this.internetRadioEnabled);
+            $("select#moreActions #star").prop("disabled", this.internetRadioEnabled);
+            $("select#moreActions #unstar").prop("disabled", this.internetRadioEnabled);
             $("#shuffleQueue").toggleLink(!this.internetRadioEnabled);
             $("#repeatQueue").toggleLink(!this.internetRadioEnabled);
             $("#undoQueue").toggleLink(!this.internetRadioEnabled);
@@ -1113,6 +1115,7 @@
 
         <!-- actionSelected() is invoked when the users selects from the "More actions..." combo box. -->
         actionSelected(id) {
+            var selectedIndexes;
             if (id == "top") {
                 return;
             } else if (id == "savePlayQueue") {
@@ -1137,7 +1140,7 @@
                 this.selectAll(false);
             } else if (id == "removeSelected") {
                 this.onRemoveSelected();
-            } else if (id == "star" && (selectedIndexes = this.getSelectedIndexes()).length > 0) {
+            } else if ((selectedIndexes = this.getSelectedIndexes()).length > 0 && id == "star") { // define selectedIndexes first so it always evaluates
                 this.onStar(selectedIndexes, true);
             } else if (id == "unstar" && selectedIndexes.length > 0) {
                 this.onStar(selectedIndexes, false);

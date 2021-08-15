@@ -788,9 +788,9 @@
         if (mediaDir.starred != status) {
             mediaDir.starred = status;
             if (mediaDir.starred) {
-                top.StompClient.send("/app/rate/mediafile/star", [mediaDir.id]);
+                top.StompClient.send("/app/rate/mediafile/star", JSON.stringify([mediaDir.id]));
             } else {
-                top.StompClient.send("/app/rate/mediafile/unstar", [mediaDir.id]);
+                top.StompClient.send("/app/rate/mediafile/unstar", JSON.stringify([mediaDir.id]));
             }
 
             updateStarImage();
@@ -813,9 +813,9 @@
         }).toArray();
 
         if (status) {
-            top.StompClient.send("/app/rate/mediafile/star", ids);
+            top.StompClient.send("/app/rate/mediafile/star", JSON.stringify(ids));
         } else {
-            top.StompClient.send("/app/rate/mediafile/unstar", ids);
+            top.StompClient.send("/app/rate/mediafile/unstar", JSON.stringify(ids));
         }
     }
     function onToggleStar(row) {
@@ -864,13 +864,14 @@
     /** Albums Only **/
     // actionSelected() is invoked when the users selects from the "More actions..." combo box.
     function actionSelected(id) {
+        var selectedIndexes;
         if (id == "top") {
             return;
         } else if (id == "selectAll") {
             selectAll(true);
         } else if (id == "selectNone") {
             selectAll(false);
-        } else if (id == "star" && (selectedIndexes = getSelectedIndexes()).length > 0) {
+        } else if ((selectedIndexes = getSelectedIndexes()).length > 0 && id == "star") {
             onStar(filesTable, selectedIndexes, true);
         } else if (id == "unstar" && selectedIndexes.length > 0) {
             onStar(filesTable, selectedIndexes, false);
