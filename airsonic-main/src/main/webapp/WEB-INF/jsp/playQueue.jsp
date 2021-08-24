@@ -919,7 +919,7 @@
         onSavePlayQueue() {
             var positionMillis = 0;
             if (this.player.tech == 'WEB') {
-                poitionMillis = Math.round(this.audioPlayer.currentTime * 1000.0);
+                positionMillis = Math.round(this.audioPlayer.currentTime * 1000.0);
             }
             top.StompClient.send("/app/playqueues/" + this.player.id + "/save", JSON.stringify({index: this.currentSongIndex, offset: positionMillis}));
         },
