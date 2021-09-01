@@ -23,6 +23,7 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.util.Util;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
@@ -30,6 +31,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -158,9 +160,7 @@ public class ListenBrainzScrobbler {
 
         String json = Util.toJson(content);
 
-        executeJsonPostRequest(registrationData.url, registrationData.token, json);
-
-        return true;
+        return executeJsonPostRequest(registrationData.url, registrationData.token, json);
     }
 
     private boolean executeJsonPostRequest(String url, String token, String json) throws ClientProtocolException, IOException {
@@ -169,13 +169,18 @@ public class ListenBrainzScrobbler {
         request.setHeader("Authorization", "token " + token);
         request.setHeader("Content-type", "application/json; charset=utf-8");
 
-        executeRequest(request);
-        return true;
+        return executeRequest(request);
     }
 
-    private void executeRequest(HttpUriRequest request) throws ClientProtocolException, IOException {
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
-            client.execute(request);
+    private boolean executeRequest(HttpUriRequest request) throws ClientProtocolException, IOException {
+        try (CloseableHttpClient client = HttpClients.createDefault();
+                CloseableHttpResponse resp = client.execute(request);) {
+            boolean ok = resp.getStatusLine().getStatusCode() == 200;
+            if (!ok) {
+                LOG.warn("Failed to execute ListenBrainz request: {}", resp.getEntity().toString());
+            }
+
+            return ok;
         }
     }
 
