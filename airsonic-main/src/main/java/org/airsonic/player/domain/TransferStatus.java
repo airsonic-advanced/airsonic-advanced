@@ -249,17 +249,17 @@ public class TransferStatus {
      * A sample containing a timestamp and the number of bytes transferred up to that point in time.
      */
     public static class Sample {
-        private long bytesTransfered;
+        private long bytesTransferred;
         private long timestamp;
 
         /**
          * Creates a new sample.
          *
-         * @param bytesTransfered The total number of bytes transferred.
-         * @param timestamp       A point in time, in milliseconds.
+         * @param bytesTransferred The total number of bytes transferred.
+         * @param timestamp        A point in time, in milliseconds.
          */
-        public Sample(long bytesTransfered, long timestamp) {
-            this.bytesTransfered = bytesTransfered;
+        public Sample(long bytesTransferred, long timestamp) {
+            this.bytesTransferred = bytesTransferred;
             this.timestamp = timestamp;
         }
 
@@ -268,8 +268,8 @@ public class TransferStatus {
          *
          * @return The number of bytes transferred.
          */
-        public long getBytesTransfered() {
-            return bytesTransfered;
+        public long getBytesTransferred() {
+            return bytesTransferred;
         }
 
         /**

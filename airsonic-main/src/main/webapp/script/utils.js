@@ -74,3 +74,20 @@ function formatDuration(seconds) {
     if (seconds < 0) { res = '-' + res; }
     return res;
 }
+
+function getJQueryUiDialogPlaylistSize(origin) {
+    var size = null;
+    if (window && window.localStorage) {
+        size = JSON.parse(window.localStorage.getItem("jqueryui-dialog-select-playlist-size-" + origin));
+    }
+    if (!size) {
+        size = {width: 300, height: 250};
+    }
+    return size;
+}
+
+function setJQueryUiDialogPlaylistSize(origin, size) {
+    if (window && window.localStorage) {
+        window.localStorage.setItem("jqueryui-dialog-select-playlist-size-" + origin, JSON.stringify({width: parseInt(size.width), height: parseInt(size.height)}));
+    }
+}

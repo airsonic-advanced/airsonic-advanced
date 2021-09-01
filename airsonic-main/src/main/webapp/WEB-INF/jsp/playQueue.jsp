@@ -329,7 +329,7 @@
                 pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
             } );
             $("#playQueueMusic tbody").on( "click", ".starSong", function () {
-                pq.onStar(pq.musicTable.row( $(this).parents('tr') ).index());
+                pq.onToggleStar(pq.musicTable.row( $(this).parents('tr') ).index());
             } );
             $("#playQueueMusic tbody").on( "click", ".removeSong", function () {
                 pq.onRemove(pq.musicTable.row( $(this).parents('tr') ).index());
@@ -385,12 +385,15 @@
                 }
             });
 
-            $("#dialog-select-playlist").dialog({resizable: true, height: 220, autoOpen: false,
+            var dialogSize = getJQueryUiDialogPlaylistSize("playQueue");
+            $("#dialog-select-playlist").dialog({resizable: true, height: dialogSize.height, width: dialogSize.width, autoOpen: false,
                 buttons: {
                     "<fmt:message key="common.cancel"/>"() {
                         $(this).dialog("close");
                     }
-                }});
+                },
+                resizeStop: function (event, ui) { setJQueryUiDialogPlaylistSize("playQueue", ui.size) }
+            });
 
             pq.createMediaElementPlayer();
             JavaJukeBox.initJavaJukeboxPlayerControlBar();
@@ -870,18 +873,23 @@
         onShuffle() {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/shuffle", "");
         },
-        onStar(index) {
-            this.songs[index].starred = !this.songs[index].starred;
-
-            if (this.songs[index].starred) {
-                top.StompClient.send("/app/rate/mediafile/star", this.songs[index].id);
+        onStar(indices, status) {
+            var par = this;
+            var ids = indices.map(index => {
+                par.songs[index].starred = status;
+                par.musicTable.cell(index, "starred:name").invalidate();
+                return par.songs[index].id;
+            });
+            
+            if (status) {
+                top.StompClient.send("/app/rate/mediafile/star", JSON.stringify(ids));
             } else {
-                top.StompClient.send("/app/rate/mediafile/unstar", this.songs[index].id);
+                top.StompClient.send("/app/rate/mediafile/unstar", JSON.stringify(ids));
             }
-            this.musicTable.cell(index, "starred:name").invalidate();
+            
         },
-        onStarCurrent() {
-            this.onStar(this.currentSongIndex);
+        onToggleStar(index) {
+            this.onStar([index], !this.songs[index].starred);
         },
         onRemove(index) {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/remove", JSON.stringify([index]));
@@ -911,7 +919,7 @@
         onSavePlayQueue() {
             var positionMillis = 0;
             if (this.player.tech == 'WEB') {
-                poitionMillis = Math.round(this.audioPlayer.currentTime * 1000.0);
+                positionMillis = Math.round(this.audioPlayer.currentTime * 1000.0);
             }
             top.StompClient.send("/app/playqueues/" + this.player.id + "/save", JSON.stringify({index: this.currentSongIndex, offset: positionMillis}));
         },
@@ -1012,6 +1020,8 @@
             $("select#moreActions #removeSelected").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #download").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #appendPlaylist").prop("disabled", this.internetRadioEnabled);
+            $("select#moreActions #star").prop("disabled", this.internetRadioEnabled);
+            $("select#moreActions #unstar").prop("disabled", this.internetRadioEnabled);
             $("#shuffleQueue").toggleLink(!this.internetRadioEnabled);
             $("#repeatQueue").toggleLink(!this.internetRadioEnabled);
             $("#undoQueue").toggleLink(!this.internetRadioEnabled);
@@ -1072,7 +1082,6 @@
                 this.createNotification(song);
             } else if (Notification.permission !== 'denied') {
                 Notification.requestPermission(function (permission) {
-                    Notification.permission = permission;
                     if (permission === "granted") {
                         this.createNotification(song);
                     }
@@ -1106,7 +1115,7 @@
 
         <!-- actionSelected() is invoked when the users selects from the "More actions..." combo box. -->
         actionSelected(id) {
-            var selectedIndexes = this.getSelectedIndexes();
+            var selectedIndexes;
             if (id == "top") {
                 return;
             } else if (id == "savePlayQueue") {
@@ -1118,7 +1127,7 @@
             } else if (id == "downloadPlaylist") {
                 location.href = "download.view?player=" + this.player.id;
             } else if (id == "sharePlaylist") {
-                parent.frames.main.location.href = "createShare.view?player=" + this.player.id + "&" + selectedIndexes;
+                parent.frames.main.location.href = "createShare.view?player=" + this.player.id + "&" + this.querize(this.getSelectedIndexes(), "i");
             } else if (id == "sortByTrack") {
                 this.onSortByTrack();
             } else if (id == "sortByArtist") {
@@ -1131,16 +1140,22 @@
                 this.selectAll(false);
             } else if (id == "removeSelected") {
                 this.onRemoveSelected();
-            } else if (id == "download" && selectedIndexes != "") {
-                location.href = "download.view?player=" + this.player.id + "&" + selectedIndexes;
-            } else if (id == "appendPlaylist" && selectedIndexes != "") {
+            } else if ((selectedIndexes = this.getSelectedIndexes()).length > 0 && id == "star") { // define selectedIndexes first so it always evaluates
+                this.onStar(selectedIndexes, true);
+            } else if (id == "unstar" && selectedIndexes.length > 0) {
+                this.onStar(selectedIndexes, false);
+            } else if (id == "download" && selectedIndexes.length > 0) {
+                location.href = "download.view?player=" + this.player.id + "&" + querize(selectedIndexes, "i");
+            } else if (id == "appendPlaylist" && selectedIndexes.length > 0) {
                 this.onAppendPlaylist();
             }
             $("#moreActions").prop("selectedIndex", 0);
         },
-
         getSelectedIndexes() {
-            return this.musicTable.rows({ selected: true }).indexes().map(function(i) { return "i=" + i; }).join("&");
+            return this.musicTable.rows({ selected: true }).indexes().toArray();
+        },
+        querize(arr, queryVar) {
+            return arr.map(i => queryVar + "=" + i).join("&");
         },
 
         selectAll(b) {
@@ -1304,6 +1319,8 @@
                     <option id="download"><fmt:message key="common.download"/></option>
                   </c:if>
                     <option id="appendPlaylist"><fmt:message key="playlist.append"/></option>
+                    <option id="star"><fmt:message key="playlist.more.star"/></option>
+                    <option id="unstar"><fmt:message key="playlist.more.unstar"/></option>
                 </optgroup>
             </select>
         </span>

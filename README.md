@@ -66,6 +66,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
     - Ability to show and display more track fields in playlists, playqueue and file browse mode
     - Option to show header row for track fields
     - Sort tracks in browse mode (such as show most recently scanned files etc.)
+    - Star and unstar from playqueue and media browser in bulk
 - Bugfixes:
   - Several race condition fixes
   - Consistency checks and refactors

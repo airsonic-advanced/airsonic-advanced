@@ -70,6 +70,14 @@
                 <c:import url="helpToolTip.jsp"><c:param name="topic" value="ignoredarticles"/></c:import>
             </td>
         </tr>
+        
+        <tr>
+            <td><fmt:message key="generalsettings.genreseparators"/></td>
+            <td>
+                <form:input path="genreSeparators" size="70"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="genreseparators"/></c:import>
+            </td>S
+        </tr>
 
         <tr>
             <td><fmt:message key="generalsettings.shortcuts"/></td>
