@@ -79,6 +79,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Ability to use custom URLs to scrobble on ListenBrainz servers
   - Ability to use Repeat-One in play queues in web-clients
   - Sonos support: [read documentation](https://github.com/airsonic-advanced/airsonic-advanced/blob/master/SONOS.md)
+  - Chromecast support: [read details](https://github.com/airsonic-advanced/airsonic-advanced/blob/master/CHROMECAST.md)
   - Ability to upload multiple files simultaneously
   - Ability to upload and extract more archive formats:
     - rar
