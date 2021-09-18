@@ -9,9 +9,12 @@
     <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/quality/quality.min.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/quality/quality-i18n.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/chromecast/chromecast.min.js'/>"></script>
+    <script src="<c:url value='/script/mediaelement/plugins/chromecast/chromecast-i18n.js'/>"></script>
     <link rel="stylesheet" type="text/css" href="<c:url value='/style/videoPlayer.css'/>">
     <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/speed/speed.min.css'/>">
     <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/quality/quality.min.css'/>">
+    <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/chromecast/chromecast.min.css'/>">
 
     <style type="text/css">
         .ui-slider .ui-slider-handle {
@@ -42,37 +45,61 @@
                 top.StompClient.send("/app/rate/mediafile/star", mediaFileId);
             }
         }
-        var model = {
-          duration: ${empty model.video.duration ? 0: model.video.duration},
-          remoteStreamUrl: "${model.remoteStreamUrl}",
-          video_title: "${model.video.title}",
+
+        var videoModel = {
+          duration: ${empty model.video.duration ? -1 : model.video.duration},
+          videoTitle: "${model.video.title}",
           streamable: ${model.streamable},
           castable: ${model.castable},
+          streamUrls: ${sub:toJson(model.streamUrls)},
           remoteCoverArtUrl: "${model.remoteCoverArtUrl}",
-          //streamUrl: "${model.streamUrl}",
-          video_id: "${model.video.id}",
-          hide_share: ${model.user.shareRole ? 'true': 'false'},
-          hide_download: ${model.user.downloadRole ? 'true': 'false'}
+          remoteStreamUrl: "${model.remoteStreamUrl}",
+          remoteCaptionsListUrl: "${model.remoteCaptionsUrl}",
+          remoteCaptions: [],
+          currentUrl: "${model.defaultBitRate}",
+          videoId: "${model.video.id}",
+          contentType: "${model.contentType}",
+          hideShare: ${model.user.shareRole ? 'true': 'false'},
+          hideDownload: ${model.user.downloadRole ? 'true': 'false'}
         }
+
         function init() {
+            $.get(videoModel.remoteCaptionsListUrl, data => {
+                videoModel.remoteCaptions = data;
+            });
             var videoPlayer = new MediaElementPlayer("videoPlayer", {
                 alwaysShowControls: true,
                 enableKeyboard: true,
                 useDefaultControls: true,
-                features: ["speed", "quality"],
+                enableTracks: true,
+                castAppID: "4FBFE470",
+                features: ["speed", "quality", "chromecast"],
+                hls: {
+                    path: "<c:url value='/script/mediaelement/renderers/hls-1.0.10/hls.min.js'/>"
+                },
+                dash: {
+                    path: "<c:url value='/script/mediaelement/renderers/dash.all-4.0.1.min.js'/>"
+                },
                 defaultSpeed: "1.00",
                 speeds: ["8.00", "2.00", "1.50", "1.25", "1.00", "0.75", "0.5"],
                 defaultQuality: "${model.defaultBitRate}",
                 videoWidth: "100%",
                 videoHeight: "100%",
+                qualityChangeCallback: function(media, node, newQuality, url, event) {
+                    videoModel.currentUrl = newQuality;
+                },
                 success(mediaElement, originalNode, instance) {
-                    if (model.streamable) {
+                    if (videoModel.streamable) {
                         // "hack" html5 renderer and reinitialize speed
                         instance.media.rendererName = "html5";
                         instance.buildspeed(instance, instance.getElement(instance.controls), instance.getElement(instance.layers), instance.media);
                     }
-                    $("#share").on('click', () => location.href = "createShare.view?id=" + model.video_id);
-                    $("#download").on('click', () => location.href = "download.view?id=" + model.video_id);
+                    <c:if test="${model.user.shareRole}">
+                    $("#share").on('click', () => location.href = "createShare.view?id=" + videoModel.videoId);
+                    </c:if>
+                    <c:if test="${model.user.downloadRole}">
+                    $("#download").on('click', () => location.href = "download.view?id=" + videoModel.videoId);
+                    </c:if>
                     // add dimensions to playing vid
                     instance.setSrc($('#videoPlayer source[data-quality="${model.defaultBitRate}"]')[0].src);
                 }
@@ -120,7 +147,6 @@
 	<div class="back" style="float:left;padding-right:2em;margin-top:1em;"><a href="${backUrl}"><fmt:message key="common.back"/></a></div>
 	<div style="clear: both"></div>
 </div>
-<script type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
 
 </body>
 </html>

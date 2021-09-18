@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.MoreFiles;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.NetworkService;
 import org.airsonic.player.service.PlayerService;
@@ -71,6 +72,8 @@ public class VideoPlayerController {
     private SecurityService securityService;
     @Autowired
     private CaptionsController captionsController;
+    @Autowired
+    private JWTSecurityService jwtSecurityService;
 
     @GetMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -83,21 +86,21 @@ public class VideoPlayerController {
 
         Integer playerId = playerService.getPlayer(request, response).getId();
         String url = NetworkService.getBaseUrl(request);
-        String coverArtUrl = url + "coverArt.view?id=" + file.getId();
         boolean streamable = isStreamable(file);
         boolean castable = isCastable(file);
 
-        Pair<String, Map<String, String>> streamUrls = getStreamUrls(file, url, streamable, playerId);
-        List<CaptionsController.CaptionInfo> captions = captionsController.listCaptions(file);
+        Pair<String, Map<String, String>> streamUrls = getStreamUrls(file, user, url, streamable, playerId);
+        List<CaptionsController.CaptionInfo> captions = captionsController.listCaptions(file, NetworkService.getBaseUrl(request));
 
         map.put("video", file);
         map.put("streamable", streamable);
         map.put("castable", castable);
         map.put("captions", captions);
         map.put("streamUrls", streamUrls.getRight());
-        map.put("streamType", !streamable ? "application/x-mpegurl" : StringUtil.getMimeType(MoreFiles.getFileExtension(file.getFile())));
-        //map.put("remoteStreamUrl", streamUrl);
-        map.put("remoteCoverArtUrl", coverArtUrl);
+        map.put("contentType", !streamable ? "application/x-mpegurl" : StringUtil.getMimeType(MoreFiles.getFileExtension(file.getFile())));
+        map.put("remoteStreamUrl", streamUrls.getRight().get("remoteStreamUrl"));
+        map.put("remoteCoverArtUrl", url + jwtSecurityService.addJWTToken(user.getUsername(), "ext/coverArt.view?id=" + file.getId()));
+        map.put("remoteCaptionsUrl", url + jwtSecurityService.addJWTToken(user.getUsername(), "ext/captions/list?id=" + file.getId()));
         // map.put("bitRates", BIT_RATES);
         map.put("defaultBitRate", streamUrls.getLeft());
         map.put("user", user);
@@ -105,7 +108,8 @@ public class VideoPlayerController {
         return new ModelAndView("videoPlayer", "model", map);
     }
 
-    public static Pair<String, Map<String, String>> getStreamUrls(MediaFile file, String baseUrl, boolean streamable, int playerId) {
+    public Pair<String, Map<String, String>> getStreamUrls(MediaFile file, User user, String baseUrl,
+            boolean streamable, int playerId) {
         Map<String, String> streamUrls;
         String defaultBitRate;
         if (streamable) {
@@ -115,12 +119,16 @@ public class VideoPlayerController {
                             BIT_RATES.stream().sequential()
                                 .map(b -> Pair.of(b + " Kbps", streamUrlWithoutBitrates + "&format=mp4&maxBitRate=" + b)))
                     .collect(Collectors.toMap(p -> p.getLeft(), p -> p.getRight(), (a,b) -> a, () -> new LinkedHashMap<>()));
+            streamUrls.put("remoteStreamUrl", baseUrl + jwtSecurityService.addJWTToken(user.getUsername(),
+                    "ext/stream?id=" + file.getId() + "&player=" + playerId + "&format=raw"));
             defaultBitRate = "Original";
         } else {
             String streamUrlWithoutBitrates = baseUrl + "hls/hls.m3u8?id=" + file.getId() + "&player=" + playerId;
             streamUrls = BIT_RATES.stream().sequential()
                     .map(b -> Pair.of(b + " Kbps", streamUrlWithoutBitrates + "&maxBitRate=" + b))
                     .collect(Collectors.toMap(p -> p.getLeft(), p -> p.getRight(), (a,b) -> a, () -> new LinkedHashMap<>()));
+            streamUrls.put("remoteStreamUrl", baseUrl + jwtSecurityService.addJWTToken(user.getUsername(),
+                    "ext/hls/hls.m3u8?id=" + file.getId() + "&player=" + playerId)); //+ "&maxBitRate=" + DEFAULT_BIT_RATE));
             defaultBitRate = DEFAULT_BIT_RATE + " Kbps";
         }
         return Pair.of(defaultBitRate, streamUrls);
