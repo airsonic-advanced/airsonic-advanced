@@ -144,7 +144,7 @@ public class FFmpegHlsSession {
         command.add(SettingsService.resolveTranscodeExecutable("ffmpeg"));
         if (segmentIndex > 0) {
             command.add("-ss");
-            command.add(String.valueOf(segmentIndex * 10));
+            command.add(String.valueOf(segmentIndex * this.sessionKey.getDuration()));
         }
         command.add("-i");
         command.add(this.mediaFile.getPath());
@@ -152,6 +152,8 @@ public class FFmpegHlsSession {
         command.add(this.sessionKey.getSize());
         command.add("-c:v");
         command.add("libx264");
+        command.add("-flags");
+        command.add("+cgop");
         command.add("-c:a");
         command.add("aac");
         command.add("-b:v");
@@ -172,6 +174,7 @@ public class FFmpegHlsSession {
         command.add("superfast");
         if (segmentIndex > 0)
             command.add("-copyts");
+        // command.add("-pix_fmt yuv420p");
         command.add("-v");
         command.add("error");
         command.add("-force_key_frames");
@@ -179,7 +182,7 @@ public class FFmpegHlsSession {
         command.add("-start_number");
         command.add(String.valueOf(segmentIndex));
         command.add("-hls_time");
-        command.add("10");
+        command.add(this.sessionKey.getDuration().toString());
         command.add("-hls_list_size");
         command.add("0");
         command.add("-hls_segment_filename");
@@ -282,13 +285,15 @@ public class FFmpegHlsSession {
         private final String playerId;
         private final int maxBitRate;
         private final String size;
+        private final Integer duration;
         private final Integer audioTrack;
 
-        public Key(int mediaFileId, String playerId, int maxBitRate, String size, Integer audioTrack) {
+        public Key(int mediaFileId, String playerId, int maxBitRate, String size, Integer duration, Integer audioTrack) {
             this.mediaFileId = mediaFileId;
             this.playerId = playerId;
             this.maxBitRate = maxBitRate;
             this.size = size;
+            this.duration = duration;
             this.audioTrack = audioTrack;
         }
 
@@ -312,6 +317,10 @@ public class FFmpegHlsSession {
             return this.size;
         }
 
+        public Integer getDuration() {
+            return duration;
+        }
+
         public Integer getAudioTrack() {
             return this.audioTrack;
         }
@@ -327,18 +336,19 @@ public class FFmpegHlsSession {
             Key key = (Key) o;
             return this.mediaFileId == key.mediaFileId && Objects.equals(this.playerId, key.playerId)
                     && Objects.equals(this.maxBitRate, key.maxBitRate) && Objects.equals(this.size, key.size)
-                    && Objects.equals(this.audioTrack, key.audioTrack);
+                    && Objects.equals(this.audioTrack, key.audioTrack) && Objects.equals(this.duration, key.duration);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(this.mediaFileId, this.playerId, this.maxBitRate, this.size, this.audioTrack);
+            return Objects.hash(this.mediaFileId, this.playerId, this.maxBitRate, this.size, this.duration, this.audioTrack);
         }
 
         @Override
         public String toString() {
             return "{mediaFileId=" + this.mediaFileId + ", playerId='" + this.playerId + '\'' + ", maxBitRate='"
-                    + this.maxBitRate + '\'' + ", size='" + this.size + '\'' + ", audioTrack=" + this.audioTrack + '}';
+                    + this.maxBitRate + '\'' + ", size='" + this.size + '\'' + ", duration='" + this.duration + '\''
+                    + ", audioTrack=" + this.audioTrack + '}';
         }
     }
 }
