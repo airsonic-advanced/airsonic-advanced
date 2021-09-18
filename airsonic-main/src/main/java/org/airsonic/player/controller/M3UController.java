@@ -62,18 +62,18 @@ public class M3UController {
 
         Player player = playerService.getPlayer(request, response);
 
-        String url = NetworkService.getBaseUrl(request);
-        url = url + "ext/stream?";
+        String baseUrl = NetworkService.getBaseUrl(request);
+        String prefix = "ext/stream?";
 
         if (player.isExternalWithPlaylist()) {
-            createClientSidePlaylist(response.getWriter(), player, url);
+            createClientSidePlaylist(response.getWriter(), player, baseUrl, prefix);
         } else {
-            createServerSidePlaylist(response.getWriter(), player, url);
+            createServerSidePlaylist(response.getWriter(), player, baseUrl, prefix);
         }
         return null;
     }
 
-    private void createClientSidePlaylist(PrintWriter out, Player player, String url) {
+    private void createClientSidePlaylist(PrintWriter out, Player player, String baseUrl, String prefix) {
         if (player.getM3uBomEnabled()) {
             out.print("\ufeff");
         }
@@ -89,16 +89,16 @@ public class M3UController {
             }
             out.println("#EXTINF:" + duration + "," + mediaFile.getArtist() + " - " + mediaFile.getTitle());
 
-            String urlNoAuth = url + "player=" + player.getId() + "&id=" + mediaFile.getId() + "&suffix=." +
+            String urlNoAuth = prefix + "player=" + player.getId() + "&id=" + mediaFile.getId() + "&suffix=." +
                     transcodingService.getSuffix(player, mediaFile, null);
             String urlWithAuth = jwtSecurityService.addJWTToken(player.getUsername(), urlNoAuth);
-            out.println(urlWithAuth);
+            out.println(baseUrl + urlWithAuth);
         }
     }
 
-    private void createServerSidePlaylist(PrintWriter out, Player player, String url) {
+    private void createServerSidePlaylist(PrintWriter out, Player player, String baseUrl, String prefix) {
 
-        url += "player=" + player.getId();
+        String url = prefix + "player=" + player.getId();
 
         // Get suffix of current file, e.g., ".mp3".
         String suffix = getSuffix(player);
@@ -111,7 +111,7 @@ public class M3UController {
         }
         out.println("#EXTM3U");
         out.println("#EXTINF:-1,Airsonic");
-        out.println(jwtSecurityService.addJWTToken(player.getUsername(), url));
+        out.println(baseUrl + jwtSecurityService.addJWTToken(player.getUsername(), url));
     }
 
     private String getSuffix(Player player) {

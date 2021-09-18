@@ -137,11 +137,12 @@ public class ExternalPlayerController {
 
     public MediaFileWithUrlInfo addUrlInfo(HttpServletRequest request, Player player, MediaFile mediaFile, Instant expires) {
         String prefix = "ext";
+        String baseUrl = NetworkService.getBaseUrl(request);
 
         boolean streamable = true;
         String contentType = StringUtil.getMimeType(MoreFiles.getFileExtension(mediaFile.getFile()));
-        String streamUrl = jwtSecurityService.addJWTToken(User.USERNAME_GUEST,
-                UriComponentsBuilder.fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/stream")
+        String streamUrl = baseUrl + jwtSecurityService
+                .addJWTToken(User.USERNAME_GUEST, UriComponentsBuilder.fromUriString(prefix + "/stream")
                         .queryParam("id", mediaFile.getId())
                         .queryParam("player", player.getId())
                         .queryParam("format", "raw"),
@@ -150,24 +151,24 @@ public class ExternalPlayerController {
             streamable = videoPlayerController.isStreamable(mediaFile);
             if (!streamable) {
                 contentType = "application/x-mpegurl";
-                streamUrl = jwtSecurityService.addJWTToken(User.USERNAME_GUEST,
-                        UriComponentsBuilder.fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/hls/hls.m3u8")
+                streamUrl = baseUrl + jwtSecurityService
+                        .addJWTToken(User.USERNAME_GUEST, UriComponentsBuilder.fromUriString(prefix + "/hls/hls.m3u8")
                                 .queryParam("id", mediaFile.getId()).queryParam("player", player.getId())
                                 .queryParam("maxBitRate", VideoPlayerController.BIT_RATES),
                         expires).build().toUriString();
             }
         }
 
-        String captionsUrl = jwtSecurityService.addJWTToken(
+        String captionsUrl = baseUrl + jwtSecurityService.addJWTToken(
                 User.USERNAME_GUEST,
-                UriComponentsBuilder.fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/captions/list").queryParam("id", mediaFile.getId()),
+                UriComponentsBuilder.fromUriString(prefix + "/captions/list").queryParam("id", mediaFile.getId()),
                 expires)
             .build().toUriString();
 
-        String coverArtUrl = jwtSecurityService.addJWTToken(
+        String coverArtUrl = baseUrl + jwtSecurityService.addJWTToken(
                 User.USERNAME_GUEST,
                 UriComponentsBuilder
-                        .fromHttpUrl(NetworkService.getBaseUrl(request) + prefix + "/coverArt.view")
+                        .fromUriString(prefix + "/coverArt.view")
                         .queryParam("id", mediaFile.getId())
                         .queryParam("size", "500"),
                 expires)
