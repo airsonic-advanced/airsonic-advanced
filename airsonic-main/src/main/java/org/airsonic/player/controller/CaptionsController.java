@@ -8,6 +8,7 @@ import org.airsonic.player.io.InputStreamReaderThread;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.NetworkService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.metadata.MetaData;
@@ -34,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -69,15 +70,15 @@ public class CaptionsController {
     private MetaDataParserFactory metaDataParserFactory;
     @Autowired
     private JWTSecurityService jwtSecurityService;
-    @Autowired
-    private ServletContext servletContext;
 
     @GetMapping
     public ResponseEntity<Resource> handleRequest(
             Authentication authentication,
             @RequestParam int id,
             @RequestParam(required = false) String captionId,
-            @RequestParam(required = false, name = "format") String requiredFormat) throws Exception {
+            @RequestParam(required = false, name = "format") String requiredFormat,
+            HttpServletRequest request)
+            throws Exception {
 
         User user = securityService.getUserByName(authentication.getName());
         MediaFile video = this.mediaFileService.getMediaFile(id);
@@ -86,7 +87,7 @@ public class CaptionsController {
             throw new AccessDeniedException("Access to file " + id + " is forbidden for user " + user.getUsername());
         }
 
-        List<CaptionInfo> captions = listCaptions(video);
+        List<CaptionInfo> captions = listCaptions(video, NetworkService.getBaseUrl(request));
         CaptionInfo res;
         if (captionId == null) {
             res = captions.stream().findFirst().orElse(null);
@@ -179,12 +180,11 @@ public class CaptionsController {
     }
 
     @GetMapping("/list")
-    public @ResponseBody List<CaptionInfo> listCaptions(Authentication authentication, @RequestParam int id) {
+    public @ResponseBody List<CaptionInfo> listCaptions(Authentication authentication, @RequestParam int id, HttpServletRequest request) {
         MediaFile video = mediaFileService.getMediaFile(id);
         if (!(authentication instanceof JWTAuthenticationToken)
                 && !securityService.isFolderAccessAllowed(video, authentication.getName())) {
-            throw new AccessDeniedException(
-                    "Access to file " + id + " is forbidden for user " + authentication.getName());
+            throw new AccessDeniedException("Access to file " + id + " is forbidden for user " + authentication.getName());
         }
 
         String user = null;
@@ -195,14 +195,14 @@ public class CaptionsController {
             expiration = JWTSecurityService.getExpiration((JWTAuthenticationToken) authentication);
         }
 
-        return listCaptions(video, user, expiration);
+        return listCaptions(video, NetworkService.getBaseUrl(request), user, expiration);
     }
 
-    public List<CaptionInfo> listCaptions(MediaFile video) {
-        return listCaptions(video, null, null);
+    public List<CaptionInfo> listCaptions(MediaFile video, String basePath) {
+        return listCaptions(video, basePath, null, null);
     }
 
-    public List<CaptionInfo> listCaptions(MediaFile video, String externalUser, Instant externalExpiration) {
+    public List<CaptionInfo> listCaptions(MediaFile video, String basePath, String externalUser, Instant externalExpiration) {
         MetaData metaData = getVideoMetaData(video);
         Stream<CaptionInfo> internalCaptions;
         if (metaData == null || metaData.getSubtitleTracks().isEmpty()) {
@@ -214,7 +214,7 @@ public class CaptionsController {
                             CaptionInfo.Location.internal,
                             getDisplayFormat(c.getCodec()),
                             c.getLanguage(),
-                            getUrl(externalUser, externalExpiration, video.getId(),
+                            getUrl(basePath, externalUser, externalExpiration, video.getId(),
                                     String.valueOf(c.getId()))));
         }
 
@@ -223,7 +223,7 @@ public class CaptionsController {
                         CaptionInfo.Location.external,
                         MoreFiles.getFileExtension(c),
                         c.getFileName().toString(),
-                        getUrl(externalUser, externalExpiration, video.getId(),
+                        getUrl(basePath, externalUser, externalExpiration, video.getId(),
                                 URLEncoder.encode(c.toString(), StandardCharsets.UTF_8))));
 
         return Stream.concat(internalCaptions, externalCaptions).collect(Collectors.toList());
@@ -234,17 +234,17 @@ public class CaptionsController {
         return (parser != null) ? parser.getMetaData(video.getFile()) : null;
     }
 
-    public String getUrl(String externalUser, Instant externalExpiration, int mediaId, String captionId) {
+    public String getUrl(String basePath, String externalUser, Instant externalExpiration, int mediaId, String captionId) {
         boolean ext = !StringUtils.isBlank(externalUser);
         UriComponentsBuilder builder = UriComponentsBuilder
-                .fromUriString(servletContext.getContextPath() + (ext ? "/ext" : "") + "/captions")
+                .fromUriString((ext ? "ext/" : "") + "captions")
                 .queryParam("id", mediaId)
                 .queryParam("captionId", captionId);
 
         if (ext) {
             builder = jwtSecurityService.addJWTToken(externalUser, builder, externalExpiration);
         }
-        return builder.build().toUriString();
+        return basePath + builder.build().toUriString();
     }
 
     private Resource getExternalResource(Path captionsFile, String format) throws IOException {
