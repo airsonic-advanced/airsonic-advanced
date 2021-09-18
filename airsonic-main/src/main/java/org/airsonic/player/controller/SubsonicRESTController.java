@@ -1430,7 +1430,7 @@ public class SubsonicRESTController {
             return;
         }
 
-        hlsController.handleRequest(authentication, id, request, response);
+        hlsController.handleHlsRequest(authentication, id, request, response);
     }
 
     @RequestMapping("/scrobble")
