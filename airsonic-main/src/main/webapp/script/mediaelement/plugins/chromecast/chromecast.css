@@ -9,11 +9,10 @@
     background: #000;
     color: #fff;
     font-size: 10px;
-    left: 0;
     padding: 5px;
     position: absolute;
-    top: 0;
-    z-index: 1;
+    top: -20px;
+    right: 0;
 }
 
 .mejs__chromecast-layer > img,
