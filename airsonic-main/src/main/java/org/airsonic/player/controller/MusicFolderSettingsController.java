@@ -94,6 +94,7 @@ public class MusicFolderSettingsController {
         command.setScanning(mediaScannerService.isScanning());
         command.setMusicFolders(wrap(settingsService.getAllMusicFolders(true, true)));
         command.setNewMusicFolder(new MusicFolderSettingsCommand.MusicFolderInfo());
+        command.setUploadsFolder(settingsService.getUploadsFolder());
         command.setExcludePatternString(settingsService.getExcludePatternString());
         command.setIgnoreSymLinks(settingsService.getIgnoreSymLinks());
         command.setFullScan(settingsService.getFullScan());
@@ -153,12 +154,12 @@ public class MusicFolderSettingsController {
         settingsService.setIndexCreationHour(Integer.parseInt(command.getHour()));
         settingsService.setFastCacheEnabled(command.isFastCache());
         settingsService.setOrganizeByFolderStructure(command.isOrganizeByFolderStructure());
+        settingsService.setUploadsFolder(command.getUploadsFolder());
         settingsService.setExcludePatternString(command.getExcludePatternString());
         settingsService.setIgnoreSymLinks(command.getIgnoreSymLinks());
         settingsService.setFullScan(command.getFullScan());
         settingsService.setClearFullScanSettingAfterScan(!command.getFullScan() ? command.getFullScan() : command.getClearFullScanSettingAfterScan());
         settingsService.save();
-
 
         redirectAttributes.addFlashAttribute("settings_toast", true);
         redirectAttributes.addFlashAttribute("settings_reload", true);
