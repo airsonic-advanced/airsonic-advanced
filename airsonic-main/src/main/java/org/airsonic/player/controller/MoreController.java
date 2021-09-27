@@ -64,11 +64,8 @@ public class MoreController {
 
         User user = securityService.getCurrentUser(request);
 
-        String uploadDirectory = null;
+        String uploadDirectory = settingsService.resolveContextualString(settingsService.getUploadsFolder(), user.getUsername());
         List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(user.getUsername());
-        if (!musicFolders.isEmpty()) {
-            uploadDirectory = musicFolders.get(0).getPath().resolve("Incoming").toString();
-        }
 
         Player player = playerService.getPlayer(request, response);
         ModelAndView result = new ModelAndView();

@@ -79,6 +79,12 @@
     <p class="detail" style="width:60%;white-space:normal;margin-top:-10px;">
         <fmt:message key="musicfoldersettings.access.description"/>
     </p>
+    
+    <div>
+	<fmt:message key="musicfoldersettings.uploadsfolder"/>
+	<form:input path="uploadsFolder" size="70"/>
+        <c:import url="helpToolTip.jsp"><c:param name="topic" value="uploadsfolderpattern"/></c:import>
+    </div>
 
     <div>
 	<fmt:message key="musicfoldersettings.excludepattern"/>
