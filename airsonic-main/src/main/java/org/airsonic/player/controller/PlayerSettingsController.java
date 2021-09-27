@@ -19,7 +19,6 @@
  */
 package org.airsonic.player.controller;
 
-import com.github.biconou.AudioPlayer.AudioSystemUtils;
 import org.airsonic.player.command.PlayerSettingsCommand;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.service.PlayQueueService;
@@ -40,7 +39,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import javax.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -109,10 +107,6 @@ public class PlayerSettingsController {
         command.setPlayers(players.toArray(new Player[players.size()]));
         command.setAdmin(user.isAdminRole());
 
-        command.setJavaJukeboxMixers(Arrays.stream(AudioSystemUtils.listAllMixers()).map(info -> info.getName()).toArray(String[]::new));
-        if (player != null) {
-            command.setJavaJukeboxMixer(player.getJavaJukeboxMixer());
-        }
         model.addAttribute("command",command);
     }
 
@@ -152,14 +146,6 @@ public class PlayerSettingsController {
                     stopped = true;
                 }
                 player.setTechnology(PlayerTechnology.valueOf(command.getTechnologyName()));
-                update = true;
-            }
-            if (!StringUtils.equals(player.getJavaJukeboxMixer(), command.getJavaJukeboxMixer())) {
-                if (!stopped) {
-                    playQueueService.stop(player);
-                    stopped = true;
-                }
-                player.setJavaJukeboxMixer(command.getJavaJukeboxMixer());
                 update = true;
             }
 

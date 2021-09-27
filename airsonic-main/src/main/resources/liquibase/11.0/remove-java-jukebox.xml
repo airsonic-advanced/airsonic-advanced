@@ -1,0 +1,16 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="remove-player-mixer" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="player" columnName="mixer" />
+        </preConditions>
+        <dropColumn tableName="player" columnName="mixer"/>
+        <rollback changeSetId="add-player-mixer_001" changeSetAuthor="biconou" changeSetPath="classpath:liquibase/6.3/add-player-mixer.xml" />
+    </changeSet>
+    <changeSet id="convert-jukeboxes" author="anon">
+        <sql>update player set technology='JUKEBOX' where technology='JAVA_JUKEBOX'</sql>
+        <rollback />
+    </changeSet>
+</databaseChangeLog>

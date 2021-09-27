@@ -7,7 +7,6 @@
 <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
 <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
 <script type="text/javascript" src="<c:url value='/script/playQueueCast.js'/>"></script>
-<script type="text/javascript" src="<c:url value='/script/playQueue/javaJukeboxPlayerControlBar.js'/>"></script>
 <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/speed/speed.min.css'/>">
 <style type="text/css">
     .ui-slider .ui-slider-handle {
@@ -396,7 +395,6 @@
             });
 
             pq.createMediaElementPlayer();
-            JavaJukeBox.initJavaJukeboxPlayerControlBar();
             <c:if test="${model.autoHide}">pq.initAutoHide();</c:if>
             pq.onTogglePlayQueue(${!model.autoHide});
 
@@ -424,9 +422,7 @@
                   pq.unsubscribePlayerSpecificCallbacks();
                   pq.currentStreamUrl = null;
                   pq.currentSongIndex = -1;
-                  if (pq.player.tech == 'JAVA_JUKEBOX') {
-                      JavaJukeBox.reset();
-                  } else if (pq.player.tech == 'WEB') {
+                  if (pq.player.tech == 'WEB') {
                       if (this.CastPlayer.castSession) {
                           pq.CastPlayer.stopCastApp();
                       }
@@ -438,10 +434,6 @@
                   $("#playerSelector").val(player.id);
                   pq.player = player;
                   $(".player-tech-" + player.tech.toLowerCase()).show();
-                  if (player.tech == 'JAVA_JUKEBOX') {
-                      //show regular jukebox controls also
-                      $(".player-tech-jukebox").show();
-                  }
                   if (player.tech != 'WEB') {
                       $(".player-tech-non-web").show();
                   }
@@ -558,9 +550,7 @@
         },
 
         jukeBoxPositionCallback(pos) {
-            if (this.player.tech == 'JAVA_JUKEBOX') {
-                JavaJukeBox.javaJukeboxPositionCallback(pos);
-            }
+            //nothing for now
         },
         jukeBoxGainCallback(gain) {
             $("#jukeboxVolume").slider("option", "value", Math.floor(gain * 100)); // update UI
@@ -671,10 +661,6 @@
                     } else {
                         this.onSkip(0);  // Start the first track if the player was not yet loaded
                     }
-                } else {
-                    if (this.player.tech == 'JAVA_JUKEBOX') {
-                        JavaJukeBox.javaJukeboxStartCallback();
-                    }
                 }
             } else {
                 $("#audioStop").hide();
@@ -683,10 +669,6 @@
                     this.CastPlayer.pauseCast();
                 } else if (this.player.tech == 'WEB' && !nonWebOnly) {
                     this.audioPlayer.pause();
-                } else {
-                    if (this.player.tech == 'JAVA_JUKEBOX') {
-                        JavaJukeBox.javaJukeboxStopCallback();
-                    }
                 }
             }
         },
@@ -752,8 +734,6 @@
 
             if (this.player.tech == 'WEB') {
                 this.webSkip(song, location.offset / 1000);
-            } else if (this.player.tech == 'JAVA_JUKEBOX') {
-                JavaJukeBox.updateJavaJukeboxPlayerControlBar(song, location.offset / 1000);
             }
 
             this.updateWindowTitle(song);
@@ -1218,16 +1198,6 @@
         <img alt="Stop" id="audioStop" src="<spring:theme code='castPauseImage'/>" onclick="playQueue.onStop()" style="cursor:pointer; display:none">
     </div>
   </c:if>
-
-    <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
-        <span id="playingPositionDisplay" class="javaJukeBoxPlayerControlBarSongTime"></span>
-    </div>
-    <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
-        <div id="javaJukeboxSongPositionSlider"></div>
-    </div>
-    <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
-        <span id="playingDurationDisplay" class="javaJukeBoxPlayerControlBarSongTime"></span>
-    </div>
 
     <div class="player-tech player-tech-jukebox" style="white-space:nowrap;">
         <img src="<spring:theme code='volumeImage'/>" alt="">
