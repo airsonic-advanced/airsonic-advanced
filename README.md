@@ -35,7 +35,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Spring Boot 2.x (instead of 1.x), Spring Framework 5.x (instead of 4.x). Plus all the additional dependency upgrades due to the base libaries being upgraded (including EhCache, upgraded SQL connectors etc.)
 - Security
   - A completely revamped credential system that actually stores credentials securely instead of openly. Includes encryption for credentials that need to be retrievable later (such as for third-party locations) and backwards compatibility. Also includes modern password hashing algorithms such as bcrypt, Argon for password storage.
-- More compliant with web specs and utilizes frameworks to apply them instead of custom home-implemented solutions
+- Compliance: More compliant with web specs and utilizes frameworks to apply them instead of custom home-implemented solutions
   - RFC 7233 for Range headers
   - Send correct ETags and Last-Modified headers to aid in client-side caching
 - Performance enhancements
@@ -67,9 +67,11 @@ The following is an incomplete list of features that are enhanced from Airsonic:
     - Option to show header row for track fields
     - Sort tracks in browse mode (such as show most recently scanned files etc.)
     - Star and unstar from playqueue and media browser in bulk
+    - Status charts/graphs are rendered on client-side using JS library, instead of on the server
 - Bugfixes:
   - Several race condition fixes
   - Consistency checks and refactors
+  - Documentation fixes
 - Miscellaneous
   - Works with JDK14
   - Uses JSR 310 (Java time) instead of older Java packages for time/duration tracking
@@ -80,6 +82,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Ability to use Repeat-One in play queues in web-clients
   - Sonos support: [read documentation](https://github.com/airsonic-advanced/airsonic-advanced/blob/master/SONOS.md)
   - Chromecast support: [read details](https://github.com/airsonic-advanced/airsonic-advanced/blob/master/CHROMECAST.md)
+  - Ability to upload to specified folders (via `UploadsFolder` property/parameter)
   - Ability to upload multiple files simultaneously
   - Ability to upload and extract more archive formats:
     - rar
@@ -88,6 +91,8 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Ability to export Podcasts to OPML
   - Ability to import playlists with relative file paths (resolved relative to Playlists folder)
   - Support direct binary internet radio stream urls
+  - Catalog multiple genres
+  - Ability to specify custom log file location (via `logging.file.name` property/parameter)
 - Testing
   - Various fixes to make it compatible with multiple external DBs
   - Automated tests are performed against external DBs
