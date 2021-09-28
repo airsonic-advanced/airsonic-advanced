@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.logging.LogFile;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.env.Environment;
@@ -321,10 +322,10 @@ public class SettingsService {
         Map<String, Object> temp = new HashMap<>();
         // needs to be processed serially
         keyMaps.entrySet().stream()
-                // ps has the property we're trying to migrate (either directly or migrated earlier within the chain)
-                .filter(e -> StringUtils.isNotBlank(Optional.ofNullable(src.getProperty(e.getKey())).map(Object::toString).orElse(temp.getOrDefault(e.getKey(), "").toString())))
                 // we're not migrating to null, i.e. trying to delete the property
                 .filter(e -> e.getValue() != null)
+                // ps has the property we're trying to migrate (either directly or migrated earlier within the chain)
+                .filter(e -> StringUtils.isNotBlank(Optional.ofNullable(src.getProperty(e.getKey())).map(Object::toString).orElse(temp.getOrDefault(e.getKey(), "").toString())))
                 // we're not migrating to a property that is already occupied
                 .filter(e -> StringUtils.isBlank(Optional.ofNullable(src.getProperty(e.getValue())).map(Object::toString).orElse(temp.getOrDefault(e.getValue(), "").toString())))
                 .forEach(e -> {
@@ -388,6 +389,9 @@ public class SettingsService {
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER))) {
             defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER, Util.getDefaultMusicFolder());
         }
+        if (StringUtils.isBlank(env.getProperty(LogFile.FILE_NAME_PROPERTY))) {
+            defaultConstants.put(LogFile.FILE_NAME_PROPERTY, getDefaultLogFile());
+        }
     }
 
     public static Path getAirsonicHome() {
@@ -428,8 +432,12 @@ public class SettingsService {
         return getInt(KEY_UPNP_PORT, DEFAULT_UPNP_PORT);
     }
 
-    public static Path getLogFile() {
-        return SettingsService.getAirsonicHome().resolve(getFileSystemAppName() + ".log");
+    public static String getDefaultLogFile() {
+        return SettingsService.getAirsonicHome().resolve(getFileSystemAppName() + ".log").toString();
+    }
+
+    public String getLogFile() {
+        return getProperty(LogFile.FILE_NAME_PROPERTY, getDefaultLogFile());
     }
 
     /**
