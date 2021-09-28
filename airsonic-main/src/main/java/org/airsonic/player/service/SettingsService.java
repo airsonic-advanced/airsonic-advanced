@@ -163,7 +163,7 @@ public class SettingsService {
     private static final String DEFAULT_JWT_KEY = null;
     private static final String DEFAULT_INDEX_STRING = "A B C D E F G H I J K L M N O P Q R S T U V W X-Z(XYZ)";
     private static final String DEFAULT_IGNORED_ARTICLES = "The El La Los Las Le Les";
-    private static final String DEFAULT_UPLOADS_FOLDER = "${['USER_MUSIC_FOLDERS'][0]}/Incoming";
+    private static final String DEFAULT_UPLOADS_FOLDER = "%{['USER_MUSIC_FOLDERS'][0]}/Incoming";
     private static final String DEFAULT_GENRE_SEPARATORS = ";";
     private static final String DEFAULT_SHORTCUTS = "New Incoming Podcast";
     private static final String DEFAULT_PLAYLIST_FOLDER = Util.getDefaultPlaylistFolder();
@@ -536,8 +536,8 @@ public class SettingsService {
     }
 
     public String resolveContextualString(String s, String username) {
-        String[] contextuals = StringUtils.substringsBetween(s, "${", "}");
-        if (contextuals.length == 0) {
+        String[] contextuals = StringUtils.substringsBetween(s, "%{", "}");
+        if (contextuals == null || contextuals.length == 0) {
             // if no context eval is needed, then short-circuit
             return s;
         }
@@ -553,7 +553,7 @@ public class SettingsService {
         // StandardEvaluationContext spelCtx = new StandardEvaluationContext(context);
 
         return StringUtils.replaceEach(s,
-                Stream.of(contextuals).map(x -> "${" + x + "}").toArray(String[]::new),
+                Stream.of(contextuals).map(x -> "%{" + x + "}").toArray(String[]::new),
                 Stream.of(contextuals)
                         .map(x -> new SpelExpressionParser().parseExpression(x).getValue(context, String.class))
                         .toArray(String[]::new));
