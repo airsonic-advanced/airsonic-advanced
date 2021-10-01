@@ -106,6 +106,8 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Multiplatform builds, including for ARM v7 and ARM64
   - A more advanced build pipeline including automatic releases and deploys at merge
     - Allows people to grab the newest build without compiling from source as soon as features/enhancements are merged, instead of waiting for the next stable build (which may be months away)
+- Stepbacks
+  - The Java Jukebox has been removed, due to the third-party library not being kept up to date with modern JVMs. See [PR #636](https://github.com/airsonic-advanced/airsonic-advanced/pull/636).
 
 The complete list of PRs that were used to enhance Airsonic can be seen on the PRs page. At some point an automatic changelog generator will be added to keep track.
 
