@@ -43,6 +43,7 @@ public class MusicFolderSettingsCommand {
     private boolean organizeByFolderStructure;
     private List<MusicFolderInfo> musicFolders;
     private MusicFolderInfo newMusicFolder;
+    private String uploadsFolder;
     private String excludePatternString;
     private boolean ignoreSymLinks;
     private Boolean fullScan;
@@ -134,6 +135,14 @@ public class MusicFolderSettingsCommand {
 
     public void setClearFullScanSettingAfterScan(Boolean clearFullScanSettingAfterScan) {
         this.clearFullScanSettingAfterScan = clearFullScanSettingAfterScan;
+    }
+
+    public String getUploadsFolder() {
+        return uploadsFolder;
+    }
+
+    public void setUploadsFolder(String uploadsFolder) {
+        this.uploadsFolder = uploadsFolder;
     }
 
     public static class MusicFolderInfo {

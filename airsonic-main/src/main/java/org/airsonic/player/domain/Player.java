@@ -19,7 +19,6 @@
  */
 package org.airsonic.player.domain;
 
-import org.airsonic.player.dao.AbstractDao.Column;
 import org.apache.commons.lang.StringUtils;
 
 import java.time.Instant;
@@ -45,8 +44,6 @@ public class Player {
     private Instant lastSeen;
     private TranscodeScheme transcodeScheme = TranscodeScheme.OFF;
     private PlayQueue playQueue;
-    @Column("mixer")
-    private String javaJukeboxMixer;
 
     /**
      * Returns the player ID.
@@ -123,11 +120,7 @@ public class Player {
     }
 
     public boolean isJukebox() {
-        return (technology == PlayerTechnology.JUKEBOX || technology == PlayerTechnology.JAVA_JUKEBOX);
-    }
-
-    public boolean isJavaJukebox() {
-        return (technology == PlayerTechnology.JAVA_JUKEBOX);
+        return technology == PlayerTechnology.JUKEBOX;
     }
 
     public boolean isExternal() {
@@ -332,16 +325,6 @@ public class Player {
         }
         return "Player " + id;
     }
-
-
-    public void setJavaJukeboxMixer(String javaJukeboxMixer) {
-        this.javaJukeboxMixer = javaJukeboxMixer;
-    }
-
-    public String getJavaJukeboxMixer() {
-        return javaJukeboxMixer;
-    }
-
 
     /**
      * Returns a string representation of the player.
