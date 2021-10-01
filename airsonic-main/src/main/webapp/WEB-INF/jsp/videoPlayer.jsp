@@ -5,7 +5,7 @@
 <head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
+    <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/quality/quality.min.js'/>"></script>
@@ -124,7 +124,7 @@
 		        <c:param name="id" value="${model.video.id}" />
 		        <c:param name="captionId" value="${caption.identifier}" />
 		    </c:url>
-		    <track src="${suburl}" label="${caption.identifier} (${caption.language})" srclang="${caption.language}" kind="subtitles">
+		    <track src="${caption.url}" label="${caption.identifier} (${caption.language})" srclang="${caption.language}" kind="subtitles">
 		  </c:forEach>
 		</video>
 	</div>
