@@ -238,7 +238,9 @@ public class GlobalSecurityConfig {
 
             http
                     .antMatcher("/ext/**")
-                    .csrf().requireCsrfProtectionMatcher(csrfSecurityRequestMatcher).and()
+                    .csrf()
+                    // .disable()
+                    .requireCsrfProtectionMatcher(csrfSecurityRequestMatcher).and()
                     .headers().frameOptions().sameOrigin().and()
                     .authorizeRequests()
                     .antMatchers(
@@ -246,10 +248,9 @@ public class GlobalSecurityConfig {
                             "/ext/coverArt*",
                             "/ext/share/**",
                             "/ext/hls/**",
-                            "/ext/segment/**",
-                            "/ext/captions*")
+                            "/ext/captions**")
                     .hasAnyRole("TEMP", "USER").and()
-                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).sessionFixation().none().and()
                     .exceptionHandling().and()
                     .securityContext().and()
                     .requestCache().and()
@@ -285,13 +286,15 @@ public class GlobalSecurityConfig {
             http
                     .cors()
                     .and()
+                    //.addFilterBefore(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                     .httpBasic()
                     .and()
                     .addFilterAfter(restAuthenticationFilter, BasicAuthenticationFilter.class)
                     .csrf()
                     .ignoringAntMatchers("/ws/Sonos/**")
                     .requireCsrfProtectionMatcher(csrfSecurityRequestMatcher)
-                    .and().headers()
+                    .and()
+                    .headers()
                     .frameOptions()
                     .sameOrigin()
                     .and().authorizeRequests()
@@ -330,6 +333,7 @@ public class GlobalSecurityConfig {
                     .passwordParameter("j_password")
                     // see http://docs.spring.io/spring-security/site/docs/3.2.4.RELEASE/reference/htmlsingle/#csrf-logout
                     .and().logout().deleteCookies("JSESSIONID").logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")).logoutSuccessUrl("/login?logout")
+                    .clearAuthentication(true).invalidateHttpSession(true).deleteCookies("JSESSIONID", "XSRF-TOKEN")
                     .and().rememberMe().key(rememberMeKey).userDetailsService(securityService);
         }
     }
@@ -342,9 +346,11 @@ public class GlobalSecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/rest/**", configuration);
         source.registerCorsConfiguration("/stream/**", configuration);
+        source.registerCorsConfiguration("/hls**", configuration);
+        source.registerCorsConfiguration("/captions**", configuration);
         source.registerCorsConfiguration("/ext/stream/**", configuration);
-        source.registerCorsConfiguration("/ext/hls/**", configuration);
-        source.registerCorsConfiguration("/ext/segment/**", configuration);
+        source.registerCorsConfiguration("/ext/hls**", configuration);
+        source.registerCorsConfiguration("/ext/captions**", configuration);
         return source;
     }
 }
