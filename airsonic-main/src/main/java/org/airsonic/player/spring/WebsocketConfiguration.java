@@ -58,7 +58,7 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
     }
 
     @Autowired
-    @Value("${server.servlet.context-path}")
+    @Value("${server.servlet.context-path:/}")
     public void setContextPath(String contextPath) {
         this.contextPath = contextPath;
     }
