@@ -58,7 +58,7 @@ public class GlobalSecurityConfig {
 
     private static final Logger LOG = LoggerFactory.getLogger(GlobalSecurityConfig.class);
 
-    static final String FAILURE_URL = "/login?error=1";
+    static final String FAILURE_URL = "/login?error";
 
     @SuppressWarnings("deprecation")
     public static final Map<String, PasswordEncoder> ENCODERS = new HashMap<>(ImmutableMap

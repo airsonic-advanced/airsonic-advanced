@@ -45,6 +45,10 @@
             <c:if test="${model.error}">
                 <div class="loginmessagebottom">
                     <span class="warning"><fmt:message key="login.error"/></span>
+                    <br/>
+                    <c:if test="${SPRING_SECURITY_LAST_EXCEPTION != null}">
+                       Reason: <c:out value="${SPRING_SECURITY_LAST_EXCEPTION.message}" />
+                    </c:if>
                 </div>
             </c:if>
 
