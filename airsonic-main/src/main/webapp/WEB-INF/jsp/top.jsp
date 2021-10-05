@@ -109,6 +109,10 @@
                 top.StompClient.connect();
             }
         }
+
+        function airsonicLogout() {
+            $("#logoutForm")[0].submit();
+        }
     </script>
 </head>
 
@@ -221,7 +225,7 @@
         </td>
 
         <td style="padding-left:15pt;padding-right:5pt;vertical-align: right;width: 100%;text-align: center">
-            <a href="<c:url value='/logout'/>" target="_top">
+            <a href="#" onclick="airsonicLogout();">
                 <img src="<spring:theme code='logoutImage'/>" alt="logout" height="24">
                 <div class="detail">
                     <fmt:message key="top.logout"></fmt:message>
@@ -230,5 +234,8 @@
         </td>
 
     </tr></table>
+    <form id="logoutForm" action="<c:url value='/logout'/>"  method="POST" style="display:none">
+        <sec:csrfInput />
+    </form>
 
 </body></html>

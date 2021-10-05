@@ -36,7 +36,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -331,10 +330,13 @@ public class GlobalSecurityConfig {
                     .failureUrl(FAILURE_URL)
                     .usernameParameter("j_username")
                     .passwordParameter("j_password")
-                    // see http://docs.spring.io/spring-security/site/docs/3.2.4.RELEASE/reference/htmlsingle/#csrf-logout
-                    .and().logout().deleteCookies("JSESSIONID").logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")).logoutSuccessUrl("/login?logout")
-                    .clearAuthentication(true).invalidateHttpSession(true).deleteCookies("JSESSIONID", "XSRF-TOKEN")
-                    .and().rememberMe().key(rememberMeKey).userDetailsService(securityService);
+                    .and()
+                    .logout(logout -> logout
+                            .deleteCookies("JSESSIONID", "XSRF-TOKEN")
+                            .clearAuthentication(true)
+                            .invalidateHttpSession(true)
+                            .logoutSuccessUrl("/login?logout"))
+                    .rememberMe().key(rememberMeKey).userDetailsService(securityService);
         }
     }
 
