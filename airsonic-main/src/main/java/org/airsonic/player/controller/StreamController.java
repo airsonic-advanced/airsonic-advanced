@@ -28,6 +28,7 @@ import org.airsonic.player.io.PlayQueueInputStream;
 import org.airsonic.player.io.ShoutCastOutputStream;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.*;
+import org.airsonic.player.service.hls.FFmpegHlsSession;
 import org.airsonic.player.service.sonos.SonosHelper;
 import org.airsonic.player.spring.KnownLengthInputStreamResource;
 import org.airsonic.player.util.FileUtil;
@@ -163,16 +164,15 @@ public class StreamController {
             playQueue.addFiles(true, file);
             player.setPlayQueue(playQueue);
 
-            if (file.isVideo() || hls) {
+            if ((file.isVideo() || hls) && !TranscodingService.FORMAT_RAW.equals(targetFormat)) {
                 videoTranscodingSettings = createVideoTranscodingSettings(file, swr.getRequest());
             }
 
             TranscodingService.Parameters parameters = transcodingService.getParameters(file, player, bitRate,
                     targetFormat, videoTranscodingSettings);
 
-            // Support ranges as long as we're not transcoding blindly; video is always
-            // assumed to transcode
-            expectedSize = file.isVideo() || !parameters.isRangeAllowed() ? null : parameters.getExpectedLength();
+            // Support ranges as long as we're not transcoding blindly
+            expectedSize = parameters.isRangeAllowed() ? parameters.getExpectedLength() : null;
 
             // roughly adjust for offset seconds
             if (expectedSize != null && expectedSize > 0 && offsetSeconds != null && offsetSeconds > 0 && file.getDuration() != null) {
@@ -410,7 +410,7 @@ public class StreamController {
 
         Dimension dim = getRequestedVideoSize(request.getParameter("size"));
         if (dim == null) {
-            dim = getSuitableVideoSize(existingWidth, existingHeight, maxBitRate);
+            dim = FFmpegHlsSession.getSuitableVideoSize(existingWidth, existingHeight, maxBitRate);
         }
 
         return new VideoTranscodingSettings(dim.width, dim.height, timeOffset, duration, hls);
@@ -431,42 +431,5 @@ public class StreamController {
             }
         }
         return null;
-    }
-
-    protected Dimension getSuitableVideoSize(Integer existingWidth, Integer existingHeight, Integer maxBitRate) {
-        if (maxBitRate == null) {
-            return new Dimension(400, 224);
-        }
-
-        int w;
-        if (maxBitRate < 400) {
-            w = 400;
-        } else if (maxBitRate < 600) {
-            w = 480;
-        } else if (maxBitRate < 1800) {
-            w = 640;
-        } else {
-            w = 960;
-        }
-        int h = even(w * 9 / 16);
-
-        if (existingWidth == null || existingHeight == null) {
-            return new Dimension(w, h);
-        }
-
-        if (existingWidth < w || existingHeight < h) {
-            return new Dimension(even(existingWidth), even(existingHeight));
-        }
-
-        double aspectRate = existingWidth.doubleValue() / existingHeight.doubleValue();
-        h = (int) Math.round(w / aspectRate);
-
-        return new Dimension(even(w), even(h));
-    }
-
-    // Make sure width and height are multiples of two, as some versions of ffmpeg
-    // require it.
-    private int even(int size) {
-        return size + (size % 2);
     }
 }

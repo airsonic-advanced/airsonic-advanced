@@ -19,12 +19,19 @@
  */
 package org.airsonic.player.controller;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.io.MoreFiles;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.NetworkService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SecurityService;
+import org.airsonic.player.service.metadata.MetaData;
+import org.airsonic.player.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.ServletRequestUtils;
@@ -36,7 +43,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Controller for the page used to play videos.
@@ -47,8 +59,10 @@ import java.util.Map;
 @RequestMapping("/videoPlayer")
 public class VideoPlayerController {
 
-    public static final int DEFAULT_BIT_RATE = 2000;
-    public static final int[] BIT_RATES = {200, 300, 400, 500, 700, 1000, 1200, 1500, 2000, 3000, 5000};
+    public static final int DEFAULT_BIT_RATE = 1500;
+    public static final Set<Integer> BIT_RATES = ImmutableSet.of(200, 300, 400, 500, 700, 1000, 1200, DEFAULT_BIT_RATE, 2000, 3000, 5000);
+    private static Set<String> STREAMABLE_FORMATS = ImmutableSet.of("mp4", "m4v");
+    private static Set<String> CASTABLE_FORMATS = ImmutableSet.of("mp4", "m4v", "mkv");
 
     @Autowired
     private MediaFileService mediaFileService;
@@ -56,6 +70,10 @@ public class VideoPlayerController {
     private PlayerService playerService;
     @Autowired
     private SecurityService securityService;
+    @Autowired
+    private CaptionsController captionsController;
+    @Autowired
+    private JWTSecurityService jwtSecurityService;
 
     @GetMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -66,21 +84,71 @@ public class VideoPlayerController {
         MediaFile file = mediaFileService.getMediaFile(id);
         mediaFileService.populateStarredDate(file, user.getUsername());
 
-        Double duration = file.getDuration();
         Integer playerId = playerService.getPlayer(request, response).getId();
         String url = NetworkService.getBaseUrl(request);
-        String streamUrl = url + "stream?id=" + file.getId() + "&player=" + playerId + "&format=mp4";
-        String coverArtUrl = url + "coverArt.view?id=" + file.getId();
+        boolean streamable = isStreamable(file);
+        boolean castable = isCastable(file);
+
+        Pair<String, Map<String, String>> streamUrls = getStreamUrls(file, user, url, streamable, playerId);
+        List<CaptionsController.CaptionInfo> captions = captionsController.listCaptions(file, NetworkService.getBaseUrl(request));
 
         map.put("video", file);
-        map.put("streamUrl", streamUrl);
-        map.put("remoteStreamUrl", streamUrl);
-        map.put("remoteCoverArtUrl", coverArtUrl);
-        map.put("duration", duration);
-        map.put("bitRates", BIT_RATES);
-        map.put("defaultBitRate", DEFAULT_BIT_RATE);
+        map.put("streamable", streamable);
+        map.put("castable", castable);
+        map.put("captions", captions);
+        map.put("streamUrls", streamUrls.getRight());
+        map.put("contentType", !streamable ? "application/x-mpegurl" : StringUtil.getMimeType(MoreFiles.getFileExtension(file.getFile())));
+        map.put("remoteStreamUrl", streamUrls.getRight().get("remoteStreamUrl"));
+        map.put("remoteCoverArtUrl", url + jwtSecurityService.addJWTToken(user.getUsername(), "ext/coverArt.view?id=" + file.getId()));
+        map.put("remoteCaptionsUrl", url + jwtSecurityService.addJWTToken(user.getUsername(), "ext/captions/list?id=" + file.getId()));
+        // map.put("bitRates", BIT_RATES);
+        map.put("defaultBitRate", streamUrls.getLeft());
         map.put("user", user);
 
         return new ModelAndView("videoPlayer", "model", map);
     }
+
+    public Pair<String, Map<String, String>> getStreamUrls(MediaFile file, User user, String baseUrl,
+            boolean streamable, int playerId) {
+        Map<String, String> streamUrls;
+        String defaultBitRate;
+        if (streamable) {
+            String streamUrlWithoutBitrates = baseUrl + "stream?id=" + file.getId() + "&player=" + playerId;
+            streamUrls = Stream
+                    .concat(Stream.of(Pair.of("Original", streamUrlWithoutBitrates + "&format=raw")),
+                            BIT_RATES.stream().sequential()
+                                .map(b -> Pair.of(b + " Kbps", streamUrlWithoutBitrates + "&format=mp4&maxBitRate=" + b)))
+                    .collect(Collectors.toMap(p -> p.getLeft(), p -> p.getRight(), (a,b) -> a, () -> new LinkedHashMap<>()));
+            streamUrls.put("remoteStreamUrl", baseUrl + jwtSecurityService.addJWTToken(user.getUsername(),
+                    "ext/stream?id=" + file.getId() + "&player=" + playerId + "&format=raw"));
+            defaultBitRate = "Original";
+        } else {
+            String streamUrlWithoutBitrates = baseUrl + "hls/hls.m3u8?id=" + file.getId() + "&player=" + playerId;
+            streamUrls = BIT_RATES.stream().sequential()
+                    .map(b -> Pair.of(b + " Kbps", streamUrlWithoutBitrates + "&maxBitRate=" + b))
+                    .collect(Collectors.toMap(p -> p.getLeft(), p -> p.getRight(), (a,b) -> a, () -> new LinkedHashMap<>()));
+            streamUrls.put("remoteStreamUrl", baseUrl + jwtSecurityService.addJWTToken(user.getUsername(),
+                    "ext/hls/hls.m3u8?id=" + file.getId() + "&player=" + playerId)); //+ "&maxBitRate=" + DEFAULT_BIT_RATE));
+            defaultBitRate = DEFAULT_BIT_RATE + " Kbps";
+        }
+        return Pair.of(defaultBitRate, streamUrls);
+    }
+
+    public boolean isStreamable(MediaFile file) {
+        if (!STREAMABLE_FORMATS.contains(StringUtils.lowerCase(file.getFormat())))
+            return false;
+        MetaData metaData = captionsController.getVideoMetaData(file);
+        if (metaData == null)
+            return true;
+        if (!metaData.getVideoTracks().isEmpty() && !metaData.getVideoTracks().get(0).isStreamable())
+            return false;
+        if (!metaData.getAudioTracks().isEmpty() && !metaData.getAudioTracks().get(0).isStreamable())
+            return false;
+        return true;
+    }
+
+    public static boolean isCastable(MediaFile file) {
+        return CASTABLE_FORMATS.contains(StringUtils.lowerCase(file.getFormat()));
+    }
+
 }

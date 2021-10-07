@@ -105,7 +105,7 @@ public class SonosLinkSecurityInterceptor extends AbstractSoapInterceptor {
                 String sonosLinkToken = getCredentials(message).getLoginToken().getToken();
                 if (sonosLinkToken != null) {
                     JWTAuthenticationToken token = new JWTAuthenticationToken(null, sonosLinkToken,
-                            request.getRequestURI() + "?" + request.getQueryString());
+                            request.getRequestURI().substring(request.getContextPath().length() + 1) + "?" + request.getQueryString());
                     SecurityContextHolder.getContext().setAuthentication(authenticationManager.authenticate(token));
                 }
             } else if (action != null && authenticationType == AuthenticationType.ANONYMOUS) {

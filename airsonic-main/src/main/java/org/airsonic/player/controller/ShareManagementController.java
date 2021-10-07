@@ -49,8 +49,6 @@ public class ShareManagementController {
     @Autowired
     private MediaFileService mediaFileService;
     @Autowired
-    private SettingsService settingsService;
-    @Autowired
     private ShareService shareService;
     @Autowired
     private PlayerService playerService;

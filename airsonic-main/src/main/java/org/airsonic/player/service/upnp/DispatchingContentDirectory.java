@@ -197,7 +197,16 @@ public class DispatchingContentDirectory extends CustomContentDirectory {
     }
 
     public URI getAlbumArtUrl(int id) {
-        return jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS, UriComponentsBuilder.fromUriString(getBaseUrl() + "/ext/coverArt.view").queryParam("id", id).queryParam("size", CoverArtScheme.LARGE.getSize())).build().encode().toUri();
+        return UriComponentsBuilder
+                .fromUriString(getBaseUrl())
+                .uriComponents(jwtSecurityService
+                        .addJWTToken(
+                                User.USERNAME_ANONYMOUS,
+                                UriComponentsBuilder.fromUriString("ext/coverArt.view")
+                                        .queryParam("id", id)
+                                        .queryParam("size", CoverArtScheme.LARGE.getSize()))
+                        .build())
+                .build().encode().toUri();
     }
 
     public PlaylistUpnpProcessor getPlaylistProcessor() {

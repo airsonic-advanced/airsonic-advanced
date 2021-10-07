@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.RateLimiter;
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
@@ -106,6 +107,7 @@ public class SettingsService {
     private static final String KEY_HLS_COMMAND = "HlsCommand3";
     private static final String KEY_JUKEBOX_COMMAND = "JukeboxCommand2";
     private static final String KEY_VIDEO_IMAGE_COMMAND = "VideoImageCommand";
+    private static final String KEY_SUBTITLES_EXTRACTION_COMMAND = "SubtitlesExtractionCommand";
     private static final String KEY_LDAP_ENABLED = "LdapEnabled";
     private static final String KEY_LDAP_URL = "LdapUrl";
     private static final String KEY_LDAP_MANAGER_DN = "LdapManagerDn";
@@ -206,6 +208,7 @@ public class SettingsService {
     private static final String DEFAULT_HLS_COMMAND = "ffmpeg -ss %o -t %d -i %s -async 1 -b:v %bk -s %wx%h -ar 44100 -ac 2 -v 0 -f mpegts -c:v libx264 -preset superfast -c:a libmp3lame -threads 0 -";
     private static final String DEFAULT_JUKEBOX_COMMAND = "ffmpeg -ss %o -i %s -map 0:0 -v 0 -ar 44100 -ac 2 -f s16be -";
     private static final String DEFAULT_VIDEO_IMAGE_COMMAND = "ffmpeg -r 1 -ss %o -t 1 -i %s -s %wx%h -v 0 -f mjpeg -";
+    private static final String DEFAULT_SUBTITLES_EXTRACTION_COMMAND = "ffmpeg -i %s -map 0:%i -f %f -";
     private static final boolean DEFAULT_LDAP_ENABLED = false;
     private static final String DEFAULT_LDAP_URL = "ldap://host.domain.com:389/cn=Users,dc=domain,dc=com";
     private static final String DEFAULT_LDAP_MANAGER_DN = null;
@@ -409,6 +412,34 @@ public class SettingsService {
         ensureDirectoryPresent(home);
 
         return home;
+    }
+
+    /**
+     * Returns the directory in which all transcoders are installed.
+     */
+    public static Path getTranscodeDirectory() {
+        Path dir = getAirsonicHome().resolve("transcode");
+        if (!Files.exists(dir)) {
+            try {
+                dir = Files.createDirectory(dir);
+                LOG.info("Created directory {}", dir);
+            } catch (Exception e) {
+                LOG.warn("Failed to create directory {}", dir);
+            }
+        }
+        return dir;
+    }
+
+    public static boolean isTranscodeExecutableInstalled(String executable) {
+        try (Stream<Path> files = Files.list(getTranscodeDirectory())) {
+            return files.anyMatch(p -> MoreFiles.getNameWithoutExtension(p).equals(executable));
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public static String resolveTranscodeExecutable(String executable) {
+        return isTranscodeExecutableInstalled(executable) ? getTranscodeDirectory().resolve(executable).toString() : executable;
     }
 
     private static String getFileSystemAppName() {
@@ -906,6 +937,14 @@ public class SettingsService {
 
     public String getVideoImageCommand() {
         return getProperty(KEY_VIDEO_IMAGE_COMMAND, DEFAULT_VIDEO_IMAGE_COMMAND);
+    }
+
+    public String getSubtitlesExtractionCommand() {
+        return getProperty(KEY_SUBTITLES_EXTRACTION_COMMAND, DEFAULT_SUBTITLES_EXTRACTION_COMMAND);
+    }
+
+    public void setSubtitlesExtractionCommand(String command) {
+        setProperty(KEY_SUBTITLES_EXTRACTION_COMMAND, command);
     }
 
     public boolean isLdapEnabled() {

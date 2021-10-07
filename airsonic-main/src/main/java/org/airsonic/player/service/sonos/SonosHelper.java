@@ -613,8 +613,8 @@ public class SonosHelper {
     }
 
     private String getCoverArtUrl(String id, String username, HttpServletRequest request) {
-        String uri = getBaseUrl(request) + "ext/coverArt.view?id=" + id + "&size=" + CoverArtScheme.LARGE.getSize();
-        return jwtSecurityService.addJWTToken(username, uri);
+        String uri = "ext/coverArt.view?id=" + id + "&size=" + CoverArtScheme.LARGE.getSize();
+        return getBaseUrl(request) + jwtSecurityService.addJWTToken(username, uri);
     }
 
     public static MediaList createSubList(int index, int count, List<? extends AbstractMedia> mediaCollections) {
@@ -648,8 +648,8 @@ public class SonosHelper {
     public String getMediaURI(int mediaFileId, String username, HttpServletRequest request) {
         Player player = createPlayerIfNecessary(username);
         MediaFile song = mediaFileService.getMediaFile(mediaFileId);
-        String uri = getBaseUrl(request) + "ext/stream?id=" + song.getId() + "&player=" + player.getId();
-        return jwtSecurityService.addJWTToken(username, uri);
+        String uri = "ext/stream?id=" + song.getId() + "&player=" + player.getId();
+        return getBaseUrl(request) + jwtSecurityService.addJWTToken(username, uri);
     }
 
     private Player createPlayerIfNecessary(String username) {

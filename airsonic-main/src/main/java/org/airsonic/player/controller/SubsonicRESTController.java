@@ -1422,24 +1422,15 @@ public class SubsonicRESTController {
     }
 
     @RequestMapping("/hls")
-    public void hls(HttpServletRequest request, HttpServletResponse response) throws Exception {
+    public void hls(Authentication authentication, @RequestParam Integer id, HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
         if (!user.isStreamRole()) {
             error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to play files.");
             return;
         }
-        int id = getRequiredIntParameter(request, "id");
-        MediaFile video = mediaFileDao.getMediaFile(id);
-        if (video == null || video.isDirectory()) {
-            error(request, response, ErrorCode.NOT_FOUND, "Video not found.");
-            return;
-        }
-        if (!securityService.isFolderAccessAllowed(video, user.getUsername())) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, "Access denied");
-            return;
-        }
-        hlsController.handleRequest(request, response);
+
+        hlsController.handleHlsRequest(authentication, id, request, response);
     }
 
     @RequestMapping("/scrobble")

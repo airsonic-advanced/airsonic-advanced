@@ -690,7 +690,7 @@ public class SonosService implements SonosSoap {
 
     public DeviceAuthTokenResult createAuthToken(SonosLink sonosLink, HttpServletRequest req) {
         String refreshToken = createRefreshToken();
-        String authToken = sonosHelper.createJwt(sonosLink, req.getRequestURI() + "?" + req.getQueryString(), refreshToken);
+        String authToken = sonosHelper.createJwt(sonosLink, req.getRequestURI().substring(req.getContextPath().length() + 1) + "?" + req.getQueryString(), refreshToken);
 
         DeviceAuthTokenResult authTokenResult = new DeviceAuthTokenResult();
         authTokenResult.setAuthToken(authToken);
