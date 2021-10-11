@@ -324,7 +324,7 @@ public class SecurityService implements UserDetailsService {
     public void createUser(User user, UserCredential credential) {
         userDao.createUser(user, credential);
         settingsService.setMusicFoldersForUser(user.getUsername(), MusicFolder.toIdList(settingsService.getAllMusicFolders()));
-        LOG.info("Created user " + user.getUsername());
+        LOG.info("Created user {}", user.getUsername());
     }
 
     /**
@@ -335,7 +335,7 @@ public class SecurityService implements UserDetailsService {
     @CacheEvict
     public void deleteUser(String username) {
         userDao.deleteUser(username);
-        LOG.info("Deleted user " + username);
+        LOG.info("Deleted user {}", username);
     }
 
     /**

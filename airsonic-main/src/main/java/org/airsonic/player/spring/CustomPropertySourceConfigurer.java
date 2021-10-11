@@ -3,21 +3,23 @@ package org.airsonic.player.spring;
 import org.airsonic.player.service.ConfigurationPropertiesService;
 import org.airsonic.player.service.SettingsService;
 import org.apache.commons.configuration2.spring.ConfigurationPropertySource;
-import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
+import org.springframework.boot.context.logging.LoggingApplicationListener;
+import org.springframework.context.ApplicationListener;
+import org.springframework.core.Ordered;
 import org.springframework.core.env.MapPropertySource;
-import org.springframework.web.context.ConfigurableWebApplicationContext;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class CustomPropertySourceConfigurer implements
-        ApplicationContextInitializer<ConfigurableWebApplicationContext> {
+        ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
 
     private static final Map<String, Object> DEFAULT_CONSTANTS = new ConcurrentHashMap<>();
     private static final Map<String, Object> MIGRATED = new ConcurrentHashMap<>();
 
     @Override
-    public void initialize(ConfigurableWebApplicationContext ctx) {
+    public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
         // vars are searched in order: spring > jvm > env > app.prop > airsonic.prop > default consts
         // spring: java -jar pkg.jar --var=foo
         // jvm: java -jar -Dvar=foo pkg.jar
@@ -44,15 +46,20 @@ public class CustomPropertySourceConfigurer implements
         //  - Lookup(B) finds migrated[env[A]]
         //  - Lookup(C) finds file[C] (higher precedence than migrated[env[C]])
         //  - Lookup(D) finds migrated[env[A]]
-        ctx.getEnvironment().getPropertySources().forEach(ps -> SettingsService.migratePropertySourceKeys(migratedProps, ps, MIGRATED));
-        ctx.getEnvironment().getPropertySources().addLast(new MapPropertySource("migrated-properties", MIGRATED));
+        event.getEnvironment().getPropertySources().forEach(ps -> SettingsService.migratePropertySourceKeys(migratedProps, ps, MIGRATED));
+        event.getEnvironment().getPropertySources().addLast(new MapPropertySource("migrated-properties", MIGRATED));
 
         // Migrate external property file
         SettingsService.migratePropFileKeys(migratedProps, ConfigurationPropertiesService.getInstance());
-        ctx.getEnvironment().getPropertySources().addLast(new ConfigurationPropertySource("airsonic-properties", ConfigurationPropertiesService.getInstance().getConfiguration()));
+        event.getEnvironment().getPropertySources().addLast(new ConfigurationPropertySource("airsonic-properties", ConfigurationPropertiesService.getInstance().getConfiguration()));
 
         // Set default constants - only set if vars are blank so their PS need to be set first (or blank vars will get picked up first on look up)
-        SettingsService.setDefaultConstants(ctx.getEnvironment(), DEFAULT_CONSTANTS);
-        ctx.getEnvironment().getPropertySources().addFirst(new MapPropertySource("default-constants", DEFAULT_CONSTANTS));
+        SettingsService.setDefaultConstants(event.getEnvironment(), DEFAULT_CONSTANTS);
+        event.getEnvironment().getPropertySources().addFirst(new MapPropertySource("default-constants", DEFAULT_CONSTANTS));
+    }
+
+    @Override
+    public int getOrder() {
+        return LoggingApplicationListener.DEFAULT_ORDER - 1;
     }
 }

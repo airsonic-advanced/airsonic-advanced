@@ -40,7 +40,7 @@ public class JWTRequestParameterProcessingFilter implements Filter {
     private static Optional<JWTAuthenticationToken> findToken(HttpServletRequest request) {
         return Optional.ofNullable(request.getParameter(JWTSecurityService.JWT_PARAM_NAME))
                 .filter(StringUtils::isNotEmpty)
-                .map(t -> new JWTAuthenticationToken(null, t, request.getRequestURI() + "?" + request.getQueryString()));
+                .map(t -> new JWTAuthenticationToken(null, t, request.getRequestURI().substring(request.getContextPath().length() + 1) + "?" + request.getQueryString()));
     }
 
     @Override

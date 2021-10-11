@@ -25,7 +25,7 @@
 
             <input required type="password" autocomplete="off"  name="j_password" tabindex="2" placeholder="<fmt:message key='login.password'/>">
 
-            <input name="submit" type="submit" value="<fmt:message key='login.login'/>" tabindex="4"></td>
+            <input name="submit" type="submit" value="<fmt:message key='login.login'/>" tabindex="4">
 
             <div class="details">
                 <div id="loginremember">
@@ -45,6 +45,10 @@
             <c:if test="${model.error}">
                 <div class="loginmessagebottom">
                     <span class="warning"><fmt:message key="login.error"/></span>
+                    <br/>
+                    <c:if test="${SPRING_SECURITY_LAST_EXCEPTION != null}">
+                       Reason: <c:out value="${SPRING_SECURITY_LAST_EXCEPTION.message}" />
+                    </c:if>
                 </div>
             </c:if>
 

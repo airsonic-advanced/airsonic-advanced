@@ -522,13 +522,17 @@ public class PlayQueueService {
     }
 
     public PlayQueueInfo getPlayQueueInfo(Player player) {
+        return getPlayQueueInfo(player, "");
+    }
+
+    public PlayQueueInfo getPlayQueueInfo(Player player, String basePath) {
         PlayQueue playQueue = player.getPlayQueue();
 
         List<MediaFileEntry> entries;
         if (playQueue.isInternetRadioEnabled()) {
             entries = convertInternetRadio(player);
         } else {
-            entries = convertMediaFileList(player);
+            entries = convertMediaFileList(player, basePath);
         }
 
         float gain = jukeboxService.getGain(player);
@@ -536,14 +540,12 @@ public class PlayQueueService {
         return new PlayQueueInfo(entries, playQueue.getStatus(), playQueue.getRepeatStatus(), playQueue.isShuffleRadioEnabled(), playQueue.isInternetRadioEnabled(), gain);
     }
 
-    private List<MediaFileEntry> convertMediaFileList(Player player) {
-        String url = ""; // NetworkService.getBaseUrl(request);
-        Function<MediaFile, String> streamUrlGenerator = file -> url + "stream?player=" + player.getId() + "&id="
-                + file.getId();
-        Function<MediaFile, String> remoteStreamUrlGenerator = file -> jwtSecurityService
-                .addJWTToken(player.getUsername(), url + "ext/stream?player=" + player.getId() + "&id=" + file.getId());
-        Function<MediaFile, String> remoteCoverArtUrlGenerator = file -> jwtSecurityService
-                .addJWTToken(player.getUsername(), url + "ext/coverArt.view?id=" + file.getId());
+    private List<MediaFileEntry> convertMediaFileList(Player player, String basePath) {
+        Function<MediaFile, String> streamUrlGenerator = file -> basePath + "stream?player=" + player.getId() + "&id=" + file.getId();
+        Function<MediaFile, String> remoteStreamUrlGenerator = file -> basePath + jwtSecurityService
+                .addJWTToken(player.getUsername(), "ext/stream?player=" + player.getId() + "&id=" + file.getId());
+        Function<MediaFile, String> remoteCoverArtUrlGenerator = file -> basePath
+                + jwtSecurityService.addJWTToken(player.getUsername(), "ext/coverArt.view?id=" + file.getId());
         return mediaFileService.toMediaFileEntryList(player.getPlayQueue().getFiles(), player.getUsername(), true, true,
                 streamUrlGenerator, remoteStreamUrlGenerator, remoteCoverArtUrlGenerator);
     }

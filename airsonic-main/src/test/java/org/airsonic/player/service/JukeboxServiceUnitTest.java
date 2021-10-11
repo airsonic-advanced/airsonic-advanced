@@ -18,16 +18,12 @@ public class JukeboxServiceUnitTest {
     private JukeboxService jukeboxService;
     @Mock
     private JukeboxLegacySubsonicService jukeboxLegacySubsonicService;
-    @Mock
-    private JukeboxJavaService jukeboxJavaService;
-    private Player jukeboxPlayer;
     private Player legacyJukeboxPlayer;
     private Player nonJukeboxPlayer;
 
     @Before
     public void setUp() {
-        jukeboxService = new JukeboxService(jukeboxLegacySubsonicService, jukeboxJavaService);
-        jukeboxPlayer = generateJukeboxPlayer();
+        jukeboxService = new JukeboxService(jukeboxLegacySubsonicService);
         legacyJukeboxPlayer = generateLegacyJukeboxPlayer();
         nonJukeboxPlayer = generateNonJukeboxPlayer();
     }
@@ -46,33 +42,10 @@ public class JukeboxServiceUnitTest {
         return player;
     }
 
-    private Player generateJukeboxPlayer() {
-        Player player = new Player();
-        player.setId(2);
-        player.setTechnology(PlayerTechnology.JAVA_JUKEBOX);
-        return player;
-    }
-
-    @Test
-    public void setPositionWithJukeboxPlayer() {
-        // When
-        jukeboxService.setPosition(jukeboxPlayer, 0);
-        // Then
-        verify(jukeboxJavaService).setPosition(jukeboxPlayer, 0);
-    }
-
     @Test(expected = UnsupportedOperationException.class)
     public void setPositionWithLegacyJukeboxPlayer() {
         // When
         jukeboxService.setPosition(legacyJukeboxPlayer, 0);
-    }
-
-    @Test
-    public void getGainWithJukeboxPlayer() {
-        // When
-        jukeboxService.getGain(jukeboxPlayer);
-        // Then
-        verify(jukeboxJavaService).getGain(jukeboxPlayer);
     }
 
     @Test
@@ -100,14 +73,6 @@ public class JukeboxServiceUnitTest {
     }
 
     @Test
-    public void getPositionWithJukeboxPlayer() {
-        // When
-        jukeboxService.getPosition(jukeboxPlayer);
-        // Then
-        verify(jukeboxJavaService).getPosition(jukeboxPlayer);
-    }
-
-    @Test
     public void getPositionWithLegacyJukeboxPlayer() {
         // When
         jukeboxService.getPosition(legacyJukeboxPlayer);
@@ -116,7 +81,7 @@ public class JukeboxServiceUnitTest {
     }
 
     @Test
-    public void getPasitionWithNonJukeboxPlayer() {
+    public void getPositionWithNonJukeboxPlayer() {
         // When
         int position = jukeboxService.getPosition(nonJukeboxPlayer);
         // Then
@@ -124,27 +89,11 @@ public class JukeboxServiceUnitTest {
     }
 
     @Test
-    public void setGainWithJukeboxPlayer() {
-        // When
-        jukeboxService.setGain(jukeboxPlayer, 0.5f);
-        // Then
-        verify(jukeboxJavaService).setGain(jukeboxPlayer, 0.5f);
-    }
-
-    @Test
-    public void setGaintWithLegacyJukeboxPlayer() {
+    public void setGainWithLegacyJukeboxPlayer() {
         // When
         jukeboxService.setGain(legacyJukeboxPlayer, 0.5f);
         // Then
         verify(jukeboxLegacySubsonicService).setGain(0.5f);
-    }
-
-    @Test
-    public void startWithJukeboxPlayer() {
-        // When
-        jukeboxService.start(jukeboxPlayer);
-        // Then
-        verify(jukeboxJavaService).start(jukeboxPlayer);
     }
 
     @Test
@@ -157,27 +106,11 @@ public class JukeboxServiceUnitTest {
     }
 
     @Test
-    public void playWithJukeboxPlayer() {
-        // When
-        jukeboxService.play(jukeboxPlayer);
-        // Then
-        verify(jukeboxJavaService).play(jukeboxPlayer);
-    }
-
-    @Test
     public void playWithLegacyJukeboxPlayer() {
         // When
         jukeboxService.play(legacyJukeboxPlayer);
         // Then
         verify(jukeboxLegacySubsonicService).updateJukebox(legacyJukeboxPlayer, 0);
-    }
-
-    @Test
-    public void stopWithJukeboxPlayer() {
-        // When
-        jukeboxService.stop(jukeboxPlayer);
-        // Then
-        verify(jukeboxJavaService).stop(jukeboxPlayer);
     }
 
     @Test
@@ -188,29 +121,12 @@ public class JukeboxServiceUnitTest {
         verify(jukeboxLegacySubsonicService).updateJukebox(legacyJukeboxPlayer, 0);
     }
 
-
-    @Test
-    public void skipWithJukeboxPlayer() {
-        // When
-        jukeboxService.skip(jukeboxPlayer, 0, 1);
-        // Then
-        verify(jukeboxJavaService).skip(jukeboxPlayer, 0, 1);
-    }
-
     @Test
     public void skipWithLegacyJukeboxPlayer() {
         // When
         jukeboxService.skip(legacyJukeboxPlayer, 0, 1);
         // Then
         verify(jukeboxLegacySubsonicService).updateJukebox(legacyJukeboxPlayer, 1);
-    }
-
-    @Test
-    public void canControlWithJukeboxPlayer() {
-        // When
-        boolean canControl = jukeboxService.canControl(jukeboxPlayer);
-        // Then
-        assertThat(canControl).isEqualTo(true);
     }
 
     @Test

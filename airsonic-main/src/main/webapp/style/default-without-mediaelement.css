@@ -338,13 +338,13 @@ table.music {
     width: 100%;
 }
 
-td.fit {
+th.fit, td.fit {
     width:1px;
     padding-left:4px !important;
     padding-right:4px !important;
 }
 
-td.truncate {
+th.truncate, td.truncate {
     max-width:50px;
     overflow:hidden;
     text-overflow:ellipsis;
@@ -353,7 +353,7 @@ td.truncate {
     padding-right:10px;
 }
 
-td.rightalign {
+th.rightalign, td.rightalign {
     text-align:right;
     padding-right: 20px;
 }
@@ -538,23 +538,6 @@ img {
     display: flex;
     flex-direction: row;
     align-items: center;
-}
-
-/*
- * Styles related to java jukebox controls
- */
-
-.javaJukeBoxPlayerControlBarSongTime {
-    width : 50px;
-    font-size: 80%;
-    text-align: right;
-    padding-left: 10px;
-    padding-right: 10px;
-}
-
-#javaJukeboxSongPositionSlider {
-    width : 200px;
-    height : 4px;
 }
 
 /* Blur effect */

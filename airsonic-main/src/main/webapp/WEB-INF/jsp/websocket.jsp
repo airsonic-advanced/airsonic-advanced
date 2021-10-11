@@ -66,7 +66,9 @@
                     }
                 }
                 var headers = {};
-                headers[csrfheaderName] = csrftoken;
+                if (csrfheaderName != "" && csrftoken != "") {
+                    headers[csrfheaderName] = csrftoken;
+                }
                 stompclient.stompClient.connect(headers, function(frame) {
                     console.log('Connected', frame);
                     stompclient.state='connected';

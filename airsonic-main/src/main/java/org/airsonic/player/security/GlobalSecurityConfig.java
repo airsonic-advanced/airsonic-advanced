@@ -36,7 +36,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -58,7 +57,7 @@ public class GlobalSecurityConfig {
 
     private static final Logger LOG = LoggerFactory.getLogger(GlobalSecurityConfig.class);
 
-    static final String FAILURE_URL = "/login?error=1";
+    static final String FAILURE_URL = "/login?error";
 
     @SuppressWarnings("deprecation")
     public static final Map<String, PasswordEncoder> ENCODERS = new HashMap<>(ImmutableMap
@@ -238,16 +237,19 @@ public class GlobalSecurityConfig {
 
             http
                     .antMatcher("/ext/**")
-                    .csrf().requireCsrfProtectionMatcher(csrfSecurityRequestMatcher).and()
+                    .csrf()
+                    // .disable()
+                    .requireCsrfProtectionMatcher(csrfSecurityRequestMatcher).and()
                     .headers().frameOptions().sameOrigin().and()
                     .authorizeRequests()
                     .antMatchers(
                             "/ext/stream/**",
                             "/ext/coverArt*",
                             "/ext/share/**",
-                            "/ext/hls/**")
+                            "/ext/hls/**",
+                            "/ext/captions**")
                     .hasAnyRole("TEMP", "USER").and()
-                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+                    .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).sessionFixation().none().and()
                     .exceptionHandling().and()
                     .securityContext().and()
                     .requestCache().and()
@@ -283,13 +285,15 @@ public class GlobalSecurityConfig {
             http
                     .cors()
                     .and()
+                    //.addFilterBefore(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                     .httpBasic()
                     .and()
                     .addFilterAfter(restAuthenticationFilter, BasicAuthenticationFilter.class)
                     .csrf()
                     .ignoringAntMatchers("/ws/Sonos/**")
                     .requireCsrfProtectionMatcher(csrfSecurityRequestMatcher)
-                    .and().headers()
+                    .and()
+                    .headers()
                     .frameOptions()
                     .sameOrigin()
                     .and().authorizeRequests()
@@ -326,9 +330,13 @@ public class GlobalSecurityConfig {
                     .failureUrl(FAILURE_URL)
                     .usernameParameter("j_username")
                     .passwordParameter("j_password")
-                    // see http://docs.spring.io/spring-security/site/docs/3.2.4.RELEASE/reference/htmlsingle/#csrf-logout
-                    .and().logout().deleteCookies("JSESSIONID").logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET")).logoutSuccessUrl("/login?logout")
-                    .and().rememberMe().key(rememberMeKey).userDetailsService(securityService);
+                    .and()
+                    .logout(logout -> logout
+                            .deleteCookies("JSESSIONID", "XSRF-TOKEN")
+                            .clearAuthentication(true)
+                            .invalidateHttpSession(true)
+                            .logoutSuccessUrl("/login?logout"))
+                    .rememberMe().key(rememberMeKey).userDetailsService(securityService);
         }
     }
 
@@ -340,9 +348,11 @@ public class GlobalSecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/rest/**", configuration);
         source.registerCorsConfiguration("/stream/**", configuration);
+        source.registerCorsConfiguration("/hls**", configuration);
+        source.registerCorsConfiguration("/captions**", configuration);
         source.registerCorsConfiguration("/ext/stream/**", configuration);
-        source.registerCorsConfiguration("/ext/hls/**", configuration);
-        source.registerCorsConfiguration("/ext/hls/**", configuration);
+        source.registerCorsConfiguration("/ext/hls**", configuration);
+        source.registerCorsConfiguration("/ext/captions**", configuration);
         return source;
     }
 }

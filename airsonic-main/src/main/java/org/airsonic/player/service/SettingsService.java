@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.service;
 
+import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.RateLimiter;
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
@@ -32,10 +33,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.logging.LogFile;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertySource;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -70,6 +73,7 @@ public class SettingsService {
     private static final String KEY_INDEX_STRING = "IndexString";
     private static final String KEY_IGNORED_ARTICLES = "IgnoredArticles";
     private static final String KEY_GENRE_SEPARATORS = "GenreSeparators";
+    private static final String KEY_UPLOADS_FOLDER = "UploadsFolder";
     private static final String KEY_SHORTCUTS = "Shortcuts";
     private static final String KEY_PLAYLIST_FOLDER = "PlaylistFolder";
     private static final String KEY_MUSIC_FILE_TYPES = "MusicFileTypes";
@@ -103,6 +107,7 @@ public class SettingsService {
     private static final String KEY_HLS_COMMAND = "HlsCommand3";
     private static final String KEY_JUKEBOX_COMMAND = "JukeboxCommand2";
     private static final String KEY_VIDEO_IMAGE_COMMAND = "VideoImageCommand";
+    private static final String KEY_SUBTITLES_EXTRACTION_COMMAND = "SubtitlesExtractionCommand";
     private static final String KEY_LDAP_ENABLED = "LdapEnabled";
     private static final String KEY_LDAP_URL = "LdapUrl";
     private static final String KEY_LDAP_MANAGER_DN = "LdapManagerDn";
@@ -161,6 +166,7 @@ public class SettingsService {
     private static final String DEFAULT_JWT_KEY = null;
     private static final String DEFAULT_INDEX_STRING = "A B C D E F G H I J K L M N O P Q R S T U V W X-Z(XYZ)";
     private static final String DEFAULT_IGNORED_ARTICLES = "The El La Los Las Le Les";
+    private static final String DEFAULT_UPLOADS_FOLDER = "%{['USER_MUSIC_FOLDERS'][0]}/Incoming";
     private static final String DEFAULT_GENRE_SEPARATORS = ";";
     private static final String DEFAULT_SHORTCUTS = "New Incoming Podcast";
     private static final String DEFAULT_PLAYLIST_FOLDER = Util.getDefaultPlaylistFolder();
@@ -202,6 +208,7 @@ public class SettingsService {
     private static final String DEFAULT_HLS_COMMAND = "ffmpeg -ss %o -t %d -i %s -async 1 -b:v %bk -s %wx%h -ar 44100 -ac 2 -v 0 -f mpegts -c:v libx264 -preset superfast -c:a libmp3lame -threads 0 -";
     private static final String DEFAULT_JUKEBOX_COMMAND = "ffmpeg -ss %o -i %s -map 0:0 -v 0 -ar 44100 -ac 2 -f s16be -";
     private static final String DEFAULT_VIDEO_IMAGE_COMMAND = "ffmpeg -r 1 -ss %o -t 1 -i %s -s %wx%h -v 0 -f mjpeg -";
+    private static final String DEFAULT_SUBTITLES_EXTRACTION_COMMAND = "ffmpeg -i %s -map 0:%i -f %f -";
     private static final boolean DEFAULT_LDAP_ENABLED = false;
     private static final String DEFAULT_LDAP_URL = "ldap://host.domain.com:389/cn=Users,dc=domain,dc=com";
     private static final String DEFAULT_LDAP_MANAGER_DN = null;
@@ -318,10 +325,10 @@ public class SettingsService {
         Map<String, Object> temp = new HashMap<>();
         // needs to be processed serially
         keyMaps.entrySet().stream()
-                // ps has the property we're trying to migrate (either directly or migrated earlier within the chain)
-                .filter(e -> StringUtils.isNotBlank(Optional.ofNullable(src.getProperty(e.getKey())).map(Object::toString).orElse(temp.getOrDefault(e.getKey(), "").toString())))
                 // we're not migrating to null, i.e. trying to delete the property
                 .filter(e -> e.getValue() != null)
+                // ps has the property we're trying to migrate (either directly or migrated earlier within the chain)
+                .filter(e -> StringUtils.isNotBlank(Optional.ofNullable(src.getProperty(e.getKey())).map(Object::toString).orElse(temp.getOrDefault(e.getKey(), "").toString())))
                 // we're not migrating to a property that is already occupied
                 .filter(e -> StringUtils.isBlank(Optional.ofNullable(src.getProperty(e.getValue())).map(Object::toString).orElse(temp.getOrDefault(e.getValue(), "").toString())))
                 .forEach(e -> {
@@ -385,6 +392,9 @@ public class SettingsService {
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER))) {
             defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER, Util.getDefaultMusicFolder());
         }
+        if (StringUtils.isBlank(env.getProperty(LogFile.FILE_NAME_PROPERTY))) {
+            defaultConstants.put(LogFile.FILE_NAME_PROPERTY, getDefaultLogFile());
+        }
     }
 
     public static Path getAirsonicHome() {
@@ -404,13 +414,41 @@ public class SettingsService {
         return home;
     }
 
+    /**
+     * Returns the directory in which all transcoders are installed.
+     */
+    public static Path getTranscodeDirectory() {
+        Path dir = getAirsonicHome().resolve("transcode");
+        if (!Files.exists(dir)) {
+            try {
+                dir = Files.createDirectory(dir);
+                LOG.info("Created directory {}", dir);
+            } catch (Exception e) {
+                LOG.warn("Failed to create directory {}", dir);
+            }
+        }
+        return dir;
+    }
+
+    public static boolean isTranscodeExecutableInstalled(String executable) {
+        try (Stream<Path> files = Files.list(getTranscodeDirectory())) {
+            return files.anyMatch(p -> MoreFiles.getNameWithoutExtension(p).equals(executable));
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public static String resolveTranscodeExecutable(String executable) {
+        return isTranscodeExecutableInstalled(executable) ? getTranscodeDirectory().resolve(executable).toString() : executable;
+    }
+
     private static String getFileSystemAppName() {
         String home = getAirsonicHome().toString();
         return home.contains("libresonic") ? "libresonic" : "airsonic";
     }
 
     public static String getDefaultJDBCUrl() {
-        return "jdbc:hsqldb:file:" + getAirsonicHome().resolve("db").resolve(getFileSystemAppName()).toString() + ";hsqldb.tx=mvcc;sql.enforce_size=false;sql.char_literal=false;sql.nulls_first=false;hsqldb.defrag_limit=50;shutdown=true";
+        return "jdbc:hsqldb:file:" + getAirsonicHome().resolve("db").resolve(getFileSystemAppName()).toString() + ";hsqldb.tx=mvcc;sql.enforce_size=false;sql.char_literal=false;sql.nulls_first=false;sql.pad_space=false;hsqldb.defrag_limit=50;shutdown=true";
     }
 
     public static String getDefaultJDBCUsername() {
@@ -425,8 +463,12 @@ public class SettingsService {
         return getInt(KEY_UPNP_PORT, DEFAULT_UPNP_PORT);
     }
 
-    public static Path getLogFile() {
-        return SettingsService.getAirsonicHome().resolve(getFileSystemAppName() + ".log");
+    public static String getDefaultLogFile() {
+        return SettingsService.getAirsonicHome().resolve(getFileSystemAppName() + ".log").toString();
+    }
+
+    public String getLogFile() {
+        return getProperty(LogFile.FILE_NAME_PROPERTY, getDefaultLogFile());
     }
 
     /**
@@ -522,6 +564,38 @@ public class SettingsService {
 
     public void setIgnoredArticles(String ignoredArticles) {
         setProperty(KEY_IGNORED_ARTICLES, ignoredArticles);
+    }
+
+    public String getUploadsFolder() {
+        return getProperty(KEY_UPLOADS_FOLDER, DEFAULT_UPLOADS_FOLDER);
+    }
+
+    public void setUploadsFolder(String uploadsFolder) {
+        setProperty(KEY_UPLOADS_FOLDER, uploadsFolder);
+    }
+
+    public String resolveContextualString(String s, String username) {
+        String[] contextuals = StringUtils.substringsBetween(s, "%{", "}");
+        if (contextuals == null || contextuals.length == 0) {
+            // if no context eval is needed, then short-circuit
+            return s;
+        }
+        Map<String, Object> context = new HashMap<>();
+        context.put("AIRSONIC_HOME", getAirsonicHome());
+        context.put("DEFAULT_PLAYLIST_FOLDER", getPlaylistFolder());
+        context.put("DEFAULT_MUSIC_FOLDER", Util.getDefaultMusicFolder());
+        if (StringUtils.isNotEmpty(username)) {
+            context.put("USER_NAME", username);
+            context.put("USER_MUSIC_FOLDERS", getMusicFoldersForUser(username).stream().map(MusicFolder::getPath).map(Path::toString).collect(Collectors.toList()));
+        }
+
+        // StandardEvaluationContext spelCtx = new StandardEvaluationContext(context);
+
+        return StringUtils.replaceEach(s,
+                Stream.of(contextuals).map(x -> "%{" + x + "}").toArray(String[]::new),
+                Stream.of(contextuals)
+                        .map(x -> new SpelExpressionParser().parseExpression(x).getValue(context, String.class))
+                        .toArray(String[]::new));
     }
 
     public String getGenreSeparators() {
@@ -863,6 +937,14 @@ public class SettingsService {
 
     public String getVideoImageCommand() {
         return getProperty(KEY_VIDEO_IMAGE_COMMAND, DEFAULT_VIDEO_IMAGE_COMMAND);
+    }
+
+    public String getSubtitlesExtractionCommand() {
+        return getProperty(KEY_SUBTITLES_EXTRACTION_COMMAND, DEFAULT_SUBTITLES_EXTRACTION_COMMAND);
+    }
+
+    public void setSubtitlesExtractionCommand(String command) {
+        setProperty(KEY_SUBTITLES_EXTRACTION_COMMAND, command);
     }
 
     public boolean isLdapEnabled() {

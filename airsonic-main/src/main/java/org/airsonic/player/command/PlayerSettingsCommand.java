@@ -52,8 +52,6 @@ public class PlayerSettingsCommand {
     private EnumHolder[] transcodeSchemeHolders;
     private Player[] players;
     private boolean isAdmin;
-    private String javaJukeboxMixer;
-    private String[] javaJukeboxMixers;
 
     public Integer getPlayerId() {
         return playerId;
@@ -205,26 +203,6 @@ public class PlayerSettingsCommand {
 
     public void setAdmin(boolean admin) {
         isAdmin = admin;
-    }
-
-
-    public void setReloadNeeded(boolean reloadNeeded) {
-    }
-
-    public String getJavaJukeboxMixer() {
-        return javaJukeboxMixer;
-    }
-
-    public void setJavaJukeboxMixer(String javaJukeboxMixer) {
-        this.javaJukeboxMixer = javaJukeboxMixer;
-    }
-
-    public String[] getJavaJukeboxMixers() {
-        return javaJukeboxMixers;
-    }
-
-    public void setJavaJukeboxMixers(String[] javaJukeboxMixers) {
-        this.javaJukeboxMixers = javaJukeboxMixers;
     }
 
     /**
