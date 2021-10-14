@@ -33,7 +33,8 @@ import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.StatusService;
-import org.airsonic.player.service.hls.FFmpegHlsSession;
+import org.airsonic.player.service.TranscodingService;
+import org.airsonic.player.service.hls.HlsSession;
 import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
@@ -108,12 +109,14 @@ public class HLSController {
     private StatusService statusService;
     @Autowired
     private SettingsService settingsService;
+    @Autowired
+    private TranscodingService transcodingService;
 
-    private final Map<FFmpegHlsSession.Key, FFmpegHlsSession> sessions = new ConcurrentHashMap<>();
+    private final Map<HlsSession.Key, HlsSession> sessions = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
-        FileUtil.delete(FFmpegHlsSession.getHlsRootDirectory());
+        FileUtil.delete(HlsSession.getHlsRootDirectory());
     }
 
     @GetMapping("/hls.m3u8")
@@ -146,12 +149,12 @@ public class HLSController {
         response.setHeader("Access-Control-Allow-Origin", "*");
         List<Pair<Integer, Dimension>> bitRates = parseBitRates(request).stream()
                 .map(b -> b.getRight() != null ? b
-                        : Pair.of(b.getLeft(), FFmpegHlsSession.getSuitableVideoSize(mediaFile.getWidth(),
+                        : Pair.of(b.getLeft(), TranscodingService.getSuitableVideoSize(mediaFile.getWidth(),
                                 mediaFile.getHeight(), b.getLeft())))
                 .collect(Collectors.toList());
         if (bitRates.isEmpty())
             bitRates = Collections.singletonList(
-                    Pair.of(VideoPlayerController.DEFAULT_BIT_RATE, FFmpegHlsSession.getSuitableVideoSize(
+                    Pair.of(VideoPlayerController.DEFAULT_BIT_RATE, TranscodingService.getSuitableVideoSize(
                             mediaFile.getWidth(), mediaFile.getHeight(), VideoPlayerController.DEFAULT_BIT_RATE)));
 
         String requestWithoutContextPath = request.getRequestURI().substring(request.getContextPath().length() + 1);
@@ -212,7 +215,7 @@ public class HLSController {
 
         for (Pair<Integer, Dimension> bitRate : bitRates) {
             Integer kbps = bitRate.getLeft();
-            int averageVideoBitRate = FFmpegHlsSession.getAverageVideoBitRate(kbps);
+            int averageVideoBitRate = TranscodingService.getAverageVideoBitRate(kbps);
             writer.println("#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=" + (kbps * 1000L) + ",AVERAGE-BANDWIDTH=" + (averageVideoBitRate * 1000L));
             UriComponentsBuilder url = prefix.cloneBuilder()
                     .pathSegment("hls.m3u8")
@@ -300,8 +303,8 @@ public class HLSController {
         }
         TransferStatus status = this.statusService.createStreamStatus(player);
         status.setFile(mediaFile.getFile());
-        FFmpegHlsSession.Key sessionKey = new FFmpegHlsSession.Key(id, playerId, maxBitRate, size, duration, audioTrack);
-        FFmpegHlsSession session = getOrCreateSession(sessionKey, mediaFile);
+        HlsSession.Key sessionKey = new HlsSession.Key(id, playerId, maxBitRate, size, duration, audioTrack);
+        HlsSession session = getOrCreateSession(sessionKey, mediaFile);
         Path segmentFile = session.waitForSegment(segmentIndex, 30000L);
         if (segmentFile == null) {
             throw new HttpServerErrorException(HttpStatus.SERVICE_UNAVAILABLE,
@@ -330,16 +333,16 @@ public class HLSController {
         return ResponseEntity.ok().headers(headers).body(resource);
     }
 
-    private FFmpegHlsSession getOrCreateSession(FFmpegHlsSession.Key sessionKey, MediaFile mediaFile) {
+    private HlsSession getOrCreateSession(HlsSession.Key sessionKey, MediaFile mediaFile) {
         return this.sessions.computeIfAbsent(sessionKey, k -> {
-            for (FFmpegHlsSession.Key k1 : sessions.keySet()) {
+            for (HlsSession.Key k1 : sessions.keySet()) {
                 if (k1.getMediaFileId() == k.getMediaFileId()
                         && StringUtils.equals(k1.getPlayerId(), k.getPlayerId())) {
                     sessions.remove(k1).destroySession();
                 }
             }
 
-            return new FFmpegHlsSession(k, mediaFile);
+            return new HlsSession(k, mediaFile, transcodingService);
         });
     }
 

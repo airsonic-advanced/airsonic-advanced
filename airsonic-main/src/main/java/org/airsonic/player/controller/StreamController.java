@@ -28,7 +28,6 @@ import org.airsonic.player.io.PlayQueueInputStream;
 import org.airsonic.player.io.ShoutCastOutputStream;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.*;
-import org.airsonic.player.service.hls.FFmpegHlsSession;
 import org.airsonic.player.service.sonos.SonosHelper;
 import org.airsonic.player.spring.KnownLengthInputStreamResource;
 import org.airsonic.player.util.FileUtil;
@@ -106,7 +105,6 @@ public class StreamController {
             @RequestParam Optional<Integer> maxBitRate,
             @RequestParam Optional<Integer> id,
             @RequestParam Optional<String> path,
-            @RequestParam(defaultValue = "false") boolean hls,
             @RequestParam(required = false) Double offsetSeconds,
             ServletWebRequest swr) throws Exception {
         Player player = playerService.getPlayer(swr.getRequest(), swr.getResponse(), false, true);
@@ -130,7 +128,7 @@ public class StreamController {
             LOG.info("{}: Incoming Podcast request for playlist {}", swr.getRequest().getRemoteAddr(), playlist);
         }
 
-        String targetFormat = hls ? "ts" : format;
+        String targetFormat = format;
         Integer bitRate = maxBitRate.filter(x -> x != 0).orElse(null);
 
         VideoTranscodingSettings videoTranscodingSettings = null;
@@ -164,7 +162,7 @@ public class StreamController {
             playQueue.addFiles(true, file);
             player.setPlayQueue(playQueue);
 
-            if ((file.isVideo() || hls) && !TranscodingService.FORMAT_RAW.equals(targetFormat)) {
+            if (file.isVideo() && !TranscodingService.FORMAT_RAW.equals(targetFormat)) {
                 videoTranscodingSettings = createVideoTranscodingSettings(file, swr.getRequest());
             }
 
@@ -406,14 +404,13 @@ public class StreamController {
         int timeOffset = ServletRequestUtils.getIntParameter(request, "timeOffset", 0);
         double defaultDuration = file.getDuration() == null ? Double.MAX_VALUE : file.getDuration() - timeOffset;
         double duration = ServletRequestUtils.getDoubleParameter(request, "duration", defaultDuration);
-        boolean hls = ServletRequestUtils.getBooleanParameter(request, "hls", false);
 
         Dimension dim = getRequestedVideoSize(request.getParameter("size"));
         if (dim == null) {
-            dim = FFmpegHlsSession.getSuitableVideoSize(existingWidth, existingHeight, maxBitRate);
+            dim = TranscodingService.getSuitableVideoSize(existingWidth, existingHeight, maxBitRate);
         }
 
-        return new VideoTranscodingSettings(dim.width, dim.height, timeOffset, duration, hls);
+        return new VideoTranscodingSettings(dim.width, dim.height, timeOffset, duration);
     }
 
     protected Dimension getRequestedVideoSize(String sizeSpec) {

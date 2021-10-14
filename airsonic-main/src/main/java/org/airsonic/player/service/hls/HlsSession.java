@@ -2,19 +2,20 @@ package org.airsonic.player.service.hls;
 
 import com.google.common.io.MoreFiles;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.VideoTranscodingSettings;
 import org.airsonic.player.io.InputStreamReaderThread;
+import org.airsonic.player.io.TranscodeInputStream;
 import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.TranscodingService;
 import org.airsonic.player.util.FileUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.Dimension;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -25,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class FFmpegHlsSession {
+public class HlsSession {
     private final Logger LOG;
 
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
@@ -36,37 +37,40 @@ public class FFmpegHlsSession {
 
     private final MediaFile mediaFile;
 
-    private Process ffmpegProcess;
+    private final TranscodingService transcodingService;
+
+    private Process process;
 
     private ScheduledFuture<?> destroySessionFuture;
 
-    public FFmpegHlsSession(Key sessionKey, MediaFile mediaFile) {
-        this.LOG = LoggerFactory.getLogger(FFmpegHlsSession.class.toString() + "-" + sessionKey.id());
-        this.LOG.info("Creating FFmpeg HLS session {}: {}", sessionKey.id(), sessionKey);
+    public HlsSession(Key sessionKey, MediaFile mediaFile, TranscodingService transcodingService) {
+        this.LOG = LoggerFactory.getLogger(HlsSession.class.toString() + "-" + sessionKey.id());
+        this.LOG.info("Creating HLS session {}: {}", sessionKey.id(), sessionKey);
         this.sessionKey = sessionKey;
         this.mediaFile = mediaFile;
+        this.transcodingService = transcodingService;
     }
 
     public Path waitForSegment(int segmentIndex, long timeoutMillis) throws Exception {
-        this.LOG.debug("Requesting segment {}", segmentIndex);
+        this.LOG.debug("Requesting hls segment {}", segmentIndex);
         scheduleSessionDestruction();
         Path segment = getSegment(segmentIndex);
         if (segment != null) {
             this.LOG.debug("Segment {} already produced.", segmentIndex);
             return segment;
         }
-        if (!isFFmpegAlive()) {
-            startFFmpeg(segmentIndex);
+        if (!isProcessAlive()) {
+            startProcess(segmentIndex);
         } else {
             Integer latestCompleted = getLatestCompletedSegmentIndex();
             if (latestCompleted != null
                     && (segmentIndex < latestCompleted.intValue() || segmentIndex > latestCompleted.intValue() + 2)) {
                 destroySession();
-                startFFmpeg(segmentIndex);
+                startProcess(segmentIndex);
             }
         }
         long timeout = currentTimeMillis() + timeoutMillis;
-        while (segment == null && currentTimeMillis() < timeout && isFFmpegAlive()) {
+        while (segment == null && currentTimeMillis() < timeout && isProcessAlive()) {
             this.LOG.debug("Segment {} not yet produced. Waiting.", segmentIndex);
             Thread.sleep(2000L);
             segment = getSegment(segmentIndex);
@@ -86,8 +90,8 @@ public class FFmpegHlsSession {
     }
 
     public void destroySession() {
-        this.LOG.debug("Destroying session");
-        killFFmpeg();
+        this.LOG.debug("Destroying hls session");
+        killProcess();
         FileUtil.delete(getDirectory());
     }
 
@@ -106,7 +110,7 @@ public class FFmpegHlsSession {
             SortedSet<Integer> result = children.filter(Files::isRegularFile)
                     .filter(c -> "ts".equals(MoreFiles.getFileExtension(c))).map(MoreFiles::getNameWithoutExtension)
                     .map(Integer::valueOf).collect(Collectors.toCollection(() -> new TreeSet<>()));
-            if (!result.isEmpty() && isFFmpegAlive()) {
+            if (!result.isEmpty() && isProcessAlive()) {
                 result.remove(result.last());
             }
             return result;
@@ -135,145 +139,40 @@ public class FFmpegHlsSession {
         return SettingsService.getAirsonicHome().resolve("hls");
     }
 
-    private void startFFmpeg(int segmentIndex) throws IOException {
-        List<String> command = new ArrayList<String>();
-        int peakVideoBitRate = this.sessionKey.getMaxBitRate();
-        int averageVideoBitRate = getAverageVideoBitRate(peakVideoBitRate);
-        int audioBitRate = getSuitableAudioBitRate(peakVideoBitRate);
-        int audioTrack = (this.sessionKey.getAudioTrack() == null) ? 1 : this.sessionKey.getAudioTrack().intValue();
-        command.add(SettingsService.resolveTranscodeExecutable("ffmpeg"));
-        if (segmentIndex > 0) {
-            command.add("-ss");
-            command.add(String.valueOf(segmentIndex * this.sessionKey.getDuration()));
-        }
-        command.add("-i");
-        command.add(this.mediaFile.getPath());
-        command.add("-s");
-        command.add(this.sessionKey.getSize());
-        command.add("-c:v");
-        command.add("libx264");
-        command.add("-flags");
-        command.add("+cgop");
-        command.add("-c:a");
-        command.add("aac");
-        command.add("-b:v");
-        command.add(averageVideoBitRate + "k");
-        command.add("-maxrate");
-        command.add(peakVideoBitRate + "k");
-        command.add("-b:a");
-        command.add(audioBitRate + "k");
-        command.add("-bufsize");
-        command.add("256k");
-        command.add("-map");
-        command.add("0:0");
-        command.add("-map");
-        command.add("0:" + audioTrack);
-        command.add("-ac");
-        command.add("2");
-        command.add("-preset");
-        command.add("superfast");
-        if (segmentIndex > 0)
-            command.add("-copyts");
-        // command.add("-pix_fmt yuv420p");
-        command.add("-v");
-        command.add("error");
-        command.add("-force_key_frames");
-        command.add("expr:gte(t,n_forced*10)");
-        command.add("-start_number");
-        command.add(String.valueOf(segmentIndex));
-        command.add("-hls_time");
-        command.add(this.sessionKey.getDuration().toString());
-        command.add("-hls_list_size");
-        command.add("0");
-        command.add("-hls_segment_filename");
-        command.add(getDirectory().resolve("%d.ts").toString());
-        command.add(getDirectory().resolve("out.m3u8").toString());
-        this.LOG.info("Starting ffmpeg for hls: {}", command);
-        this.ffmpegProcess = (new ProcessBuilder(command)).redirectErrorStream(true).start();
-        (new InputStreamReaderThread(this.ffmpegProcess.getInputStream(), getClass().getSimpleName(), true)).start();
+    private void startProcess(int segmentIndex) throws IOException {
+        String[] size = StringUtils.split(this.sessionKey.getSize(), "x");
+        VideoTranscodingSettings vts = new VideoTranscodingSettings(
+                Integer.valueOf(size[0]), Integer.valueOf(size[1]),
+                segmentIndex * this.sessionKey.getDuration(), this.sessionKey.getDuration(),
+                (this.sessionKey.getAudioTrack() == null) ? 1 : this.sessionKey.getAudioTrack(), segmentIndex,
+                getDirectory().resolve("%d.ts").toString(), getDirectory().resolve("out.m3u8").toString());
+        TranscodingService.Parameters parameters = transcodingService.getParameters(mediaFile, null, this.sessionKey.getMaxBitRate(), "ts", vts);
+        TranscodeInputStream in = (TranscodeInputStream) transcodingService.getTranscodedInputStream(parameters);
+
+        process = in.getProcess();
+        (new InputStreamReaderThread(process.getInputStream(), getClass().getSimpleName(), true)).start();
     }
 
-    private void killFFmpeg() {
-        if (this.ffmpegProcess != null) {
-            this.LOG.info("Killing ffmpeg");
+    private void killProcess() {
+        if (this.process != null) {
+            this.LOG.info("Killing hls process");
             try {
-                this.ffmpegProcess.destroy();
+                this.process.destroy();
             } catch (Exception e) {
-                this.LOG.error("Failed to kill ffmpeg", e);
+                this.LOG.error("Failed to kill hls process", e);
             }
         }
     }
 
-    private boolean isFFmpegAlive() {
-        if (this.ffmpegProcess == null)
+    private boolean isProcessAlive() {
+        if (this.process == null)
             return false;
         try {
-            this.ffmpegProcess.exitValue();
+            this.process.exitValue();
             return false;
         } catch (IllegalThreadStateException e) {
             return true;
         }
-    }
-
-    public static Dimension getSuitableVideoSize(Integer existingWidth, Integer existingHeight, int peakVideoBitRate) {
-        int w;
-        if (peakVideoBitRate < 400) {
-            w = 416;
-        } else if (peakVideoBitRate < 800) {
-            w = 480;
-        } else if (peakVideoBitRate < 1200) {
-            w = 640;
-        } else if (peakVideoBitRate < 2200) {
-            w = 768;
-        } else if (peakVideoBitRate < 3300) {
-            w = 960;
-        } else if (peakVideoBitRate < 8600) {
-            w = 1280;
-        } else {
-            w = 1920;
-        }
-        int h = even(w * 9 / 16);
-        if (existingWidth == null || existingHeight == null)
-            return new Dimension(w, h);
-        if (existingWidth.intValue() < w || existingHeight.intValue() < h)
-            return new Dimension(even(existingWidth.intValue()), even(existingHeight.intValue()));
-        double aspectRatio = existingWidth.doubleValue() / existingHeight.doubleValue();
-        h = (int) Math.round(w / aspectRatio);
-        return new Dimension(even(w), even(h));
-    }
-
-    private static int even(int size) {
-        return size + size % 2;
-    }
-
-    public static int getSuitableAudioBitRate(int peakVideoBitRate) {
-        if (peakVideoBitRate < 1200)
-            return 64;
-        if (peakVideoBitRate < 5000)
-            return 96;
-        return 128;
-    }
-
-    public static int getAverageVideoBitRate(int peakVideoBitRate) {
-        switch (peakVideoBitRate) {
-            case 200:
-                return 145;
-            case 400:
-                return 365;
-            case 800:
-                return 730;
-            case 1200:
-                return 1100;
-            case 2200:
-                return 2000;
-            case 3300:
-                return 3000;
-            case 5000:
-                return 4500;
-            case 6500:
-                return 6000;
-        }
-        return (int) (peakVideoBitRate * 0.9D);
     }
 
     private long currentTimeMillis() {
