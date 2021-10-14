@@ -153,6 +153,13 @@ Vanilla Airsonic can be downloaded from
 
 Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Advanced shares similar running instructions unless stated otherwise.
 
+### Building/Compiling
+You may compile the code yourself by using maven. One of the repositories does not have https, so you may need to allow that for maven. A custom `settings.xml` has been put in `.mvn` folder for this purpose. A sample invocation would be (in the root):
+```
+mvn --settings=./.mvn/settings.xml clean compile package verify
+```
+The main binary would be in `airsonic-main/target`
+
 Compatibility Notes:
 ------
 The following properties are new in Airsonic-Advanced:
