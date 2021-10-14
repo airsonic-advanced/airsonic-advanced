@@ -931,12 +931,20 @@ public class SettingsService {
         setProperty(KEY_HLS_COMMAND, command);
     }
 
-    String getJukeboxCommand() {
+    public String getJukeboxCommand() {
         return getProperty(KEY_JUKEBOX_COMMAND, DEFAULT_JUKEBOX_COMMAND);
+    }
+
+    public void setJukeboxCommand(String command) {
+        setProperty(KEY_JUKEBOX_COMMAND, command);
     }
 
     public String getVideoImageCommand() {
         return getProperty(KEY_VIDEO_IMAGE_COMMAND, DEFAULT_VIDEO_IMAGE_COMMAND);
+    }
+
+    public void setVideoImageCommand(String command) {
+        setProperty(KEY_VIDEO_IMAGE_COMMAND, command);
     }
 
     public String getSubtitlesExtractionCommand() {
