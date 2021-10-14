@@ -1408,7 +1408,6 @@ public class SubsonicRESTController {
             @RequestParam Optional<Integer> maxBitRate,
             @RequestParam Optional<Integer> id,
             @RequestParam Optional<String> path,
-            @RequestParam(defaultValue = "false") boolean hls,
             @RequestParam(required = false) Double offsetSeconds,
             ServletWebRequest swr) throws Exception {
         HttpServletRequest request = wrapRequest(swr.getRequest());
@@ -1417,7 +1416,7 @@ public class SubsonicRESTController {
             throw new APIException(ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to play files.");
         }
 
-        return streamController.handleRequest(authentication, playlist, format, suffix, maxBitRate, id, path, hls,
+        return streamController.handleRequest(authentication, playlist, format, suffix, maxBitRate, id, path,
                 offsetSeconds, new ServletWebRequest(request, swr.getResponse()));
     }
 

@@ -31,14 +31,29 @@ public class VideoTranscodingSettings {
     private final int height;
     private final int timeOffset;
     private final double duration;
-    private final boolean hls;
 
-    public VideoTranscodingSettings(int width, int height, int timeOffset, double duration, boolean hls) {
+    private int audioTrackIndex = 1;
+
+    // HLS stuff
+    private int hlsSegmentIndex;
+    private String hlsSegmentFilename;
+    // TODO shouldn't be part of this file
+    private String outputFilename;
+
+    public VideoTranscodingSettings(int width, int height, int timeOffset, double duration) {
         this.width = width;
         this.height = height;
         this.timeOffset = timeOffset;
         this.duration = duration;
-        this.hls = hls;
+    }
+
+    public VideoTranscodingSettings(int width, int height, int timeOffset, double duration, int audioTrackIndex,
+            int hlsSegmentIndex, String hlsSegmentFilename, String outputFilename) {
+        this(width, height, timeOffset, duration);
+        this.audioTrackIndex = audioTrackIndex;
+        this.hlsSegmentIndex = hlsSegmentIndex;
+        this.hlsSegmentFilename = hlsSegmentFilename;
+        this.outputFilename = outputFilename;
     }
 
     public int getWidth() {
@@ -57,7 +72,20 @@ public class VideoTranscodingSettings {
         return duration;
     }
 
-    public boolean isHls() {
-        return hls;
+    public int getAudioTrackIndex() {
+        return audioTrackIndex;
     }
+
+    public int getHlsSegmentIndex() {
+        return hlsSegmentIndex;
+    }
+
+    public String getHlsSegmentFilename() {
+        return hlsSegmentFilename;
+    }
+
+    public String getOutputFilename() {
+        return outputFilename;
+    }
+
 }

@@ -314,7 +314,7 @@ public class CoverArtController implements LastModified {
     }
 
     private InputStream getImageInputStreamForVideo(MediaFile mediaFile, int width, int height, int offset) throws Exception {
-        VideoTranscodingSettings videoSettings = new VideoTranscodingSettings(width, height, offset, 0, false);
+        VideoTranscodingSettings videoSettings = new VideoTranscodingSettings(width, height, offset, 0);
         TranscodingService.Parameters parameters = new TranscodingService.Parameters(mediaFile, videoSettings);
         String command = settingsService.getVideoImageCommand();
         parameters.setTranscoding(new Transcoding(null, null, null, null, command, null, null, false));

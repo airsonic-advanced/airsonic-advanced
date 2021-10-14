@@ -20,9 +20,9 @@
 package org.airsonic.player.controller;
 
 import junit.framework.TestCase;
-import org.airsonic.player.service.hls.FFmpegHlsSession;
+import org.airsonic.player.service.TranscodingService;
 
-import java.awt.*;
+import java.awt.Dimension;
 
 /**
  * @author Sindre Mehus
@@ -114,7 +114,7 @@ public class StreamControllerTestCase extends TestCase {
     }
 
     private void doTestGetSuitableVideoSize(Integer existingWidth, Integer existingHeight, Integer maxBitRate, int expectedWidth, int expectedHeight) {
-        Dimension dimension = FFmpegHlsSession.getSuitableVideoSize(existingWidth, existingHeight, maxBitRate);
+        Dimension dimension = TranscodingService.getSuitableVideoSize(existingWidth, existingHeight, maxBitRate);
         assertEquals("Wrong width.", expectedWidth, dimension.width);
         assertEquals("Wrong height.", expectedHeight, dimension.height);
     }
