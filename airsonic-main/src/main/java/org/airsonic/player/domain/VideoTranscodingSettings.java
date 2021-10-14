@@ -40,14 +40,6 @@ public class VideoTranscodingSettings {
     // TODO shouldn't be part of this file
     private String outputFilename;
 
-//    result.put("%v", averageVideoRate);
-//    result.put("%r", audioRate);
-//    result.put("%i", audioTrackIndex);
-//    result.put("%j", hlsSegmentIndex);
-//    result.put("%n", hlsSegmentFilename);
-//    result.put("%s", inputFilename);
-//    result.put("%p", outputFilename);
-
     public VideoTranscodingSettings(int width, int height, int timeOffset, double duration) {
         this.width = width;
         this.height = height;
