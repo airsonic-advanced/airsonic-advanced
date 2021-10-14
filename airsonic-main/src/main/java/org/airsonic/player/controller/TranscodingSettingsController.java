@@ -53,12 +53,15 @@ public class TranscodingSettingsController {
     @GetMapping
     public String doGet(Model model) {
 
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
 
         map.put("transcodings", transcodingService.getAllTranscodings());
         map.put("transcodeDirectory", SettingsService.getTranscodeDirectory());
         map.put("downsampleCommand", settingsService.getDownsamplingCommand());
         map.put("hlsCommand", settingsService.getHlsCommand());
+        map.put("jukeboxCommand", settingsService.getJukeboxCommand());
+        map.put("videoImageCommand", settingsService.getVideoImageCommand());
+        map.put("subtitlesExtractionCommand", settingsService.getSubtitlesExtractionCommand());
         map.put("transcodeEstimateTimePadding", settingsService.getTranscodeEstimateTimePadding());
         map.put("transcodeEstimateBytePadding", settingsService.getTranscodeEstimateBytePadding());
         map.put("brand", settingsService.getBrand());
@@ -137,6 +140,9 @@ public class TranscodingSettingsController {
         }
         settingsService.setDownsamplingCommand(StringUtils.trim(request.getParameter("downsampleCommand")));
         settingsService.setHlsCommand(StringUtils.trim(request.getParameter("hlsCommand")));
+        settingsService.setJukeboxCommand(StringUtils.trim(request.getParameter("jukeboxCommand")));
+        settingsService.setVideoImageCommand(StringUtils.trim(request.getParameter("videoImageCommand")));
+        settingsService.setSubtitlesExtractionCommand(StringUtils.trim(request.getParameter("subtitlesExtractionCommand")));
 
         String timePad = StringUtils.trimToNull(request.getParameter("transcodeEstimateTimePadding"));
         String bytePad = StringUtils.trimToNull(request.getParameter("transcodeEstimateBytePadding"));
