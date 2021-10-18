@@ -80,6 +80,8 @@
 
         // List of songs (of type PlayQueueInfo.Entry)
         songs: [],
+        
+        bookmarks: {},
 
         // Stream URL of the media being played
         currentStreamUrl: null,
@@ -381,7 +383,22 @@
                 },
                 '/topic/players/deleted'(msg) {
                     pq.onPlayerDeleted(JSON.parse(msg.body));
-                }
+                },
+
+                // Bookmarks
+                '/user/queue/bookmarks/added': function(msg) {
+	                pq.addedBookmarksCallback(JSON.parse(msg.body));
+	            },
+	            '/user/queue/bookmarks/deleted': function(msg) {
+	                pq.deleteBookmarksCallback(JSON.parse(msg.body));
+	            },
+	            '/user/queue/bookmarks/get': function(msg) {
+	                pq.getBookmarkCallback(JSON.parse(msg.body));
+	            },
+	            //one-time population only
+	            '/app/bookmarks/list': function(msg) {
+	                pq.getBookmarksCallback(JSON.parse(msg.body));
+	            }
             });
 
             var dialogSize = getJQueryUiDialogPlaylistSize("playQueue");
@@ -597,7 +614,7 @@
         },
 
         onEnded() {
-            setBookmark();
+            this.setBookmark();
             this.onNext(this.repeatStatus);
         },
 
@@ -618,6 +635,20 @@
                 this.lastProgressionBookmarkTime = position;
                 this.setBookmark();
             }
+        },
+
+        deleteBookmarksCallback(mediaFileId) {
+            delete this.bookmarks[mediaFileId];
+        },
+        addedBookmarksCallback(mediaFileId) {
+            // get new (added in callback)
+            top.StompClient.send("/app/bookmarks/get", mediaFileId);
+        },
+        getBookmarkCallback(bookmark) {
+            this.bookmarks[bookmark.mediaFileEntry.id] = bookmark;
+        },
+        getBookmarksCallback(bookmarks) {
+            this.bookmarks = bookmarks;
         },
 
         createMediaElementPlayer() {
@@ -748,7 +779,13 @@
           </c:if>
         },
 
-        onSkip(index, offset) {
+        onSkip(index, offset, nobookmarks) {
+            if (!offset && !nobookmarks) {
+                var bookmark = this.bookmarks[this.songs[index].id];
+                if (bookmark) {
+                    offset = bookmark.positionMillis;
+                }
+            }
             if (this.player.tech == 'WEB') {
                 this.playQueueSkipCallback({index: index, offset: offset});
             } else if (this.player.tech != 'EXTERNAL_WITH_PLAYLIST') {

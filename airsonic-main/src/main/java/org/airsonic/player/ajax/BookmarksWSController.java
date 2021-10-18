@@ -13,7 +13,7 @@ import org.springframework.stereotype.Controller;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
@@ -25,11 +25,11 @@ public class BookmarksWSController {
     private MediaFileService mediaFileService;
 
     @SubscribeMapping("/list")
-    private List<BookmarkInfo> getBookmarks(Principal user) {
+    private Map<Integer, BookmarkInfo> getBookmarks(Principal user) {
         return bookmarkService.getBookmarks(user.getName()).stream()
                 .map(b -> bookmarkToBookmarkInfo(b, user.getName()))
                 .filter(bi -> bi != null)
-                .collect(Collectors.toList());
+                .collect(Collectors.toMap(bi -> bi.getMediaFileEntry().getId(), bi -> bi));
     }
 
     private BookmarkInfo bookmarkToBookmarkInfo(Bookmark bookmark, String user) {

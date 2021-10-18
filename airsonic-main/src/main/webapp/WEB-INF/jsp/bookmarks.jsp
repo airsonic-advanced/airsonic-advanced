@@ -10,7 +10,8 @@
 
     <script type="text/javascript" language="javascript">
 
-        var bookmarks = [];
+        var bookmarks = {};
+        var bookmarksTable;
 
         function init() {
         	var ratingOnImage = "<spring:theme code='ratingOnImage'/>";
@@ -23,7 +24,6 @@
                 stateDuration: 60 * 60 * 24 * 365,
                 ordering: true,
                 order: [],
-                orderFixed: [ 0, 'asc' ],
                 orderMulti: true,
                 pageLength: ${model.initialPaginationSize},
               <c:set var="paginationaddition" value="${fn:contains(' 10 20 50 100 -1', ' '.concat(model.initialPaginationSize)) ? '' : ', '.concat(model.initialPaginationSize)}" />
@@ -35,10 +35,10 @@
                     emptyTable: "<fmt:message key='bookmarks.empty'/>"
                 },
                 ajax: function(ajaxData, callback) {
-                    callback({data: bookmarks});
+                    callback({data: Object.values(bookmarks)});
                 },
                 stripeClasses: ["bgcolor2", "bgcolor1"],
-                columnDefs: [{ targets: "_all", orderable: false }],
+                columnDefs: [{ targets: "_all", orderable: true }],
                 columns: [
                     { data: "id", className: "detail fit", visible: true },
                     { data: "mediaFileEntry.starred",
@@ -215,38 +215,38 @@
         }
 
         function onAdd(index) {
-            top.playQueue.onAdd(bookmarks[index].mediaFileEntry.id);
+            top.playQueue.onAdd(bookmarksTable.row(index).data().mediaFileEntry.id);
             $().toastmessage('showSuccessToast', '<fmt:message key="main.addlast.toast"/>')
         }
         function onAddNext(index) {
-            top.playQueue.onAddNext(bookmarks[index].mediaFileEntry.id);
+            top.playQueue.onAddNext(bookmarksTable.row(index).data().mediaFileEntry.id);
             $().toastmessage('showSuccessToast', '<fmt:message key="main.addnext.toast"/>')
         }
         function onStar(index) {
-            bookmarks[index].mediaFileEntry.starred = !bookmarks[index].mediaFileEntry.starred;
+            var bookmark = bookmarksTable.row(index).data();
+            bookmark.mediaFileEntry.starred = !bookmark.mediaFileEntry.starred;
 
-            if (bookmarks[index].mediaFileEntry.starred) {
-                top.StompClient.send("/app/rate/mediafile/star", JSON.stringify([bookmarks[index].mediaFileEntry.id]));
+            if (bookmark.mediaFileEntry.starred) {
+                top.StompClient.send("/app/rate/mediafile/star", JSON.stringify([bookmark.mediaFileEntry.id]));
             } else {
-                top.StompClient.send("/app/rate/mediafile/unstar", JSON.stringify([bookmarks[index].mediaFileEntry.id]));
+                top.StompClient.send("/app/rate/mediafile/unstar", JSON.stringify([bookmark.mediaFileEntry.id]));
             }
             bookmarksTable.cell(index, "starred:name").invalidate();
         }
         function onRemoveBookmark(index) {
-            top.StompClient.send("/app/bookmarks/delete", bookmarks[index].mediaFileEntry.id);
+            top.StompClient.send("/app/bookmarks/delete", bookmarksTable.row(index).data().mediaFileEntry.id);
         }
         function deleteBookmarksCallback(mediaFileId) {
-            getBookmarksCallback(bookmarks.filter(b => b.mediaFileEntry.id != mediaFileId));
+            delete this.bookmarks[mediaFileId];
+            bookmarksTable.ajax.reload().columns.adjust();
         }
         function addedBookmarksCallback(mediaFileId) {
-            // delete old first
-            deleteBookmarksCallback(mediaFileId);
             // get new (added in callback)
             top.StompClient.send("/app/bookmarks/get", mediaFileId);
         }
         function getBookmarkCallback(bookmark) {
-            this.bookmarks.push(bookmark);
-            getBookmarksCallback(bookmarks);
+            this.bookmarks[bookmark.mediaFileEntry.id] = bookmark;
+            bookmarksTable.ajax.reload().columns.adjust();
         }
         function getBookmarksCallback(bookmarks) {
             this.bookmarks = bookmarks;
