@@ -1780,10 +1780,9 @@ public class SubsonicRESTController {
         int mediaFileId = getRequiredIntParameter(request, "id");
         long position = getRequiredLongParameter(request, "position");
         String comment = request.getParameter("comment");
-        Instant now = Instant.now();
 
-        Bookmark bookmark = new Bookmark(0, mediaFileId, position, username, comment, now, now);
-        bookmarkService.createOrUpdateBookmark(bookmark);
+        bookmarkService.setBookmark(username, mediaFileId, position, comment);
+
         writeEmptyResponse(request, response);
     }
 

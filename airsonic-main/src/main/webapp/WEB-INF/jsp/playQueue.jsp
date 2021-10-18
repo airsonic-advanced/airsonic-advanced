@@ -597,7 +597,27 @@
         },
 
         onEnded() {
+            setBookmark();
             this.onNext(this.repeatStatus);
+        },
+
+        setBookmark() {
+            var song = this.songs[this.currentSongIndex];
+            //if (!song.bookmarkable) {
+            //    return;
+            //}
+            var positionMillis = Math.round(this.audioPlayer.currentTime * 1000);
+            song.bookmarkPositionMillis = positionMillis;
+            top.StompClient.send("/app/bookmarks/set", JSON.stringify({positionMillis: positionMillis, comment: "Played on Web Player " + this.player.id, mediaFileId: song.id}));
+        },
+        lastProgressionBookmarkTime: 0,
+        updateProgressionBookmark() {
+            var song = this.songs[this.currentSongIndex];
+            var position = Math.round(this.audioPlayer.currentTime);
+            if ((this.lastProgressionBookmarkTime != position) && (position % 10 == 0)) {
+                this.lastProgressionBookmarkTime = position;
+                this.setBookmark();
+            }
         },
 
         createMediaElementPlayer() {
@@ -618,6 +638,9 @@
 
                     // Once playback reaches the end, go to the next song, if any.
                     $(mediaElement).on("ended", () => pq.onEnded());
+                    $(mediaElement).on("timeupdate", () => pq.updateProgressionBookmark());
+                    $(mediaElement).on("seeked", () => pq.setBookmark());
+                    $(mediaElement).on("paused", () => pq.setBookmark());
 
                     // skip to first song if no src loaded
                     $(".mejs__controls .mejs__button.mejs__playpause-button.mejs__play button").on("click", () => {

@@ -21,8 +21,10 @@ package org.airsonic.player.controller;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.MoreFiles;
+import org.airsonic.player.domain.Bookmark;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.service.BookmarkService;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.NetworkService;
@@ -74,6 +76,8 @@ public class VideoPlayerController {
     private CaptionsController captionsController;
     @Autowired
     private JWTSecurityService jwtSecurityService;
+    @Autowired
+    private BookmarkService bookmarkService;
 
     @GetMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -84,6 +88,16 @@ public class VideoPlayerController {
         MediaFile file = mediaFileService.getMediaFile(id);
         mediaFileService.populateStarredDate(file, user.getUsername());
 
+        Long position = ServletRequestUtils.getLongParameter(request, "position");
+        if (position == null) {
+            Bookmark bookmark = bookmarkService.getBookmark(user.getUsername(), id);
+            if (bookmark != null) {
+                position = bookmark.getPositionMillis();
+            } else {
+                position = 0L;
+            }
+        }
+
         Integer playerId = playerService.getPlayer(request, response).getId();
         String url = NetworkService.getBaseUrl(request);
         boolean streamable = isStreamable(file);
@@ -93,6 +107,7 @@ public class VideoPlayerController {
         List<CaptionsController.CaptionInfo> captions = captionsController.listCaptions(file, NetworkService.getBaseUrl(request));
 
         map.put("video", file);
+        map.put("position", position);
         map.put("streamable", streamable);
         map.put("castable", castable);
         map.put("captions", captions);

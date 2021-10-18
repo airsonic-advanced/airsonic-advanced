@@ -24,8 +24,11 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,6 +44,11 @@ public class BookmarkDao extends AbstractDao {
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
 
     private BookmarkRowMapper bookmarkRowMapper = new BookmarkRowMapper();
+
+    @PostConstruct
+    public void register() throws Exception {
+        registerInserts("bookmark", "id", Arrays.asList(INSERT_COLUMNS.split(", ")), Bookmark.class);
+    }
 
     /**
      * Returns all bookmarks.
@@ -62,6 +70,11 @@ public class BookmarkDao extends AbstractDao {
         return query(sql, bookmarkRowMapper, username);
     }
 
+    public Bookmark getBookmark(String username, int mediaFileId) {
+        String sql = "select " + QUERY_COLUMNS + " from bookmark where username=? and media_file_id=?";
+        return queryOne(sql, bookmarkRowMapper, username, mediaFileId);
+    }
+
     /**
      * Creates or updates a bookmark.  If created, the ID of the bookmark will be set by this method.
      */
@@ -71,10 +84,7 @@ public class BookmarkDao extends AbstractDao {
                 bookmark.getPositionMillis(), bookmark.getComment(), bookmark.getChanged(), bookmark.getMediaFileId(), bookmark.getUsername());
 
         if (n == 0) {
-            update("insert into bookmark (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")",
-                   bookmark.getMediaFileId(), bookmark.getPositionMillis(), bookmark.getUsername(), bookmark.getComment(),
-                   bookmark.getCreated(), bookmark.getChanged());
-            int id = queryForInt("select id from bookmark where media_file_id=? and username=?", 0, bookmark.getMediaFileId(), bookmark.getUsername());
+            Integer id = insert("bookmark", bookmark);
             bookmark.setId(id);
         }
     }
@@ -88,6 +98,7 @@ public class BookmarkDao extends AbstractDao {
     }
 
     private static class BookmarkRowMapper implements RowMapper<Bookmark> {
+        @Override
         public Bookmark mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Bookmark(rs.getInt(1), rs.getInt(2), rs.getLong(3), rs.getString(4),
                     rs.getString(5), Optional.ofNullable(rs.getTimestamp(6)).map(x -> x.toInstant()).orElse(null), Optional.ofNullable(rs.getTimestamp(7)).map(x -> x.toInstant()).orElse(null));

@@ -14,6 +14,7 @@ if (top.keyboardShortcutsEnabled) {
   Mousetrap.bind('g p', function() { parent.frames.main.location.href = "playlists.view?"; });
   Mousetrap.bind('g o', function() { parent.frames.main.location.href = "podcastChannels.view?"; });
   Mousetrap.bind('g s', function() { parent.frames.main.location.href = "settings.view?"; });
+  Mousetrap.bind('g b', function() { parent.frames.main.location.href = "bookmarks.view?"; });
   Mousetrap.bind('g t', function() { parent.frames.main.location.href = "starred.view?"; });
   Mousetrap.bind('g r', function() { parent.frames.main.location.href = "more.view?"; });
   Mousetrap.bind('g a', function() { parent.frames.main.location.href = "help.view?"; });

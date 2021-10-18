@@ -59,16 +59,26 @@
           remoteCaptions: [],
           currentUrl: "${model.defaultBitRate}",
           videoId: "${model.video.id}",
+          position: ${model.position},
           contentType: "${model.contentType}",
           hideShare: ${model.user.shareRole ? 'true': 'false'},
           hideDownload: ${model.user.downloadRole ? 'true': 'false'}
+        }
+
+        function setBookmark() {
+            var positionMillis = Math.round(this.videoPlayer.currentTime * 1000);
+            if ((videoModel.position != positionMillis) && (positionMillis % 40000 == 0)) {
+                videoModel.position = positionMillis;
+                top.StompClient.send("/app/bookmarks/set", JSON.stringify({positionMillis: positionMillis, comment: "Played on Web Video Player", mediaFileId: videoModel.videoId}));
+            }
         }
 
         function init() {
             $.get(videoModel.remoteCaptionsListUrl, data => {
                 videoModel.remoteCaptions = data;
             });
-            var videoPlayer = new MediaElementPlayer("videoPlayer", {
+            var vpr = this;
+            this.videoPlayer = new MediaElementPlayer("videoPlayer", {
                 alwaysShowControls: true,
                 enableKeyboard: true,
                 useDefaultControls: true,
@@ -103,6 +113,14 @@
                     </c:if>
                     // add dimensions to playing vid
                     instance.setSrc($('#videoPlayer source[data-quality="${model.defaultBitRate}"]')[0].src);
+                    // set position
+                    instance.setCurrentTime(videoModel.position/1000);
+
+                    // Once playback reaches the end, go to the next song, if any.
+                    $(mediaElement).on("ended", () => vpr.setBookmark());
+                    $(mediaElement).on("timeupdate", () => vpr.setBookmark());
+                    $(mediaElement).on("seeked", () => vpr.setBookmark());
+                    $(mediaElement).on("paused", () => vpr.setBookmark());
                 }
             });
             // add dimensions to play at

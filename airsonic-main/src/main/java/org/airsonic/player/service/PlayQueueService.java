@@ -63,6 +63,8 @@ public class PlayQueueService {
     @Autowired
     private InternetRadioService internetRadioService;
     @Autowired
+    private BookmarkService bookmarkService;
+    @Autowired
     private SimpMessagingTemplate brokerTemplate;
 
     public void start(Player player) {
