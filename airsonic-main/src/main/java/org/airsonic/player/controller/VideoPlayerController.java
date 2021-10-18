@@ -24,12 +24,14 @@ import com.google.common.io.MoreFiles;
 import org.airsonic.player.domain.Bookmark;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.UserSettings;
 import org.airsonic.player.service.BookmarkService;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.NetworkService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SecurityService;
+import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.metadata.MetaData;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -78,6 +80,8 @@ public class VideoPlayerController {
     private JWTSecurityService jwtSecurityService;
     @Autowired
     private BookmarkService bookmarkService;
+    @Autowired
+    private SettingsService settingsService;
 
     @GetMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -97,6 +101,7 @@ public class VideoPlayerController {
                 position = 0L;
             }
         }
+        UserSettings settings = settingsService.getUserSettings(user.getUsername());
 
         Integer playerId = playerService.getPlayer(request, response).getId();
         String url = NetworkService.getBaseUrl(request);
@@ -108,6 +113,8 @@ public class VideoPlayerController {
 
         map.put("video", file);
         map.put("position", position);
+        map.put("autoBookmark", settings.getAutoBookmark());
+        map.put("videoBookmarkFrequency", settings.getVideoBookmarkFrequency());
         map.put("streamable", streamable);
         map.put("castable", castable);
         map.put("captions", captions);

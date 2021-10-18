@@ -82,6 +82,8 @@
         songs: [],
         
         bookmarks: {},
+        autoBookmark: ${model.autoBookmark},
+        audioBookmarkFrequency: ${model.audioBookmarkFrequency},
 
         // Stream URL of the media being played
         currentStreamUrl: null,
@@ -619,21 +621,21 @@
         },
 
         setBookmark() {
-            var song = this.songs[this.currentSongIndex];
-            //if (!song.bookmarkable) {
-            //    return;
-            //}
-            var positionMillis = Math.round(this.audioPlayer.currentTime * 1000);
-            song.bookmarkPositionMillis = positionMillis;
-            top.StompClient.send("/app/bookmarks/set", JSON.stringify({positionMillis: positionMillis, comment: "Played on Web Player " + this.player.id, mediaFileId: song.id}));
+            if (this.autoBookmark) {
+                var song = this.songs[this.currentSongIndex];
+                var positionMillis = Math.round(this.audioPlayer.currentTime * 1000);
+                top.StompClient.send("/app/bookmarks/set", JSON.stringify({positionMillis: positionMillis, comment: "Played on Web Player " + this.player.id, mediaFileId: song.id}));
+            }
         },
         lastProgressionBookmarkTime: 0,
         updateProgressionBookmark() {
-            var song = this.songs[this.currentSongIndex];
-            var position = Math.round(this.audioPlayer.currentTime);
-            if ((this.lastProgressionBookmarkTime != position) && (position % 10 == 0)) {
-                this.lastProgressionBookmarkTime = position;
-                this.setBookmark();
+            if (this.autoBookmark) {
+                var song = this.songs[this.currentSongIndex];
+                var position = Math.round(this.audioPlayer.currentTime);
+                if ((this.lastProgressionBookmarkTime != position) && (position % this.audioBookmarkFrequency == 0)) {
+                    this.lastProgressionBookmarkTime = position;
+                    this.setBookmark();
+                }
             }
         },
 
