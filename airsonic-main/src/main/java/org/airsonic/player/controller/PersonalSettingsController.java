@@ -89,6 +89,10 @@ public class PersonalSettingsController {
         command.setPaginationSizeFolders(userSettings.getPaginationSizeFolders());
         command.setPaginationSizePlaylist(userSettings.getPaginationSizePlaylist());
         command.setPaginationSizePlayqueue(userSettings.getPaginationSizePlayqueue());
+        command.setPaginationSizeBookmarks(userSettings.getPaginationSizeBookmarks());
+        command.setAutoBookmark(userSettings.getAutoBookmark());
+        command.setAudioBookmarkFrequency(userSettings.getAudioBookmarkFrequency());
+        command.setVideoBookmarkFrequency(userSettings.getVideoBookmarkFrequency());
 
         Locale currentLocale = userSettings.getLocale();
         Locale[] locales = settingsService.getAvailableLocales();
@@ -167,6 +171,10 @@ public class PersonalSettingsController {
         settings.setPaginationSizeFolders(command.getPaginationSizeFolders());
         settings.setPaginationSizePlaylist(command.getPaginationSizePlaylist());
         settings.setPaginationSizePlayqueue(command.getPaginationSizePlayqueue());
+        settings.setPaginationSizeBookmarks(command.getPaginationSizeBookmarks());
+        settings.setAutoBookmark(command.getAutoBookmark());
+        settings.setAudioBookmarkFrequency(command.getAudioBookmarkFrequency());
+        settings.setVideoBookmarkFrequency(command.getVideoBookmarkFrequency());
 
         settings.setChanged(Instant.now());
         settingsService.updateUserSettings(settings);

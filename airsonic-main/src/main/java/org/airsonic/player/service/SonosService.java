@@ -349,8 +349,10 @@ public class SonosService implements SonosSoap {
                             Holder<HttpHeaders> httpHeaders, Holder<Integer> uriTimeout, Holder<PositionInformation> positionInformation,
                             Holder<String> privateDataFieldName
     ) throws CustomFault {
-        result.value = sonosHelper.getMediaURI(Integer.parseInt(id), getUsername(), getRequest());
-
+        int mediaFileId = Integer.parseInt(id);
+        String username = getUsername();
+        result.value = sonosHelper.getMediaURI(mediaFileId, getUsername(), getRequest());
+        positionInformation.value = this.sonosHelper.getPositionInformation(mediaFileId, username);
         LOG.debug("getMediaURI: {} -> {}", id, result.value);
     }
 
@@ -628,12 +630,19 @@ public class SonosService implements SonosSoap {
 
     @Override
     public void setPlayedSeconds(String id, int seconds, String contextId, String privateData, Integer offsetMillis) throws CustomFault {
-
+        if (offsetMillis != null) {
+            this.sonosHelper.createBookmark(Integer.parseInt(id), offsetMillis, this.getUsername());
+        }
     }
 
     @Override
     public ReportPlaySecondsResult reportPlaySeconds(String id, int seconds, String contextId, String privateData, Integer offsetMillis) throws CustomFault {
-        return null;
+        if (offsetMillis != null) {
+            this.sonosHelper.createBookmark(Integer.parseInt(id), offsetMillis, getUsername());
+        }
+        ReportPlaySecondsResult result = new ReportPlaySecondsResult();
+        result.setInterval(60);
+        return result;
     }
 
     @Override
@@ -659,7 +668,9 @@ public class SonosService implements SonosSoap {
 
     @Override
     public void reportPlayStatus(String id, String status, String contextId, Integer offsetMillis) throws CustomFault {
-
+        if (offsetMillis != null) {
+            this.sonosHelper.createBookmark(Integer.parseInt(id), offsetMillis, this.getUsername());
+        }
     }
 
     @Override
