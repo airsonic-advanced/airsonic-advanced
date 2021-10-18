@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" %>
 <%--@elvariable id="command" type="org.airsonic.player.command.PlayerSettingsCommand"--%>
 
@@ -120,19 +121,6 @@ $(document).ready(function() {
                     <td><form:input path="name" size="16"/></td>
                     <td colspan="2"><c:import url="helpToolTip.jsp"><c:param name="topic" value="playername"/></c:import></td>
                 </tr>
-
-                <tr class="technologyDepends JAVA_JUKEBOX">
-                    <td><fmt:message key="playersettings.javaJukeboxMixer"/></td>
-                    <td>
-                        <form:select path="javaJukeboxMixer">
-                            <c:forEach items="${command.javaJukeboxMixers}" var="javaJukeboxMixer">
-                                <form:option value="${javaJukeboxMixer}" label="${javaJukeboxMixer}"/>
-                            </c:forEach>
-                        </form:select>
-                    </td>
-                    <td colspan="2"></td>
-                </tr>
-
 
                 <%// Max bitrate %>
                 <tr class="technologyDepends WEB EXTERNAL EXTERNAL_WITH_PLAYLIST JUKEBOX">

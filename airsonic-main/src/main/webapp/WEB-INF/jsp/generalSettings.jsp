@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8" %>
 <%@ page import="org.airsonic.player.domain.CoverArtSource" %>
 <%--@elvariable id="command" type="org.airsonic.player.command.GeneralSettingsCommand"--%>
@@ -69,6 +70,14 @@
                 <form:input path="ignoredArticles" size="70"/>
                 <c:import url="helpToolTip.jsp"><c:param name="topic" value="ignoredarticles"/></c:import>
             </td>
+        </tr>
+        
+        <tr>
+            <td><fmt:message key="generalsettings.genreseparators"/></td>
+            <td>
+                <form:input path="genreSeparators" size="70"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="genreseparators"/></c:import>
+            </td>S
         </tr>
 
         <tr>

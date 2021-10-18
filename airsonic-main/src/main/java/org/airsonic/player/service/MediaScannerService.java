@@ -339,9 +339,9 @@ public class MediaScannerService {
             return;
         }
         if (file.isAlbum()) {
-            genres.incrementAlbumCount(genre);
+            genres.incrementAlbumCount(genre, settingsService.getGenreSeparators());
         } else if (file.isAudio()) {
-            genres.incrementSongCount(genre);
+            genres.incrementSongCount(genre, settingsService.getGenreSeparators());
         }
     }
 

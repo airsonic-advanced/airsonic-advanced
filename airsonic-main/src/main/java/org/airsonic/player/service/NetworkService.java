@@ -19,9 +19,11 @@
  */
 package org.airsonic.player.service;
 
+import org.airsonic.player.spring.WebsocketConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UrlPathHelper;
 
@@ -41,6 +43,10 @@ public class NetworkService {
     private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
 
     private final static Logger LOG = LoggerFactory.getLogger(NetworkService.class);
+
+    public static String getBaseUrl(SimpMessageHeaderAccessor websocketHeaders) {
+        return getBaseUrl((HttpServletRequest) websocketHeaders.getSessionAttributes().get(WebsocketConfiguration.UNDERLYING_SERVLET_REQUEST));
+    }
 
     public static String getBaseUrl(HttpServletRequest request) {
         try {

@@ -65,7 +65,7 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
     protected Res createResourceForSong(MediaFile song) {
         Player player = playerService.getGuestPlayer(null);
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(getBaseUrl() + "/ext/stream")
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString("ext/stream")
                 .queryParam("id", song.getId())
                 .queryParam("player", player.getId());
 
@@ -73,9 +73,9 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
             builder.queryParam("format", TranscodingService.FORMAT_RAW);
         }
 
-        jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS, builder);
+        builder = jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS, builder);
 
-        String url = builder.toUriString();
+        String url = getBaseUrl() + builder.toUriString();
 
         String suffix = song.isVideo() ? FilenameUtils.getExtension(song.getPath()) : transcodingService.getSuffix(player, song, null);
         String mimeTypeString = StringUtil.getMimeType(suffix);
@@ -98,7 +98,7 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
         if (StringUtils.isBlank(dlnaBaseLANURL)) {
             throw new RuntimeException("DLNA Base LAN URL is not set correctly");
         }
-        return dlnaBaseLANURL;
+        return StringUtils.appendIfMissing(dlnaBaseLANURL, "/");
     }
 
     protected BrowseResult createBrowseResult(DIDLContent didl, int count, int totalMatches) throws Exception {

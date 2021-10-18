@@ -19,10 +19,13 @@
  */
 package org.airsonic.player.domain;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 /**
  * Represents a list of genres.
@@ -34,12 +37,32 @@ public class Genres {
 
     private final Map<String, Genre> genres = new ConcurrentHashMap<>();
 
-    public void incrementAlbumCount(String genreName) {
-        genres.computeIfAbsent(genreName, k -> new Genre(genreName)).incrementAlbumCount();
+    // genre names can be ([genre] --> [split to])
+    // - abc --> ['abc']
+    // - abc; --> ['abc', '']
+    // - abc;xyz --> ['abc', 'xyz']
+    // - abc; xyz --> ['abc', ' xyz']
+
+    public void incrementAlbumCount(String genreName, String separators) {
+        String[] splitGenres = StringUtils.split(genreName, separators);
+        if (splitGenres.length > 1) { // otherwise it's the same genre as the original
+            Stream.of(splitGenres)
+                    .map(StringUtils::trim)
+                    .filter(StringUtils::isNotBlank)
+                    .forEach(s -> genres.computeIfAbsent(s, k -> new Genre(k)).incrementAlbumCount());
+        }
+        genres.computeIfAbsent(genreName, k -> new Genre(k)).incrementAlbumCount();
     }
 
-    public void incrementSongCount(String genreName) {
-        genres.computeIfAbsent(genreName, k -> new Genre(genreName)).incrementSongCount();
+    public void incrementSongCount(String genreName, String separators) {
+        String[] splitGenres = StringUtils.split(genreName, separators);
+        if (splitGenres.length > 1) { // otherwise it's the same genre as the original
+            Stream.of(splitGenres)
+                    .map(StringUtils::trim)
+                    .filter(StringUtils::isNotBlank)
+                    .forEach(s -> genres.computeIfAbsent(s, k -> new Genre(k)).incrementSongCount());
+        }
+        genres.computeIfAbsent(genreName, k -> new Genre(k)).incrementSongCount();
     }
 
     public List<Genre> getGenres() {

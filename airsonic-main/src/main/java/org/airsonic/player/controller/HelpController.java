@@ -37,6 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -89,7 +90,7 @@ public class HelpController {
         map.put("serverInfo", serverInfo);
         map.put("usedMemory", totalMemory - freeMemory);
         map.put("totalMemory", totalMemory);
-        Path logFile = SettingsService.getLogFile();
+        Path logFile = Paths.get(settingsService.getLogFile());
         List<String> latestLogEntries = getLatestLogEntries(logFile);
         map.put("logEntries", latestLogEntries);
         map.put("logFile", logFile);

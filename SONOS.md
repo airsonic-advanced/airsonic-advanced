@@ -14,7 +14,7 @@ There are 2 steps:
 In Airsonic / Settings / Sonos
 - Enable Sonos
 - Select the method you wish to use to link Airsonic with Sonos, **Multi User** or **One User**
-- Enter the Root host address, this is the network address of the Airsonic installation, and allows Sonos to communicate with Airsonic.  If your network has DNS it may be a DNS name, ie. <http://airsonic:8080/>, if your network does not have DNS then it must be the IP address, ie. <http://192.168.0.10:8080/>.  If you are using docker, please take into consideration the section on docker below.
+- Enter the Root host address, this is the network address of the Airsonic installation, and allows Sonos to communicate with Airsonic.  If your network has DNS it may be a DNS name, ie. <http://airsonic:8080/>, if your network does not have DNS then it must be the IP address, ie. <http://192.168.0.10:8080/>.  If you are using docker, please take into consideration the section on docker below. This setting **must** match the root of the EndPoint URL in the Sonos service config down below.
 - Enter the Music service name. This is the name of your Airsonic service within the Sonos application.  ie. *Airsonic*
 - Save
 
@@ -60,7 +60,7 @@ Enter the following values into the form and submit.
 
 - SID – Any legal value except 244, ie. 242
 - Service Name – *Airsonic*
-- Endpoint URL – http://[AIRSONIC-OR-DOCKER-HOST-IP]:8080/ws/Sonos
+- Endpoint URL – http://[AIRSONIC-OR-DOCKER-HOST-IP]:8080/ws/Sonos  (Ensure the 'Root host address' config item on the Sonos settings page in Airsonic matches the root of this URL)
 - Secure Endpoint URL – http://[AIRSONIC-OR-DOCKER-HOST-IP]:8080/ws/Sonos
 - Polling Interval – 1200
 - Authentication - *Anonymous* or *Application Link*.  If you chose **Multi User** in Airsonic, then use *Application Link*.  If you chose **One User** in Airsonic, then use *Anonymous*.

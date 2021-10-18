@@ -14,5 +14,7 @@
     <include file="podcast-description-text.xml" relativeToChangelogFile="true"/>
     <include file="insert-mod-transcoding.xml" relativeToChangelogFile="true"/>
     <include file="mediafile-add-start-position.xml" relativeToChangelogFile="true"/>
-    <!-- <include file="mediafile-modify-path-index.xml" relativeToChangelogFile="true"/> -->
+    <!-- <include file="mediafile-modify-path-index.xml" relativeToChangelogFile="true"/> see discussion for PR #546 -->
+    <include file="add-player-id-autoincrement.xml" relativeToChangelogFile="true"/>
+    <include file="remove-java-jukebox.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

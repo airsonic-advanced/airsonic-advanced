@@ -60,6 +60,10 @@ public class PersonalSettingsCommand {
     private int paginationSizeFolders;
     private int paginationSizePlayqueue;
     private int paginationSizePlaylist;
+    private int paginationSizeBookmarks;
+    private boolean autoBookmark;
+    private int videoBookmarkFrequency;
+    private int audioBookmarkFrequency;
 
     public User getUser() {
         return user;
@@ -299,5 +303,37 @@ public class PersonalSettingsCommand {
 
     public void setPaginationSizePlaylist(int paginationSizePlaylist) {
         this.paginationSizePlaylist = paginationSizePlaylist;
+    }
+
+    public int getPaginationSizeBookmarks() {
+        return paginationSizeBookmarks;
+    }
+
+    public void setPaginationSizeBookmarks(int paginationSizeBookmarks) {
+        this.paginationSizeBookmarks = paginationSizeBookmarks;
+    }
+
+    public boolean getAutoBookmark() {
+        return autoBookmark;
+    }
+
+    public void setAutoBookmark(boolean autoBookmark) {
+        this.autoBookmark = autoBookmark;
+    }
+
+    public int getVideoBookmarkFrequency() {
+        return videoBookmarkFrequency;
+    }
+
+    public void setVideoBookmarkFrequency(int videoBookmarkFrequency) {
+        this.videoBookmarkFrequency = videoBookmarkFrequency;
+    }
+
+    public int getAudioBookmarkFrequency() {
+        return audioBookmarkFrequency;
+    }
+
+    public void setAudioBookmarkFrequency(int audioBookmarkFrequency) {
+        this.audioBookmarkFrequency = audioBookmarkFrequency;
     }
 }

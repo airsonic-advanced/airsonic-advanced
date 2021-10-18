@@ -71,6 +71,7 @@ public class TranscodeInputStream extends InputStream {
         // Copy data in a separate thread
         if (in != null) {
             new Thread(name + " TranscodedInputStream copy thread") {
+                @Override
                 public void run() {
                     try {
                         IOUtils.copy(in, processOutputStream);
@@ -85,9 +86,14 @@ public class TranscodeInputStream extends InputStream {
         }
     }
 
+    public Process getProcess() {
+        return process;
+    }
+
     /**
      * @see InputStream#read()
      */
+    @Override
     public int read() throws IOException {
         return processInputStream.read();
     }
@@ -95,6 +101,7 @@ public class TranscodeInputStream extends InputStream {
     /**
      * @see InputStream#read(byte[])
      */
+    @Override
     public int read(byte[] b) throws IOException {
         return processInputStream.read(b);
     }
@@ -102,6 +109,7 @@ public class TranscodeInputStream extends InputStream {
     /**
      * @see InputStream#read(byte[], int, int)
      */
+    @Override
     public int read(byte[] b, int off, int len) throws IOException {
         return processInputStream.read(b, off, len);
     }
@@ -109,6 +117,7 @@ public class TranscodeInputStream extends InputStream {
     /**
      * @see InputStream#close()
      */
+    @Override
     public void close() {
         FileUtil.closeQuietly(processInputStream);
         FileUtil.closeQuietly(processOutputStream);

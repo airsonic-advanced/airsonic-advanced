@@ -5,6 +5,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.jdbc.EmbeddedDatabaseConnection;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
@@ -64,6 +65,16 @@ public class LegacyHsqlMigrationUtil {
         if (currentVersion == null) {
             LOG.debug("HSQLDB database not found, won't back up");
             return false;
+        }
+
+        try {
+            // as we're running before spring's datasource initialises... we need to try loading the driver ourselves
+            EmbeddedDatabaseConnection conn = EmbeddedDatabaseConnection.get(null);
+            if (conn != null) {
+                Class.forName(conn.getDriverClassName());
+            }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Unable to load HSQLDB driver", e);
         }
 
         // Sanity check the database driver version (better be 2.x)

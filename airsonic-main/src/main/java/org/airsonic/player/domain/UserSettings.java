@@ -60,6 +60,10 @@ public class UserSettings {
     private int paginationSizeFolders = 7;
     private int paginationSizePlaylist = 10;
     private int paginationSizePlayqueue = 10;
+    private int paginationSizeBookmarks = 20;
+    private boolean autoBookmark = true;
+    private int videoBookmarkFrequency = 40;
+    private int audioBookmarkFrequency = 10;
 
     public UserSettings() {
     }
@@ -324,6 +328,38 @@ public class UserSettings {
 
     public void setPaginationSizePlayqueue(int paginationSizePlayqueue) {
         this.paginationSizePlayqueue = paginationSizePlayqueue;
+    }
+
+    public int getPaginationSizeBookmarks() {
+        return paginationSizeBookmarks;
+    }
+
+    public void setPaginationSizeBookmarks(int paginationSizeBookmarks) {
+        this.paginationSizeBookmarks = paginationSizeBookmarks;
+    }
+
+    public boolean getAutoBookmark() {
+        return autoBookmark;
+    }
+
+    public void setAutoBookmark(boolean autoBookmark) {
+        this.autoBookmark = autoBookmark;
+    }
+
+    public int getVideoBookmarkFrequency() {
+        return videoBookmarkFrequency;
+    }
+
+    public void setVideoBookmarkFrequency(int videoBookmarkFrequency) {
+        this.videoBookmarkFrequency = videoBookmarkFrequency;
+    }
+
+    public int getAudioBookmarkFrequency() {
+        return audioBookmarkFrequency;
+    }
+
+    public void setAudioBookmarkFrequency(int audioBookmarkFrequency) {
+        this.audioBookmarkFrequency = audioBookmarkFrequency;
     }
 
     /**

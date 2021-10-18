@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
 
 <%--
@@ -35,6 +36,10 @@
                         $(this).dialog("close");
                     }
                 }});
+                
+              $( '#episodessa' ).click( function () {
+                  $( '.music tr input[type="checkbox"]' ).prop('checked', this.checked);
+              });
         }
 
         function downloadSelected() {
@@ -71,6 +76,14 @@
         }
 
     </script>
+    <style type="text/css">
+      .music .center {
+          text-align: center;
+      }
+      .music .left {
+          text-align: left;
+      }
+    </style>
 </head>
 <body class="mainframe bgcolor1" onload="init()">
 
@@ -104,11 +117,20 @@
 <div style="height:0.7em;clear:both"></div>
 
 <table class="music">
+        <tr>
+            <th class="fit center"><input type="checkbox" id="episodessa" value="all"/></th>
+            <th colspan="4"></th>
+            <th class="truncate left"><fmt:message key="podcastreceiver.episode"/></th>
+            <th class="fit center"><fmt:message key="personalsettings.duration"/></th>
+            <th class="fit left"><fmt:message key="podcastreceiver.published"/></th>
+            <th class="fit center"><fmt:message key="top.status"/></th>
+            <th class="truncate left"><fmt:message key="sharesettings.description"/></th>
+        </tr>
     <c:forEach items="${model.episodes}" var="episode" varStatus="i">
 
         <tr>
 
-            <td class="fit"><input type="checkbox" id="episode${i.index}" value="${episode.id}"/></td>
+            <td class="fit center"><input type="checkbox" id="episode${i.index}" value="${episode.id}"/></td>
 
             <c:choose>
                 <c:when test="${empty episode.mediaFileId or episode.status ne 'COMPLETED'}">
@@ -129,15 +151,15 @@
                     <span title="${episode.title}" class="songTitle">${episode.title}</span>
             </td>
 
-            <td class="fit">
+            <td class="fit center">
                 <span class="detail">${episode.duration}</span>
             </td>
 
-            <td class="fit">
+            <td class="fit left">
                 <span class="detail"><javatime:format value="${episode.publishDate}" style="M-"/></span>
             </td>
 
-            <td class="fit" style="text-align:center">
+            <td class="fit center">
                 <span class="detail">
                     <c:choose>
                         <c:when test="${episode.status eq 'DOWNLOADING'}">

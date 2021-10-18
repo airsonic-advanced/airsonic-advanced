@@ -6,9 +6,11 @@
 <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
 <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
 <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
-<script type="text/javascript" src="<c:url value='/script/playQueueCast.js'/>"></script>
-<script type="text/javascript" src="<c:url value='/script/playQueue/javaJukeboxPlayerControlBar.js'/>"></script>
+<script src="<c:url value='/script/mediaelement/plugins/chromecast/chromecast.min.js'/>"></script>
+<script src="<c:url value='/script/mediaelement/plugins/chromecast/chromecast-i18n.js'/>"></script>
 <link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/speed/speed.min.css'/>">
+<link rel="stylesheet" href="<c:url value='/script/mediaelement/plugins/chromecast/chromecast.min.css'/>">
+
 <style type="text/css">
     .ui-slider .ui-slider-handle {
         width: 11px;
@@ -78,6 +80,10 @@
 
         // List of songs (of type PlayQueueInfo.Entry)
         songs: [],
+        
+        bookmarks: {},
+        autoBookmark: ${model.autoBookmark},
+        audioBookmarkFrequency: ${model.audioBookmarkFrequency},
 
         // Stream URL of the media being played
         currentStreamUrl: null,
@@ -99,9 +105,6 @@
         // Is the play queue visible?
         isVisible: false,
 
-        // Initialize the Cast player (ChromeCast support)
-        CastPlayer: new CastPlayer(),
-
         musicTable: null,
         audioPlayer: null,
 
@@ -122,6 +125,9 @@
                         rowNode.find(".songIndex input").prop("checked", true);
                     }
                 },
+                colReorder: true,
+                stateSave: true,
+                stateDuration: 60 * 60 * 24 * 365,
                 ordering: true,
                 order: [],
                 orderFixed: [ 0, 'asc' ],
@@ -203,9 +209,9 @@
                           if (type == "display") {
                               var img = "<img class='currentImage' src=\"<spring:theme code='currentImage'/>\" alt='' style='display: none; padding-right: 0.5em' />";
                               if (playQueue.player.tech != "EXTERNAL_WITH_PLAYLIST") {
-                                  return img + $("<a>").addClass("titleUrl").attr("href", "javascript:void(0)").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
+                                  return img + $("<a>", {title: title, alt: title, text: title}).addClass("titleUrl").attr("href", "javascript:void(0)")[0].outerHTML;
                               } else {
-                                  return img + $("<span>").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
+                                  return img + $("<span>", {title: title, alt: title, text: title})[0].outerHTML;
                               }
                           }
                           return title;
@@ -217,7 +223,7 @@
                       title: "<fmt:message key='personalsettings.album'/>",
                       render(album, type, row) {
                           if (type == "display" && album != null) {
-                              return $("<a>").attr("href", row.albumUrl).attr("target", !pq.internetRadioEnabled ? "main" : "_blank").attr("rel", !pq.internetRadioEnabled ? "" : "noopener noreferrer").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
+                              return $("<a>", {title: album, alt: album, text: album}).attr("href", row.albumUrl).attr("target", !pq.internetRadioEnabled ? "main" : "_blank").attr("rel", !pq.internetRadioEnabled ? "" : "noopener noreferrer")[0].outerHTML;
                           }
                           return album;
                       }
@@ -228,7 +234,7 @@
                       title: "<fmt:message key='personalsettings.artist'/>",
                       render(artist, type) {
                           if (type == "display" && artist != null) {
-                              return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
+                              return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
                           }
                           return artist;
                       }
@@ -239,7 +245,7 @@
                       title: "<fmt:message key='personalsettings.genre'/>",
                       render(genre, type) {
                           if (type == "display" && genre != null) {
-                              return $("<span>").attr("title", genre).attr("alt", genre).text(genre)[0].outerHTML;
+                              return $("<span>", {title: genre, alt: genre, text: genre})[0].outerHTML;
                           }
                           return genre;
                       }
@@ -326,7 +332,7 @@
                 pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
             } );
             $("#playQueueMusic tbody").on( "click", ".starSong", function () {
-                pq.onStar(pq.musicTable.row( $(this).parents('tr') ).index());
+                pq.onToggleStar(pq.musicTable.row( $(this).parents('tr') ).index());
             } );
             $("#playQueueMusic tbody").on( "click", ".removeSong", function () {
                 pq.onRemove(pq.musicTable.row( $(this).parents('tr') ).index());
@@ -379,18 +385,35 @@
                 },
                 '/topic/players/deleted'(msg) {
                     pq.onPlayerDeleted(JSON.parse(msg.body));
-                }
+                },
+
+                // Bookmarks
+                '/user/queue/bookmarks/added': function(msg) {
+	                pq.addedBookmarksCallback(JSON.parse(msg.body));
+	            },
+	            '/user/queue/bookmarks/deleted': function(msg) {
+	                pq.deleteBookmarksCallback(JSON.parse(msg.body));
+	            },
+	            '/user/queue/bookmarks/get': function(msg) {
+	                pq.getBookmarkCallback(JSON.parse(msg.body));
+	            },
+	            //one-time population only
+	            '/app/bookmarks/list': function(msg) {
+	                pq.getBookmarksCallback(JSON.parse(msg.body));
+	            }
             });
 
-            $("#dialog-select-playlist").dialog({resizable: true, height: 220, autoOpen: false,
+            var dialogSize = getJQueryUiDialogPlaylistSize("playQueue");
+            $("#dialog-select-playlist").dialog({resizable: true, height: dialogSize.height, width: dialogSize.width, autoOpen: false,
                 buttons: {
                     "<fmt:message key="common.cancel"/>"() {
                         $(this).dialog("close");
                     }
-                }});
+                },
+                resizeStop: function (event, ui) { setJQueryUiDialogPlaylistSize("playQueue", ui.size) }
+            });
 
             pq.createMediaElementPlayer();
-            JavaJukeBox.initJavaJukeboxPlayerControlBar();
             <c:if test="${model.autoHide}">pq.initAutoHide();</c:if>
             pq.onTogglePlayQueue(${!model.autoHide});
 
@@ -418,12 +441,11 @@
                   pq.unsubscribePlayerSpecificCallbacks();
                   pq.currentStreamUrl = null;
                   pq.currentSongIndex = -1;
-                  if (pq.player.tech == 'JAVA_JUKEBOX') {
-                      JavaJukeBox.reset();
-                  } else if (pq.player.tech == 'WEB') {
-                      if (this.CastPlayer.castSession) {
-                          pq.CastPlayer.stopCastApp();
-                      }
+                  if (pq.player.tech == 'WEB') {
+                      //if (this.CastPlayer.castSession) {
+                      //    pq.CastPlayer.stopCastApp();
+                      //}
+
                       // no need to change src on audioPlayer because start button will see currentSongIndex
                       //pq.audioPlayer.setSrc(null);
                   }
@@ -432,10 +454,6 @@
                   $("#playerSelector").val(player.id);
                   pq.player = player;
                   $(".player-tech-" + player.tech.toLowerCase()).show();
-                  if (player.tech == 'JAVA_JUKEBOX') {
-                      //show regular jukebox controls also
-                      $(".player-tech-jukebox").show();
-                  }
                   if (player.tech != 'WEB') {
                       $(".player-tech-non-web").show();
                   }
@@ -552,9 +570,7 @@
         },
 
         jukeBoxPositionCallback(pos) {
-            if (this.player.tech == 'JAVA_JUKEBOX') {
-                JavaJukeBox.javaJukeboxPositionCallback(pos);
-            }
+            //nothing for now
         },
         jukeBoxGainCallback(gain) {
             $("#jukeboxVolume").slider("option", "value", Math.floor(gain * 100)); // update UI
@@ -563,10 +579,6 @@
             var value = parseInt($("#jukeboxVolume").slider("option", "value"));
             top.StompClient.send("/app/playqueues/" + this.player.id + "/jukebox/gain", value / 100);
         },
-        onCastVolumeChanged() {
-            var value = parseInt($("#castVolume").slider("option", "value"));
-            this.CastPlayer.setCastVolume(value / 100, false);
-        },
 
         /**
          * Increase or decrease volume by a certain amount
@@ -574,13 +586,7 @@
          * @param gain amount to add or remove from the current volume
          */
         onGainAdd(gain) {
-            if (this.CastPlayer.castSession) {
-                var volume = parseInt($("#castVolume").slider("option", "value")) + gain;
-                if (volume > 100) volume = 100;
-                if (volume < 0) volume = 0;
-                this.CastPlayer.setCastVolume(volume / 100, false);
-                $("#castVolume").slider("option", "value", volume); // Need to update UI
-            } else if (this.player.tech == 'WEB') {
+            if (this.player.tech == 'WEB') {
                 var volume = parseFloat(this.audioPlayer.volume)*100 + gain;
                 if (volume > 100) volume = 100;
                 if (volume < 0) volume = 0;
@@ -610,7 +616,41 @@
         },
 
         onEnded() {
+            this.setBookmark();
             this.onNext(this.repeatStatus);
+        },
+
+        setBookmark() {
+            if (this.autoBookmark) {
+                var song = this.songs[this.currentSongIndex];
+                var positionMillis = Math.round(this.audioPlayer.currentTime * 1000);
+                top.StompClient.send("/app/bookmarks/set", JSON.stringify({positionMillis: positionMillis, comment: "Played on Web Player " + this.player.id, mediaFileId: song.id}));
+            }
+        },
+        lastProgressionBookmarkTime: 0,
+        updateProgressionBookmark() {
+            if (this.autoBookmark) {
+                var song = this.songs[this.currentSongIndex];
+                var position = Math.round(this.audioPlayer.currentTime);
+                if ((this.lastProgressionBookmarkTime != position) && (position % this.audioBookmarkFrequency == 0)) {
+                    this.lastProgressionBookmarkTime = position;
+                    this.setBookmark();
+                }
+            }
+        },
+
+        deleteBookmarksCallback(mediaFileId) {
+            delete this.bookmarks[mediaFileId];
+        },
+        addedBookmarksCallback(mediaFileId) {
+            // get new (added in callback)
+            top.StompClient.send("/app/bookmarks/get", mediaFileId);
+        },
+        getBookmarkCallback(bookmark) {
+            this.bookmarks[bookmark.mediaFileEntry.id] = bookmark;
+        },
+        getBookmarksCallback(bookmarks) {
+            this.bookmarks = bookmarks;
         },
 
         createMediaElementPlayer() {
@@ -620,7 +660,8 @@
                 alwaysShowControls: true,
                 enableKeyboard: false,
                 useDefaultControls: true,
-                features: ["speed"],
+                castAppID: "4FBFE470",
+                features: ["speed", "chromecast"],
                 defaultSpeed: "1.00",
                 speeds: ["8.00", "2.00", "1.50", "1.25", "1.00", "0.75", "0.5"],
                 success(mediaElement, originalNode, instance) {
@@ -630,6 +671,9 @@
 
                     // Once playback reaches the end, go to the next song, if any.
                     $(mediaElement).on("ended", () => pq.onEnded());
+                    $(mediaElement).on("timeupdate", () => pq.updateProgressionBookmark());
+                    $(mediaElement).on("seeked", () => pq.setBookmark());
+                    $(mediaElement).on("paused", () => pq.setBookmark());
 
                     // skip to first song if no src loaded
                     $(".mejs__controls .mejs__button.mejs__playpause-button.mejs__play button").on("click", () => {
@@ -657,30 +701,18 @@
             if (status == "PLAYING") {
                 $("#audioStart").hide();
                 $("#audioStop").show();
-                if (this.CastPlayer.castSession && !nonWebOnly) {
-                    this.CastPlayer.playCast();
-                } else if (this.player.tech == 'WEB' && !nonWebOnly) {
+                if (this.player.tech == 'WEB' && !nonWebOnly) {
                     if (this.audioPlayer.src) {
                         this.audioPlayer.play();  // Resume playing if the player was paused
                     } else {
                         this.onSkip(0);  // Start the first track if the player was not yet loaded
                     }
-                } else {
-                    if (this.player.tech == 'JAVA_JUKEBOX') {
-                        JavaJukeBox.javaJukeboxStartCallback();
-                    }
                 }
             } else {
                 $("#audioStop").hide();
                 $("#audioStart").show();
-                if (this.CastPlayer.castSession && !nonWebOnly) {
-                    this.CastPlayer.pauseCast();
-                } else if (this.player.tech == 'WEB' && !nonWebOnly) {
+                if (this.player.tech == 'WEB' && !nonWebOnly) {
                     this.audioPlayer.pause();
-                } else {
-                    if (this.player.tech == 'JAVA_JUKEBOX') {
-                        JavaJukeBox.javaJukeboxStopCallback();
-                    }
                 }
             }
         },
@@ -690,7 +722,7 @@
          */
         onStart() {
             // simulate immediate callback
-            if (this.CastPlayer.castSession || this.player.tech == 'WEB') {
+            if (this.player.tech == 'WEB') {
                 this.playQueuePlayStatusCallback("PLAYING");
             } else {
                 top.StompClient.send("/app/playqueues/" + this.player.id + "/start", "");
@@ -702,7 +734,7 @@
          */
         onStop() {
             // simulate immediate callback
-            if (this.CastPlayer.castSession || this.player.tech == 'WEB') {
+            if (this.player.tech == 'WEB') {
                 this.playQueuePlayStatusCallback("STOPPED");
             } else {
                 if (this.player.id) {
@@ -716,14 +748,7 @@
          * TODO: Nobody calls this
          */
         onToggleStartStop() {
-            if (this.CastPlayer.castSession) {
-                var playing = this.CastPlayer.mediaSession && this.CastPlayer.mediaSession.playerState == chrome.cast.media.PlayerState.PLAYING;
-                if (playing) {
-                    this.onStop();
-                } else {
-                    this.onStart();
-                }
-            } else if (this.player.tech == 'WEB') {
+            if (this.player.tech == 'WEB') {
                 if (this.audioPlayer.paused) {
                     this.onStart();
                 } else {
@@ -746,8 +771,6 @@
 
             if (this.player.tech == 'WEB') {
                 this.webSkip(song, location.offset / 1000);
-            } else if (this.player.tech == 'JAVA_JUKEBOX') {
-                JavaJukeBox.updateJavaJukeboxPlayerControlBar(song, location.offset / 1000);
             }
 
             this.updateWindowTitle(song);
@@ -758,7 +781,13 @@
           </c:if>
         },
 
-        onSkip(index, offset) {
+        onSkip(index, offset, nobookmarks) {
+            if (!offset && !nobookmarks) {
+                var bookmark = this.bookmarks[this.songs[index].id];
+                if (bookmark) {
+                    offset = bookmark.positionMillis;
+                }
+            }
             if (this.player.tech == 'WEB') {
                 this.playQueueSkipCallback({index: index, offset: offset});
             } else if (this.player.tech != 'EXTERNAL_WITH_PLAYLIST') {
@@ -767,13 +796,7 @@
         },
 
         webSkip(song, position) {
-            // Handle ChromeCast player.
-            if (this.CastPlayer.castSession) {
-                this.CastPlayer.loadCastMedia(song, position);
-            // Handle MediaElement (HTML5) player.
-            } else {
-                this.loadMediaElementPlayer(song, position);
-            }
+            this.loadMediaElementPlayer(song, position);
         },
 
         loadMediaElementPlayer(song, position) {
@@ -783,6 +806,7 @@
             if (player.src == null || !player.src.endsWith(song.streamUrl)) {
                 // Stop the current playing song and change the media source.
                 player.src = song.streamUrl;
+                player.node.setAttribute('type', song.contentType);
                 // Inform MEJS that we need to load a new media source. The
                 // 'canplay' event will be fired once playback is possible.
                 player.load();
@@ -867,18 +891,23 @@
         onShuffle() {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/shuffle", "");
         },
-        onStar(index) {
-            this.songs[index].starred = !this.songs[index].starred;
-
-            if (this.songs[index].starred) {
-                top.StompClient.send("/app/rate/mediafile/star", this.songs[index].id);
+        onStar(indices, status) {
+            var par = this;
+            var ids = indices.map(index => {
+                par.songs[index].starred = status;
+                par.musicTable.cell(index, "starred:name").invalidate();
+                return par.songs[index].id;
+            });
+            
+            if (status) {
+                top.StompClient.send("/app/rate/mediafile/star", JSON.stringify(ids));
             } else {
-                top.StompClient.send("/app/rate/mediafile/unstar", this.songs[index].id);
+                top.StompClient.send("/app/rate/mediafile/unstar", JSON.stringify(ids));
             }
-            this.musicTable.cell(index, "starred:name").invalidate();
+            
         },
-        onStarCurrent() {
-            this.onStar(this.currentSongIndex);
+        onToggleStar(index) {
+            this.onStar([index], !this.songs[index].starred);
         },
         onRemove(index) {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/remove", JSON.stringify([index]));
@@ -908,7 +937,7 @@
         onSavePlayQueue() {
             var positionMillis = 0;
             if (this.player.tech == 'WEB') {
-                poitionMillis = Math.round(this.audioPlayer.currentTime * 1000.0);
+                positionMillis = Math.round(this.audioPlayer.currentTime * 1000.0);
             }
             top.StompClient.send("/app/playqueues/" + this.player.id + "/save", JSON.stringify({index: this.currentSongIndex, offset: positionMillis}));
         },
@@ -1009,6 +1038,8 @@
             $("select#moreActions #removeSelected").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #download").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #appendPlaylist").prop("disabled", this.internetRadioEnabled);
+            $("select#moreActions #star").prop("disabled", this.internetRadioEnabled);
+            $("select#moreActions #unstar").prop("disabled", this.internetRadioEnabled);
             $("#shuffleQueue").toggleLink(!this.internetRadioEnabled);
             $("#repeatQueue").toggleLink(!this.internetRadioEnabled);
             $("#undoQueue").toggleLink(!this.internetRadioEnabled);
@@ -1069,7 +1100,6 @@
                 this.createNotification(song);
             } else if (Notification.permission !== 'denied') {
                 Notification.requestPermission(function (permission) {
-                    Notification.permission = permission;
                     if (permission === "granted") {
                         this.createNotification(song);
                     }
@@ -1103,7 +1133,7 @@
 
         <!-- actionSelected() is invoked when the users selects from the "More actions..." combo box. -->
         actionSelected(id) {
-            var selectedIndexes = this.getSelectedIndexes();
+            var selectedIndexes;
             if (id == "top") {
                 return;
             } else if (id == "savePlayQueue") {
@@ -1115,7 +1145,7 @@
             } else if (id == "downloadPlaylist") {
                 location.href = "download.view?player=" + this.player.id;
             } else if (id == "sharePlaylist") {
-                parent.frames.main.location.href = "createShare.view?player=" + this.player.id + "&" + selectedIndexes;
+                parent.frames.main.location.href = "createShare.view?player=" + this.player.id + "&" + this.querize(this.getSelectedIndexes(), "i");
             } else if (id == "sortByTrack") {
                 this.onSortByTrack();
             } else if (id == "sortByArtist") {
@@ -1128,16 +1158,22 @@
                 this.selectAll(false);
             } else if (id == "removeSelected") {
                 this.onRemoveSelected();
-            } else if (id == "download" && selectedIndexes != "") {
-                location.href = "download.view?player=" + this.player.id + "&" + selectedIndexes;
-            } else if (id == "appendPlaylist" && selectedIndexes != "") {
+            } else if ((selectedIndexes = this.getSelectedIndexes()).length > 0 && id == "star") { // define selectedIndexes first so it always evaluates
+                this.onStar(selectedIndexes, true);
+            } else if (id == "unstar" && selectedIndexes.length > 0) {
+                this.onStar(selectedIndexes, false);
+            } else if (id == "download" && selectedIndexes.length > 0) {
+                location.href = "download.view?player=" + this.player.id + "&" + querize(selectedIndexes, "i");
+            } else if (id == "appendPlaylist" && selectedIndexes.length > 0) {
                 this.onAppendPlaylist();
             }
             $("#moreActions").prop("selectedIndex", 0);
         },
-
         getSelectedIndexes() {
-            return this.musicTable.rows({ selected: true }).indexes().map(function(i) { return "i=" + i; }).join("&");
+            return this.musicTable.rows({ selected: true }).indexes().toArray();
+        },
+        querize(arr, queryVar) {
+            return arr.map(i => queryVar + "=" + i).join("&");
         },
 
         selectAll(b) {
@@ -1173,25 +1209,6 @@
         <div id="player" style="height:40px">
             <audio id="audioPlayer" style="width:100%; height:40px" tabindex="-1" ></audio>
         </div>
-        <div id="castPlayer" style="display: none">
-            <div style="float:left">
-                <img alt="Play" id="castPlay" src="<spring:theme code='castPlayImage'/>" onclick="playQueue.CastPlayer.playCast()" style="cursor:pointer">
-                <img alt="Pause" id="castPause" src="<spring:theme code='castPauseImage'/>" onclick="playQueue.CastPlayer.pauseCast()" style="cursor:pointer; display:none">
-                <img alt="Mute on" id="castMuteOn" src="<spring:theme code='volumeImage'/>" onclick="playQueue.CastPlayer.castMuteOn()" style="cursor:pointer">
-                <img alt="Mute off" id="castMuteOff" src="<spring:theme code='muteImage'/>" onclick="playQueue.CastPlayer.castMuteOff()" style="cursor:pointer; display:none">
-            </div>
-            <div style="float:left">
-                <div id="castVolume" style="width:80px;height:4px;margin-left:10px;margin-right:10px;margin-top:8px"></div>
-                <script type="text/javascript">
-                    $("#castVolume").slider({max: 100, value: 50, animate: "fast", range: "min"});
-                    $("#castVolume").on("slidestop", () => playQueue.onCastVolumeChanged());
-                </script>
-            </div>
-        </div>
-    </div>
-    <div class="player-tech player-tech-web" style="white-space:nowrap;">
-        <img alt="Cast on" id="castOn" src="<spring:theme code='castIdleImage'/>" onclick="playQueue.CastPlayer.launchCastApp()" style="cursor:pointer; display:none">
-        <img alt="Cast off" id="castOff" src="<spring:theme code='castActiveImage'/>" onclick="playQueue.CastPlayer.stopCastApp()" style="cursor:pointer; display:none">
     </div>
 
   <c:if test="${model.user.streamRole}">
@@ -1200,16 +1217,6 @@
         <img alt="Stop" id="audioStop" src="<spring:theme code='castPauseImage'/>" onclick="playQueue.onStop()" style="cursor:pointer; display:none">
     </div>
   </c:if>
-
-    <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
-        <span id="playingPositionDisplay" class="javaJukeBoxPlayerControlBarSongTime"></span>
-    </div>
-    <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
-        <div id="javaJukeboxSongPositionSlider"></div>
-    </div>
-    <div class="player-tech player-tech-java_jukebox" style="white-space:nowrap;">
-        <span id="playingDurationDisplay" class="javaJukeBoxPlayerControlBarSongTime"></span>
-    </div>
 
     <div class="player-tech player-tech-jukebox" style="white-space:nowrap;">
         <img src="<spring:theme code='volumeImage'/>" alt="">
@@ -1301,6 +1308,8 @@
                     <option id="download"><fmt:message key="common.download"/></option>
                   </c:if>
                     <option id="appendPlaylist"><fmt:message key="playlist.append"/></option>
+                    <option id="star"><fmt:message key="playlist.more.star"/></option>
+                    <option id="unstar"><fmt:message key="playlist.more.unstar"/></option>
                 </optgroup>
             </select>
         </span>
@@ -1321,12 +1330,3 @@
     <p><fmt:message key="main.addtoplaylist.text"/></p>
     <div id="dialog-select-playlist-list"></div>
 </div>
-
-<script type="text/javascript">
-    window['__onGCastApiAvailable'] = function(isAvailable) {
-        if (isAvailable) {
-            playQueue.CastPlayer.initializeCastPlayer();
-        }
-    };
-</script>
-<script type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>

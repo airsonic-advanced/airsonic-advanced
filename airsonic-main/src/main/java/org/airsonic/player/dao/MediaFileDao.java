@@ -662,13 +662,28 @@ public class MediaFileDao extends AbstractDao {
                                 0, args);
     }
 
+    public void starMediaFiles(List<Integer> ids, String username) {
+        if (!ids.isEmpty()) {
+            unstarMediaFiles(ids, username);
+            Instant now = Instant.now();
+            batchedUpdate("insert into starred_media_file(media_file_id, username, created) values (?,?,?)",
+                    ids.parallelStream().map(id -> new Object[] { id, username, now }).collect(Collectors.toList()));
+        }
+    }
+
+    public void unstarMediaFiles(List<Integer> ids, String username) {
+        if (!ids.isEmpty()) {
+            namedUpdate("delete from starred_media_file where media_file_id in (:ids) and username=:user",
+                    ImmutableMap.of("ids", ids, "user", username));
+        }
+    }
+
     public void starMediaFile(int id, String username) {
-        unstarMediaFile(id, username);
-        update("insert into starred_media_file(media_file_id, username, created) values (?,?,?)", id, username, Instant.now());
+        starMediaFiles(Collections.singletonList(id), username);
     }
 
     public void unstarMediaFile(int id, String username) {
-        update("delete from starred_media_file where media_file_id=? and username=?", id, username);
+        unstarMediaFiles(Collections.singletonList(id), username);
     }
 
     public Instant getMediaFileStarredDate(int id, String username) {

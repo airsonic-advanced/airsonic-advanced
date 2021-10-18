@@ -269,12 +269,16 @@ public class FolderBasedContentDirectory extends CustomContentDirectory {
     }
 
     private URI getAlbumArtUrl(MediaFile album) {
-        return jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS, UriComponentsBuilder.fromUriString(getBaseUrl() + "/ext/coverArt.view")
-                .queryParam("id", album.getId())
-                .queryParam("size", CoverArtScheme.LARGE.getSize()))
-                .build()
-                .encode()
-                .toUri();
+        return UriComponentsBuilder
+                .fromUriString(getBaseUrl())
+                .uriComponents(jwtSecurityService
+                        .addJWTToken(
+                                User.USERNAME_ANONYMOUS,
+                                UriComponentsBuilder.fromUriString("ext/coverArt.view")
+                                        .queryParam("id", album.getId())
+                                        .queryParam("size", CoverArtScheme.LARGE.getSize()))
+                        .build())
+                .build().encode().toUri();
     }
 
     public void setMediaFileService(MediaFileService mediaFileService) {

@@ -131,7 +131,7 @@ public class JaudiotaggerParser extends MetaDataParser {
 
     private static String getTagField(Tag tag, FieldKey fieldKey) {
         try {
-            return StringUtils.trimToNull(tag.getFirst(fieldKey));
+            return StringUtils.replace(StringUtils.trimToNull(tag.getFirst(fieldKey)), "\0", " ");
         } catch (Exception x) {
             // Ignored.
             return null;
