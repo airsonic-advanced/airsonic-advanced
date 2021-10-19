@@ -73,7 +73,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Consistency checks and refactors
   - Documentation fixes
 - Miscellaneous
-  - Works with JDK14
+  - Works with JDK17
   - Uses JSR 310 (Java time) instead of older Java packages for time/duration tracking
   - Uses Java's NIO for handling files instead of the older IO packages
   - More precise song duration calculation
@@ -93,6 +93,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Support direct binary internet radio stream urls
   - Catalog multiple genres
   - Ability to specify custom log file location (via `logging.file.name` property/parameter)
+  - Auto Bookmarks and Bookmark management
 - Testing
   - Various fixes to make it compatible with multiple external DBs
   - Automated tests are performed against external DBs
