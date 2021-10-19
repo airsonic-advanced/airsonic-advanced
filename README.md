@@ -73,7 +73,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Consistency checks and refactors
   - Documentation fixes
 - Miscellaneous
-  - Works with JDK14
+  - Works with JDK17
   - Uses JSR 310 (Java time) instead of older Java packages for time/duration tracking
   - Uses Java's NIO for handling files instead of the older IO packages
   - More precise song duration calculation
@@ -93,6 +93,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Support direct binary internet radio stream urls
   - Catalog multiple genres
   - Ability to specify custom log file location (via `logging.file.name` property/parameter)
+  - Auto Bookmarks and Bookmark management
 - Testing
   - Various fixes to make it compatible with multiple external DBs
   - Automated tests are performed against external DBs
@@ -152,6 +153,13 @@ Vanilla Airsonic can be downloaded from
 [GitHub](https://github.com/airsonic/airsonic/releases).
 
 Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Advanced shares similar running instructions unless stated otherwise.
+
+### Building/Compiling
+You may compile the code yourself by using maven. One of the repositories does not have https, so you may need to allow that for maven. A custom `settings.xml` has been put in `.mvn` folder for this purpose. A sample invocation would be (in the root):
+```
+mvn --settings=./.mvn/settings.xml clean compile package verify
+```
+The main binary would be in `airsonic-main/target`
 
 Compatibility Notes:
 ------

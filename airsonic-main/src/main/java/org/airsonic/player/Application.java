@@ -17,8 +17,8 @@ import org.springframework.util.ReflectionUtils;
 import java.lang.reflect.Method;
 
 @SpringBootApplication(exclude = {
-        JmxAutoConfiguration.class,
-        MultipartAutoConfiguration.class // TODO: update to use spring boot builtin multipart support
+    JmxAutoConfiguration.class,
+    MultipartAutoConfiguration.class // TODO: update to use spring boot builtin multipart support
 })
 @EnableTransactionManagement(mode = AdviceMode.ASPECTJ)
 public class Application extends SpringBootServletInitializer implements WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {

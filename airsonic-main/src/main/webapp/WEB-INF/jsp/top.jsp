@@ -127,6 +127,7 @@
 <fmt:message key="top.settings" var="settings"/>
 <fmt:message key="top.status" var="status" />
 <fmt:message key="top.podcast" var="podcast"/>
+<fmt:message key="top.bookmarks" var="bookmarks"/>
 <fmt:message key="top.more" var="more"/>
 <fmt:message key="top.help" var="help"/>
 <fmt:message key="top.search" var="search"/>
@@ -156,6 +157,10 @@
         <td style="min-width:4em;padding-right:1em;text-align: center">
             <a href="podcastChannels.view?" target="main"><img src="<spring:theme code='podcastLargeImage'/>" title="${podcast}" alt="${podcast}"></a>
             <div class="topHeader"><a href="podcastChannels.view?" target="main">${podcast}</a></div>
+        </td>
+        <td style="min-width:4em;padding-right:1em;text-align: center">
+            <a href="bookmarks.view?" target="main"><img src="<spring:theme code='bookmarkImage'/>" title="${bookmarks}" alt="${bookmarks}"></a>
+            <div class="topHeader"><a href="bookmarks.view?" target="main">${bookmarks}</a></div>
         </td>
         <c:if test="${model.user.settingsRole}">
             <td style="min-width:3em;padding-right:1em;text-align: center">

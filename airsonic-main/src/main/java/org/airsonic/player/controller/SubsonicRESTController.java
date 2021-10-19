@@ -1408,7 +1408,6 @@ public class SubsonicRESTController {
             @RequestParam Optional<Integer> maxBitRate,
             @RequestParam Optional<Integer> id,
             @RequestParam Optional<String> path,
-            @RequestParam(defaultValue = "false") boolean hls,
             @RequestParam(required = false) Double offsetSeconds,
             ServletWebRequest swr) throws Exception {
         HttpServletRequest request = wrapRequest(swr.getRequest());
@@ -1417,7 +1416,7 @@ public class SubsonicRESTController {
             throw new APIException(ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to play files.");
         }
 
-        return streamController.handleRequest(authentication, playlist, format, suffix, maxBitRate, id, path, hls,
+        return streamController.handleRequest(authentication, playlist, format, suffix, maxBitRate, id, path,
                 offsetSeconds, new ServletWebRequest(request, swr.getResponse()));
     }
 
@@ -1781,10 +1780,9 @@ public class SubsonicRESTController {
         int mediaFileId = getRequiredIntParameter(request, "id");
         long position = getRequiredLongParameter(request, "position");
         String comment = request.getParameter("comment");
-        Instant now = Instant.now();
 
-        Bookmark bookmark = new Bookmark(0, mediaFileId, position, username, comment, now, now);
-        bookmarkService.createOrUpdateBookmark(bookmark);
+        bookmarkService.setBookmark(username, mediaFileId, position, comment);
+
         writeEmptyResponse(request, response);
     }
 

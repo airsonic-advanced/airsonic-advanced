@@ -5,7 +5,7 @@
 <head>
     <%@ include file="head.jsp" %>
     <%@ include file="jquery.jsp" %>
-    <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.js'/>"></script>
+    <script type="text/javascript" src="<c:url value='/script/mediaelement/mediaelement-and-player.min.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/speed/speed.min.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/speed/speed-i18n.js'/>"></script>
     <script src="<c:url value='/script/mediaelement/plugins/quality/quality.min.js'/>"></script>
@@ -59,16 +59,30 @@
           remoteCaptions: [],
           currentUrl: "${model.defaultBitRate}",
           videoId: "${model.video.id}",
+          position: ${model.position},
+          autoBookmark: ${model.autoBookmark},
+          videoBookmarkFrequency: ${model.videoBookmarkFrequency},
           contentType: "${model.contentType}",
           hideShare: ${model.user.shareRole ? 'true': 'false'},
           hideDownload: ${model.user.downloadRole ? 'true': 'false'}
+        }
+
+        function setBookmark() {
+            if (videoModel.autoBookmark) {
+                var position = Math.round(this.videoPlayer.currentTime);
+                if ((videoModel.position != (position * 1000)) && (position % videoModel.videoBookmarkFrequency == 0)) {
+                    videoModel.position = position * 1000;
+                    top.StompClient.send("/app/bookmarks/set", JSON.stringify({positionMillis: videoModel.position, comment: "Played on Web Video Player", mediaFileId: videoModel.videoId}));
+                }
+            }
         }
 
         function init() {
             $.get(videoModel.remoteCaptionsListUrl, data => {
                 videoModel.remoteCaptions = data;
             });
-            var videoPlayer = new MediaElementPlayer("videoPlayer", {
+            var vpr = this;
+            this.videoPlayer = new MediaElementPlayer("videoPlayer", {
                 alwaysShowControls: true,
                 enableKeyboard: true,
                 useDefaultControls: true,
@@ -103,6 +117,14 @@
                     </c:if>
                     // add dimensions to playing vid
                     instance.setSrc($('#videoPlayer source[data-quality="${model.defaultBitRate}"]')[0].src);
+                    // set position
+                    instance.setCurrentTime(videoModel.position/1000);
+
+                    // Once playback reaches the end, go to the next song, if any.
+                    $(mediaElement).on("ended", () => vpr.setBookmark());
+                    $(mediaElement).on("timeupdate", () => vpr.setBookmark());
+                    $(mediaElement).on("seeked", () => vpr.setBookmark());
+                    $(mediaElement).on("paused", () => vpr.setBookmark());
                 }
             });
             // add dimensions to play at

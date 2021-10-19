@@ -33,16 +33,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.awt.Dimension;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Provides services for transcoding media. Transcoding is the process of
@@ -199,7 +206,7 @@ public class TranscodingService {
             maxBitRate = transcodeScheme.getMaxBitRate();
         }
 
-        boolean hls = videoTranscodingSettings != null && videoTranscodingSettings.isHls();
+        boolean hls = videoTranscodingSettings != null && videoTranscodingSettings.getHlsSegmentFilename() != null;
         Transcoding transcoding = getTranscoding(mediaFile, player, preferredTargetFormat, hls);
         if (transcoding != null) {
             parameters.setTranscoding(transcoding);
@@ -260,6 +267,9 @@ public class TranscodingService {
      * Returns the strictest transcoding scheme defined for the player and the user.
      */
     private TranscodeScheme getTranscodeScheme(Player player) {
+        if (player == null) {
+            return TranscodeScheme.OFF;
+        }
         String username = player.getUsername();
         if (username != null) {
             UserSettings userSettings = settingsService.getUserSettings(username);
@@ -318,75 +328,107 @@ public class TranscodingService {
      * @param maxBitRate               The maximum bitrate to use. May not be {@code null}.
      * @param videoTranscodingSettings Parameters used when transcoding video. May be {@code null}.
      * @param mediaFile                The media file.
-     * @param in                       Data to feed to the process.  May be {@code null}.  @return The newly created input stream.
+     * @param in                       Data to feed to the process.  May be {@code null}.
+     * @return The newly created input stream.
      */
     private TranscodeInputStream createTranscodeInputStream(String command, Integer maxBitRate,
                                                             VideoTranscodingSettings videoTranscodingSettings, MediaFile mediaFile, InputStream in) throws IOException {
 
-        String title = mediaFile.getTitle();
-        String album = mediaFile.getAlbumName();
-        String artist = mediaFile.getArtist();
-
-        if (title == null) {
-            title = "Unknown Song";
-        }
-        if (album == null) {
-            album = "Unknown Album";
-        }
-        if (artist == null) {
-            artist = "Unknown Artist";
-        }
-
-        List<String> result = new LinkedList<>(Arrays.asList(StringUtil.split(command)));
-        result.set(0, SettingsService.resolveTranscodeExecutable(result.get(0)));
-
+        // Work-around for filename character encoding problem on Windows.
+        // Create temporary file, and feed this to the transcoder.
+        Path path = mediaFile.getFile().toAbsolutePath();
+        String pathString = path.toString();
         Path tmpFile = null;
-
-        for (int i = 1; i < result.size(); i++) {
-            String cmd = result.get(i);
-            if (cmd.contains("%b")) {
-                cmd = cmd.replace("%b", String.valueOf(maxBitRate));
-            }
-            if (cmd.contains("%t")) {
-                cmd = cmd.replace("%t", title);
-            }
-            if (cmd.contains("%l")) {
-                cmd = cmd.replace("%l", album);
-            }
-            if (cmd.contains("%a")) {
-                cmd = cmd.replace("%a", artist);
-            }
-            if (cmd.contains("%o") && videoTranscodingSettings != null) {
-                cmd = cmd.replace("%o", String.valueOf(videoTranscodingSettings.getTimeOffset()));
-            }
-            if (cmd.contains("%d") && videoTranscodingSettings != null) {
-                cmd = cmd.replace("%d", String.valueOf(videoTranscodingSettings.getDuration()));
-            }
-            if (cmd.contains("%w") && videoTranscodingSettings != null) {
-                cmd = cmd.replace("%w", String.valueOf(videoTranscodingSettings.getWidth()));
-            }
-            if (cmd.contains("%h") && videoTranscodingSettings != null) {
-                cmd = cmd.replace("%h", String.valueOf(videoTranscodingSettings.getHeight()));
-            }
-            if (cmd.contains("%s")) {
-
-                // Work-around for filename character encoding problem on Windows.
-                // Create temporary file, and feed this to the transcoder.
-                Path path = mediaFile.getFile().toAbsolutePath();
-                if (Util.isWindows() && !mediaFile.isVideo() && !StringUtils.isAsciiPrintable(path.toString())) {
-                    tmpFile = Files.createTempFile("airsonic", "." + MoreFiles.getFileExtension(path));
-                    tmpFile.toFile().deleteOnExit();
-                    Files.copy(path, tmpFile, StandardCopyOption.REPLACE_EXISTING);
-                    LOG.debug("Created tmp file: " + tmpFile);
-                    cmd = cmd.replace("%s", tmpFile.toString());
-                } else {
-                    cmd = cmd.replace("%s", path.toString());
-                }
-            }
-
-            result.set(i, cmd);
+        if (Util.isWindows() && !mediaFile.isVideo() && !StringUtils.isAsciiPrintable(path.toString()) && StringUtils.contains(command, "%s")) {
+            tmpFile = Files.createTempFile("airsonic", "." + MoreFiles.getFileExtension(path));
+            tmpFile.toFile().deleteOnExit();
+            Files.copy(path, tmpFile, StandardCopyOption.REPLACE_EXISTING);
+            LOG.info("Created tmp file: {}", tmpFile);
+            pathString = tmpFile.toString();
         }
-        return new TranscodeInputStream(new ProcessBuilder(result), in, tmpFile);
+
+        Map<String, String> vars = generateTranscodingSubstitutionMap(
+                Optional.ofNullable(mediaFile.getTitle()).orElse("Unknown Media"),
+                Optional.ofNullable(mediaFile.getArtist()).orElse("Unknown Artist"),
+                Optional.ofNullable(mediaFile.getAlbumName()).orElse("Unknown Album"),
+                Optional.ofNullable(maxBitRate).map(String::valueOf).orElse(null),
+                videoTranscodingSettings != null ? String.valueOf(videoTranscodingSettings.getTimeOffset()) : null,
+                videoTranscodingSettings != null ? String.valueOf(videoTranscodingSettings.getDuration()) : null,
+                videoTranscodingSettings != null ? String.valueOf(videoTranscodingSettings.getWidth()) : null,
+                videoTranscodingSettings != null ? String.valueOf(videoTranscodingSettings.getHeight()) : null,
+                Optional.ofNullable(maxBitRate).map(TranscodingService::getAverageVideoBitRate).map(String::valueOf).orElse(null),
+                Optional.ofNullable(maxBitRate).map(TranscodingService::getSuitableAudioBitRate).map(String::valueOf).orElse(null),
+                Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getAudioTrackIndex).map(String::valueOf).orElse(null),
+                Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getHlsSegmentIndex).map(String::valueOf).orElse(null),
+                Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getHlsSegmentFilename).orElse(null),
+                pathString,
+                // TODO: this shouldn't be part of videosettings
+                Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getOutputFilename).orElse(null));
+
+        ProcessBuilder builder = transformTranscodingVariables(command, vars);
+        return new TranscodeInputStream(builder, in, tmpFile);
+    }
+
+    public static ProcessBuilder transformTranscodingVariables(String command, Map<String, String> vars) {
+        String[] splitCommand = StringUtil.split(command);
+        List<String> kl = new ArrayList<>(vars.size());
+        List<String> vl = new ArrayList<>(vars.size());
+        vars.entrySet().stream().filter(e -> e.getValue() != null).forEach(e -> {
+            kl.add(e.getKey());
+            vl.add(e.getValue());
+        });
+        String[] ka = kl.toArray(new String[0]);
+        String[] va = vl.toArray(new String[0]);
+        List<String> result = IntStream.range(0, splitCommand.length)
+                .mapToObj(i -> substituteTranscodingVariable(i, splitCommand[i], ka, va)).collect(Collectors.toList());
+
+        return new ProcessBuilder(result);
+    }
+
+    public static String substituteTranscodingVariable(int index, String commandSegment, String[] keys, String[] values) {
+        if (index == 0) {
+            return SettingsService.resolveTranscodeExecutable(commandSegment);
+        }
+
+        return StringUtils.replaceEach(commandSegment, keys, values);
+    }
+
+    public static Map<String, String> generateTranscodingSubstitutionMap(
+            String title,
+            String artist,
+            String album,
+            String maxVideoBitRate,
+            String timeOffset,
+            String duration,
+            String width,
+            String height,
+            String averageVideoRate,
+            String audioRate,
+            String audioTrackIndex,
+            String hlsSegmentIndex,
+            String hlsSegmentFilename,
+            String inputFilename,
+            String outputFilename) {
+        Map<String, String> result = new HashMap<>();
+        result.put("%t", title);
+        result.put("%a", artist);
+        result.put("%l", album);
+
+        result.put("%b", maxVideoBitRate);
+        result.put("%o", timeOffset);
+        result.put("%d", duration);
+        result.put("%w", width);
+        result.put("%h", height);
+
+        result.put("%v", averageVideoRate);
+        result.put("%r", audioRate);
+        result.put("%i", audioTrackIndex);
+        result.put("%j", hlsSegmentIndex);
+        result.put("%n", hlsSegmentFilename);
+        result.put("%s", inputFilename);
+        result.put("%p", outputFilename);
+
+        return result;
     }
 
     /**
@@ -538,6 +580,67 @@ public class TranscodingService {
         return false;
     }
 
+    public static Dimension getSuitableVideoSize(Integer existingWidth, Integer existingHeight, int peakVideoBitRate) {
+        int w;
+        if (peakVideoBitRate < 400) {
+            w = 416;
+        } else if (peakVideoBitRate < 800) {
+            w = 480;
+        } else if (peakVideoBitRate < 1200) {
+            w = 640;
+        } else if (peakVideoBitRate < 2200) {
+            w = 768;
+        } else if (peakVideoBitRate < 3300) {
+            w = 960;
+        } else if (peakVideoBitRate < 8600) {
+            w = 1280;
+        } else {
+            w = 1920;
+        }
+        int h = even(w * 9 / 16);
+        if (existingWidth == null || existingHeight == null)
+            return new Dimension(w, h);
+        if (existingWidth.intValue() < w || existingHeight.intValue() < h)
+            return new Dimension(even(existingWidth.intValue()), even(existingHeight.intValue()));
+        double aspectRatio = existingWidth.doubleValue() / existingHeight.doubleValue();
+        h = (int) Math.round(w / aspectRatio);
+        return new Dimension(even(w), even(h));
+    }
+
+    private static int even(int size) {
+        return size + size % 2;
+    }
+
+    public static int getSuitableAudioBitRate(int peakVideoBitRate) {
+        if (peakVideoBitRate < 1200)
+            return 64;
+        if (peakVideoBitRate < 5000)
+            return 96;
+        return 128;
+    }
+
+    public static int getAverageVideoBitRate(int peakVideoBitRate) {
+        switch (peakVideoBitRate) {
+            case 200:
+                return 145;
+            case 400:
+                return 365;
+            case 800:
+                return 730;
+            case 1200:
+                return 1100;
+            case 2200:
+                return 2000;
+            case 3300:
+                return 3000;
+            case 5000:
+                return 4500;
+            case 6500:
+                return 6000;
+        }
+        return (int) (peakVideoBitRate * 0.9D);
+    }
+
     public void setTranscodingDao(TranscodingDao transcodingDao) {
         this.transcodingDao = transcodingDao;
     }
@@ -562,6 +665,11 @@ public class TranscodingService {
         public Parameters(MediaFile mediaFile, VideoTranscodingSettings videoTranscodingSettings) {
             this.mediaFile = mediaFile;
             this.videoTranscodingSettings = videoTranscodingSettings;
+        }
+
+        public Parameters(MediaFile mediaFile, VideoTranscodingSettings videoTranscodingSettings, Integer maxBitrate) {
+            this(mediaFile, videoTranscodingSettings);
+            this.maxBitRate = maxBitrate;
         }
 
         public void setMaxBitRate(Integer maxBitRate) {

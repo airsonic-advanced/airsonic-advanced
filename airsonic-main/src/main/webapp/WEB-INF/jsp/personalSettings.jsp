@@ -237,6 +237,21 @@
 
     <table class="indent">
         <tr>
+            <td><form:checkbox path="autoBookmark" id="autoBookmark" cssClass="checkbox"/></td>
+            <td><label for="autoBookmark"><fmt:message key="personalsettings.autobookmark"/></label><c:import url="helpToolTip.jsp"><c:param name="topic" value="autobookmark"/></c:import></td>
+        </tr>
+        <tr>
+            <td colspan="2"><fmt:message key="personalsettings.audiobookmarkfrequency"/></td>
+            <td><form:input path="audioBookmarkFrequency" size="10"/></td>
+        </tr>
+        <tr>
+            <td colspan="2"><fmt:message key="personalsettings.videobookmarkfrequency"/></td>
+            <td><form:input path="videoBookmarkFrequency" size="10"/></td>
+        </tr>
+    </table>
+
+    <table class="indent">
+        <tr>
             <td><form:checkbox path="keyboardShortcutsEnabled" id="keyboardShortcutsEnabled" cssClass="checkbox"/></td>
             <td><label for="keyboardShortcutsEnabled"><fmt:message key="personalsettings.keyboardshortcutsenabled"/></label></td>
         </tr>
@@ -249,6 +264,7 @@
             <th style="padding:0 0.5em 0.5em 0.5em;text-align:center;"><fmt:message key="personalsettings.browse"/> (<fmt:message key="personalsettings.folders"/>)</th>
             <th style="padding:0 0 0.5em 0.5em;text-align:center;"><fmt:message key="personalsettings.playlist"/></th>
             <th style="padding:0 0 0.5em 0.5em;text-align:center;"><fmt:message key="personalsettings.playqueue"/></th>
+            <th style="padding:0 0 0.5em 0.5em;text-align:center;"><fmt:message key="top.bookmarks"/></th>
         </tr>
         <tr>
             <td><fmt:message key="personalsettings.paginationsize"/></td>
@@ -256,6 +272,7 @@
             <td style="text-align:center"><form:input path="paginationSizeFolders" size="10"/></td>
             <td style="text-align:center"><form:input path="paginationSizePlaylist" size="10"/></td>
             <td style="text-align:center"><form:input path="paginationSizePlayqueue" size="10"/></td>
+            <td style="text-align:center"><form:input path="paginationSizeBookmarks" size="10"/></td>
         </tr>
     </table>
 

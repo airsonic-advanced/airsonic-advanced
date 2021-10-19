@@ -104,7 +104,7 @@ public class SettingsService {
     private static final String KEY_DOWNLOAD_BITRATE_LIMIT = "DownloadBitrateLimit";
     private static final String KEY_UPLOAD_BITRATE_LIMIT = "UploadBitrateLimit";
     private static final String KEY_DOWNSAMPLING_COMMAND = "DownsamplingCommand4";
-    private static final String KEY_HLS_COMMAND = "HlsCommand3";
+    private static final String KEY_HLS_COMMAND = "HlsCommand4";
     private static final String KEY_JUKEBOX_COMMAND = "JukeboxCommand2";
     private static final String KEY_VIDEO_IMAGE_COMMAND = "VideoImageCommand";
     private static final String KEY_SUBTITLES_EXTRACTION_COMMAND = "SubtitlesExtractionCommand";
@@ -205,7 +205,7 @@ public class SettingsService {
     private static final long DEFAULT_DOWNLOAD_BITRATE_LIMIT = 0;
     private static final long DEFAULT_UPLOAD_BITRATE_LIMIT = 0;
     private static final String DEFAULT_DOWNSAMPLING_COMMAND = "ffmpeg -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -";
-    private static final String DEFAULT_HLS_COMMAND = "ffmpeg -ss %o -t %d -i %s -async 1 -b:v %bk -s %wx%h -ar 44100 -ac 2 -v 0 -f mpegts -c:v libx264 -preset superfast -c:a libmp3lame -threads 0 -";
+    private static final String DEFAULT_HLS_COMMAND = "ffmpeg -ss %o -i %s -s %wx%h -async 1 -c:v libx264 -flags +cgop -b:v %vk -maxrate %bk -preset superfast -copyts -b:a %rk -bufsize 256k -map 0:0 -map 0:%i -ac 2 -ar 44100 -v 0 -threads 0 -force_key_frames expr:gte(t,n_forced*10) -start_number %j -hls_time %d -hls_list_size 0 -hls_segment_filename %n %p";
     private static final String DEFAULT_JUKEBOX_COMMAND = "ffmpeg -ss %o -i %s -map 0:0 -v 0 -ar 44100 -ac 2 -f s16be -";
     private static final String DEFAULT_VIDEO_IMAGE_COMMAND = "ffmpeg -r 1 -ss %o -t 1 -i %s -s %wx%h -v 0 -f mjpeg -";
     private static final String DEFAULT_SUBTITLES_EXTRACTION_COMMAND = "ffmpeg -i %s -map 0:%i -f %f -";
@@ -283,7 +283,7 @@ public class SettingsService {
     // Array of obsolete properties. Used to clean property file.
     private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
             "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "AutoCoverBatch", "MusicMask",
-            "VideoMask", "CoverArtMask", "HlsCommand", "HlsCommand2", "JukeboxCommand",
+            "VideoMask", "CoverArtMask", "HlsCommand", "HlsCommand2", "HlsCommand3", "JukeboxCommand",
             "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
             "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",
             "UrlRedirectFrom", "UrlRedirectionEnabled", "UrlRedirectType", "Port", "HttpsPort",
@@ -931,12 +931,20 @@ public class SettingsService {
         setProperty(KEY_HLS_COMMAND, command);
     }
 
-    String getJukeboxCommand() {
+    public String getJukeboxCommand() {
         return getProperty(KEY_JUKEBOX_COMMAND, DEFAULT_JUKEBOX_COMMAND);
+    }
+
+    public void setJukeboxCommand(String command) {
+        setProperty(KEY_JUKEBOX_COMMAND, command);
     }
 
     public String getVideoImageCommand() {
         return getProperty(KEY_VIDEO_IMAGE_COMMAND, DEFAULT_VIDEO_IMAGE_COMMAND);
+    }
+
+    public void setVideoImageCommand(String command) {
+        setProperty(KEY_VIDEO_IMAGE_COMMAND, command);
     }
 
     public String getSubtitlesExtractionCommand() {
