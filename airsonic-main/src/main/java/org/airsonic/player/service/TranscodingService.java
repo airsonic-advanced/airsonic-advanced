@@ -374,7 +374,8 @@ public class TranscodingService {
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getAudioTrackIndex).map(String::valueOf).orElse(null),
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getHlsSegmentIndex).map(String::valueOf).orElse(null),
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getHlsSegmentFilename).orElse(null),
-                pathString,
+                // make sure split command output is used in following transcoder steps
+                (in != null && mediaFile.isSingleFile()) ? "-" : pathString,
                 // TODO: this shouldn't be part of videosettings
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getOutputFilename).orElse(null));
 
