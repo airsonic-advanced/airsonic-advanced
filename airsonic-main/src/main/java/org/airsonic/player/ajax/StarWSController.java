@@ -6,6 +6,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.util.List;
 
 @Controller
 @MessageMapping("/rate/mediafile")
@@ -14,13 +15,13 @@ public class StarWSController {
     private MediaFileDao mediaFileDao;
 
     @MessageMapping("/star")
-    public void star(Principal user, int id) {
-        mediaFileDao.starMediaFile(id, user.getName());
+    public void star(Principal user, List<Integer> ids) {
+        mediaFileDao.starMediaFiles(ids, user.getName());
     }
 
     @MessageMapping("/unstar")
-    public void unstar(Principal user, int id) {
-        mediaFileDao.unstarMediaFile(id, user.getName());
+    public void unstar(Principal user, List<Integer> ids) {
+        mediaFileDao.unstarMediaFiles(ids, user.getName());
     }
 
     public void setMediaFileDao(MediaFileDao mediaFileDao) {

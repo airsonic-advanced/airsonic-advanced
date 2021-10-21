@@ -69,6 +69,8 @@ public class PlayQueueController {
         map.put("notify", userSettings.getSongNotificationEnabled());
         map.put("autoHide", userSettings.getAutoHidePlayQueue());
         map.put("initialPaginationSize", userSettings.getPaginationSizePlayqueue());
+        map.put("autoBookmark", userSettings.getAutoBookmark());
+        map.put("audioBookmarkFrequency", userSettings.getAudioBookmarkFrequency());
         return new ModelAndView("playQueue", "model", map);
     }
 

@@ -123,8 +123,10 @@ public class ShareService {
     }
 
     public String getShareUrl(HttpServletRequest request, Share share) {
-        String shareUrl = NetworkService.getBaseUrl(request) + "ext/share/" + share.getName();
-        return jwtSecurityService.addJWTToken(User.USERNAME_ANONYMOUS, UriComponentsBuilder.fromUriString(shareUrl), share.getExpires()).build().toUriString();
+        String shareUrl = "ext/share/" + share.getName();
+        return NetworkService.getBaseUrl(request) + jwtSecurityService
+                .addJWTToken(User.USERNAME_ANONYMOUS, UriComponentsBuilder.fromUriString(shareUrl), share.getExpires())
+                .build().toUriString();
     }
 
     public void setSecurityService(SecurityService securityService) {

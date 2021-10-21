@@ -7,7 +7,7 @@
 
     <description>Airsonic tag library</description>
     <display-name>Airsonic tag library</display-name>
-    <tlib-version>1.1</tlib-version>
+    <tlib-version>1.2</tlib-version>
     <short-name>sub</short-name>
     <uri>http://airsonic.org/taglib/sub</uri>
 
@@ -95,5 +95,13 @@
             <rtexprvalue>true</rtexprvalue>
         </attribute>
     </tag>
+
+    <function>
+        <name>toJson</name>
+        <function-class>org.airsonic.player.util.Util</function-class>
+        <function-signature>
+            String toJson(java.lang.Object)
+        </function-signature>
+    </function>
 
 </taglib>

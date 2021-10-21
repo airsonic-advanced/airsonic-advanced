@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" %>
 
 <html><head>
@@ -75,6 +76,33 @@
             </td>
             <td>
                 <input class="monospace" type="text" name="hlsCommand" size="100" value="${model.hlsCommand}"/>
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold;">
+                <fmt:message key="advancedsettings.jukeboxcommand"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="jukeboxcommand"/></c:import>
+            </td>
+            <td>
+                <input class="monospace" type="text" name="jukeboxCommand" size="100" value="${model.jukeboxCommand}"/>
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold;">
+                <fmt:message key="advancedsettings.videoimagecommand"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="videoimagecommand"/></c:import>
+            </td>
+            <td>
+                <input class="monospace" type="text" name="videoImageCommand" size="100" value="${model.videoImageCommand}"/>
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold;">
+                <fmt:message key="advancedsettings.subtitlesextractioncommand"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="subtitlesextractioncommand"/></c:import>
+            </td>
+            <td>
+                <input class="monospace" type="text" name="subtitlesExtractionCommand" size="100" value="${model.subtitlesExtractionCommand}"/>
             </td>
         </tr>
     </table>

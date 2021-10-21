@@ -53,8 +53,9 @@ public class UserSettingsJsonTablePopulation implements CustomSqlChange {
         }
 
         if (conn != null) {
-            try (Statement st = conn.createStatement()) {
-                ResultSet result = st.executeQuery("SELECT * FROM user_settings");
+            try (Statement st = conn.createStatement();
+                    ResultSet result = st.executeQuery("SELECT * FROM user_settings");) {
+
                 while (result.next()) {
                     userSettingRows.add(mapRow(result));
                 }

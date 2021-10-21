@@ -31,25 +31,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Java Audio Player and needed dependencies
-         -->
-        <dependency>
-            <groupId>com.github.biconou</groupId>
-            <artifactId>AudioPlayer</artifactId>
-            <version>0.2.5</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-simple</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-io</groupId>
-                    <artifactId>commons-io</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <!-- -->
-
         <!-- Metrics
              Metrics is a cool framework used here
              to compute musures and statistics during automated testing
@@ -213,7 +194,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.20</version>
+            <version>1.21</version>
         </dependency>
         <dependency>
             <groupId>org.tukaani</groupId>
@@ -264,22 +245,6 @@
             <groupId>net.jthink</groupId>
             <artifactId>jaudiotagger</artifactId>
             <version>2.2.6.20210504</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jfree</groupId>
-            <artifactId>jfreechart</artifactId>
-            <version>1.5.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>gnujaxp</groupId>
-                    <artifactId>gnujaxp</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>

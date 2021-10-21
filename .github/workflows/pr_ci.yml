@@ -45,6 +45,9 @@ jobs:
           - jdk: 14
             services: {}
             env: {}
+          - jdk: 16
+            services: {}
+            env: {}
           # external dbs
           - jdk: 11
             services:
@@ -63,7 +66,21 @@ jobs:
           - jdk: 11
             services:
               postgres:
-                image: 'postgres:12.2-alpine'
+                image: 'postgres:12.7-alpine'
+                ports:
+                  - 5432:5432
+                env:
+                  POSTGRES_PASSWORD: pass
+            env:
+              spring_datasource_url: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified&raiseExceptionOnSilentRollback=false'
+              spring_datasource_username: postgres
+              spring_datasource_password: pass
+              spring_liquibase_parameters_userTableQuote: '"'
+              EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
+          - jdk: 11
+            services:
+              postgres:
+                image: 'postgres:13.3-alpine'
                 ports:
                   - 5432:5432
                 env:

@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" %>
 <%--@elvariable id="command" type="org.airsonic.player.command.MusicFolderSettingsCommand"--%>
 
@@ -79,6 +80,12 @@
     <p class="detail" style="width:60%;white-space:normal;margin-top:-10px;">
         <fmt:message key="musicfoldersettings.access.description"/>
     </p>
+    
+    <div>
+	<fmt:message key="musicfoldersettings.uploadsfolder"/>
+	<form:input path="uploadsFolder" size="70"/>
+        <c:import url="helpToolTip.jsp"><c:param name="topic" value="uploadsfolderpattern"/></c:import>
+    </div>
 
     <div>
 	<fmt:message key="musicfoldersettings.excludepattern"/>

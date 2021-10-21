@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 
 <html><head>
@@ -121,7 +122,7 @@
                       title: "<fmt:message key='edittags.songtitle'/>",
                       render: function(title, type, row) {
                           if (type == "display" && title != null) {
-                              return $("<span>").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
+                              return $("<span>", {title: title, alt: title, text: title})[0].outerHTML;
                           }
                           return title;
                       }
@@ -132,7 +133,7 @@
                       title: "<fmt:message key='personalsettings.album'/>",
                       render: function(album, type, row) {
                           if (type == "display" && album != null) {
-                              return $("<a>").attr("href", "main.view?id=" + row.id).attr("target", "main").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
+                              return $("<a>", {title: album, alt: album, text: album, target: "main"}).attr("href", "main.view?id=" + row.id)[0].outerHTML;
                           }
                           return album;
                       }
@@ -143,7 +144,7 @@
                       title: "<fmt:message key='personalsettings.artist'/>",
                       render: function(artist, type, row) {
                           if (type == "display" && artist != null) {
-                              return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
+                              return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
                           }
                           return artist;
                       }
@@ -154,7 +155,7 @@
                       title: "<fmt:message key='personalsettings.genre'/>",
                       render(genre, type) {
                           if (type == "display" && genre != null) {
-                              return $("<span>").attr("title", genre).attr("alt", genre).text(genre)[0].outerHTML;
+                              return $("<span>", {title: genre, alt: genre, text: genre})[0].outerHTML;
                           }
                           return genre;
                       }
@@ -376,9 +377,9 @@
             songs[index].starred = !songs[index].starred;
 
             if (songs[index].starred) {
-                top.StompClient.send("/app/rate/mediafile/star", songs[index].id);
+                top.StompClient.send("/app/rate/mediafile/star", JSON.stringify([songs[index].id]));
             } else {
-                top.StompClient.send("/app/rate/mediafile/unstar", songs[index].id);
+                top.StompClient.send("/app/rate/mediafile/unstar", JSON.stringify([songs[index].id]));
             }
             playlistMusicTable.cell(index, "starred:name").invalidate();
         }

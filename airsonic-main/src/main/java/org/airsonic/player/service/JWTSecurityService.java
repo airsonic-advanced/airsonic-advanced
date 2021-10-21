@@ -5,6 +5,7 @@ import com.auth0.jwt.JWTCreator.Builder;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import org.airsonic.player.security.JWTAuthenticationToken;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 @Service("jwtSecurityService")
 public class JWTSecurityService {
@@ -75,10 +77,8 @@ public class JWTSecurityService {
         return addJWTToken(user, builder, Collections.emptyMap());
     }
 
-    public UriComponentsBuilder addJWTToken(String user, UriComponentsBuilder builder,
-            Map<String, String> additionalClaims) {
-        return addJWTToken(user, builder, Instant.now().plus(DEFAULT_DAYS_VALID_FOR, ChronoUnit.DAYS),
-                additionalClaims);
+    public UriComponentsBuilder addJWTToken(String user, UriComponentsBuilder builder, Map<String, String> additionalClaims) {
+        return addJWTToken(user, builder, null, additionalClaims);
     }
 
     public UriComponentsBuilder addJWTToken(String user, UriComponentsBuilder builder, Instant expires) {
@@ -86,14 +86,16 @@ public class JWTSecurityService {
     }
 
     public UriComponentsBuilder addJWTToken(String user, UriComponentsBuilder builder, Instant expires, Map<String, String> additionalClaims) {
+        if (expires == null) {
+            expires = Instant.now().plus(DEFAULT_DAYS_VALID_FOR, ChronoUnit.DAYS);
+        }
         String token = JWTSecurityService.createToken(
                 settingsService.getJWTKey(),
                 user,
                 builder.toUriString(),
                 expires,
                 additionalClaims);
-        builder.queryParam(JWTSecurityService.JWT_PARAM_NAME, token);
-        return builder;
+        return builder.queryParam(JWTSecurityService.JWT_PARAM_NAME, token);
     }
 
     public static DecodedJWT verify(String jwtKey, String token) {
@@ -108,5 +110,13 @@ public class JWTSecurityService {
 
     public static DecodedJWT decode(String token) {
         return JWT.decode(token);
+    }
+
+    public static Instant getExpiration(JWTAuthenticationToken auth) {
+        return Optional.ofNullable(auth)
+                .map(x -> (DecodedJWT) x.getDetails())
+                .map(x -> x.getExpiresAt())
+                .map(x -> x.toInstant())
+                .orElse(null);
     }
 }

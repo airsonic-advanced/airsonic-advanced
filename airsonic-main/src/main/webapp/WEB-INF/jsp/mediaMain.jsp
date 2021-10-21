@@ -247,12 +247,15 @@
             minBorder: 30
         });
 
-        $("#dialog-select-playlist").dialog({resizable: true, height: 350, autoOpen: false,
+        var dialogSize = getJQueryUiDialogPlaylistSize("mediaMain");
+        $("#dialog-select-playlist").dialog({resizable: true, height: dialogSize.height, width: dialogSize.width, autoOpen: false,
             buttons: {
                 "<fmt:message key="common.cancel"/>": function() {
                     $(this).dialog("close");
                 }
-            }});
+            },
+            resizeStop: function (event, ui) { setJQueryUiDialogPlaylistSize("mediaMain", ui.size) }
+        });
 
         var ratingOnImage = "<spring:theme code='ratingOnImage'/>";
         var ratingOffImage = "<spring:theme code='ratingOffImage'/>";
@@ -347,7 +350,7 @@
                   title: "<fmt:message key='edittags.songtitle'/>",
                   render: function(title, type, row) {
                       if (type == "display" && title != null) {
-                          return "<span title='" + title + "' + alt='" + title + "'>" + title + "</span>";
+                          return $("<span>", {title: title, alt: title, text: title})[0].outerHTML;
                       }
                       return title;
                   }
@@ -358,7 +361,7 @@
                   title: "<fmt:message key='personalsettings.album'/>",
                   render: function(album, type, row) {
                       if (type == "display" && album != null) {
-                          return "<span title='" + album + "' + alt='" + album + "'>" + album + "</span>";
+                          return $("<span>", {title: album, alt: album, text: album})[0].outerHTML;
                       }
                       return album;
                   }
@@ -369,7 +372,7 @@
                   title: "<fmt:message key='personalsettings.artist'/>",
                   render: function(artist, type) {
                       if (type == "display" && artist != null) {
-                          return "<span title='" + artist + "' + alt='" + artist + "'>" + artist + "</span>";
+                          return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
                       }
                       return artist;
                   }
@@ -380,7 +383,7 @@
                   title: "<fmt:message key='personalsettings.genre'/>",
                   render: function(genre, type) {
                       if (type == "display" && genre != null) {
-                          return "<span title='" + genre + "' + alt='" + genre + "'>" + genre + "</span>";
+                          return $("<span>", {title: genre, alt: genre, text: genre})[0].outerHTML;
                       }
                       return genre;
                   }
@@ -467,7 +470,7 @@
                           if (entryType == 'VIDEO') {
                               media += " " + row.dimensions
                           }
-                          return "<span title='" + media + "' + alt='" + media + "'>" + media + "</span>";
+                          return $("<span>", {title: media, alt: media, text: media})[0].outerHTML;
                       }
                       return entryType;
                   }
@@ -482,7 +485,7 @@
              filesTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
         } );
         $("#filesTable tbody").on( "click", ".starSong", function () {
-            onStar(filesTable.row( $(this).parents('tr') ), filesTable);
+            onToggleStar(filesTable.row( $(this).parents('tr') ));
         } );
         $("#filesTable tbody").on( "click", ".playSong", function () {
             onPlay(filesTable.row( $(this).parents('tr') ));
@@ -559,7 +562,7 @@
                   className: "detail songTitle truncate",
                   render: function(title, type, row) {
                       if (type == "display" && title != null) {
-                          return "<a href='#' title='" + title + "' + alt='" + title + "'>" + title + "</a>";
+                          return $("<a>", {title: title, alt: title, text: title, href: "#"})[0].outerHTML;
                       }
                       return title;
                   }
@@ -641,7 +644,7 @@
                   className: "detail songTitle truncate",
                   render: function(title, type, row) {
                       if (type == "display" && title != null) {
-                          return $("<span>").attr("title", title).attr("alt", title).text(title)[0].outerHTML;
+                          return $("<span>", {title: title, alt: title, text: title})[0].outerHTML;
                       }
                       return title;
                   }
@@ -650,7 +653,7 @@
                   className: "detail truncate",
                   render: function(album, type, row) {
                       if (type == "display" && album != null) {
-                          return $("<a>").attr("href", "main.view?id=" + row.id).attr("target", "main").attr("title", album).attr("alt", album).text(album)[0].outerHTML;
+                          return $("<a>", {title: album, alt: album, text: album, target: "main"}).attr("href", "main.view?id=" + row.id)[0].outerHTML;
                       }
                       return album;
                   }
@@ -659,7 +662,7 @@
                   className: "detail truncate",
                   render: function(artist, type, row) {
                       if (type == "display" && artist != null) {
-                          return $("<span>").attr("title", artist).attr("alt", artist).text(artist)[0].outerHTML;
+                          return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
                       }
                       return artist;
                   }
@@ -677,7 +680,7 @@
         } );
 
         $("#artistTopSongsTable tbody").on( "click", ".starSong", function () {
-            onStar(artistTopSongsTable.row( $(this).parents('tr') ), artistTopSongsTable);
+            onToggleStar(artistTopSongsTable.row( $(this).parents('tr') ));
         } );
         $("#artistTopSongsTable tbody").on( "click", ".playSong", function () {
             playTopSong(artistTopSongsTable.row( $(this).parents('tr') ).index());
@@ -721,7 +724,7 @@
 
   <c:if test="${model.showArtistInfo}">
     function loadArtistInfo() {
-        top.StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: mediaDir.id, maxSimilarArtists: 8, maxTopSongs: 0}));
+        top.StompClient.send("/app/artist/info", JSON.stringify({mediaFileId: mediaDir.id, maxSimilarArtists: 8, maxTopSongs: 100}));
     }
 
     function loadArtistInfoCallback(artistInfo) {
@@ -738,7 +741,6 @@
             $("#similarArtists").html(html);
         } else {
             $('#similarArtistsContainer').hide();
-            $("#similarArtistsRadio").hide();
         }
 
         if (artistInfo.artistBio && artistInfo.artistBio.biography) {
@@ -761,6 +763,7 @@
 
         if (topSongs.length > 0 && mediaDir.contentType == 'artist') {
             $("#artistTopSongsTable_wrapper").show();
+            $("#playTopSongs").show();
         } else {
             $("#playTopSongs").hide();
             $("#artistTopSongsTable_wrapper").hide();
@@ -781,13 +784,13 @@
         ancestors.append(mediaDir.title);
     }
 
-    function toggleStar(status) {
+    function toggleMediaDirStar(status) {
         if (mediaDir.starred != status) {
             mediaDir.starred = status;
             if (mediaDir.starred) {
-                top.StompClient.send("/app/rate/mediafile/star", mediaDir.id);
+                top.StompClient.send("/app/rate/mediafile/star", JSON.stringify([mediaDir.id]));
             } else {
-                top.StompClient.send("/app/rate/mediafile/unstar", mediaDir.id);
+                top.StompClient.send("/app/rate/mediafile/unstar", JSON.stringify([mediaDir.id]));
             }
 
             updateStarImage();
@@ -802,16 +805,21 @@
         }
     }
 
-    function onStar(row, table) {
-        var data = row.data();
-        data.starred = !data.starred;
+    function onStar(table, indices, status) {
+        var ids = table.rows(indices).data().map(data => {
+            data.starred = status;
+            table.cell(data.seq, "starred:name").invalidate();
+            return data.id;
+        }).toArray();
 
-        if (data.starred) {
-            top.StompClient.send("/app/rate/mediafile/star", data.id);
+        if (status) {
+            top.StompClient.send("/app/rate/mediafile/star", JSON.stringify(ids));
         } else {
-            top.StompClient.send("/app/rate/mediafile/unstar", data.id);
+            top.StompClient.send("/app/rate/mediafile/unstar", JSON.stringify(ids));
         }
-        table.cell(row, "starred:name").invalidate();
+    }
+    function onToggleStar(row) {
+        onStar(row.table(), [row.data().seq], !row.data().starred);
     }
     function onPlay(row) {
         var data = row.data();
@@ -856,26 +864,33 @@
     /** Albums Only **/
     // actionSelected() is invoked when the users selects from the "More actions..." combo box.
     function actionSelected(id) {
-        var selectedIndexes = getSelectedIndexes();
-
+        var selectedIndexes;
         if (id == "top") {
             return;
         } else if (id == "selectAll") {
             selectAll(true);
         } else if (id == "selectNone") {
             selectAll(false);
-        } else if (id == "share" && selectedIndexes != "") {
-            location.href = "createShare.view?id=" + mediaDir.id  + "&" + selectedIndexes;
-        } else if (id == "download" && selectedIndexes != "") {
-            location.href = "download.view?id=" + mediaDir.id  + "&" + selectedIndexes;
-        } else if (id == "appendPlaylist" && selectedIndexes != "") {
+        } else if ((selectedIndexes = getSelectedIndexes()).length > 0 && id == "star") {
+            onStar(filesTable, selectedIndexes, true);
+        } else if (id == "unstar" && selectedIndexes.length > 0) {
+            onStar(filesTable, selectedIndexes, false);
+        } else if (id == "share" && selectedIndexes.length > 0) {
+            location.href = "createShare.view?id=" + mediaDir.id  + "&" + querize(selectedIndexes, "i");
+        } else if (id == "download" && selectedIndexes.length > 0) {
+            location.href = "download.view?id=" + mediaDir.id  + "&" + querize(selectedIndexes, "i");
+        } else if (id == "appendPlaylist" && selectedIndexes.length > 0) {
             onAppendPlaylist();
         }
         $("#moreActions").prop("selectedIndex", 0);
     }
 
     function getSelectedIndexes() {
-        return filesTable.rows({ selected: true }).indexes().map(function(i) { return "i=" + i; }).join("&");
+        return filesTable.rows({ selected: true }).indexes().toArray();
+    }
+
+    function querize(arr, queryVar) {
+        return arr.map(i => queryVar + "=" + i).join("&");
     }
 
     function selectAll(b) {
@@ -1030,7 +1045,7 @@
 <div style="float:left">
     <h1>
         <img id="starImage" src="<spring:theme code='ratingOffImage'/>"
-             onclick="toggleStar(!mediaDir.starred); return false;" style="cursor:pointer;height:18px;" alt="">
+             onclick="toggleMediaDirStar(!mediaDir.starred); return false;" style="cursor:pointer;height:18px;" alt="">
 
         <span id="ancestors" style="vertical-align: middle"></span>
 
@@ -1120,6 +1135,8 @@
         <option id="share">&nbsp;&nbsp;<fmt:message key="main.more.share"/></option>
     </c:if>
     <option id="appendPlaylist">&nbsp;&nbsp;<fmt:message key="playlist.append"/></option>
+    <option id="star">&nbsp;&nbsp;<fmt:message key="playlist.more.star"/></option>
+    <option id="unstar">&nbsp;&nbsp;<fmt:message key="playlist.more.unstar"/></option>
 </select>
 
 <div class="tableSpacer"></div>
@@ -1150,8 +1167,10 @@
         <span id="similarArtists"></span>
     </td></tr>
     <tr><td style="text-align:center">
-        <button id="similarArtistsRadio" class="pagetype-dependent type-album type-artist" style="margin-top:1em;margin-right:0.3em;cursor:pointer" onclick="playSimilar()"><fmt:message key='main.startradio'/></button>
-        <button id="playTopSongs" class="pagetype-dependent type-artist" style="margin-top:1em;margin-left:0.3em;cursor:pointer" onclick="playAllTopSongs()"><fmt:message key='main.playtopsongs'/></button>
+        <div>
+            <div class="pagetype-dependent type-album type-artist" style="display: inline-block"><button id="similarArtistsRadio" style="margin-top:1em;margin-right:0.3em;cursor:pointer" onclick="playSimilar()"><fmt:message key='main.startradio'/></button></div>
+            <div class="pagetype-dependent type-artist" style="display: inline-block"><button id="playTopSongs" style="margin-top:1em;margin-left:0.3em;cursor:pointer" onclick="playAllTopSongs()"><fmt:message key='main.playtopsongs'/></button></div>
+        </div>
     </td></tr>
     <tr><td style="height: 100%"></td></tr>
 </table>

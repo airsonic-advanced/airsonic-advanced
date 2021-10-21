@@ -65,6 +65,7 @@ public class AlbumUpnpProcessor extends UpnpContentProcessor <Album, MediaFile> 
     /**
      * Browses the top-level content of a type.
      */
+    @Override
     public BrowseResult browseRoot(String filter, long firstResult, long maxResults, SortCriterion[] orderBy) throws Exception {
         DIDLContent didl = new DIDLContent();
 
@@ -76,6 +77,7 @@ public class AlbumUpnpProcessor extends UpnpContentProcessor <Album, MediaFile> 
 
         return createBrowseResult(didl, (int) didl.getCount(), getAllItemsSize());
     }
+    @Override
     public Container createContainer(Album album) {
         MusicAlbum container = new MusicAlbum();
 
@@ -95,11 +97,13 @@ public class AlbumUpnpProcessor extends UpnpContentProcessor <Album, MediaFile> 
         return container;
     }
 
+    @Override
     public List<Album> getAllItems() {
         List<MusicFolder> allFolders = getDispatchingContentDirectory().getSettingsService().getAllMusicFolders();
         return getAlbumDao().getAlphabeticalAlbums(0, Integer.MAX_VALUE, false, true, allFolders);
     }
 
+    @Override
     public Album getItemById(String id) {
         Album returnValue = null;
         if (id.startsWith(ALL_BY_ARTIST) || id.equalsIgnoreCase(ALL_RECENT)) {
@@ -112,6 +116,7 @@ public class AlbumUpnpProcessor extends UpnpContentProcessor <Album, MediaFile> 
         return returnValue;
     }
 
+    @Override
     public List<MediaFile> getChildren(Album album) {
         List<MediaFile> allFiles = getMediaFileDao().getSongsForAlbum(album.getArtist(), album.getName());
         if (album.getId() == -1) {
@@ -142,12 +147,22 @@ public class AlbumUpnpProcessor extends UpnpContentProcessor <Album, MediaFile> 
     }
 
 
+    @Override
     public void addChild(DIDLContent didl, MediaFile child) {
         didl.addItem(getDispatcher().getMediaFileProcessor().createItem(child));
     }
 
     public URI getAlbumArtURI(int albumId) {
-        return getDispatcher().getJwtSecurityService().addJWTToken(User.USERNAME_ANONYMOUS, UriComponentsBuilder.fromUriString(getDispatcher().getBaseUrl() + "/ext/coverArt.view").queryParam("id", albumId).queryParam("size", CoverArtScheme.LARGE.getSize())).build().encode().toUri();
+        return UriComponentsBuilder
+                .fromUriString(getDispatcher().getBaseUrl())
+                .uriComponents(getDispatcher().getJwtSecurityService()
+                        .addJWTToken(
+                                User.USERNAME_ANONYMOUS,
+                                UriComponentsBuilder.fromUriString("ext/coverArt.view")
+                                        .queryParam("id", albumId)
+                                        .queryParam("size", CoverArtScheme.LARGE.getSize()))
+                        .build())
+                .build().encode().toUri();
     }
 
     public PersonWithRole[] getAlbumArtists(String artist) {

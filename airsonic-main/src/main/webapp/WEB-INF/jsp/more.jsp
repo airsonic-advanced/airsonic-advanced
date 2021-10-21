@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1"%>
 
 <html><head>
@@ -352,6 +353,11 @@
     <tr>
         <td class="more-shortcut">+</td><td class="more-shortcut-descr"><fmt:message key="more.keyboard.volumeup"/></td>
         <td class="more-shortcut">g <fmt:message key="more.keyboard.then"/> t</td><td class="more-shortcut-descr"><fmt:message key="more.keyboard.starred"/></td>
+        <td></td><td></td>
+    </tr>
+    <tr>
+        <td class="more-shortcut">*</td><td class="more-shortcut-descr"><fmt:message key="more.keyboard.star"/></td>
+        <td class="more-shortcut">g <fmt:message key="more.keyboard.then"/> b</td><td class="more-shortcut-descr"><fmt:message key="more.keyboard.bookmarks"/></td>
         <td></td><td></td>
     </tr>
     <tr>
