@@ -1,0 +1,89 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="add-unknown-media-folders" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="path"/>
+            <columnExists tableName="media_file" columnName="folder"/>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.AddUnknownMediaFolders"></customChange>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="unique-media-folders" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="music_folder"/>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.UniqueMediaFolders"></customChange>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-uniqueness-constraint-to-media-folders-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="path"/>
+        </preConditions>
+        <createIndex tableName="music_folder" unique="true" indexName="idx_music_folder_path">
+            <column name="path"></column>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="music_folder" indexName="idx_music_folder_path"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-uniqueness-constraint-to-media-file-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <indexExists tableName="media_file" indexName="idx_media_file_path"/>
+        </preConditions>
+        <dropIndex tableName="media_file" indexName="idx_media_file_path"></dropIndex>
+        <rollback>
+            <createIndex tableName="media_file" indexName="idx_media_file_path" unique="true">
+                <column name="path"></column>
+            </createIndex>
+        </rollback>
+    </changeSet>
+    <changeSet id="relativize-media-file-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="path"/>
+            <columnExists tableName="media_file" columnName="folder"/>
+        </preConditions>
+        <update tableName="media_file">
+            <column name="path" valueComputed="SUBSTR(path, LENGTH(folder) + 1)"></column>
+        </update>
+        <update tableName="media_file">
+            <column name="path" valueComputed="SUBSTR(path, 2)"></column>
+            <where>LENGTH(path) != 0</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-folder-id-to-media-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="media_file" columnName="folder_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="media_file">
+            <column name="folder_id" type="int" defaultValue="-1" valueComputed="(SELECT id FROM music_folder WHERE music_folder.path=folder)">
+                <!-- No fk to music_folder.id because want to allow modification/deletion of music folder without affecting/deleting media file -->
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="media_file" columnName="folder_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-uniqueness-constraint-to-relative-media-file-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="media_file" indexName="idx_media_file_folder_path"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="media_file" unique="true" indexName="idx_media_file_folder_path">
+            <column name="folder_id"></column>
+            <column name="path"></column>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="media_file" indexName="idx_media_file_folder_path"></dropIndex>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
