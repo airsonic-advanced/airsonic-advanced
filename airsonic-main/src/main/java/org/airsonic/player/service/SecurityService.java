@@ -370,6 +370,11 @@ public class SecurityService implements UserDetailsService {
         user.setBytesUploaded(updated.getBytesUploaded());
     }
 
+    public boolean isReadAllowed(MediaFile file, boolean checkExistence) {
+        MusicFolder folder = settingsService.getMusicFolderById(file.getFolderId());
+        return folder.isEnabled() && (!checkExistence || Files.exists(folder.getPath().resolve(file.getPath())));
+    }
+
     /**
      * Returns whether the given file may be read.
      *

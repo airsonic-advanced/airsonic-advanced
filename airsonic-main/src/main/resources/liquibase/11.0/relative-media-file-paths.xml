@@ -40,6 +40,50 @@
             <dropIndex tableName="music_folder" indexName="idx_music_folder_path"/>
         </rollback>
     </changeSet>
+    <changeSet id="add-media-file-id-to-user-rating" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="user_rating" columnName="media_file_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="user_rating">
+            <column name="media_file_id" type="int" defaultValue="-1" valueComputed="(SELECT id FROM media_file WHERE media_file.path=path)">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="user_rating" columnName="media_file_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-path-from-user-rating" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="path"/>
+        </preConditions>
+        <dropColumn tableName="user_rating" columnName="path"></dropColumn>
+        <rollback>
+            <addColumn tableName="user_rating">
+                <column name="path" type="${varchar_type}">
+                    <constraints nullable="false" />
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-folder-id-to-media-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="media_file" columnName="folder_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="media_file">
+            <column name="folder_id" type="int" defaultValue="-1" valueComputed="(SELECT id FROM music_folder WHERE music_folder.path=folder)">
+                <!-- No fk to music_folder.id because want to allow modification/deletion of music folder without affecting/deleting media file -->
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="media_file" columnName="folder_id"></dropColumn>
+        </rollback>
+    </changeSet>
     <changeSet id="drop-uniqueness-constraint-to-media-file-path" author="anon">
         <preConditions onFail="MARK_RAN">
             <indexExists tableName="media_file" indexName="idx_media_file_path"/>
@@ -66,22 +110,6 @@
         <rollback>
         </rollback>
     </changeSet>
-    <changeSet id="add-folder-id-to-media-file" author="anon">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <columnExists tableName="media_file" columnName="folder_id"/>
-            </not>
-        </preConditions>
-        <addColumn tableName="media_file">
-            <column name="folder_id" type="int" defaultValue="-1" valueComputed="(SELECT id FROM music_folder WHERE music_folder.path=folder)">
-                <!-- No fk to music_folder.id because want to allow modification/deletion of music folder without affecting/deleting media file -->
-                <constraints nullable="false" />
-            </column>
-        </addColumn>
-        <rollback>
-            <dropColumn tableName="media_file" columnName="folder_id"></dropColumn>
-        </rollback>
-    </changeSet>
     <changeSet id="add-uniqueness-constraint-to-relative-media-file-path" author="anon">
         <preConditions onFail="MARK_RAN">
             <not>
@@ -94,6 +122,17 @@
         </createIndex>
         <rollback>
             <dropIndex tableName="media_file" indexName="idx_media_file_folder_path"></dropIndex>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-folder-from-media-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="folder"/>
+        </preConditions>
+        <dropColumn tableName="media_file" columnName="folder"></dropColumn>
+        <rollback>
+            <addColumn tableName="media_file">
+                <column name="folder" type="${varchar_type}"></column>
+            </addColumn>
         </rollback>
     </changeSet>
 </databaseChangeLog>

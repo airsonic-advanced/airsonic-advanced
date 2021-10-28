@@ -25,8 +25,6 @@ import org.airsonic.player.domain.MusicFolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,9 +54,8 @@ public class RatingService {
     public List<MediaFile> getHighestRatedAlbums(int offset, int count, List<MusicFolder> musicFolders) {
         return ratingDao.getHighestRatedAlbums(offset, count, musicFolders)
                 .parallelStream()
-                .map(Paths::get)
-                .filter(file -> Files.exists(file) && securityService.isReadAllowed(file))
                 .map(mediaFileService::getMediaFile)
+                .filter(file -> securityService.isReadAllowed(file, true))
                 .collect(Collectors.toList());
     }
 
