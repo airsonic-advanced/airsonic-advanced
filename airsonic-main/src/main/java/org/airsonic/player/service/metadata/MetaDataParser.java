@@ -23,8 +23,13 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.SettingsService;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jaudiotagger.tag.reference.GenreTypes;
 
 import java.nio.file.Path;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Parses meta data from media files.
@@ -32,6 +37,10 @@ import java.nio.file.Path;
  * @author Sindre Mehus
  */
 public abstract class MetaDataParser {
+
+    protected static final Pattern GENRE_PATTERN = Pattern.compile("\\((\\d+)\\).*");
+    protected static final Pattern TRACK_NUMBER_PATTERN = Pattern.compile("(\\d+)/\\d+");
+    protected static final Pattern YEAR_NUMBER_PATTERN = Pattern.compile("(\\d{4}).*");
 
     /**
      * Parses meta data for the given file.
@@ -101,6 +110,8 @@ public abstract class MetaDataParser {
      */
     public abstract boolean isEditingSupported();
 
+    abstract SettingsService getSettingsService();
+
     /**
      * Guesses the artist for the given file.
      */
@@ -115,8 +126,10 @@ public abstract class MetaDataParser {
 
     /**
      * Guesses the album for the given file.
+     *
+     * TODO: public as it is used in EditTagsController
      */
-    String guessAlbum(Path file, String artist) {
+    public String guessAlbum(Path file, String artist) {
         Path parent = file.getParent();
         String album = isRoot(parent) ? null : parent.getFileName().toString();
         if (artist != null && album != null) {
@@ -127,6 +140,8 @@ public abstract class MetaDataParser {
 
     /**
      * Guesses the title for the given file.
+     *
+     * TODO: public as it is used in EditTagsController
      */
     public String guessTitle(Path file) {
         return StringUtils.trim(FilenameUtils.getBaseName(file.toString()));
@@ -136,7 +151,133 @@ public abstract class MetaDataParser {
         return getSettingsService().getAllMusicFolders(false, true).parallelStream().anyMatch(folder -> file.equals(folder.getPath()));
     }
 
-    abstract SettingsService getSettingsService();
+    /**
+     * Returns all tags supported by id3v1.
+     */
+    public static SortedSet<String> getID3V1Genres() {
+        return new TreeSet<String>(GenreTypes.getInstanceOf().getAlphabeticalValueList());
+    }
+
+    /**
+     * Sometimes the genre is returned as "(17)" or "(17)Rock", instead of "Rock".  This method
+     * maps the genre ID to the corresponding text.
+     */
+    String mapGenre(String genre) {
+        if (genre == null) {
+            return null;
+        }
+        Matcher matcher = GENRE_PATTERN.matcher(genre);
+        if (matcher.matches()) {
+            int genreId = Integer.parseInt(matcher.group(1));
+            if (genreId >= 0 && genreId < GenreTypes.getInstanceOf().getSize()) {
+                return GenreTypes.getInstanceOf().getValueForId(genreId);
+            }
+        }
+        return genre;
+    }
+
+    /**
+     * Parses the track/disc number from the given string.  Also supports
+     * numbers on the form "4/12".
+     */
+    Integer parseTrackNumber(String trackNumber) {
+        if (trackNumber == null) {
+            return null;
+        }
+
+        Integer result = null;
+
+        try {
+            result = Integer.valueOf(trackNumber);
+        } catch (NumberFormatException x) {
+            Matcher matcher = TRACK_NUMBER_PATTERN.matcher(trackNumber);
+            if (matcher.matches()) {
+                try {
+                    result = Integer.valueOf(matcher.group(1));
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+        }
+
+        if (Integer.valueOf(0).equals(result)) {
+            return null;
+        }
+        return result;
+    }
+
+    Integer parseYear(String year) {
+        if (year == null) {
+            return null;
+        }
+
+        Integer result = null;
+
+        try {
+            result = Integer.valueOf(year);
+        } catch (NumberFormatException x) {
+            Matcher matcher = YEAR_NUMBER_PATTERN.matcher(year);
+            if (matcher.matches()) {
+                try {
+                    result = Integer.valueOf(matcher.group(1));
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+        }
+
+        if (Integer.valueOf(0).equals(result)) {
+            return null;
+        }
+        return result;
+    }
+
+    Integer parseInteger(String s) {
+        s = StringUtils.trimToNull(s);
+        if (s == null) {
+            return null;
+        }
+        try {
+            Integer result = Integer.valueOf(s);
+            if (Integer.valueOf(0).equals(result)) {
+                return null;
+            }
+            return result;
+        } catch (NumberFormatException x) {
+            return null;
+        }
+    }
+
+    Integer parseIntegerPattern(String str, Pattern pattern) {
+        str = StringUtils.trimToNull(str);
+
+        if (str == null) {
+            return null;
+        }
+
+        Integer result = null;
+
+        try {
+            result = Integer.valueOf(str);
+        } catch (NumberFormatException x) {
+            if (pattern == null) {
+                return null;
+            }
+            Matcher matcher = pattern.matcher(str);
+            if (matcher.matches()) {
+                try {
+                    result = Integer.valueOf(matcher.group(1));
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+        }
+
+        if (Integer.valueOf(0).equals(result)) {
+            return null;
+        }
+        return result;
+    }
 
     /**
      * Removes any prefixed track number from the given title string.
@@ -145,7 +286,7 @@ public abstract class MetaDataParser {
      * @param trackNumber If specified, this is the "true" track number.
      * @return The title with the track number removed, e.g., "Back In Black".
      */
-    protected String removeTrackNumberFromTitle(String title, Integer trackNumber) {
+    String removeTrackNumberFromTitle(String title, Integer trackNumber) {
         title = title.trim();
 
         // Don't remove numbers if true track number is missing, or if title does not start with it.
