@@ -62,7 +62,7 @@ public class CacheConfiguration {
                 .withCache("mediaFileMemoryCache",
                         CacheConfigurationBuilder.newCacheConfigurationBuilder(Path.class, Object.class, pools)
                                 .withClassLoader(cl)
-                                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofMinutes(10)))
+                                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofHours(2)))
                                 .withService(cacheLogging))
                 .withCache("playlistCache",
                         CacheConfigurationBuilder.newCacheConfigurationBuilder(Integer.class, Object.class, pools)
