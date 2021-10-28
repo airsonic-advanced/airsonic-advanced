@@ -219,7 +219,8 @@ public class MediaScannerService {
             // Recurse through all files on disk.
             settingsService.getAllMusicFolders()
                 .parallelStream()
-                .forEach(musicFolder -> scanFile(mediaFileService.getMediaFile(musicFolder.getPath(), false), musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, false));
+                    .forEach(musicFolder -> scanFile(mediaFileService.getMediaFile(Paths.get(""), musicFolder, false),
+                            musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, false));
 
             // Scan podcast folder.
             Path podcastFolder = Paths.get(settingsService.getPodcastFolder());
@@ -302,13 +303,13 @@ public class MediaScannerService {
 
         LOG.trace("Scanning file {}", file.getPath());
 
-        // Update the root folder if it has changed.
-        if (!musicFolder.getPath().toString().equals(file.getFolder())) {
-            file.setFolder(musicFolder.getPath().toString());
-            mediaFileDao.createOrUpdateMediaFile(file);
+        // Update the root folder if it has changed
+        if (!musicFolder.getId().equals(file.getFolderId())) {
+            file.setFolderId(musicFolder.getId());
+            mediaFileService.updateMediaFile(file);
         }
 
-        indexManager.index(file);
+        indexManager.index(file, musicFolder);
 
         if (file.isDirectory()) {
             mediaFileService.getChildrenOf(file, true, true, false, false)

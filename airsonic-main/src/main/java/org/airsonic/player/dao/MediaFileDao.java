@@ -37,6 +37,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -48,7 +49,7 @@ import java.util.stream.IntStream;
 @Repository
 public class MediaFileDao extends AbstractDao {
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileDao.class);
-    private static final String INSERT_COLUMNS = "path, folder, type, format, title, album, artist, album_artist, disc_number, " +
+    private static final String INSERT_COLUMNS = "path, folder_id, type, format, title, album, artist, album_artist, disc_number, " +
                                                 "track_number, year, genre, bit_rate, variable_bit_rate, duration, file_size, width, height, cover_art_path, " +
                                                 "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, " +
                                                 "version, mb_release_id, mb_recording_id";
@@ -62,22 +63,10 @@ public class MediaFileDao extends AbstractDao {
     private final MusicFileInfoMapper musicFileInfoRowMapper = new MusicFileInfoMapper();
     private final GenreMapper genreRowMapper = new GenreMapper();
 
-    /**
-     * Returns the media file for the given path.
-     *
-     * @param path The path.
-     * @return The media file or null.
-     */
-    public MediaFile getMediaFile(String path) {
-        return queryOne("select " + QUERY_COLUMNS + " from media_file where path=?", rowMapper, path);
+    public MediaFile getMediaFile(String path, int folderId) {
+        return queryOne("select " + QUERY_COLUMNS + " from media_file where path=? and folder_id=?", rowMapper, path, folderId);
     }
 
-    /**
-     * Returns the media file for the given ID.
-     *
-     * @param id The ID.
-     * @return The media file or null.
-     */
     public MediaFile getMediaFile(int id) {
         return queryOne("select " + QUERY_COLUMNS + " from media_file where id=?", rowMapper, id);
     }
@@ -88,8 +77,8 @@ public class MediaFileDao extends AbstractDao {
      * @param path The path.
      * @return The list of children.
      */
-    public List<MediaFile> getChildrenOf(String path) {
-        return query("select " + QUERY_COLUMNS + " from media_file where parent_path=? and present", rowMapper, path);
+    public List<MediaFile> getChildrenOf(String path, int folderId, boolean onlyPresent) {
+        return query("select " + QUERY_COLUMNS + " from media_file where parent_path=? and folder_id=?" + (onlyPresent ? " and present" : ""), rowMapper, path, folderId);
     }
 
     public List<MediaFile> getFilesInPlaylist(int playlistId) {
@@ -131,68 +120,71 @@ public class MediaFileDao extends AbstractDao {
                              "and present and folder in (:folders)", rowMapper, args);
     }
 
-    /**
-     * Creates or updates a media file.
-     *
-     * @param file The media file to create/update.
-     */
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void createOrUpdateMediaFile(MediaFile file) {
-        LOG.trace("Creating/Updating new media file at {}", file.getPath());
-        String sql = "update media_file set " +
-                     "folder=?," +
-                     "type=?," +
-                     "format=?," +
-                     "title=?," +
-                     "album=?," +
-                     "artist=?," +
-                     "album_artist=?," +
-                     "disc_number=?," +
-                     "track_number=?," +
-                     "year=?," +
-                     "genre=?," +
-                     "bit_rate=?," +
-                     "variable_bit_rate=?," +
-                     "duration=?," +
-                     "file_size=?," +
-                     "width=?," +
-                     "height=?," +
-                     "cover_art_path=?," +
-                     "parent_path=?," +
-                     "play_count=?," +
-                     "last_played=?," +
-                     "comment=?," +
-                     "changed=?," +
-                     "last_scanned=?," +
-                     "children_last_updated=?," +
-                     "present=?, " +
-                     "version=?, " +
-                     "mb_release_id=?, " +
-                     "mb_recording_id=? " +
-                     "where path=?";
+    public void createOrUpdateMediaFile(MediaFile file, Consumer<MediaFile> preInsertionCallback) {
+        LOG.trace("Creating/Updating new media file at {} in folder id {}", file.getPath(), file.getFolderId());
+        String sql = null;
+        if (file.getId() != null) {
+            sql = "update media_file set " + "path=:path," + "folder_id=:fid," + "type=:type," + "format=:format,"
+                    + "title=:title," + "album=:album," + "artist=:artist," + "album_artist=:albumartist,"
+                    + "disc_number=:dn," + "track_number=:tn," + "year=:year," + "genre=:genre," + "bit_rate=:br,"
+                    + "variable_bit_rate=:vbr," + "duration=:duration," + "file_size=:fs," + "width=:w," + "height=:h,"
+                    + "cover_art_path=:cap," + "parent_path=:pp," + "play_count=:pc," + "last_played=:lp,"
+                    + "comment=:comment," + "changed=:changed," + "last_scanned=:ls," + "children_last_updated=:clu,"
+                    + "present=:pres," + "version=:ver," + "mb_release_id=:mbrelid," + "mb_recording_id=:mbrecid "
+                    + "where id=:id";
+        } else {
+            sql = "update media_file set " + "type=:type," + "format=:format," + "title=:title," + "album=:album,"
+                    + "artist=:artist," + "album_artist=:albumartist," + "disc_number=:dn," + "track_number=:tn,"
+                    + "year=:year," + "genre=:genre," + "bit_rate=:br," + "variable_bit_rate=:vbr," + "duration=:dur,"
+                    + "file_size=:fs," + "width=:w," + "height=:h," + "cover_art_path=:cap," + "parent_path=:pp,"
+                    + "play_count=:pc," + "last_played=:lp," + "comment=:comment," + "changed=:changed,"
+                    + "last_scanned=:ls," + "children_last_updated=:clu," + "present=:pres," + "version=:ver,"
+                    + "mb_release_id=:mbrelid," + "mb_recording_id=:mbrecid " + "where path=:path and folder_id=:fid";
+        }
 
         LOG.trace("Updating media file {}", Util.debugObject(file));
+        Map<String, Object> args = new HashMap<>();
+        args.put("id", file.getId());
+        args.put("path", file.getPath());
+        args.put("fid", file.getFolderId());
+        args.put("type", file.getMediaType().name());
+        args.put("format", file.getFormat());
+        args.put("title", file.getTitle());
+        args.put("album", file.getAlbumName());
+        args.put("artist", file.getArtist());
+        args.put("albumartist", file.getAlbumArtist());
+        args.put("dn", file.getDiscNumber());
+        args.put("tn", file.getTrackNumber());
+        args.put("year", file.getYear());
+        args.put("genre", file.getGenre());
+        args.put("br", file.getBitRate());
+        args.put("vbr", file.isVariableBitRate());
+        args.put("dur", file.getDuration());
+        args.put("fs", file.getFileSize());
+        args.put("w", file.getWidth());
+        args.put("h", file.getHeight());
+        args.put("cap", file.getCoverArtPath());
+        args.put("pp", file.getParentPath());
+        args.put("pc", file.getPlayCount());
+        args.put("lp", file.getLastPlayed());
+        args.put("comment", file.getComment());
+        args.put("changed", file.getChanged());
+        args.put("ls", file.getLastScanned());
+        args.put("clu", file.getChildrenLastUpdated());
+        args.put("pres", file.isPresent());
+        args.put("ver", VERSION);
+        args.put("mbrelid", file.getMusicBrainzReleaseId());
+        args.put("mbrecid", file.getMusicBrainzRecordingId());
 
-        int n = update(sql,
-                       file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
-                       file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
-                file.isVariableBitRate(), file.getDuration(), file.getFileSize(), file.getWidth(), file.getHeight(),
-                       file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
-                       file.getChanged(), file.getLastScanned(), file.getChildrenLastUpdated(), file.isPresent(), VERSION,
-                       file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId(), file.getPath());
+        int n = namedUpdate(sql, args);
 
         if (n == 0) {
 
-            // Copy values from obsolete table music_file_info.
-            MediaFile musicFileInfo = getMusicFileInfo(file.getPath());
-            if (musicFileInfo != null) {
-                file.setComment(musicFileInfo.getComment());
-                file.setLastPlayed(musicFileInfo.getLastPlayed());
-                file.setPlayCount(musicFileInfo.getPlayCount());
-            }
+            preInsertionCallback.accept(file);
 
             update("insert into media_file (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")",
-                   file.getPath(), file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
+                   file.getPath(), file.getFolderId(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
                    file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
                    file.isVariableBitRate(), file.getDuration(), file.getFileSize(), file.getWidth(), file.getHeight(),
                    file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
@@ -200,11 +192,13 @@ public class MediaFileDao extends AbstractDao {
                    file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId());
         }
 
-        int id = queryForInt("select id from media_file where path=?", null, file.getPath());
-        file.setId(id);
+        if (file.getId() == null) {
+            Integer id = queryForInt("select id from media_file where path=? and folder_id=?", null, file.getPath(), file.getFolderId());
+            file.setId(id);
+        }
     }
 
-    private MediaFile getMusicFileInfo(String path) {
+    public MediaFile getMusicFileInfo(String path) {
         return queryOne("select play_count, last_played, comment from music_file_info where path=?", musicFileInfoRowMapper, path);
     }
 
@@ -732,7 +726,7 @@ public class MediaFileDao extends AbstractDao {
             return new MediaFile(
                     rs.getInt(1),
                     rs.getString(2),
-                    rs.getString(3),
+                    rs.getInt(3),
                     MediaFile.MediaType.valueOf(rs.getString(4)),
                     rs.getString(5),
                     rs.getString(6),

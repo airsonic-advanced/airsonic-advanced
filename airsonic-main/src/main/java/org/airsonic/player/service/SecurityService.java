@@ -421,6 +421,7 @@ public class SecurityService implements UserDetailsService {
     private MusicFolder getMusicFolderForFile(Path file) {
         return settingsService.getAllMusicFolders(false, true).stream()
                 .filter(folder -> isFileInFolder(file, folder.getPath()))
+                .sorted(Comparator.comparingInt(folder -> folder.getPath().toString().length()))
                 .findFirst().orElse(null);
     }
 
@@ -435,24 +436,18 @@ public class SecurityService implements UserDetailsService {
         return isFileInFolder(file, Paths.get(podcastFolder));
     }
 
-    public String getRootFolderForFile(Path file) {
+    public MusicFolder getRootFolderForFile(Path file) {
         MusicFolder folder = getMusicFolderForFile(file);
         if (folder != null) {
-            return folder.getPath().toString();
+            return folder;
         }
 
-        if (isInPodcastFolder(file)) {
-            return settingsService.getPodcastFolder();
-        }
         return null;
     }
 
     public boolean isFolderAccessAllowed(MediaFile file, String username) {
-        if (isInPodcastFolder(file.getFile())) {
-            return true;
-        }
-
-        return settingsService.getMusicFoldersForUser(username).parallelStream().anyMatch(musicFolder -> musicFolder.getPath().toString().equals(file.getFolder()));
+        return settingsService.getMusicFoldersForUser(username).parallelStream()
+                .anyMatch(musicFolder -> musicFolder.getId().equals(file.getFolderId()));
     }
 
     protected static boolean isFileInFolder(Path file, Path folder) {

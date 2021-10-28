@@ -273,7 +273,7 @@ public class JaudiotaggerParser extends MetaDataParser {
      * @param file The music file.
      * @return Whether cover art image data is available.
      */
-    public boolean isImageAvailable(MediaFile file) {
+    public static boolean isImageAvailable(Path file) {
         try {
             return getArtwork(file) != null;
         } catch (Throwable x) {
@@ -282,8 +282,8 @@ public class JaudiotaggerParser extends MetaDataParser {
         }
     }
 
-    public Artwork getArtwork(MediaFile file) throws Exception {
-        AudioFile audioFile = AudioFileIO.read(file.getFile().toFile());
+    public static Artwork getArtwork(Path file) throws Exception {
+        AudioFile audioFile = AudioFileIO.read(file.toFile());
         Tag tag = audioFile.getTag();
         Artwork artwork = null;
         if (tag != null) {

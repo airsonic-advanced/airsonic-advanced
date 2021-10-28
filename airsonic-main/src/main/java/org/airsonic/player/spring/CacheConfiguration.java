@@ -22,7 +22,6 @@ import org.springframework.context.annotation.Configuration;
 import javax.cache.Caching;
 import javax.cache.spi.CachingProvider;
 
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.EnumSet;
 
@@ -60,7 +59,7 @@ public class CacheConfiguration {
                                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(2)))
                                 .withService(cacheLogging))
                 .withCache("mediaFileMemoryCache",
-                        CacheConfigurationBuilder.newCacheConfigurationBuilder(Path.class, Object.class, pools)
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, Object.class, pools)
                                 .withClassLoader(cl)
                                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofHours(2)))
                                 .withService(cacheLogging))

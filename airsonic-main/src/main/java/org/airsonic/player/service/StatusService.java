@@ -161,7 +161,7 @@ public class StatusService {
 
     public PlayStatus getPlayStatus(TransferStatus status) {
         return new PlayStatus(status.getId(),
-                Optional.ofNullable(status.getFile()).map(f -> mediaFileService.getMediaFile(f)).orElse(null),
+                Optional.ofNullable(status.getFile()).map(mediaFileService::getMediaFile).orElse(null),
                 status.getPlayer(),
                 status.getMillisSinceLastUpdate());
     }

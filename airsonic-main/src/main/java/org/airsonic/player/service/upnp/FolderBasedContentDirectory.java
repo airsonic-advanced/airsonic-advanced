@@ -155,7 +155,7 @@ public class FolderBasedContentDirectory extends CustomContentDirectory {
         List<MusicFolder> allFolders = settingsService.getAllMusicFolders();
         List<MusicFolder> selectedFolders = Util.subList(allFolders, firstResult, maxResults);
         for (MusicFolder folder : selectedFolders) {
-            MediaFile mediaFile = mediaFileService.getMediaFile(folder.getPath());
+            MediaFile mediaFile = mediaFileService.getMediaFile("", folder);
             addContainerOrItem(didl, mediaFile);
         }
 

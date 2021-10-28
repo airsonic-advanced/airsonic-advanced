@@ -37,9 +37,9 @@ import java.util.stream.Collectors;
  */
 public class MediaFile {
 
-    private int id;
+    private Integer id;
     private String path;
-    private String folder;
+    private Integer folderId;
     private MediaType mediaType;
     private String format;
     private String title;
@@ -71,14 +71,14 @@ public class MediaFile {
     private String musicBrainzReleaseId;
     private String musicBrainzRecordingId;
 
-    public MediaFile(int id, String path, String folder, MediaType mediaType, String format, String title,
+    public MediaFile(Integer id, String path, Integer folderId, MediaType mediaType, String format, String title,
                      String albumName, String artist, String albumArtist, Integer discNumber, Integer trackNumber, Integer year, String genre, Integer bitRate,
                      boolean variableBitRate, Double duration, Long fileSize, Integer width, Integer height, String coverArtPath,
                      String parentPath, int playCount, Instant lastPlayed, String comment, Instant created, Instant changed, Instant lastScanned,
                      Instant childrenLastUpdated, boolean present, int version, String musicBrainzReleaseId, String musicBrainzRecordingId) {
         this.id = id;
         this.path = path;
-        this.folder = folder;
+        this.folderId = folderId;
         this.mediaType = mediaType;
         this.format = format;
         this.title = title;
@@ -113,11 +113,11 @@ public class MediaFile {
     public MediaFile() {
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -129,16 +129,16 @@ public class MediaFile {
         this.path = path;
     }
 
-    public String getFolder() {
-        return folder;
+    public Integer getFolderId() {
+        return folderId;
     }
 
-    public void setFolder(String folder) {
-        this.folder = folder;
+    public void setFolderId(Integer folderId) {
+        this.folderId = folderId;
     }
 
-    public Path getFile() {
-        return Paths.get(path);
+    public Path getFile(Path mediaFolderPath) {
+        return mediaFolderPath.resolve(path);
     }
 
     public boolean exists() {
