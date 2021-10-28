@@ -159,7 +159,7 @@ public class SettingsService {
     private static final String KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH = "spring.liquibase.parameters.mysqlVarcharLimit";
     public static final String KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE = "spring.liquibase.parameters.userTableQuote";
     private static final String KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER = "spring.liquibase.parameters.defaultMusicFolder";
-
+    private static final String KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER = "spring.liquibase.parameters.defaultPodcastFolder";
     public static final String KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS = "PropertiesFileRetainObsoleteKeys";
 
     // Default values.
@@ -315,6 +315,8 @@ public class SettingsService {
         keyMaps.put("database.usertable.quote", "DatabaseUsertableQuote");
         keyMaps.put("DatabaseUsertableQuote", KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
 
+        keyMaps.put(KEY_PODCAST_FOLDER, KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER);
+
         keyMaps.put("airsonic.rememberMeKey", KEY_REMEMBER_ME_KEY);
         keyMaps.put("IgnoreFileTimestamps", KEY_FULL_SCAN);
 
@@ -391,6 +393,9 @@ public class SettingsService {
         }
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER))) {
             defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER, Util.getDefaultMusicFolder());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER))) {
+            defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER, Util.getDefaultPodcastFolder());
         }
         if (StringUtils.isBlank(env.getProperty(LogFile.FILE_NAME_PROPERTY))) {
             defaultConstants.put(LogFile.FILE_NAME_PROPERTY, getDefaultLogFile());
