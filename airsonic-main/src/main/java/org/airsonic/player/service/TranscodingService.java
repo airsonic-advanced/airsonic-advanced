@@ -254,14 +254,13 @@ public class TranscodingService {
             }
 
         } catch (IOException x) {
-            LOG.warn("Transcoder failed: {}. Using original: " + parameters.getMediaFile().getFile().toAbsolutePath(), x.toString());
+            LOG.warn("Transcoder failed for {} in folder {}. Using original file", parameters.getMediaFile().getPath(), parameters.getMediaFile().getFolderId(), x);
         } catch (Exception x) {
-            LOG.warn("Transcoder failed. Using original: " + parameters.getMediaFile().getFile().toAbsolutePath(), x);
+            LOG.warn("Transcoder failed for {} in folder {}. Using original file", parameters.getMediaFile().getPath(), parameters.getMediaFile().getFolderId(), x);
         }
 
-        return new BufferedInputStream(Files.newInputStream(parameters.getMediaFile().getFile()));
+        return new BufferedInputStream(Files.newInputStream(parameters.getMediaFile().getFile(settingsService.getMusicFolderById(parameters.getMediaFile().getFolderId()).getPath()).toAbsolutePath()));
     }
-
 
     /**
      * Returns the strictest transcoding scheme defined for the player and the user.
@@ -336,7 +335,7 @@ public class TranscodingService {
 
         // Work-around for filename character encoding problem on Windows.
         // Create temporary file, and feed this to the transcoder.
-        Path path = mediaFile.getFile().toAbsolutePath();
+        Path path = mediaFile.getFile(settingsService.getMusicFolderById(mediaFile.getFolderId()).getPath()).toAbsolutePath();
         String pathString = path.toString();
         Path tmpFile = null;
         if (Util.isWindows() && !mediaFile.isVideo() && !StringUtils.isAsciiPrintable(path.toString()) && StringUtils.contains(command, "%s")) {
