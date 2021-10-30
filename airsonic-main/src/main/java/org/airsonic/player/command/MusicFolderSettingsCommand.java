@@ -150,6 +150,7 @@ public class MusicFolderSettingsCommand {
         private Integer id;
         private String path;
         private String name;
+        private String type;
         private boolean enabled;
         private boolean delete;
         private boolean existing;
@@ -158,6 +159,7 @@ public class MusicFolderSettingsCommand {
             id = musicFolder.getId();
             path = musicFolder.getPath().toString();
             name = musicFolder.getName();
+            type = musicFolder.getType().name();
             enabled = musicFolder.isEnabled();
             existing = Files.exists(musicFolder.getPath()) && Files.isDirectory(musicFolder.getPath());
         }
@@ -190,6 +192,14 @@ public class MusicFolderSettingsCommand {
             this.name = name;
         }
 
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -216,7 +226,7 @@ public class MusicFolderSettingsCommand {
             if (name == null) {
                 name = file.getFileName().toString();
             }
-            return new MusicFolder(id, file, name, enabled, Instant.now());
+            return new MusicFolder(id, file, name, MusicFolder.Type.valueOf(type), enabled, Instant.now());
         }
 
         public boolean isExisting() {

@@ -2,10 +2,26 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="add-type-to-media-folder" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="music_folder" columnName="type"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="music_folder">
+            <column name="type" type="${varchar_type}" defaultValue="MEDIA">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="music_folder" columnName="type"></dropColumn>
+        </rollback>
+    </changeSet>
     <changeSet id="add-podcast-media-folder" author="anon">
         <insert tableName="music_folder">
             <column name="path" value="${defaultPodcastFolder}"/>
             <column name="name" value="Podcasts"/>
+            <column name="type" value="PODCAST"/>
             <column name="enabled" valueBoolean="true" />
         </insert>
         <customChange class="org.airsonic.player.spring.migrations.AddPodcastMediaFolderUsers"></customChange>
@@ -62,6 +78,34 @@
         <dropColumn tableName="user_rating" columnName="path"></dropColumn>
         <rollback>
             <addColumn tableName="user_rating">
+                <column name="path" type="${varchar_type}">
+                    <constraints nullable="false" />
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-media-file-id-to-share-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="share_file" columnName="media_file_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="share_file">
+            <column name="media_file_id" type="int" defaultValue="-1" valueComputed="(SELECT id FROM media_file WHERE media_file.path=path)">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="share_file" columnName="media_file_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-path-from-share-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="share_file" columnName="path"/>
+        </preConditions>
+        <dropColumn tableName="share_file" columnName="path"></dropColumn>
+        <rollback>
+            <addColumn tableName="share_file">
                 <column name="path" type="${varchar_type}">
                     <constraints nullable="false" />
                 </column>

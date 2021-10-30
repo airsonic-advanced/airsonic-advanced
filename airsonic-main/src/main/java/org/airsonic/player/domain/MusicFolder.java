@@ -39,6 +39,7 @@ public class MusicFolder implements Serializable {
     private Integer id;
     private Path path;
     private String name;
+    private Type type = Type.MEDIA;
     private boolean enabled;
     private Instant changed;
 
@@ -51,10 +52,11 @@ public class MusicFolder implements Serializable {
      * @param enabled Whether the folder is enabled.
      * @param changed When the corresponding database entry was last changed.
      */
-    public MusicFolder(Integer id, Path path, String name, boolean enabled, Instant changed) {
+    public MusicFolder(Integer id, Path path, String name, Type type, boolean enabled, Instant changed) {
         this.id = id;
         this.path = path;
         this.name = name;
+        this.type = type;
         this.enabled = enabled;
         this.changed = changed;
     }
@@ -67,8 +69,8 @@ public class MusicFolder implements Serializable {
      * @param enabled Whether the folder is enabled.
      * @param changed When the corresponding database entry was last changed.
      */
-    public MusicFolder(Path path, String name, boolean enabled, Instant changed) {
-        this(null, path, name, enabled, changed);
+    public MusicFolder(Path path, String name, Type type, boolean enabled, Instant changed) {
+        this(null, path, name, type, enabled, changed);
     }
 
     /**
@@ -156,6 +158,14 @@ public class MusicFolder implements Serializable {
         this.changed = changed;
     }
 
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -170,6 +180,10 @@ public class MusicFolder implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hashCode(id);
+    }
+
+    public static enum Type {
+        MEDIA, PODCAST
     }
 
 

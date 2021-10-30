@@ -220,14 +220,7 @@ public class MediaScannerService {
             settingsService.getAllMusicFolders()
                 .parallelStream()
                     .forEach(musicFolder -> scanFile(mediaFileService.getMediaFile(Paths.get(""), musicFolder, false),
-                            musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, false));
-
-            // Scan podcast folder.
-            Path podcastFolder = Paths.get(settingsService.getPodcastFolder());
-            if (Files.exists(podcastFolder)) {
-                scanFile(mediaFileService.getMediaFile(podcastFolder), new MusicFolder(podcastFolder, null, true, null),
-                        statistics, albumCount, artists, albums, albumsInDb, genres, encountered, true);
-            }
+                            musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered));
 
             LOG.info("Scanned media library with {} entries.", scanCount.get());
 
@@ -295,7 +288,8 @@ public class MediaScannerService {
     }
 
     private void scanFile(MediaFile file, MusicFolder musicFolder, MediaLibraryStatistics statistics,
-                          Map<String, AtomicInteger> albumCount, Map<String, Artist> artists, Map<String, Album> albums, Map<Integer, Album> albumsInDb, Genres genres, Map<String, Boolean> encountered, boolean isPodcast) {
+            Map<String, AtomicInteger> albumCount, Map<String, Artist> artists, Map<String, Album> albums,
+            Map<Integer, Album> albumsInDb, Genres genres, Map<String, Boolean> encountered) {
         if (scanCount.incrementAndGet() % 250 == 0) {
             broadcastScanStatus();
             LOG.info("Scanned media library with {} entries.", scanCount.get());
@@ -314,9 +308,10 @@ public class MediaScannerService {
         if (file.isDirectory()) {
             mediaFileService.getChildrenOf(file, true, true, false, false)
                 .parallelStream()
-                .forEach(child -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, isPodcast));
+                    .forEach(child -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, albumsInDb,
+                            genres, encountered));
         } else {
-            if (!isPodcast) {
+            if (musicFolder.getType() == MusicFolder.Type.MEDIA) {
                 updateAlbum(file, musicFolder, statistics.getScanDate(), albumCount, albums, albumsInDb);
                 updateArtist(file, musicFolder, statistics.getScanDate(), albumCount, artists);
             }

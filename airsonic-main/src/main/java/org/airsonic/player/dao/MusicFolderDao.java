@@ -45,7 +45,7 @@ import java.util.Optional;
 public class MusicFolderDao extends AbstractDao {
 
     private static final Logger LOG = LoggerFactory.getLogger(MusicFolderDao.class);
-    private static final String INSERT_COLUMNS = "path, name, enabled, changed";
+    private static final String INSERT_COLUMNS = "path, name, type, enabled, changed";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private final MusicFolderRowMapper rowMapper = new MusicFolderRowMapper();
 
@@ -111,8 +111,8 @@ public class MusicFolderDao extends AbstractDao {
      * @param musicFolder The music folder to update.
      */
     public void updateMusicFolder(MusicFolder musicFolder) {
-        String sql = "update music_folder set path=?, name=?, enabled=?, changed=? where id=?";
-        update(sql, musicFolder.getPath().toString(), musicFolder.getName(),
+        String sql = "update music_folder set path=?, name=?, type=?, enabled=?, changed=? where id=?";
+        update(sql, musicFolder.getPath().toString(), musicFolder.getName(), musicFolder.getType().name(),
                musicFolder.isEnabled(), musicFolder.getChanged(), musicFolder.getId());
     }
 
@@ -132,7 +132,9 @@ public class MusicFolderDao extends AbstractDao {
     private static class MusicFolderRowMapper implements RowMapper<MusicFolder> {
         @Override
         public MusicFolder mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new MusicFolder(rs.getInt(1), Paths.get(rs.getString(2)), rs.getString(3), rs.getBoolean(4), Optional.ofNullable(rs.getTimestamp(5)).map(x -> x.toInstant()).orElse(null));
+            return new MusicFolder(rs.getInt(1), Paths.get(rs.getString(2)), rs.getString(3),
+                    MusicFolder.Type.valueOf(rs.getString(4)), rs.getBoolean(5),
+                    Optional.ofNullable(rs.getTimestamp(6)).map(x -> x.toInstant()).orElse(null));
         }
     }
 
