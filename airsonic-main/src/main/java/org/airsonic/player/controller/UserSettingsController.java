@@ -21,6 +21,7 @@ package org.airsonic.player.controller;
 
 import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.TranscodeScheme;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.User.Role;
@@ -55,6 +56,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Controller for the page used to administrate users.
@@ -180,6 +183,7 @@ public class UserSettingsController {
         User user = securityService.getUserByName(command.getUsername());
         user.setEmail(StringUtils.trimToNull(command.getEmail()));
         user.setLdapAuthenticated(command.isLdapAuthenticated());
+        Set<Integer> allowedMusicFolderIds = new HashSet<>();
         Set<Role> roles = new HashSet<>();
         if (command.isAdminRole()) {
             roles.add(Role.ADMIN);
@@ -198,6 +202,8 @@ public class UserSettingsController {
         }
         if (command.isPodcastRole()) {
             roles.add(Role.PODCAST);
+            allowedMusicFolderIds.addAll(settingsService.getAllMusicFolders().stream()
+                    .filter(mf -> mf.getType() == Type.PODCAST).map(mf -> mf.getId()).collect(toSet()));
         }
         if (command.isStreamRole()) {
             roles.add(Role.STREAM);
@@ -225,7 +231,7 @@ public class UserSettingsController {
         userSettings.setChanged(Instant.now());
         settingsService.updateUserSettings(userSettings);
 
-        List<Integer> allowedMusicFolderIds = Util.toIntegerList(command.getAllowedMusicFolderIds());
+        allowedMusicFolderIds.addAll(Util.toIntegerList(command.getAllowedMusicFolderIds()));
         settingsService.setMusicFoldersForUser(command.getUsername(), allowedMusicFolderIds);
     }
 

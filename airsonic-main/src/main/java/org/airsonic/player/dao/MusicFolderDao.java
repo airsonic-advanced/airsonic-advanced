@@ -33,6 +33,7 @@ import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -122,7 +123,7 @@ public class MusicFolderDao extends AbstractDao {
         return query(sql, rowMapper, username);
     }
 
-    public void setMusicFoldersForUser(String username, List<Integer> musicFolderIds) {
+    public void setMusicFoldersForUser(String username, Collection<Integer> musicFolderIds) {
         update("delete from music_folder_user where username = ?", username);
         for (Integer musicFolderId : musicFolderIds) {
             update("insert into music_folder_user(music_folder_id, username) values (?, ?)", musicFolderId, username);

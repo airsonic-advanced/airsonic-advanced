@@ -1233,13 +1233,11 @@ public class SettingsService {
      * @return Possibly empty list of music folders.
      */
     public List<MusicFolder> getMusicFoldersForUser(String username) {
-        List<MusicFolder> result = cachedMusicFoldersPerUser.get(username);
-        if (result == null) {
-            result = musicFolderDao.getMusicFoldersForUser(username);
+        return cachedMusicFoldersPerUser.computeIfAbsent(username, u -> {
+            List<MusicFolder> result = musicFolderDao.getMusicFoldersForUser(u);
             result.retainAll(getAllMusicFolders(false, false));
-            cachedMusicFoldersPerUser.put(username, result);
-        }
-        return result;
+            return result;
+        });
     }
 
     /**
@@ -1270,7 +1268,7 @@ public class SettingsService {
         return allowedMusicFolders.contains(musicFolder) ? musicFolder : null;
     }
 
-    public void setMusicFoldersForUser(String username, List<Integer> musicFolderIds) {
+    public void setMusicFoldersForUser(String username, Collection<Integer> musicFolderIds) {
         musicFolderDao.setMusicFoldersForUser(username, musicFolderIds);
         cachedMusicFoldersPerUser.remove(username);
     }
