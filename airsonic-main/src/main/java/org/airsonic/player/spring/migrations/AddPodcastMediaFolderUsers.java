@@ -51,7 +51,7 @@ public class AddPodcastMediaFolderUsers implements CustomSqlChange {
             try (Statement st = conn.createStatement();
                     ResultSet result = st.executeQuery("SELECT username, roles FROM user;");
                     ResultSet result2 = st
-                            .executeQuery("SELECT MAX(id) AS maxid FROM music_folder WHERE name='Podcasts';");) {
+                            .executeQuery("SELECT MAX(id) AS maxid FROM music_folder WHERE type='PODCAST';");) {
 
                 while (result2.next()) {
                     maxFolderId = result2.getInt("maxid");

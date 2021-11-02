@@ -56,6 +56,55 @@
             <dropIndex tableName="music_folder" indexName="idx_music_folder_path"/>
         </rollback>
     </changeSet>
+    <changeSet id="add-media-file-id-to-podcast-channel" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="podcast_channel" columnName="media_file_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="podcast_channel">
+            <column name="media_file_id" type="int">
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="podcast_channel" columnName="media_file_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="populate-podcast-channel-media-file-id" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="path"/>
+            <columnExists tableName="podcast_channel" columnName="media_file_id"/>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.AddMediaFileIdToPodcastChannels"></customChange>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-media-file-id-to-podcast-episode" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="podcast_episode" columnName="media_file_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="podcast_episode">
+            <column name="media_file_id" type="int" valueComputed="(SELECT id FROM media_file WHERE media_file.path=path)">
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="podcast_episode" columnName="media_file_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-path-from-podcast-episode" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="podcast_episode" columnName="path"/>
+        </preConditions>
+        <dropColumn tableName="podcast_episode" columnName="path"></dropColumn>
+        <rollback>
+            <addColumn tableName="podcast_episode">
+                <column name="path" type="${varchar_type}">
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
     <changeSet id="add-media-file-id-to-user-rating" author="anon">
         <preConditions onFail="MARK_RAN">
             <not>
