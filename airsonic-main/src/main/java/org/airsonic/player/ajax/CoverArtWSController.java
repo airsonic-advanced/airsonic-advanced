@@ -86,8 +86,8 @@ public class CoverArtWSController {
         MusicFolder folder = settingsService.getMusicFolderById(dir.getFolderId());
         Path fullPath = dir.getFullPath(folder.getPath());
         Path newCoverFile = fullPath.resolve("cover." + suffix);
-        if (!securityService.isWriteAllowed(newCoverFile)) {
-            throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(newCoverFile.toString()));
+        if (!securityService.isWriteAllowed(folder.getPath().relativize(newCoverFile), folder)) {
+            throw new SecurityException("Permission denied: " + StringEscapeUtils.escapeHtml(newCoverFile.toString()));
         }
 
         try (CloseableHttpClient client = HttpClients.createDefault();

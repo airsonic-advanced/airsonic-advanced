@@ -623,13 +623,17 @@ public class PodcastService {
         for (int i = 0; Files.exists(file); i++) {
             file = channelDir.resolve(filename + i + "." + extension);
         }
+        Path relativeFile = folder.getPath().relativize(file);
+        if (!securityService.isWriteAllowed(relativeFile, folder)) {
+            throw new SecurityException("Access denied to file " + file);
+        }
         try {
             Files.createFile(file);
         } catch (IOException e) {
             throw new RuntimeException("Failed to create file " + file, e);
         }
 
-        return mediaFileService.getMediaFile(folder.getPath().relativize(file), folder);
+        return mediaFileService.getMediaFile(relativeFile, folder);
     }
 
     private MediaFile createChannelDirectory(PodcastChannel channel) {

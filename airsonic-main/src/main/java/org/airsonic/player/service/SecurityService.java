@@ -22,6 +22,7 @@ package org.airsonic.player.service;
 import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserCredential.App;
@@ -375,27 +376,9 @@ public class SecurityService implements UserDetailsService {
         return folder.isEnabled() && (!checkExistence || Files.exists(file.getFullPath(folder.getPath())));
     }
 
-    /**
-     * Returns whether the given file may be read.
-     *
-     * @return Whether the given file may be read.
-     */
-    public boolean isReadAllowed(Path file) {
-        // Allowed to read from both music folder and podcast folder.
-        return isInMusicFolder(file) || isInPodcastFolder(file);
-    }
-
-    /**
-     * Returns whether the given file may be written, created or deleted.
-     *
-     * @return Whether the given file may be written, created or deleted.
-     */
-    public boolean isWriteAllowed(Path file) {
+    public boolean isWriteAllowed(Path relativePath, MusicFolder folder) {
         // Only allowed to write podcasts or cover art.
-        boolean isPodcast = isInPodcastFolder(file);
-        boolean isCoverArt = isInMusicFolder(file) && file.getFileName().toString().startsWith("cover.");
-
-        return isPodcast || isCoverArt;
+        return folder.isEnabled() && (folder.getType() == Type.PODCAST || relativePath.getFileName().toString().startsWith("cover."));
     }
 
     /**
@@ -404,7 +387,7 @@ public class SecurityService implements UserDetailsService {
      * @return Whether the given file may be uploaded.
      */
     public void checkUploadAllowed(Path file, boolean checkFileExists) throws IOException {
-        if (!isInMusicFolder(file)) {
+        if (getMusicFolderForFile(file) == null) {
             throw new AccessDeniedException(file.toString(), null, "Specified location is not in writable music folder");
         }
 
@@ -413,41 +396,11 @@ public class SecurityService implements UserDetailsService {
         }
     }
 
-    /**
-     * Returns whether the given file is located in one of the music folders (or any of their sub-folders).
-     *
-     * @param file The file in question.
-     * @return Whether the given file is located in one of the music folders.
-     */
-    private boolean isInMusicFolder(Path file) {
-        return getMusicFolderForFile(file) != null;
-    }
-
     private MusicFolder getMusicFolderForFile(Path file) {
         return settingsService.getAllMusicFolders(false, true).stream()
                 .filter(folder -> isFileInFolder(file, folder.getPath()))
                 .sorted(Comparator.comparingInt(folder -> folder.getPath().toString().length()))
                 .findFirst().orElse(null);
-    }
-
-    /**
-     * Returns whether the given file is located in the Podcast folder (or any of its sub-folders).
-     *
-     * @param file The file in question.
-     * @return Whether the given file is located in the Podcast folder.
-     */
-    private boolean isInPodcastFolder(Path file) {
-        String podcastFolder = settingsService.getPodcastFolder();
-        return isFileInFolder(file, Paths.get(podcastFolder));
-    }
-
-    public MusicFolder getRootFolderForFile(Path file) {
-        MusicFolder folder = getMusicFolderForFile(file);
-        if (folder != null) {
-            return folder;
-        }
-
-        return null;
     }
 
     public boolean isFolderAccessAllowed(MediaFile file, String username) {
