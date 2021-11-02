@@ -398,9 +398,9 @@ public class CoverArtController implements LastModified {
                             return scale(bimg, size, size);
                         }
                     }
-                    LOG.warn("Failed to process cover art " + coverArt + ": " + reason + " failed");
+                    LOG.warn("Failed to process cover art {}: {} failed", coverArt, reason);
                 } catch (Throwable x) {
-                    LOG.warn("Failed to process cover art " + coverArt + ": " + x, x);
+                    LOG.warn("Failed to process cover art {}", coverArt, x);
                 }
             }
             return createAutoCover(size, size);
@@ -598,7 +598,7 @@ public class CoverArtController implements LastModified {
 
         @Override
         public String getKey() {
-            return coverArt != null ? coverArt.toString() : dir.getPath();
+            return coverArt != null ? coverArt.toString() : dir.getFolderId() + "/" + dir.getPath();
         }
 
         @Override
@@ -641,16 +641,16 @@ public class CoverArtController implements LastModified {
                 if (result != null) {
                     return result;
                 }
-                LOG.warn("Failed to process cover art for " + mediaFile + ": {}", result);
+                LOG.warn("Failed to process cover art for {}: {}", mediaFile, result);
             } catch (Throwable x) {
-                LOG.warn("Failed to process cover art for " + mediaFile + ": " + x, x);
+                LOG.warn("Failed to process cover art for {}", mediaFile, x);
             }
             return createAutoCover(width, height);
         }
 
         @Override
         public String getKey() {
-            return mediaFile.getPath() + "/" + offset;
+            return mediaFile.getFolderId() + "/" + mediaFile.getPath() + "/" + offset;
         }
 
         @Override

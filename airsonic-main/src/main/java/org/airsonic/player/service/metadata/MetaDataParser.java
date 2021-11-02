@@ -128,7 +128,7 @@ public abstract class MetaDataParser {
     /**
      * Guesses the title for the given file.
      */
-    public String guessTitle(Path file) {
+    public static String guessTitle(Path file) {
         return StringUtils.trim(FilenameUtils.getBaseName(file.toString()));
     }
 

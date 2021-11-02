@@ -20,6 +20,7 @@
 package org.airsonic.player.controller;
 
 import com.google.common.io.ByteStreams;
+import org.airsonic.player.dao.PlayerDaoPlayQueueFactory;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.io.PipeStreams.MonitoredInputStream;
 import org.airsonic.player.io.PipeStreams.PipedInputStream;
@@ -58,7 +59,6 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -97,6 +97,8 @@ public class StreamController {
     private MediaFileService mediaFileService;
     @Autowired
     private SearchService searchService;
+    @Autowired
+    private PlayerDaoPlayQueueFactory playQueueFactory;
 
     @GetMapping
     public ResponseEntity<Resource> handleRequest(Authentication authentication,
@@ -121,7 +123,7 @@ public class StreamController {
         // play queue (in order to support multiple parallel Podcast streams).
         boolean isPodcast = playlist != null;
         if (isPodcast) {
-            PlayQueue playQueue = new PlayQueue();
+            PlayQueue playQueue = playQueueFactory.createPlayQueue();
             playQueue.addFiles(false, playlistService.getFilesInPlaylist(playlist));
             player.setPlayQueue(playQueue);
             // Note: does not take transcoding into account
@@ -204,10 +206,10 @@ public class StreamController {
         TransferStatus status = statusService.createStreamStatus(player);
 
         Consumer<MediaFile> fileStartListener = mediaFile -> {
-            LOG.info("{}: {} listening to {} in folder {}", player.getIpAddress(), player.getUsername(), FileUtil.getShortPath(Paths.get(mediaFile.getPath())), mediaFile.getFolderId());
+            LOG.info("{}: {} listening to {} in folder {}", player.getIpAddress(), player.getUsername(), FileUtil.getShortPath(mediaFile.getRelativePath()), mediaFile.getFolderId());
             mediaFileService.incrementPlayCount(mediaFile);
             scrobble(mediaFile, player, false);
-            status.setFile(mediaFile.getPath());
+            status.setFile(mediaFile.getRelativePath());
             status.setFolderId(mediaFile.getFolderId());
             statusService.addActiveLocalPlay(
                     new PlayStatus(status.getId(), mediaFile, player, status.getMillisSinceLastUpdate()));

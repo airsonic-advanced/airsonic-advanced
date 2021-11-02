@@ -116,8 +116,9 @@ public class CaptionsController {
             }
             time = Files.getLastModifiedTime(captionsFile).toInstant();
         } else {
-            resource = getConvertedResource(video.getFile(), res.getIdentifier(), effectiveFormat);
-            time = Files.getLastModifiedTime(video.getFile()).toInstant();
+            Path videoFullPath = video.getFullPath(settingsService.getMusicFolderById(video.getFolderId()).getPath());
+            resource = getConvertedResource(videoFullPath, res.getIdentifier(), effectiveFormat);
+            time = Files.getLastModifiedTime(videoFullPath).toInstant();
         }
 
         HttpHeaders headers = new HttpHeaders();
@@ -230,8 +231,9 @@ public class CaptionsController {
     }
 
     public MetaData getVideoMetaData(MediaFile video) {
-        MetaDataParser parser = this.metaDataParserFactory.getParser(video.getFile());
-        return (parser != null) ? parser.getMetaData(video.getFile()) : null;
+        Path videoFullPath = video.getFullPath(settingsService.getMusicFolderById(video.getFolderId()).getPath());
+        MetaDataParser parser = this.metaDataParserFactory.getParser(videoFullPath);
+        return (parser != null) ? parser.getMetaData(videoFullPath) : null;
     }
 
     public String getUrl(String basePath, String externalUser, Instant externalExpiration, int mediaId, String captionId) {
@@ -256,15 +258,19 @@ public class CaptionsController {
     }
 
     public List<Path> findExternalCaptionsForVideo(MediaFile video) {
-        Path file = video.getFile();
+        MediaFile parent = mediaFileService.getParentOf(video);
+        if (parent == null) {
+            return Collections.emptyList();
+        }
+        Path parentPath = parent.getFullPath(settingsService.getMusicFolderById(parent.getFolderId()).getPath());
 
-        try (Stream<Path> children = Files.walk(file.getParent())) {
+        try (Stream<Path> children = Files.walk(parentPath)) {
             return children.parallel()
                     .filter(c -> Files.isRegularFile(c))
                     .filter(c -> CAPTIONS_FORMATS.contains(MoreFiles.getFileExtension(c)))
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            LOG.warn("Could not retrieve directory list for {} to find subtitle files for {}", file.getParent(), file, e);
+            LOG.warn("Could not retrieve directory list for {} to find subtitle files for {}", parentPath, video, e);
 
             return Collections.emptyList();
         }

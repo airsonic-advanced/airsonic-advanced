@@ -54,7 +54,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
@@ -199,7 +198,7 @@ public class DownloadController {
         if (indices.size() == 1 && (additionalFiles == null || additionalFiles.size() == 0)) {
             // single file
             MediaFile file = files.get(indices.get(0));
-            Path path = file.getFile(settingsService.getMusicFolderById(file.getFolderId()).getPath());
+            Path path = file.getFullPath(settingsService.getMusicFolderById(file.getFolderId()).getPath());
             long changed = file.getChanged() == null ? -1 : file.getChanged().toEpochMilli();
             return new ResponseDTO(
                     new MonitoredResource(
@@ -215,7 +214,7 @@ public class DownloadController {
             // get a list of all paths under the tree, plus their zip names and sizes
             Collection<Triple<Path, Pair<Path, Integer>, Pair<String, Long>>> pathsToZip = Streams
                     .concat(
-                            indices.stream().map(files::get).filter(Objects::nonNull).map(x -> Pair.of(Paths.get(x.getPath()), x.getFolderId())),
+                            indices.stream().map(files::get).filter(Objects::nonNull).map(x -> Pair.of(x.getRelativePath(), x.getFolderId())),
                             additionalFiles.stream().filter(Objects::nonNull))
                     .flatMap(pf -> {
                         MusicFolder mf = settingsService.getMusicFolderById(pf.getRight());

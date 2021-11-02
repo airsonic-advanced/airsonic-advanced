@@ -36,8 +36,6 @@ import org.subsonic.restapi.ScanStatus;
 import javax.annotation.PostConstruct;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -295,7 +293,7 @@ public class MediaScannerService {
             LOG.info("Scanned media library with {} entries.", scanCount.get());
         }
 
-        LOG.trace("Scanning file {}", file.getPath());
+        LOG.trace("Scanning file {} in folder {} ({})", file.getPath(), musicFolder.getId(), musicFolder.getName());
 
         // Update the root folder if it has changed
         if (!musicFolder.getId().equals(file.getFolderId())) {

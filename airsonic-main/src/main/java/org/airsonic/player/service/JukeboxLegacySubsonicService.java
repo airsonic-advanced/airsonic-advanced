@@ -29,7 +29,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
-import java.nio.file.Paths;
 
 /**
  * Plays music on the local audio device.
@@ -160,9 +159,9 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
     }
 
     private void onSongStart(MediaFile file) {
-        LOG.info("{} starting jukebox for {} in folder {}", player.getUsername(), FileUtil.getShortPath(Paths.get(file.getPath())), file.getFolderId());
+        LOG.info("{} starting jukebox for {} in folder {}", player.getUsername(), FileUtil.getShortPath(file.getRelativePath()), file.getFolderId());
         status = statusService.createStreamStatus(player);
-        status.setFile(file.getPath());
+        status.setFile(file.getRelativePath());
         status.setFolderId(file.getFolderId());
         status.addBytesTransferred(file.getFileSize());
         mediaFileService.incrementPlayCount(file);
@@ -172,7 +171,7 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
     }
 
     private void onSongEnd(MediaFile file) {
-        LOG.info("{} stopping jukebox for {} in folder {}", player.getUsername(), FileUtil.getShortPath(Paths.get(file.getPath())), file.getFolderId());
+        LOG.info("{} stopping jukebox for {} in folder {}", player.getUsername(), FileUtil.getShortPath(file.getRelativePath()), file.getFolderId());
         if (playStatus != null) {
             statusService.removeActiveLocalPlay(playStatus);
             playStatus = null;

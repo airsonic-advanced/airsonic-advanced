@@ -21,7 +21,6 @@ package org.airsonic.player.domain;
 
 import org.apache.commons.io.FilenameUtils;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -137,12 +136,12 @@ public class MediaFile {
         this.folderId = folderId;
     }
 
-    public Path getFile(Path mediaFolderPath) {
-        return mediaFolderPath.resolve(path);
+    public Path getRelativePath() {
+        return Paths.get(path);
     }
 
-    public boolean exists() {
-        return Files.exists(getFile());
+    public Path getFullPath(Path relativeMediaFolderPath) {
+        return relativeMediaFolderPath.resolve(path);
     }
 
     public MediaType getMediaType() {
@@ -305,6 +304,14 @@ public class MediaFile {
         return coverArtPath;
     }
 
+    public Path getRelativeCoverArtPath() {
+        return coverArtPath == null ? null : Paths.get(coverArtPath);
+    }
+
+    public Path getFullCoverArtPath(Path relativeMediaFolderPath) {
+        return coverArtPath == null ? null : relativeMediaFolderPath.resolve(coverArtPath);
+    }
+
     public void setCoverArtPath(String coverArtPath) {
         this.coverArtPath = coverArtPath;
     }
@@ -316,10 +323,6 @@ public class MediaFile {
 
     public void setParentPath(String parentPath) {
         this.parentPath = parentPath;
-    }
-
-    public Path getParentFile() {
-        return getFile().getParent();
     }
 
     public int getPlayCount() {
@@ -440,11 +443,6 @@ public class MediaFile {
         int result = 1;
         result = prime * result + ((path == null) ? 0 : path.hashCode());
         return result;
-    }
-
-    public Path getCoverArtFile() {
-        // TODO: Optimize
-        return coverArtPath == null ? null : Paths.get(coverArtPath);
     }
 
     @Override

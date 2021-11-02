@@ -7,6 +7,8 @@ import chameleon.playlist.SpecificPlaylist;
 import chameleon.playlist.SpecificPlaylistProvider;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
@@ -18,6 +20,9 @@ public class DefaultPlaylistExportHandler implements PlaylistExportHandler {
 
     @Autowired
     MediaFileDao mediaFileDao;
+
+    @Autowired
+    SettingsService settingsService;
 
     @Override
     public boolean canHandle(Class<? extends SpecificPlaylistProvider> providerClass) {
@@ -34,8 +39,9 @@ public class DefaultPlaylistExportHandler implements PlaylistExportHandler {
         Playlist newPlaylist = new Playlist();
         List<MediaFile> files = mediaFileDao.getFilesInPlaylist(id);
         files.forEach(file -> {
+            MusicFolder folder = settingsService.getMusicFolderById(file.getFolderId());
             Media component = new Media();
-            Content content = new Content(file.getPath());
+            Content content = new Content(file.getFullPath(folder.getPath()).toString());
             component.setSource(content);
             newPlaylist.getRootSequence().addComponent(component);
         });

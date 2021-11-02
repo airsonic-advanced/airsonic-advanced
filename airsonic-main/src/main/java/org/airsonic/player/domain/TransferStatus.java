@@ -22,7 +22,6 @@ package org.airsonic.player.domain;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -173,10 +172,6 @@ public class TransferStatus {
      */
     public void setFile(Path file) {
         this.file = file;
-    }
-
-    public void setFile(String file) {
-        this.file = Paths.get(file);
     }
 
     public Integer getFolderId() {
