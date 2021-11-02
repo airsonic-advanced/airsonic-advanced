@@ -203,6 +203,41 @@
         <rollback>
         </rollback>
     </changeSet>
+    <changeSet id="relativize-media-file-cover-art-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="cover_art_path"/>
+            <columnExists tableName="media_file" columnName="folder"/>
+        </preConditions>
+        <update tableName="media_file">
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, LENGTH(folder) + 1)"></column>
+        </update>
+        <update tableName="media_file">
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, 2)"></column>
+            <where>LENGTH(cover_art_path) != 0</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="relativize-media-file-parent-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="parent_path"/>
+            <columnExists tableName="media_file" columnName="folder"/>
+        </preConditions>
+        <update tableName="media_file">
+            <column name="parent_path" valueComputed="SUBSTR(parent_path, LENGTH(folder) + 1)"></column>
+            <where>LENGTH(parent_path) &gt;= LENGTH(folder)</where>
+        </update>
+        <update tableName="media_file">
+            <column name="parent_path" valueComputed="NULL"></column>
+            <where>LENGTH(parent_path) &lt; LENGTH(folder)</where>
+        </update>
+        <update tableName="media_file">
+            <column name="parent_path" valueComputed="SUBSTR(parent_path, 2)"></column>
+            <where>LENGTH(parent_path) != 0</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
     <changeSet id="add-uniqueness-constraint-to-relative-media-file-path" author="anon">
         <preConditions onFail="MARK_RAN">
             <not>
