@@ -407,7 +407,7 @@ public class MediaScannerService {
         // Update the file's album artist, if necessary.
         if (!ObjectUtils.equals(album.getArtist(), file.getAlbumArtist())) {
             file.setAlbumArtist(album.getArtist());
-            mediaFileDao.createOrUpdateMediaFile(file);
+            mediaFileService.updateMediaFile(file);
         }
     }
 

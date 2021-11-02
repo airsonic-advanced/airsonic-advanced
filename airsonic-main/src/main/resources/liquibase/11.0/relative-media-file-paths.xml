@@ -86,7 +86,7 @@
             </not>
         </preConditions>
         <addColumn tableName="podcast_episode">
-            <column name="media_file_id" type="int" valueComputed="(SELECT id FROM media_file WHERE media_file.path=path)">
+            <column name="media_file_id" type="int" valueComputed="(SELECT media_file.id FROM media_file WHERE media_file.path=podcast_episode.path)">
             </column>
         </addColumn>
         <rollback>
@@ -112,12 +112,21 @@
             </not>
         </preConditions>
         <addColumn tableName="user_rating">
-            <column name="media_file_id" type="int" defaultValue="-1" valueComputed="(SELECT id FROM media_file WHERE media_file.path=path)">
+            <column name="media_file_id" type="int" defaultValue="-1" valueComputed="(SELECT media_file.id FROM media_file WHERE media_file.path=user_rating.path)">
                 <constraints nullable="false" />
             </column>
         </addColumn>
         <rollback>
             <dropColumn tableName="user_rating" columnName="media_file_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-user-rating-path-pk" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="path"/>
+        </preConditions>
+        <dropPrimaryKey tableName="user_rating"/>
+        <rollback>
+            <addPrimaryKey tableName="user_rating" columnNames="username,path" />
         </rollback>
     </changeSet>
     <changeSet id="drop-path-from-user-rating" author="anon">
@@ -133,6 +142,15 @@
             </addColumn>
         </rollback>
     </changeSet>
+    <changeSet id="add-user-rating-pk" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="media_file_id"/>
+        </preConditions>
+        <addPrimaryKey tableName="user_rating" columnNames="username,media_file_id" constraintName="ur_u_mfid_pk"/>
+        <rollback>
+            <dropPrimaryKey tableName="user_rating" constraintName="ur_u_mfid_pk"/>
+        </rollback>
+    </changeSet>
     <changeSet id="add-media-file-id-to-share-file" author="anon">
         <preConditions onFail="MARK_RAN">
             <not>
@@ -140,7 +158,7 @@
             </not>
         </preConditions>
         <addColumn tableName="share_file">
-            <column name="media_file_id" type="int" defaultValue="-1" valueComputed="(SELECT id FROM media_file WHERE media_file.path=path)">
+            <column name="media_file_id" type="int" defaultValue="-1" valueComputed="(SELECT media_file.id FROM media_file WHERE media_file.path=share_file.path)">
                 <constraints nullable="false" />
             </column>
         </addColumn>
@@ -168,7 +186,7 @@
             </not>
         </preConditions>
         <addColumn tableName="media_file">
-            <column name="folder_id" type="int" defaultValue="-1" valueComputed="(SELECT id FROM music_folder WHERE music_folder.path=folder)">
+            <column name="folder_id" type="int" defaultValue="-1" valueComputed="(SELECT music_folder.id FROM music_folder WHERE music_folder.path=media_file.folder)">
                 <!-- No fk to music_folder.id because want to allow modification/deletion of music folder without affecting/deleting media file -->
                 <constraints nullable="false" />
             </column>
@@ -224,12 +242,12 @@
             <columnExists tableName="media_file" columnName="folder"/>
         </preConditions>
         <update tableName="media_file">
-            <column name="parent_path" valueComputed="SUBSTR(parent_path, LENGTH(folder) + 1)"></column>
-            <where>LENGTH(parent_path) &gt;= LENGTH(folder)</where>
-        </update>
-        <update tableName="media_file">
             <column name="parent_path" valueComputed="NULL"></column>
             <where>LENGTH(parent_path) &lt; LENGTH(folder)</where>
+        </update>
+        <update tableName="media_file">
+            <column name="parent_path" valueComputed="SUBSTR(parent_path, LENGTH(folder) + 1)"></column>
+            <where>LENGTH(parent_path) &gt;= LENGTH(folder)</where>
         </update>
         <update tableName="media_file">
             <column name="parent_path" valueComputed="SUBSTR(parent_path, 2)"></column>
@@ -261,6 +279,30 @@
             <addColumn tableName="media_file">
                 <column name="folder" type="${varchar_type}"></column>
             </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="relativize-album-cover-art-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="cover_art_path"/>
+            <columnExists tableName="album" columnName="folder_id"/>
+        </preConditions>
+        <update tableName="album">
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = album.folder_id) + 2)"></column>
+            <where>cover_art_path IS NOT NULL</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="relativize-artist-cover-art-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="artist" columnName="cover_art_path"/>
+            <columnExists tableName="artist" columnName="folder_id"/>
+        </preConditions>
+        <update tableName="artist">
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = artist.folder_id) + 2)"></column>
+            <where>cover_art_path IS NOT NULL</where>
+        </update>
+        <rollback>
         </rollback>
     </changeSet>
 </databaseChangeLog>

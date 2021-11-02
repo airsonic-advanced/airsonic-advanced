@@ -372,6 +372,9 @@ public class SecurityService implements UserDetailsService {
     }
 
     public boolean isReadAllowed(MediaFile file, boolean checkExistence) {
+        if (file == null) {
+            return false;
+        }
         MusicFolder folder = settingsService.getMusicFolderById(file.getFolderId());
         return folder.isEnabled() && (!checkExistence || Files.exists(file.getFullPath(folder.getPath())));
     }

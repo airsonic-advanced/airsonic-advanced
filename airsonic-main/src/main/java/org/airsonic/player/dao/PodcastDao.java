@@ -193,7 +193,7 @@ public class PodcastDao extends AbstractDao {
     private static class PodcastEpisodeRowMapper implements RowMapper<PodcastEpisode> {
         @Override
         public PodcastEpisode mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new PodcastEpisode(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getInt(4), rs.getString(5),
+            return new PodcastEpisode(rs.getInt(1), rs.getInt(2), rs.getString(3), (Integer) rs.getObject(4), rs.getString(5),
                     rs.getString(6), Optional.ofNullable(rs.getTimestamp(7)).map(x -> x.toInstant()).orElse(null), rs.getString(8), (Long) rs.getObject(9),
                     (Long) rs.getObject(10), PodcastStatus.valueOf(rs.getString(11)), rs.getString(12));
         }

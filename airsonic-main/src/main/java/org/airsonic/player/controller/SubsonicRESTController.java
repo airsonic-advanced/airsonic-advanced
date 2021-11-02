@@ -1595,9 +1595,8 @@ public class SubsonicRESTController {
     private org.subsonic.restapi.PodcastEpisode createJaxbPodcastEpisode(Player player, String username, org.airsonic.player.domain.PodcastEpisode episode) {
         org.subsonic.restapi.PodcastEpisode e = new org.subsonic.restapi.PodcastEpisode();
 
-        String path = episode.getPath();
-        if (path != null) {
-            MediaFile mediaFile = mediaFileService.getMediaFile(path);
+        if (episode.getMediaFileId() != null) {
+            MediaFile mediaFile = mediaFileService.getMediaFile(episode.getMediaFileId());
             e = createJaxbChild(new org.subsonic.restapi.PodcastEpisode(), player, mediaFile, username);
             e.setStreamId(String.valueOf(mediaFile.getId()));
         }

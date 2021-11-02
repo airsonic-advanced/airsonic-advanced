@@ -89,8 +89,13 @@ public class MediaFileService {
     public MediaFile getMediaFile(Path fullPath, boolean minimizeDiskAccess) {
         return settingsService.getAllMusicFolders(true, true).parallelStream()
                 .map(f -> {
-                    Path relativePath = f.getPath().relativize(fullPath);
-                    return getMediaFile(relativePath, f, minimizeDiskAccess);
+                    try {
+                        Path relativePath = f.getPath().relativize(fullPath);
+                        return getMediaFile(relativePath, f, minimizeDiskAccess);
+                    } catch (Exception e) {
+                        // ignore
+                        return null;
+                    }
                 })
                 .filter(Objects::nonNull)
                 .findFirst().orElse(null);
@@ -140,7 +145,7 @@ public class MediaFileService {
             return null;
         }
 
-        return checkLastModified(mediaFile, settingsService.getMusicFolderById(mediaFile.getId()), settingsService.isFastCacheEnabled());
+        return checkLastModified(mediaFile, settingsService.getMusicFolderById(mediaFile.getFolderId()), settingsService.isFastCacheEnabled());
     }
 
     public MediaFile getParentOf(MediaFile mediaFile) {
@@ -684,7 +689,7 @@ public class MediaFileService {
             // Copy values from obsolete table music_file_info if inserting for first time
             MusicFolder folder = settingsService.getMusicFolderById(mediaFile.getFolderId());
             if (folder != null) {
-                MediaFile musicFileInfo = mediaFileDao.getMusicFileInfo(file.getFile(folder.getPath()).toString());
+                MediaFile musicFileInfo = mediaFileDao.getMusicFileInfo(file.getFullPath(folder.getPath()).toString());
                 if (musicFileInfo != null) {
                     file.setComment(musicFileInfo.getComment());
                     file.setLastPlayed(musicFileInfo.getLastPlayed());

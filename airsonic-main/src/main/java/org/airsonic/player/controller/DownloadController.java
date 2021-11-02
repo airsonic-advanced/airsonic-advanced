@@ -134,7 +134,7 @@ public class DownloadController {
                 defaultDownloadName = FilenameUtils.getName(mediaFile.getPath());
             } else {
                 response = prepareResponse(mediaFileService.getChildrenOf(mediaFile, true, false, true), indices,
-                        statusSupplier, statusCloser, indices == null ? Collections.singletonList(Pair.of(mediaFile.getCoverArtFile(), mediaFile.getFolderId())) : Collections.emptyList());
+                        statusSupplier, statusCloser, indices == null ? Collections.singletonList(Pair.of(mediaFile.getRelativeCoverArtPath(), mediaFile.getFolderId())) : Collections.emptyList());
                 defaultDownloadName = FilenameUtils.getBaseName(mediaFile.getPath()) + ".zip";
             }
         } else if (playlist != null) {

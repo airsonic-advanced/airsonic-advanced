@@ -161,7 +161,7 @@ public class StreamController {
             // Create a new, fake play queue that only contains the
             // currently playing media file, in case multiple streams want
             // to use the same player.
-            PlayQueue playQueue = new PlayQueue();
+            PlayQueue playQueue = playQueueFactory.createPlayQueue();
             playQueue.addFiles(true, file);
             player.setPlayQueue(playQueue);
 

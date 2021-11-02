@@ -125,22 +125,70 @@ public class MediaFileDao extends AbstractDao {
         LOG.trace("Creating/Updating new media file at {} in folder id {}", file.getPath(), file.getFolderId());
         String sql = null;
         if (file.getId() != null) {
-            sql = "update media_file set " + "path=:path," + "folder_id=:fid," + "type=:type," + "format=:format,"
-                    + "title=:title," + "album=:album," + "artist=:artist," + "album_artist=:albumartist,"
-                    + "disc_number=:dn," + "track_number=:tn," + "year=:year," + "genre=:genre," + "bit_rate=:br,"
-                    + "variable_bit_rate=:vbr," + "duration=:duration," + "file_size=:fs," + "width=:w," + "height=:h,"
-                    + "cover_art_path=:cap," + "parent_path=:pp," + "play_count=:pc," + "last_played=:lp,"
-                    + "comment=:comment," + "changed=:changed," + "last_scanned=:ls," + "children_last_updated=:clu,"
-                    + "present=:pres," + "version=:ver," + "mb_release_id=:mbrelid," + "mb_recording_id=:mbrecid "
-                    + "where id=:id";
+            sql = "" +
+                    "update media_file set " +
+                    "path=:path," +
+                    "folder_id=:fid," +
+                    "type=:type," +
+                    "format=:format," +
+                    "title=:title," +
+                    "album=:album," +
+                    "artist=:artist," +
+                    "album_artist=:albumartist," +
+                    "disc_number=:dn," +
+                    "track_number=:tn," +
+                    "year=:year," +
+                    "genre=:genre," +
+                    "bit_rate=:br," +
+                    "variable_bit_rate=:vbr," +
+                    "duration=:dur," +
+                    "file_size=:fs," +
+                    "width=:w," +
+                    "height=:h," +
+                    "cover_art_path=:cap," +
+                    "parent_path=:pp," +
+                    "play_count=:pc," +
+                    "last_played=:lp," +
+                    "comment=:comment," +
+                    "changed=:changed," +
+                    "last_scanned=:ls," +
+                    "children_last_updated=:clu," +
+                    "present=:pres," +
+                    "version=:ver," +
+                    "mb_release_id=:mbrelid," +
+                    "mb_recording_id=:mbrecid " +
+                    "where id=:id";
         } else {
-            sql = "update media_file set " + "type=:type," + "format=:format," + "title=:title," + "album=:album,"
-                    + "artist=:artist," + "album_artist=:albumartist," + "disc_number=:dn," + "track_number=:tn,"
-                    + "year=:year," + "genre=:genre," + "bit_rate=:br," + "variable_bit_rate=:vbr," + "duration=:dur,"
-                    + "file_size=:fs," + "width=:w," + "height=:h," + "cover_art_path=:cap," + "parent_path=:pp,"
-                    + "play_count=:pc," + "last_played=:lp," + "comment=:comment," + "changed=:changed,"
-                    + "last_scanned=:ls," + "children_last_updated=:clu," + "present=:pres," + "version=:ver,"
-                    + "mb_release_id=:mbrelid," + "mb_recording_id=:mbrecid " + "where path=:path and folder_id=:fid";
+            sql = "update media_file set " +
+                    "type=:type," +
+                    "format=:format," +
+                    "title=:title," +
+                    "album=:album," +
+                    "artist=:artist," +
+                    "album_artist=:albumartist," +
+                    "disc_number=:dn," +
+                    "track_number=:tn," +
+                    "year=:year," +
+                    "genre=:genre," +
+                    "bit_rate=:br," +
+                    "variable_bit_rate=:vbr," +
+                    "duration=:dur," +
+                    "file_size=:fs," +
+                    "width=:w," +
+                    "height=:h," +
+                    "cover_art_path=:cap," +
+                    "parent_path=:pp," +
+                    "play_count=:pc," +
+                    "last_played=:lp," +
+                    "comment=:comment," +
+                    "changed=:changed," +
+                    "last_scanned=:ls," +
+                    "children_last_updated=:clu," +
+                    "present=:pres," +
+                    "version=:ver," +
+                    "mb_release_id=:mbrelid," +
+                    "mb_recording_id=:mbrecid " +
+                    "where path=:path and folder_id=:fid";
         }
 
         LOG.trace("Updating media file {}", Util.debugObject(file));
