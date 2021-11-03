@@ -186,7 +186,7 @@
             </not>
         </preConditions>
         <addColumn tableName="media_file">
-            <column name="folder_id" type="int" defaultValue="-1" valueComputed="(SELECT music_folder.id FROM music_folder WHERE music_folder.path=media_file.folder)">
+            <column name="folder_id" type="int" defaultValue="-1" valueComputed="(SELECT array_agg(muf.id ORDER BY LENGTH(muf.PATH) DESC)[1] AS mufid FROM PUBLIC.MEDIA_FILE mef JOIN PUBLIC.MUSIC_FOLDER muf ON mef.PATH LIKE concat(muf.PATH, '%') WHERE mef.id=media_file.id)">
                 <!-- No fk to music_folder.id because want to allow modification/deletion of music folder without affecting/deleting media file -->
                 <constraints nullable="false" />
             </column>
@@ -209,10 +209,12 @@
     <changeSet id="relativize-media-file-path" author="anon">
         <preConditions onFail="MARK_RAN">
             <columnExists tableName="media_file" columnName="path"/>
-            <columnExists tableName="media_file" columnName="folder"/>
+            <columnExists tableName="media_file" columnName="folder_id"/>
+            <columnExists tableName="music_folder" columnName="id"/>
+            <columnExists tableName="music_folder" columnName="path"/>
         </preConditions>
         <update tableName="media_file">
-            <column name="path" valueComputed="SUBSTR(path, LENGTH(folder) + 1)"></column>
+            <column name="path" valueComputed="(SELECT SUBSTR(media_file.path, LENGTH(music_folder.path) + 1) FROM music_folder WHERE media_file.folder_id=music_folder.id)"></column>
         </update>
         <update tableName="media_file">
             <column name="path" valueComputed="SUBSTR(path, 2)"></column>
@@ -227,7 +229,7 @@
             <columnExists tableName="media_file" columnName="folder"/>
         </preConditions>
         <update tableName="media_file">
-            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, LENGTH(folder) + 1)"></column>
+            <column name="cover_art_path" valueComputed="(SELECT SUBSTR(media_file.cover_art_path, LENGTH(music_folder.path) + 1) FROM music_folder WHERE media_file.folder_id=music_folder.id)"></column>
         </update>
         <update tableName="media_file">
             <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, 2)"></column>
@@ -243,11 +245,11 @@
         </preConditions>
         <update tableName="media_file">
             <column name="parent_path" valueComputed="NULL"></column>
-            <where>LENGTH(parent_path) &lt; LENGTH(folder)</where>
+            <where>LENGTH(parent_path) &lt; (SELECT LENGTH(music_folder.path) FROM music_folder WHERE media_file.folder_id=music_folder.id)</where>
         </update>
         <update tableName="media_file">
-            <column name="parent_path" valueComputed="SUBSTR(parent_path, LENGTH(folder) + 1)"></column>
-            <where>LENGTH(parent_path) &gt;= LENGTH(folder)</where>
+            <column name="parent_path" valueComputed="(SELECT SUBSTR(media_file.parent_path, LENGTH(music_folder.path) + 1) FROM music_folder WHERE media_file.folder_id=music_folder.id)"></column>
+            <where>LENGTH(parent_path) &gt;= (SELECT LENGTH(music_folder.path) FROM music_folder WHERE media_file.folder_id=music_folder.id)</where>
         </update>
         <update tableName="media_file">
             <column name="parent_path" valueComputed="SUBSTR(parent_path, 2)"></column>
@@ -301,6 +303,19 @@
         <update tableName="artist">
             <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = artist.folder_id) + 2)"></column>
             <where>cover_art_path IS NOT NULL</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-music-folder-names-to-media-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="name"/>
+            <columnExists tableName="media_file" columnName="title"/>
+            <columnExists tableName="media_file" columnName="folder_id"/>
+        </preConditions>
+        <update tableName="media_file">
+            <column name="title" valueComputed="(SELECT name FROM music_folder WHERE media_file.folder_id = music_folder.id)"></column>
+            <where>path = ''</where>
         </update>
         <rollback>
         </rollback>
