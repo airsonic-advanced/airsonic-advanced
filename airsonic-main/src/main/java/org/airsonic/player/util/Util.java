@@ -75,17 +75,6 @@ public final class Util {
         return list.subList((int) offset, Math.min(list.size(), (int) (offset + max)));
     }
 
-    public static List<Integer> toIntegerList(int[] values) {
-        if (values == null) {
-            return Collections.emptyList();
-        }
-        List<Integer> result = new ArrayList<>(values.length);
-        for (int value : values) {
-            result.add(value);
-        }
-        return result;
-    }
-
     public static int[] toIntArray(List<Integer> values) {
         if (values == null) {
             return new int[0];

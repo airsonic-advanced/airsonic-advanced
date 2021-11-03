@@ -53,6 +53,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -231,7 +232,7 @@ public class UserSettingsController {
         userSettings.setChanged(Instant.now());
         settingsService.updateUserSettings(userSettings);
 
-        allowedMusicFolderIds.addAll(Util.toIntegerList(command.getAllowedMusicFolderIds()));
+        Arrays.stream(command.getAllowedMusicFolderIds()).forEach(allowedMusicFolderIds::add);
         settingsService.setMusicFoldersForUser(command.getUsername(), allowedMusicFolderIds);
     }
 
