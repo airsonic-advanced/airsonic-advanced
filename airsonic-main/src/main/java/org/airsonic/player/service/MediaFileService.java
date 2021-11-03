@@ -469,7 +469,12 @@ public class MediaFileService {
         Instant lastModified = FileUtil.lastModified(file);
         mediaFile.setPath(relativePath.toString());
         mediaFile.setFolderId(folder.getId());
-        mediaFile.setParentPath(relativePath.getParent().toString());
+        // distinguish between null (no parent, like root folder), "" (root parent), and else
+        String parentPath = null;
+        if (StringUtils.isNotEmpty(relativePath.toString())) {
+            parentPath = relativePath.getParent() == null ? "" : relativePath.getParent().toString();
+        }
+        mediaFile.setParentPath(parentPath);
         mediaFile.setChanged(lastModified);
         mediaFile.setLastScanned(Instant.now());
         mediaFile.setPlayCount(existingFile == null ? 0 : existingFile.getPlayCount());
@@ -545,6 +550,9 @@ public class MediaFileService {
 
                     mediaFile.setArtist(file.getFileName().toString());
                 }
+            } else {
+                // root folders need to have a title
+                mediaFile.setTitle(folder.getName());
             }
         }
 

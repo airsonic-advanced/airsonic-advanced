@@ -304,10 +304,8 @@ public class MediaScannerService {
         indexManager.index(file, musicFolder);
 
         if (file.isDirectory()) {
-            mediaFileService.getChildrenOf(file, true, true, false, false)
-                .parallelStream()
-                    .forEach(child -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, albumsInDb,
-                            genres, encountered));
+            mediaFileService.getChildrenOf(file, true, true, false, false).parallelStream()
+                    .forEach(child -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered));
         } else {
             if (musicFolder.getType() == MusicFolder.Type.MEDIA) {
                 updateAlbum(file, musicFolder, statistics.getScanDate(), albumCount, albums, albumsInDb);
