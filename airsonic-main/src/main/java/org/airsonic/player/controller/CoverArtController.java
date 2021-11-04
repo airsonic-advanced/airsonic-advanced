@@ -432,9 +432,9 @@ public class CoverArtController implements LastModified {
 
         private ArtistCoverArtRequest(Artist artist) {
             super(artist.getCoverArtPath(),
-                    settingsService.getMusicFolderById(artist.getFolderId()),
-                    () -> ARTIST_COVERART_PREFIX + artist.getId(),
-                    () -> artist.getLastScanned());
+                settingsService.getMusicFolderById(artist.getFolderId()),
+                () -> ARTIST_COVERART_PREFIX + artist.getId(),
+                () -> artist.getLastScanned());
             this.artist = artist;
         }
 
@@ -460,9 +460,9 @@ public class CoverArtController implements LastModified {
 
         private AlbumCoverArtRequest(Album album) {
             super(album.getCoverArtPath(),
-                    settingsService.getMusicFolderById(album.getFolderId()),
-                    () -> ALBUM_COVERART_PREFIX + album.getId(),
-                    () -> album.getLastScanned());
+                settingsService.getMusicFolderById(album.getFolderId()),
+                () -> ALBUM_COVERART_PREFIX + album.getId(),
+                () -> album.getLastScanned());
             this.album = album;
         }
 
