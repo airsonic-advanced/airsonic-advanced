@@ -28,6 +28,7 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.MediaScannerService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.search.IndexManager;
+import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,9 +41,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Controller for the page used to administrate the set of music folders.
@@ -74,8 +75,8 @@ public class MusicFolderSettingsController {
     }
 
     @ModelAttribute
-    protected void formBackingObject(@RequestParam(value = "scanNow",required = false) String scanNow,
-                                       @RequestParam(value = "expunge",required = false) String expunge,
+    protected void formBackingObject(@RequestParam(value = "scanNow", required = false) String scanNow,
+                                       @RequestParam(value = "expunge", required = false) String expunge,
                                        Model model) {
         MusicFolderSettingsCommand command = new MusicFolderSettingsCommand();
 
@@ -128,26 +129,40 @@ public class MusicFolderSettingsController {
     }
 
     private List<MusicFolderSettingsCommand.MusicFolderInfo> wrap(List<MusicFolder> musicFolders) {
-        return musicFolders.stream().map(MusicFolderSettingsCommand.MusicFolderInfo::new).collect(Collectors.toCollection(ArrayList::new));
+        return musicFolders.stream().map(f -> {
+            Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = settingsService.getMusicFolderPathOverlaps(f);
+            return new MusicFolderSettingsCommand.MusicFolderInfo(f, !overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty(), SettingsService.logMusicFolderOverlap(overlaps));
+        }).collect(toList());
     }
 
     @PostMapping
     protected String onSubmit(@ModelAttribute("command") MusicFolderSettingsCommand command, RedirectAttributes redirectAttributes) {
 
+        boolean success = true;
         for (MusicFolderSettingsCommand.MusicFolderInfo musicFolderInfo : command.getMusicFolders()) {
             if (musicFolderInfo.isDelete()) {
                 settingsService.deleteMusicFolder(musicFolderInfo.getId());
             } else {
                 MusicFolder musicFolder = musicFolderInfo.toMusicFolder();
                 if (musicFolder != null) {
-                    settingsService.updateMusicFolder(musicFolder);
+                    try {
+                        settingsService.updateMusicFolder(musicFolder);
+                    } catch (Exception e) {
+                        LOG.warn("Could not update music folder id {} ({})", musicFolder.getId(), musicFolder.getName(), e);
+                        success = false;
+                    }
                 }
             }
         }
 
         MusicFolder newMusicFolder = command.getNewMusicFolder().toMusicFolder();
         if (newMusicFolder != null) {
-            settingsService.createMusicFolder(newMusicFolder);
+            try {
+                settingsService.createMusicFolder(newMusicFolder);
+            } catch (Exception e) {
+                LOG.warn("Could not create music folder {}", newMusicFolder.getName(), e);
+                success = false;
+            }
         }
 
         settingsService.setIndexCreationInterval(Integer.parseInt(command.getInterval()));
@@ -161,8 +176,8 @@ public class MusicFolderSettingsController {
         settingsService.setClearFullScanSettingAfterScan(!command.getFullScan() ? command.getFullScan() : command.getClearFullScanSettingAfterScan());
         settingsService.save();
 
-        redirectAttributes.addFlashAttribute("settings_toast", true);
-        redirectAttributes.addFlashAttribute("settings_reload", true);
+        redirectAttributes.addFlashAttribute("settings_toast", success);
+        redirectAttributes.addFlashAttribute("settings_reload", success);
 
         mediaScannerService.schedule();
         return "redirect:musicFolderSettings.view";

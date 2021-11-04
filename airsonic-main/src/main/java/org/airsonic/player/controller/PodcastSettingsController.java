@@ -20,8 +20,12 @@
 package org.airsonic.player.controller;
 
 import org.airsonic.player.command.PodcastSettingsCommand;
+import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.service.PodcastService;
 import org.airsonic.player.service.SettingsService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -31,6 +35,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.nio.file.Paths;
+import java.time.Instant;
+
 /**
  * Controller for the page used to administrate the Podcast receiver.
  *
@@ -39,6 +46,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 @RequestMapping("/podcastSettings")
 public class PodcastSettingsController {
+    private static final Logger LOG = LoggerFactory.getLogger(PodcastSettingsController.class);
 
     @Autowired
     private SettingsService settingsService;
@@ -52,9 +60,14 @@ public class PodcastSettingsController {
         command.setInterval(String.valueOf(settingsService.getPodcastUpdateInterval()));
         command.setEpisodeRetentionCount(String.valueOf(settingsService.getPodcastEpisodeRetentionCount()));
         command.setEpisodeDownloadCount(String.valueOf(settingsService.getPodcastEpisodeDownloadCount()));
-        command.setFolder(settingsService.getPodcastFolder());
+        command.setFolder(settingsService.getAllMusicFolders(true, true).stream()
+                .filter(f -> f.getType() == Type.PODCAST)
+                .map(MusicFolder::getPath)
+                .findAny()
+                .map(p -> p.toString())
+                .orElse(null));
 
-        model.addAttribute("command",command);
+        model.addAttribute("command", command);
         return "podcastSettings";
     }
 
@@ -63,11 +76,30 @@ public class PodcastSettingsController {
         settingsService.setPodcastUpdateInterval(Integer.parseInt(command.getInterval()));
         settingsService.setPodcastEpisodeRetentionCount(Integer.parseInt(command.getEpisodeRetentionCount()));
         settingsService.setPodcastEpisodeDownloadCount(Integer.parseInt(command.getEpisodeDownloadCount()));
-        settingsService.setPodcastFolder(command.getFolder());
         settingsService.save();
+        boolean success = true;
+        MusicFolder podcastFolder = settingsService.getAllMusicFolders(true, true).stream()
+                .filter(f -> f.getType() == Type.PODCAST).findAny().orElse(null);
+        if (podcastFolder != null) {
+            podcastFolder.setPath(Paths.get(command.getFolder()));
+            try {
+                settingsService.updateMusicFolder(podcastFolder);
+            } catch (Exception e) {
+                LOG.warn("Could not update music folder id {} ({})", podcastFolder.getId(), podcastFolder.getName(), e);
+                success = false;
+            }
+        } else {
+            podcastFolder = new MusicFolder(Paths.get(command.getFolder()), "Podcasts", Type.PODCAST, true, Instant.now());
+            try {
+                settingsService.createMusicFolder(podcastFolder);
+            } catch (Exception e) {
+                LOG.warn("Could not create music folder {}", podcastFolder.getName(), e);
+                success = false;
+            }
+        }
 
         podcastService.schedule();
-        redirectAttributes.addFlashAttribute("settings_toast", true);
+        redirectAttributes.addFlashAttribute("settings_toast", success);
         return "redirect:podcastSettings.view";
     }
 

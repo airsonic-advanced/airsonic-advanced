@@ -30,6 +30,7 @@ import org.airsonic.player.service.sonos.SonosServiceRegistration;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Provides persistent storage of application settings and preferences.
@@ -851,20 +854,6 @@ public class SettingsService {
     }
 
     /**
-     * Returns the Podcast download folder.
-     */
-    public String getPodcastFolder() {
-        return getProperty(KEY_PODCAST_FOLDER, DEFAULT_PODCAST_FOLDER);
-    }
-
-    /**
-     * Sets the Podcast download folder.
-     */
-    public void setPodcastFolder(String folder) {
-        setProperty(KEY_PODCAST_FOLDER, folder);
-    }
-
-    /**
      * @return The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public long getDownloadBitrateLimit() {
@@ -1295,6 +1284,10 @@ public class SettingsService {
      * @param musicFolder The music folder to create.
      */
     public void createMusicFolder(MusicFolder musicFolder) {
+        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder);
+        if (!overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty()) {
+            throw new IllegalArgumentException("Music folder with path " + musicFolder.getPath() + " overlaps with existing music folder path(s) (" + logMusicFolderOverlap(overlaps) + ") and can therefore not be created.");
+        }
         musicFolderDao.createMusicFolder(musicFolder);
         clearMusicFolderCache();
     }
@@ -1315,8 +1308,47 @@ public class SettingsService {
      * @param musicFolder The music folder to update.
      */
     public void updateMusicFolder(MusicFolder musicFolder) {
+        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder);
+        if (!overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty()) {
+            throw new IllegalArgumentException("Music folder with path " + musicFolder.getPath() + " overlaps with existing music folder path(s) (" + logMusicFolderOverlap(overlaps) + ") and can therefore not be updated.");
+        }
         musicFolderDao.updateMusicFolder(musicFolder);
         clearMusicFolderCache();
+    }
+
+    public Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> getMusicFolderPathOverlaps(MusicFolder folder) {
+        Path absoluteFolderPath = folder.getPath().normalize().toAbsolutePath();
+        List<MusicFolder> allFolders = getAllMusicFolders(true, true);
+        List<MusicFolder> sameFolders = allFolders.parallelStream().filter(f -> {
+            // is same but not itself
+            Path fAbsolute = f.getPath().normalize().toAbsolutePath();
+            return fAbsolute.equals(absoluteFolderPath) && f.getId() != folder.getId();
+        }).collect(toList());
+        List<MusicFolder> ancestorFolders = allFolders.parallelStream().filter(f -> {
+            // is ancestor
+            Path fAbsolute = f.getPath().normalize().toAbsolutePath();
+            return absoluteFolderPath.getNameCount() > fAbsolute.getNameCount()
+                    && absoluteFolderPath.startsWith(fAbsolute);
+        }).collect(toList());
+        List<MusicFolder> descendantFolders = allFolders.parallelStream().filter(f -> {
+            // is descendant
+            Path fAbsolute = f.getPath().normalize().toAbsolutePath();
+            return fAbsolute.getNameCount() > absoluteFolderPath.getNameCount()
+                    && fAbsolute.startsWith(absoluteFolderPath);
+        }).collect(toList());
+
+        return Triple.of(sameFolders, ancestorFolders, descendantFolders);
+    }
+
+    public static String logMusicFolderOverlap(Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps) {
+        StringBuilder result = new StringBuilder("SAME: ");
+        result.append(overlaps.getLeft().stream().map(f -> f.getName()).collect(joining(",", "[", "]")));
+        result.append(", ANCESTOR: ");
+        result.append(overlaps.getMiddle().stream().map(f -> f.getName()).collect(joining(",", "[", "]")));
+        result.append(", DESCENDANT: ");
+        result.append(overlaps.getRight().stream().map(f -> f.getName()).collect(joining(",", "[", "]")));
+
+        return result.toString();
     }
 
     public void clearMusicFolderCache() {

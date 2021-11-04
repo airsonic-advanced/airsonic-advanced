@@ -24,6 +24,8 @@ import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.MediaFile.MediaType;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.metadata.JaudiotaggerParser;
 import org.airsonic.player.service.metadata.MetaData;
@@ -510,7 +512,7 @@ public class MediaFileService {
             String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(mediaFile.getPath())));
             mediaFile.setFormat(format);
             mediaFile.setFileSize(FileUtil.size(file));
-            mediaFile.setMediaType(getMediaType(mediaFile));
+            mediaFile.setMediaType(getMediaType(mediaFile, folder));
 
         } else {
 
@@ -559,7 +561,10 @@ public class MediaFileService {
         return mediaFile;
     }
 
-    private MediaFile.MediaType getMediaType(MediaFile mediaFile) {
+    private MediaFile.MediaType getMediaType(MediaFile mediaFile, MusicFolder folder) {
+        if (folder.getType() == Type.PODCAST) {
+            return MediaType.PODCAST;
+        }
         if (isVideoFile(mediaFile.getFormat())) {
             return MediaFile.MediaType.VIDEO;
         }
