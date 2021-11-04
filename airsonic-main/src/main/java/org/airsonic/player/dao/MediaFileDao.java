@@ -250,15 +250,19 @@ public class MediaFileDao extends AbstractDao {
         return queryOne("select play_count, last_played, comment from music_file_info where path=?", musicFileInfoRowMapper, path);
     }
 
-    public void deleteMediaFile(String path) {
-        deleteMediaFiles(Collections.singletonList(path));
+    public void deleteMediaFile(String path, Integer folderId) {
+        deleteMediaFiles(Collections.singletonList(path), folderId);
     }
 
-    public void deleteMediaFiles(Collection<String> paths) {
+    public void deleteMediaFiles(Collection<String> paths, Integer folderId) {
         if (!paths.isEmpty()) {
-            batchedUpdate("update media_file set present=false, children_last_updated=? where path=?",
-                    paths.parallelStream().map(p -> new Object[] { Instant.ofEpochMilli(1), p }).collect(Collectors.toList()));
+            batchedUpdate("update media_file set present=false, children_last_updated=? where path=? and folder_id=?",
+                    paths.parallelStream().map(p -> new Object[] { Instant.ofEpochMilli(1), p, folderId }).collect(Collectors.toList()));
         }
+    }
+
+    public void deleteMediaFiles(Integer folderId) {
+        update("update media_file set present=false, children_last_updated=? where folder_id=?", Instant.ofEpochMilli(1), folderId);
     }
 
     public List<Genre> getGenres(boolean sortByAlbum) {

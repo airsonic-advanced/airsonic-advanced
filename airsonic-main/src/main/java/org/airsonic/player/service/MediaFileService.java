@@ -404,7 +404,7 @@ public class MediaFileService {
                     .collect(Collectors.toList());
 
             // Delete children that no longer exist on disk.
-            mediaFileDao.deleteMediaFiles(storedChildrenMap.keySet());
+            mediaFileDao.deleteMediaFiles(storedChildrenMap.keySet(), parent.getFolderId());
 
             // Update timestamp in parent.
             parent.setChildrenLastUpdated(parent.getChanged());

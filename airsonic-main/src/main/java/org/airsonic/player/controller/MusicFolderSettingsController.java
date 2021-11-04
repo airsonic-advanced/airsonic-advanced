@@ -142,6 +142,7 @@ public class MusicFolderSettingsController {
         for (MusicFolderSettingsCommand.MusicFolderInfo musicFolderInfo : command.getMusicFolders()) {
             if (musicFolderInfo.isDelete()) {
                 settingsService.deleteMusicFolder(musicFolderInfo.getId());
+                mediaFileDao.deleteMediaFiles(musicFolderInfo.getId());
             } else {
                 MusicFolder musicFolder = musicFolderInfo.toMusicFolder();
                 if (musicFolder != null) {

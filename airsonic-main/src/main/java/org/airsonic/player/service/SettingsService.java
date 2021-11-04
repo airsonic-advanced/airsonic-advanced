@@ -202,7 +202,6 @@ public class SettingsService {
     private static final long DEFAULT_TRANSCODE_ESTIMATE_TIME_PADDING = 2000;
     private static final long DEFAULT_TRANSCODE_ESTIMATE_BYTE_PADDING = 0;
     private static final int DEFAULT_PODCAST_UPDATE_INTERVAL = 24;
-    private static final String DEFAULT_PODCAST_FOLDER = Util.getDefaultPodcastFolder();
     private static final int DEFAULT_PODCAST_EPISODE_RETENTION_COUNT = 10;
     private static final int DEFAULT_PODCAST_EPISODE_DOWNLOAD_COUNT = 1;
     private static final long DEFAULT_DOWNLOAD_BITRATE_LIMIT = 0;
