@@ -28,8 +28,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -81,14 +79,14 @@ public class AlbumDao extends AbstractDao {
 
         // Look for album with the correct artist.
         for (Album candidate : candidates) {
-            if (ObjectUtils.equals(candidate.getArtist(), file.getArtist()) && Files.exists(Paths.get(candidate.getPath()))) {
+            if (ObjectUtils.equals(candidate.getArtist(), file.getArtist())) {
                 return candidate;
             }
         }
 
         // Look for album with the same path as the file.
         for (Album candidate : candidates) {
-            if (ObjectUtils.equals(candidate.getPath(), file.getParentPath())) {
+            if (ObjectUtils.equals(candidate.getPath(), file.getParentPath()) && ObjectUtils.equals(candidate.getFolderId(), file.getFolderId())) {
                 return candidate;
             }
         }

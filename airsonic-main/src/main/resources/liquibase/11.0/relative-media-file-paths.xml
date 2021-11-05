@@ -295,6 +295,18 @@
         <rollback>
         </rollback>
     </changeSet>
+    <changeSet id="relativize-album-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="path"/>
+            <columnExists tableName="album" columnName="folder_id"/>
+        </preConditions>
+        <update tableName="album">
+            <column name="path" valueComputed="SUBSTR(path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = album.folder_id) + 2)"></column>
+            <where>path IS NOT NULL</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
     <changeSet id="relativize-artist-cover-art-path" author="anon">
         <preConditions onFail="MARK_RAN">
             <columnExists tableName="artist" columnName="cover_art_path"/>
