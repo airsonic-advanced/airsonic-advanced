@@ -19,21 +19,44 @@
  */
 package org.airsonic.player.domain;
 
-import junit.framework.TestCase;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.PlayQueue.RepeatStatus;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit test of {@link PlayQueue}.
  *
  * @author Sindre Mehus
  */
-public class PlayQueueTestCase extends TestCase {
+public class PlayQueueTestCase {
+    @ClassRule
+    public static TemporaryFolder temporaryFolder = new TemporaryFolder();
 
+    @BeforeClass
+    public static void setupOnce() throws IOException {
+        Files.createFile(temporaryFolder.getRoot().toPath().resolve("A"));
+        Files.createFile(temporaryFolder.getRoot().toPath().resolve("B"));
+        Files.createFile(temporaryFolder.getRoot().toPath().resolve("C"));
+        Files.createFile(temporaryFolder.getRoot().toPath().resolve("D"));
+        Files.createFile(temporaryFolder.getRoot().toPath().resolve("E"));
+        Files.createFile(temporaryFolder.getRoot().toPath().resolve("F"));
+    }
+
+    @Test
     public void testEmpty() {
         PlayQueue playQueue = new PlayQueue(i -> null);
         assertEquals(0, playQueue.size());
@@ -42,6 +65,7 @@ public class PlayQueueTestCase extends TestCase {
         assertNull(playQueue.getCurrentFile());
     }
 
+    @Test
     public void testStatus() {
         PlayQueue playQueue = new PlayQueue(i -> null);
         assertEquals(PlayQueue.Status.PLAYING, playQueue.getStatus());
@@ -56,6 +80,7 @@ public class PlayQueueTestCase extends TestCase {
         assertEquals(PlayQueue.Status.PLAYING, playQueue.getStatus());
     }
 
+    @Test
     public void testMoveUp() {
         PlayQueue playQueue = createPlaylist(0, "A", "B", "C", "D");
         playQueue.moveUp(0);
@@ -74,6 +99,7 @@ public class PlayQueueTestCase extends TestCase {
         assertPlaylistEquals(playQueue, 2, "A", "B", "D", "C");
     }
 
+    @Test
     public void testMoveDown() {
         PlayQueue playQueue = createPlaylist(0, "A", "B", "C", "D");
         playQueue.moveDown(0);
@@ -92,6 +118,7 @@ public class PlayQueueTestCase extends TestCase {
         assertPlaylistEquals(playQueue, 3, "A", "B", "C", "D");
     }
 
+    @Test
     public void testRemove() {
         PlayQueue playQueue = createPlaylist(0, "A", "B", "C", "D");
         playQueue.removeFileAt(0);
@@ -118,6 +145,7 @@ public class PlayQueueTestCase extends TestCase {
         assertPlaylistEquals(playQueue, -1);
     }
 
+    @Test
     public void testNext() {
         PlayQueue playQueue = createPlaylist(0, "A", "B", "C");
         assertThat(playQueue.getRepeatStatus()).isEqualTo(RepeatStatus.OFF);
@@ -149,6 +177,7 @@ public class PlayQueueTestCase extends TestCase {
         assertPlaylistEquals(playQueue, 0, "A", "B", "C");
     }
 
+    @Test
     public void testPlayAfterEndReached() {
         PlayQueue playQueue = createPlaylist(2, "A", "B", "C");
         playQueue.setStatus(PlayQueue.Status.PLAYING);
@@ -162,6 +191,7 @@ public class PlayQueueTestCase extends TestCase {
         assertEquals("A", playQueue.getCurrentFile().getName());
     }
 
+    @Test
     public void testPlayLast() {
         PlayQueue playQueue = createPlaylist(1, "A", "B", "C");
 
@@ -186,6 +216,7 @@ public class PlayQueueTestCase extends TestCase {
 
     }
 
+    @Test
     public void testUndo() {
         PlayQueue playQueue = createPlaylist(0, "A", "B", "C");
         playQueue.setIndex(2);
@@ -213,18 +244,19 @@ public class PlayQueueTestCase extends TestCase {
         assertPlaylistEquals(playQueue, 0, "A", "B", "C");
     }
 
+    @Test
     public void testOrder() {
-        PlayQueue playQueue = new PlayQueue(i -> null);
-        playQueue.addFiles(true, new TestMediaFile(2, "Artist A", "Album B"));
-        playQueue.addFiles(true, new TestMediaFile(1, "Artist C", "Album C"));
-        playQueue.addFiles(true, new TestMediaFile(3, "Artist B", "Album A"));
-        playQueue.addFiles(true, new TestMediaFile(null, "Artist D", "Album D"));
+        PlayQueue playQueue = createPlaylist(2);
+        playQueue.addFiles(true, new TestMediaFile(2, "A", "Album B"));
+        playQueue.addFiles(true, new TestMediaFile(1, "C", "Album C"));
+        playQueue.addFiles(true, new TestMediaFile(3, "B", "Album A"));
+        playQueue.addFiles(true, new TestMediaFile(null, "D", "Album D"));
         playQueue.setIndex(2);
         assertThat(playQueue.getCurrentFile().getTrackNumber()).isEqualTo(3);
 
         // Order by track.
         playQueue.sort(PlayQueue.SortOrder.TRACK);
-        assertEquals("Error in sort().", null, playQueue.getFile(0).getTrackNumber());
+        assertThat(playQueue.getFile(0).getTrackNumber()).isNull();
         assertThat(playQueue.getFile(1).getTrackNumber()).isEqualTo(1);
         assertThat(playQueue.getFile(2).getTrackNumber()).isEqualTo(2);
         assertThat(playQueue.getFile(3).getTrackNumber()).isEqualTo(3);
@@ -232,18 +264,18 @@ public class PlayQueueTestCase extends TestCase {
 
         // Order by artist.
         playQueue.sort(PlayQueue.SortOrder.ARTIST);
-        assertEquals("Error in sort().", "Artist A", playQueue.getFile(0).getArtist());
-        assertEquals("Error in sort().", "Artist B", playQueue.getFile(1).getArtist());
-        assertEquals("Error in sort().", "Artist C", playQueue.getFile(2).getArtist());
-        assertEquals("Error in sort().", "Artist D", playQueue.getFile(3).getArtist());
+        assertEquals("A", playQueue.getFile(0).getArtist());
+        assertEquals("B", playQueue.getFile(1).getArtist());
+        assertEquals("C", playQueue.getFile(2).getArtist());
+        assertEquals("D", playQueue.getFile(3).getArtist());
         assertThat(playQueue.getCurrentFile().getTrackNumber()).isEqualTo(3);
 
         // Order by album.
         playQueue.sort(PlayQueue.SortOrder.ALBUM);
-        assertEquals("Error in sort().", "Album A", playQueue.getFile(0).getAlbumName());
-        assertEquals("Error in sort().", "Album B", playQueue.getFile(1).getAlbumName());
-        assertEquals("Error in sort().", "Album C", playQueue.getFile(2).getAlbumName());
-        assertEquals("Error in sort().", "Album D", playQueue.getFile(3).getAlbumName());
+        assertEquals("Album A", playQueue.getFile(0).getAlbumName());
+        assertEquals("Album B", playQueue.getFile(1).getAlbumName());
+        assertEquals("Album C", playQueue.getFile(2).getAlbumName());
+        assertEquals("Album D", playQueue.getFile(3).getAlbumName());
         assertThat(playQueue.getCurrentFile().getTrackNumber()).isEqualTo(3);
     }
 
@@ -261,7 +293,7 @@ public class PlayQueueTestCase extends TestCase {
     }
 
     private PlayQueue createPlaylist(int index, String... songs) {
-        PlayQueue playQueue = new PlayQueue(i -> null);
+        PlayQueue playQueue = new PlayQueue(i -> new MusicFolder(i, temporaryFolder.getRoot().toPath(), "meh", Type.MEDIA, true, Instant.now()));
         for (String song : songs) {
             playQueue.addFiles(true, new TestMediaFile(song));
         }
@@ -281,12 +313,16 @@ public class PlayQueueTestCase extends TestCase {
 
         TestMediaFile(String name) {
             this.name = name;
+            setPath(name);
+            setFolderId(0);
         }
 
         TestMediaFile(Integer track, String artist, String album) {
             this.track = track;
             this.album = album;
             this.artist = artist;
+            setPath(artist);
+            setFolderId(track);
         }
 
         @Override

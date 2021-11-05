@@ -109,14 +109,15 @@ public class MediaScannerServiceTestCase {
         Timer globalTimer = metrics.timer(MetricRegistry.name(MediaScannerServiceTestCase.class, "Timer.global"));
 
         Timer.Context globalTimerContext = globalTimer.time();
-        cleanupId = ScanningTestUtils.before(MusicFolderTestData.getTestMusicFolders(), settingsService, mediaScannerService);
+        List<MusicFolder> testFolders = MusicFolderTestData.getTestMusicFolders();
+        cleanupId = ScanningTestUtils.before(testFolders, settingsService, mediaScannerService);
         globalTimerContext.stop();
 
         // Music Folder Music must have 3 children
-        List<MediaFile> listeMusicChildren = mediaFileDao.getChildrenOf("", 1, false);
+        List<MediaFile> listeMusicChildren = mediaFileDao.getChildrenOf("", testFolders.get(0).getId(), false);
         Assert.assertEquals(3, listeMusicChildren.size());
         // Music Folder Music2 must have 1 children
-        List<MediaFile> listeMusic2Children = mediaFileDao.getChildrenOf("", 2, false);
+        List<MediaFile> listeMusic2Children = mediaFileDao.getChildrenOf("", testFolders.get(1).getId(), false);
         Assert.assertEquals(1, listeMusic2Children.size());
 
         System.out.println("--- List of all artists ---");
@@ -157,7 +158,7 @@ public class MediaScannerServiceTestCase {
         cleanupId = ScanningTestUtils.before(Arrays.asList(musicFolder), settingsService, mediaScannerService);
         MediaFile mediaFile = mediaFileService.getMediaFile(musicFile);
         assertEquals(mediaFile.getRelativePath(), temporaryFolder.getRoot().toPath().relativize(musicFile));
-        assertThat(mediaFile.getFolderId()).isEqualTo(1);
+        assertThat(mediaFile.getFolderId()).isEqualTo(musicFolder.getId());
         MediaFile relativeMediaFile = mediaFileService.getMediaFile(temporaryFolder.getRoot().toPath().relativize(musicFile), musicFolder);
         assertEquals(relativeMediaFile.getRelativePath(), mediaFile.getRelativePath());
     }
@@ -197,7 +198,7 @@ public class MediaScannerServiceTestCase {
         Assert.assertEquals("TestArtist", album.getArtist());
         Assert.assertEquals(1, album.getSongCount());
         Assert.assertEquals("0820752d-1043-4572-ab36-2df3b5cc15fa", album.getMusicBrainzReleaseId());
-        Assert.assertEquals(musicFolderFile.resolve("TestAlbum").toString(), album.getPath());
+        Assert.assertEquals("TestAlbum", album.getPath());
 
         // Test that the music file is correctly imported, along with its MusicBrainz release ID and recording ID
         List<MediaFile> albumFiles = mediaFileDao.getChildrenOf(allAlbums.get(0).getPath(), allAlbums.get(0).getFolderId(), false);

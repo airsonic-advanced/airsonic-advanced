@@ -21,7 +21,6 @@ package org.airsonic.player.service;
 
 import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.TestCaseUtils;
-import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.util.HomeRule;
 import org.apache.commons.configuration2.spring.ConfigurationPropertySource;
 import org.junit.Before;
@@ -91,7 +90,6 @@ public class SettingsServiceTestCase {
         assertEquals("Wrong default theme.", "default", settingsService.getThemeId());
         assertEquals("Wrong default Podcast episode retention count.", 10, settingsService.getPodcastEpisodeRetentionCount());
         assertEquals("Wrong default Podcast episode download count.", 1, settingsService.getPodcastEpisodeDownloadCount());
-        assertTrue("Wrong default Podcast folder.", settingsService.getAllMusicFolders().stream().filter(f -> f.getType() == Type.MEDIA).findAny().orElse(null).getPath().endsWith("podcast"));
         assertEquals("Wrong default Podcast update interval.", 24, settingsService.getPodcastUpdateInterval());
         assertEquals("Wrong default LDAP enabled.", false, settingsService.isLdapEnabled());
         assertEquals("Wrong default LDAP URL.", "ldap://host.domain.com:389/cn=Users,dc=domain,dc=com", settingsService.getLdapUrl());
