@@ -37,9 +37,9 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -58,7 +58,6 @@ import java.util.stream.Stream;
  * @author Sindre Mehus
  */
 @Service
-@CacheConfig(cacheNames = "mediaFileMemoryCache")
 public class MediaFileService {
 
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileService.class);
@@ -118,7 +117,7 @@ public class MediaFileService {
      * @return A media file instance, or null if not found.
      * @throws SecurityException If access is denied to the given file.
      */
-    @Cacheable(key = "#relativePath.toString().concat('-').concat(#folder.id)", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
+    @Cacheable(cacheNames = "mediaFilePathCache", key = "#relativePath.toString().concat('-').concat(#folder.id)", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
     public MediaFile getMediaFile(Path relativePath, MusicFolder folder, boolean minimizeDiskAccess) {
         // Look in database.
         MediaFile result = mediaFileDao.getMediaFile(relativePath.toString(), folder.getId());
@@ -140,7 +139,7 @@ public class MediaFileService {
         return result;
     }
 
-    // TODO: Optimize with memory caching.
+    @Cacheable(cacheNames = "mediaFileIdCache", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
     public MediaFile getMediaFile(int id) {
         MediaFile mediaFile = mediaFileDao.getMediaFile(id);
         if (mediaFile == null) {
@@ -584,7 +583,7 @@ public class MediaFileService {
         updateMediaFile(mediaFile);
     }
 
-    @CacheEvict(allEntries = true)
+    @CacheEvict(cacheNames = { "mediaFilePathCache", "mediaFileIdCache" }, allEntries = true)
     public void setMemoryCacheEnabled(boolean memoryCacheEnabled) {
         this.memoryCacheEnabled = memoryCacheEnabled;
     }
@@ -696,7 +695,9 @@ public class MediaFileService {
         this.metaDataParserFactory = metaDataParserFactory;
     }
 
-    @CacheEvict(key = "#mediaFile.path.concat('-').concat(#mediaFile.folderId)")
+    @Caching(evict = {
+        @CacheEvict(cacheNames = "mediaFilePathCache", key = "#mediaFile.path.concat('-').concat(#mediaFile.folderId)"),
+        @CacheEvict(cacheNames = "mediaFileIdCache", key = "#mediaFile.id", condition = "#mediaFile.id != null") })
     public void updateMediaFile(MediaFile mediaFile) {
         mediaFileDao.createOrUpdateMediaFile(mediaFile, file -> {
             // Copy values from obsolete table music_file_info if inserting for first time
