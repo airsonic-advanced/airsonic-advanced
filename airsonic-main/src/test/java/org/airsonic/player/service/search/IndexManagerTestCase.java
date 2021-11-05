@@ -23,6 +23,7 @@ import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.ArtistDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.SearchCriteria;
 import org.airsonic.player.domain.SearchResult;
 import org.airsonic.player.service.SearchService;
@@ -59,7 +60,7 @@ public class IndexManagerTestCase extends AbstractAirsonicHomeTest {
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
             Path musicDir = MusicFolderTestData.resolveMusicFolderPath();
-            musicFolders.add(new MusicFolder(1, musicDir, "Music", true, Instant.now()));
+            musicFolders.add(new MusicFolder(1, musicDir, "Music", Type.MEDIA, true, Instant.now()));
         }
         return musicFolders;
     }
@@ -124,7 +125,7 @@ public class IndexManagerTestCase extends AbstractAirsonicHomeTest {
         List<Integer> candidates = mediaFileDao.getArtistExpungeCandidates();
         assertEquals(0, candidates.size());
 
-        result.getMediaFiles().forEach(a -> mediaFileDao.deleteMediaFile(a.getPath()));
+        result.getMediaFiles().forEach(a -> mediaFileDao.deleteMediaFile(a.getPath(), a.getFolderId()));
 
         candidates = mediaFileDao.getArtistExpungeCandidates();
         assertEquals(2, candidates.size());
@@ -138,7 +139,7 @@ public class IndexManagerTestCase extends AbstractAirsonicHomeTest {
         candidates = mediaFileDao.getAlbumExpungeCandidates();
         assertEquals(0, candidates.size());
 
-        result.getMediaFiles().forEach(a -> mediaFileDao.deleteMediaFile(a.getPath()));
+        result.getMediaFiles().forEach(a -> mediaFileDao.deleteMediaFile(a.getPath(), a.getFolderId()));
 
         candidates = mediaFileDao.getAlbumExpungeCandidates();
         assertEquals(2, candidates.size());
@@ -152,7 +153,7 @@ public class IndexManagerTestCase extends AbstractAirsonicHomeTest {
         candidates = mediaFileDao.getSongExpungeCandidates();
         assertEquals(0, candidates.size());
 
-        result.getMediaFiles().forEach(a -> mediaFileDao.deleteMediaFile(a.getPath()));
+        result.getMediaFiles().forEach(a -> mediaFileDao.deleteMediaFile(a.getPath(), a.getFolderId()));
 
         candidates = mediaFileDao.getSongExpungeCandidates();
         assertEquals(2, candidates.size());

@@ -22,8 +22,6 @@ package org.airsonic.player.domain;
 import junit.framework.TestCase;
 import org.airsonic.player.domain.PlayQueue.RepeatStatus;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -37,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PlayQueueTestCase extends TestCase {
 
     public void testEmpty() {
-        PlayQueue playQueue = new PlayQueue();
+        PlayQueue playQueue = new PlayQueue(i -> null);
         assertEquals(0, playQueue.size());
         assertTrue(playQueue.isEmpty());
         assertEquals(0, playQueue.getFiles().size());
@@ -45,7 +43,7 @@ public class PlayQueueTestCase extends TestCase {
     }
 
     public void testStatus() {
-        PlayQueue playQueue = new PlayQueue();
+        PlayQueue playQueue = new PlayQueue(i -> null);
         assertEquals(PlayQueue.Status.PLAYING, playQueue.getStatus());
 
         playQueue.setStatus(PlayQueue.Status.STOPPED);
@@ -216,21 +214,21 @@ public class PlayQueueTestCase extends TestCase {
     }
 
     public void testOrder() {
-        PlayQueue playQueue = new PlayQueue();
+        PlayQueue playQueue = new PlayQueue(i -> null);
         playQueue.addFiles(true, new TestMediaFile(2, "Artist A", "Album B"));
         playQueue.addFiles(true, new TestMediaFile(1, "Artist C", "Album C"));
         playQueue.addFiles(true, new TestMediaFile(3, "Artist B", "Album A"));
         playQueue.addFiles(true, new TestMediaFile(null, "Artist D", "Album D"));
         playQueue.setIndex(2);
-        assertEquals("Error in sort.", new Integer(3), playQueue.getCurrentFile().getTrackNumber());
+        assertThat(playQueue.getCurrentFile().getTrackNumber()).isEqualTo(3);
 
         // Order by track.
         playQueue.sort(PlayQueue.SortOrder.TRACK);
         assertEquals("Error in sort().", null, playQueue.getFile(0).getTrackNumber());
-        assertEquals("Error in sort().", new Integer(1), playQueue.getFile(1).getTrackNumber());
-        assertEquals("Error in sort().", new Integer(2), playQueue.getFile(2).getTrackNumber());
-        assertEquals("Error in sort().", new Integer(3), playQueue.getFile(3).getTrackNumber());
-        assertEquals("Error in sort().", new Integer(3), playQueue.getCurrentFile().getTrackNumber());
+        assertThat(playQueue.getFile(1).getTrackNumber()).isEqualTo(1);
+        assertThat(playQueue.getFile(2).getTrackNumber()).isEqualTo(2);
+        assertThat(playQueue.getFile(3).getTrackNumber()).isEqualTo(3);
+        assertThat(playQueue.getCurrentFile().getTrackNumber()).isEqualTo(3);
 
         // Order by artist.
         playQueue.sort(PlayQueue.SortOrder.ARTIST);
@@ -238,7 +236,7 @@ public class PlayQueueTestCase extends TestCase {
         assertEquals("Error in sort().", "Artist B", playQueue.getFile(1).getArtist());
         assertEquals("Error in sort().", "Artist C", playQueue.getFile(2).getArtist());
         assertEquals("Error in sort().", "Artist D", playQueue.getFile(3).getArtist());
-        assertEquals("Error in sort().", new Integer(3), playQueue.getCurrentFile().getTrackNumber());
+        assertThat(playQueue.getCurrentFile().getTrackNumber()).isEqualTo(3);
 
         // Order by album.
         playQueue.sort(PlayQueue.SortOrder.ALBUM);
@@ -246,7 +244,7 @@ public class PlayQueueTestCase extends TestCase {
         assertEquals("Error in sort().", "Album B", playQueue.getFile(1).getAlbumName());
         assertEquals("Error in sort().", "Album C", playQueue.getFile(2).getAlbumName());
         assertEquals("Error in sort().", "Album D", playQueue.getFile(3).getAlbumName());
-        assertEquals("Error in sort().", new Integer(3), playQueue.getCurrentFile().getTrackNumber());
+        assertThat(playQueue.getCurrentFile().getTrackNumber()).isEqualTo(3);
     }
 
     private void assertPlaylistEquals(PlayQueue playQueue, int index, String... songs) {
@@ -263,7 +261,7 @@ public class PlayQueueTestCase extends TestCase {
     }
 
     private PlayQueue createPlaylist(int index, String... songs) {
-        PlayQueue playQueue = new PlayQueue();
+        PlayQueue playQueue = new PlayQueue(i -> null);
         for (String song : songs) {
             playQueue.addFiles(true, new TestMediaFile(song));
         }
@@ -314,16 +312,6 @@ public class PlayQueueTestCase extends TestCase {
         @Override
         public String getAlbumName() {
             return album;
-        }
-
-        @Override
-        public Path getFile() {
-            return Paths.get(name);
-        }
-
-        @Override
-        public boolean exists() {
-            return true;
         }
 
         @Override

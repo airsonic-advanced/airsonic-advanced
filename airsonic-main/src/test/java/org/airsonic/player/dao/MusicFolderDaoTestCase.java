@@ -20,6 +20,7 @@
 package org.airsonic.player.dao;
 
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,11 +48,11 @@ public class MusicFolderDaoTestCase extends DaoTestCaseBean2 {
 
     @Test
     public void testCreateMusicFolder() {
-        MusicFolder musicFolder = new MusicFolder(Paths.get("path"), "name", true, Instant.now());
+        MusicFolder musicFolder = new MusicFolder(Paths.get("path"), "name", Type.MEDIA, true, Instant.now());
         musicFolderDao.createMusicFolder(musicFolder);
 
         // no duplicates
-        musicFolderDao.createMusicFolder(new MusicFolder(Paths.get("path"), "name", true, Instant.now()));
+        musicFolderDao.createMusicFolder(new MusicFolder(Paths.get("path"), "name", Type.MEDIA, true, Instant.now()));
 
         assertThat(musicFolderDao.getAllMusicFolders()).usingElementComparatorIgnoringFields("id")
                 .containsExactly(musicFolder);
@@ -59,7 +60,7 @@ public class MusicFolderDaoTestCase extends DaoTestCaseBean2 {
 
     @Test
     public void testUpdateMusicFolder() {
-        MusicFolder musicFolder = new MusicFolder(Paths.get("path"), "name", true, Instant.now());
+        MusicFolder musicFolder = new MusicFolder(Paths.get("path"), "name", Type.MEDIA, true, Instant.now());
         musicFolderDao.createMusicFolder(musicFolder);
         musicFolder = musicFolderDao.getAllMusicFolders().get(0);
 
@@ -69,14 +70,14 @@ public class MusicFolderDaoTestCase extends DaoTestCaseBean2 {
         musicFolder.setChanged(Instant.ofEpochMilli(234234L));
         musicFolderDao.updateMusicFolder(musicFolder);
 
-        assertThat(musicFolderDao.getAllMusicFolders()).element(0).isEqualToComparingFieldByField(musicFolder);
+        assertThat(musicFolderDao.getAllMusicFolders()).element(0).usingRecursiveComparison().isEqualTo(musicFolder);
     }
 
     @Test
     public void testDeleteMusicFolder() {
         assertThat(musicFolderDao.getAllMusicFolders()).hasSize(0);
 
-        musicFolderDao.createMusicFolder(new MusicFolder(Paths.get("path"), "name", true, Instant.now()));
+        musicFolderDao.createMusicFolder(new MusicFolder(Paths.get("path"), "name", Type.MEDIA, true, Instant.now()));
 
         List<MusicFolder> musicFolders = musicFolderDao.getAllMusicFolders();
         assertThat(musicFolders).hasSize(1);

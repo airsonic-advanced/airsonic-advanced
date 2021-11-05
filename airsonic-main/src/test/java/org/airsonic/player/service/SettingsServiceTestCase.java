@@ -21,6 +21,7 @@ package org.airsonic.player.service;
 
 import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.TestCaseUtils;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.util.HomeRule;
 import org.apache.commons.configuration2.spring.ConfigurationPropertySource;
 import org.junit.Before;
@@ -90,7 +91,7 @@ public class SettingsServiceTestCase {
         assertEquals("Wrong default theme.", "default", settingsService.getThemeId());
         assertEquals("Wrong default Podcast episode retention count.", 10, settingsService.getPodcastEpisodeRetentionCount());
         assertEquals("Wrong default Podcast episode download count.", 1, settingsService.getPodcastEpisodeDownloadCount());
-        assertTrue("Wrong default Podcast folder.", settingsService.getPodcastFolder().endsWith("podcast"));
+        assertTrue("Wrong default Podcast folder.", settingsService.getAllMusicFolders().stream().filter(f -> f.getType() == Type.MEDIA).findAny().orElse(null).getPath().endsWith("podcast"));
         assertEquals("Wrong default Podcast update interval.", 24, settingsService.getPodcastUpdateInterval());
         assertEquals("Wrong default LDAP enabled.", false, settingsService.isLdapEnabled());
         assertEquals("Wrong default LDAP URL.", "ldap://host.domain.com:389/cn=Users,dc=domain,dc=com", settingsService.getLdapUrl());
@@ -116,7 +117,6 @@ public class SettingsServiceTestCase {
         settingsService.setIndexCreationHour(9);
         settingsService.setPodcastEpisodeRetentionCount(5);
         settingsService.setPodcastEpisodeDownloadCount(-1);
-        settingsService.setPodcastFolder("d:/podcasts");
         settingsService.setPodcastUpdateInterval(-1);
         settingsService.setLdapEnabled(true);
         settingsService.setLdapUrl("newLdapUrl");
@@ -152,7 +152,6 @@ public class SettingsServiceTestCase {
         assertEquals("Wrong index creation hour.", 9, ss.getIndexCreationHour());
         assertEquals("Wrong Podcast episode retention count.", 5, settingsService.getPodcastEpisodeRetentionCount());
         assertEquals("Wrong Podcast episode download count.", -1, settingsService.getPodcastEpisodeDownloadCount());
-        assertEquals("Wrong Podcast folder.", "d:/podcasts", settingsService.getPodcastFolder());
         assertEquals("Wrong Podcast update interval.", -1, settingsService.getPodcastUpdateInterval());
         assertTrue("Wrong LDAP enabled.", settingsService.isLdapEnabled());
         assertEquals("Wrong LDAP URL.", "newLdapUrl", settingsService.getLdapUrl());

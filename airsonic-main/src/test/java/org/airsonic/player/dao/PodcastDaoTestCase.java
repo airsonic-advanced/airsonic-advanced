@@ -93,7 +93,7 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testCreateEpisode() {
         int channelId = createChannel();
-        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", "path", "title", "description",
+        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", 1, "title", "description",
                 Instant.now(), "12:34", null, null, PodcastStatus.NEW, null);
         podcastDao.createEpisode(episode);
 
@@ -107,7 +107,7 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
         assertNull("Error in getEpisode()", podcastDao.getEpisode(23));
 
         int channelId = createChannel();
-        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", "path", "title", "description",
+        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", 1, "title", "description",
                 Instant.now(), "12:34", 3276213L, 2341234L, PodcastStatus.NEW, "error");
         podcastDao.createEpisode(episode);
 
@@ -150,7 +150,6 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
         episode = podcastDao.getEpisodes(channelId).get(0);
 
         episode.setUrl("http://bar");
-        episode.setPath("c:/tmp");
         episode.setTitle("Title");
         episode.setDescription("Description");
         episode.setPublishDate(Instant.now());
@@ -220,7 +219,6 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
 
     private void assertEpisodeEquals(PodcastEpisode expected, PodcastEpisode actual) {
         assertEquals("Wrong URL.", expected.getUrl(), actual.getUrl());
-        assertEquals("Wrong path.", expected.getPath(), actual.getPath());
         assertEquals("Wrong title.", expected.getTitle(), actual.getTitle());
         assertEquals("Wrong description.", expected.getDescription(), actual.getDescription());
         assertEquals("Wrong date.", expected.getPublishDate(), actual.getPublishDate());
