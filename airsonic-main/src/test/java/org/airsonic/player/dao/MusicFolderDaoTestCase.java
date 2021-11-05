@@ -70,7 +70,7 @@ public class MusicFolderDaoTestCase extends DaoTestCaseBean2 {
         musicFolder.setChanged(Instant.ofEpochMilli(234234L));
         musicFolderDao.updateMusicFolder(musicFolder);
 
-        assertThat(musicFolderDao.getAllMusicFolders()).element(0).usingRecursiveComparison().isEqualTo(musicFolder);
+        assertThat(musicFolderDao.getAllMusicFolders()).element(0).isEqualToComparingFieldByField(musicFolder);
     }
 
     @Test
