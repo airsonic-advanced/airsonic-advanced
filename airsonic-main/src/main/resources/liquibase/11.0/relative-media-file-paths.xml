@@ -289,8 +289,12 @@
             <columnExists tableName="album" columnName="folder_id"/>
         </preConditions>
         <update tableName="album">
-            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = album.folder_id) + 2)"></column>
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = album.folder_id) + 1)"></column>
             <where>cover_art_path IS NOT NULL</where>
+        </update>
+        <update tableName="album">
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, 2)"></column>
+            <where>LENGTH(cover_art_path) != 0</where>
         </update>
         <rollback>
         </rollback>
@@ -301,8 +305,12 @@
             <columnExists tableName="album" columnName="folder_id"/>
         </preConditions>
         <update tableName="album">
-            <column name="path" valueComputed="SUBSTR(path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = album.folder_id) + 2)"></column>
+            <column name="path" valueComputed="SUBSTR(path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = album.folder_id) + 1)"></column>
             <where>path IS NOT NULL</where>
+        </update>
+        <update tableName="album">
+            <column name="path" valueComputed="SUBSTR(path, 2)"></column>
+            <where>LENGTH(path) != 0</where>
         </update>
         <rollback>
         </rollback>
@@ -313,8 +321,12 @@
             <columnExists tableName="artist" columnName="folder_id"/>
         </preConditions>
         <update tableName="artist">
-            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = artist.folder_id) + 2)"></column>
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = artist.folder_id) + 1)"></column>
             <where>cover_art_path IS NOT NULL</where>
+        </update>
+        <update tableName="artist">
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, 2)"></column>
+            <where>LENGTH(cover_art_path) != 0</where>
         </update>
         <rollback>
         </rollback>
