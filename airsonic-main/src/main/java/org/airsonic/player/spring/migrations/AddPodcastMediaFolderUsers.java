@@ -12,9 +12,9 @@ import liquibase.statement.SqlStatement;
 import liquibase.statement.core.InsertStatement;
 import org.apache.commons.lang3.StringUtils;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -57,18 +57,16 @@ public class AddPodcastMediaFolderUsers implements CustomSqlChange {
         }
 
         if (conn != null) {
-            try (Statement st = conn.createStatement();
-                    ResultSet result = st
-                            .executeQuery("SELECT username, roles FROM " + userTableQuote + "user" + userTableQuote);
-                    ResultSet result2 = st
-                            .executeQuery("SELECT MAX(id) AS maxid FROM music_folder WHERE type='PODCAST';");) {
-
-                while (result2.next()) {
-                    maxFolderId = result2.getInt("maxid");
+            try (PreparedStatement st1 = conn.prepareStatement("SELECT MAX(id) AS maxid FROM music_folder WHERE type='PODCAST';");
+                    ResultSet rs1 = st1.executeQuery();
+                    PreparedStatement st2 = conn.prepareStatement("SELECT username, roles FROM " + userTableQuote + "user" + userTableQuote + ";");
+                    ResultSet rs2 = st2.executeQuery();) {
+                while (rs1.next()) {
+                    maxFolderId = rs1.getInt("maxid");
                 }
-                while (result.next()) {
-                    if (StringUtils.contains(result.getString("roles"), "PODCAST")) {
-                        podcastUsers.add(result.getString("username"));
+                while (rs2.next()) {
+                    if (StringUtils.contains(rs2.getString("roles"), "PODCAST")) {
+                        podcastUsers.add(rs2.getString("username"));
                     }
                 }
             } catch (DatabaseException | SQLException e) {

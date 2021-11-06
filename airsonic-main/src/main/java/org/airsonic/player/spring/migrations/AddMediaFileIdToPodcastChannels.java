@@ -15,9 +15,9 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,20 +51,22 @@ public class AddMediaFileIdToPodcastChannels implements CustomSqlChange {
         }
 
         if (conn != null) {
-            try (Statement st = conn.createStatement();
-                    ResultSet result = st.executeQuery("SELECT id, title FROM podcast_channel;");
-                    ResultSet result2 = st.executeQuery("SELECT path FROM music_folder WHERE type='PODCAST';");) {
-
-                while (result2.next()) {
-                    folderPath = Paths.get(result2.getString("path"));
+            try (PreparedStatement st1 = conn.prepareStatement("SELECT path FROM music_folder WHERE type='PODCAST';");
+                    ResultSet rs1 = st1.executeQuery();
+                    PreparedStatement st2 = conn.prepareStatement("SELECT id, title FROM podcast_channel;");
+                    ResultSet rs2 = st2.executeQuery();
+                    ) {
+                while (rs1.next()) {
+                    folderPath = Paths.get(rs1.getString("path"));
                 }
-                while (result.next()) {
-                    String title = result.getString("title");
+                while (rs2.next()) {
+                    String title = rs2.getString("title");
                     if (StringUtils.isNotEmpty(title)) {
                         Path channelFolder = folderPath.resolve(StringUtil.fileSystemSafe(title));
-                        try (ResultSet result3 = st.executeQuery("SELECT id FROM media_file WHERE path='" + channelFolder.toString() + "';")) {
-                            while (result3.next()) {
-                                idToMediaFile.put(result.getInt("id"), result3.getInt("id"));
+                        try (PreparedStatement st3 = conn.prepareStatement("SELECT id FROM media_file WHERE path='" + channelFolder.toString() + "';");
+                                ResultSet rs3 = st3.executeQuery()) {
+                            while (rs3.next()) {
+                                idToMediaFile.put(rs2.getInt("id"), rs3.getInt("id"));
                             }
                         }
                     }

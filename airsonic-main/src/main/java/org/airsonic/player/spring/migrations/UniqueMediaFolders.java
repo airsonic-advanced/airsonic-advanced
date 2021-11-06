@@ -13,9 +13,9 @@ import liquibase.statement.core.DeleteStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -52,12 +52,12 @@ public class UniqueMediaFolders implements CustomSqlChange {
         }
 
         if (conn != null) {
-            try (Statement st = conn.createStatement();
-                    ResultSet result = st.executeQuery(""
-                            + "select m.* from music_folder m join "
-                            + "(select path, count(*) from music_folder group by path having count(*) > 1) d "
-                            + "on m.path = d.path "
-                            + "order by m.id");) {
+            try (PreparedStatement st = conn.prepareStatement(""
+                        + "select m.* from music_folder m join "
+                        + "(select path, count(*) from music_folder group by path having count(*) > 1) d "
+                        + "on m.path = d.path "
+                        + "order by m.id");
+                    ResultSet result = st.executeQuery();) {
 
                 Set<String> paths = new HashSet<>();
                 while (result.next()) {
