@@ -73,7 +73,7 @@ public class AddUnknownMediaFolders implements CustomSqlChange {
             }
         }
         List<String> unknownMusicFoldersList = new ArrayList<>(unknownMusicFolders);
-        Integer folderId = maxFolderId + 1;
+        int folderId = maxFolderId + 1;
 
         return IntStream.range(0, unknownMusicFoldersList.size())
                 .mapToObj(i -> i)

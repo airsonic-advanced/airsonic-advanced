@@ -1321,7 +1321,7 @@ public class SettingsService {
         List<MusicFolder> sameFolders = allFolders.parallelStream().filter(f -> {
             // is same but not itself
             Path fAbsolute = f.getPath().normalize().toAbsolutePath();
-            return fAbsolute.equals(absoluteFolderPath) && f.getId() != folder.getId();
+            return fAbsolute.equals(absoluteFolderPath) && !f.getId().equals(folder.getId());
         }).collect(toList());
         List<MusicFolder> ancestorFolders = allFolders.parallelStream().filter(f -> {
             // is ancestor

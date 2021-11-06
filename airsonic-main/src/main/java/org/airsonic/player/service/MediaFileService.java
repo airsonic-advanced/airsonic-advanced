@@ -110,13 +110,6 @@ public class MediaFileService {
         return getMediaFile(relativePath, folder, settingsService.isFastCacheEnabled());
     }
 
-    /**
-     * Returns a media file instance for the given file.  If possible, a cached value is returned.
-     *
-     * @param file A file on the local file system.
-     * @return A media file instance, or null if not found.
-     * @throws SecurityException If access is denied to the given file.
-     */
     @Cacheable(cacheNames = "mediaFilePathCache", key = "#relativePath.toString().concat('-').concat(#folder.id)", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
     public MediaFile getMediaFile(Path relativePath, MusicFolder folder, boolean minimizeDiskAccess) {
         // Look in database.
