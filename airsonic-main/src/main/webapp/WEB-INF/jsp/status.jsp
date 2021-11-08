@@ -13,7 +13,9 @@
     <img src="<spring:theme code='statusImage'/>" alt="">
     <span style="vertical-align: middle"><fmt:message key="status.title"/></span>
 </h1>
-
+<h2>
+  <fmt:message key="status.currenttransfers"/>
+</h2>
 <table id="transfersTable" width="100%" class="ruleTable indent">
     <thead>
       <tr>
@@ -30,7 +32,29 @@
 </table>
 <div style="padding-top:3em"></div>
 
+<h2>
+  <fmt:message key="status.usertransfers"/>
+</h2>
 <canvas id="userChart"></canvas>
+<div style="padding-top:3em"></div>
+
+<h2>
+  <fmt:message key="status.caches"/>
+</h2>
+<table id="cachesTable" width="100%" class="ruleTable indent">
+    <thead>
+      <tr>
+        <th class="ruleTableHeader"><fmt:message key="status.cachename"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.cacheusage"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.cachehits"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.cachemiss"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.cacheputs"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.cacheremovals"/></th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
 
 <script>
   const labels = {
@@ -204,9 +228,67 @@
     userChart.update();
   });
 
+  var airsonicCaches = [];
+  var cacheNamesUrl = "<c:url value='/actuator/metrics/cache.gets'/>";
+  $.get(cacheNamesUrl, data => {
+      airsonicCaches = data.availableTags.filter(i => i.tag == 'cache')[0].values.sort();
+      var appendedRows = '';
+      airsonicCaches.forEach((row, i) => {
+        appendedRows += '<tr class="' + row + '">';
+        appendedRows +=   '<td class="cachename">' + row + '</td>';
+        appendedRows +=   '<td class="cacheusage"></td>';
+        appendedRows +=   '<td class="cachehits"></td>';
+        appendedRows +=   '<td class="cachemiss"></td>';
+        appendedRows +=   '<td class="cacheputs"></td>';
+        appendedRows +=   '<td class="cacheremovals"></td>';
+        appendedRows += '</tr>';
+      });
+
+      $('#cachesTable > tbody').append(appendedRows);
+      updateCachesData();
+  });
+
+  var cacheMissUrl = "<c:url value='/actuator/metrics/cache.gets?tag=result:miss&'/>";
+  var cacheHitsUrl = "<c:url value='/actuator/metrics/cache.gets?tag=result:hit&'/>";
+  var cachePutsUrl = "<c:url value='/actuator/metrics/cache.puts?'/>";
+  var cacheRemovalsUrl = "<c:url value='/actuator/metrics/cache.removals?'/>";
+
+  var updateCacheUsage = c => {
+    var hit = +($('#cachesTable > tbody .' + c + ' .cachehits').text());
+    var miss = +($('#cachesTable > tbody .' + c + ' .cachemiss').text());
+    var usage = "N/A";
+    if (!isNaN(hit) && !isNaN(miss) && (hit+miss != 0)) {
+      usage = hit / (hit + miss) * 100.0;
+    }
+    $('#cachesTable > tbody .' + c + ' .cacheusage').text(usage);
+  };
+  var updateCacheMissData = c => $.get(cacheMissUrl+"tag=cache:"+c, data => {
+    $('#cachesTable > tbody .' + c + ' .cachemiss').text(data.measurements[0].value);
+    updateCacheUsage(c);
+  });
+  var updateCacheHitsData = c => $.get(cacheHitsUrl+"tag=cache:"+c, data => {
+    $('#cachesTable > tbody .' + c + ' .cachehits').text(data.measurements[0].value);
+    updateCacheUsage(c);
+  });
+  var updateCachePutsData = c => $.get(cachePutsUrl+"tag=cache:"+c, data => {
+    $('#cachesTable > tbody .' + c + ' .cacheputs').text(data.measurements[0].value);
+  });
+  var updateCacheRemovalsData = c => $.get(cacheRemovalsUrl+"tag=cache:"+c, data => {
+    $('#cachesTable > tbody .' + c + ' .cacheremovals').text(data.measurements[0].value);
+  });
+  var updateCachesData = () => {
+    airsonicCaches.forEach(c => {
+      updateCacheMissData(c);
+      updateCacheHitsData(c);
+      updateCachePutsData(c);
+      updateCacheRemovalsData(c);
+    });
+  };
+
   updateTransferData();
   updateUserChartData();
-  setInterval(() => { updateTransferData(); updateUserChartData(); }, 40000);
+
+  setInterval(() => { updateTransferData(); updateUserChartData(); updateCachesData(); }, 40000);
 </script>
 
 <div class="forward"><a href="status.view?"><fmt:message key="common.refresh"/> (<fmt:message key="status.autorefresh"><fmt:param>${40000/1000}</fmt:param></fmt:message>)</a></div>
