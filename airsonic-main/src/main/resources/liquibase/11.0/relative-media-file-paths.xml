@@ -196,7 +196,7 @@
             </not>
         </preConditions>
         <addColumn tableName="media_file">
-            <column name="folder_id" type="int" defaultValue="-1" valueComputed="(SELECT array_agg(muf.id ORDER BY LENGTH(muf.PATH) DESC)[1] AS mufid FROM PUBLIC.MEDIA_FILE mef JOIN PUBLIC.MUSIC_FOLDER muf ON mef.PATH LIKE concat(muf.PATH, '%') WHERE mef.id=media_file.id)">
+            <column name="folder_id" type="int" defaultValue="-1" valueComputed="(SELECT (array_agg(muf.id ORDER BY LENGTH(muf.PATH) DESC))[1] AS mufid FROM PUBLIC.MEDIA_FILE mef JOIN PUBLIC.MUSIC_FOLDER muf ON mef.PATH LIKE concat(muf.PATH, '%') WHERE mef.id=media_file.id)">
                 <!-- No fk to music_folder.id because want to allow modification/deletion of music folder without affecting/deleting media file -->
                 <constraints nullable="false" />
             </column>
