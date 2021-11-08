@@ -6,6 +6,11 @@
     <%@ include file="jquery.jsp" %>
     <script type="text/javascript" src="<c:url value='/script/chart-3.5.0.min.js'/>"></script>
     <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+    <style>
+      #sessionsTable td, .cacheusage, .cachehits, .cachemiss, .cacheputs, .cacheremovals {
+        text-align: center;
+      }
+    </style>
 </head>
 <body class="mainframe bgcolor1">
 
@@ -50,6 +55,46 @@
         <th class="ruleTableHeader"><fmt:message key="status.cachemiss"/></th>
         <th class="ruleTableHeader"><fmt:message key="status.cacheputs"/></th>
         <th class="ruleTableHeader"><fmt:message key="status.cacheremovals"/></th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+<div style="padding-top:3em"></div>
+
+<h2>
+  <fmt:message key="status.sessions"/>
+</h2>
+<table id="sessionsTable" width="100%" class="ruleTable indent">
+    <thead>
+      <tr>
+        <th class="ruleTableHeader"><fmt:message key="status.sessionscurrent"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.sessionscreated"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.sessionsexpired"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.sessionsrejected"/></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="sessionscurrent">N/A</td>
+        <td class="sessionscreated">N/A</td>
+        <td class="sessionsexpired">N/A</td>
+        <td class="sessionsrejected">N/A</td>
+      </tr>
+    </tbody>
+</table>
+
+<div style="padding-top:3em"></div>
+
+<h2>
+  <fmt:message key="status.health"/>
+</h2>
+<table id="healthTable" width="100%" class="ruleTable indent">
+    <thead>
+      <tr>
+        <th class="ruleTableHeader"><fmt:message key="status.component"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.status"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.details"/></th>
       </tr>
     </thead>
     <tbody>
@@ -285,10 +330,53 @@
     });
   };
 
+  var sessionsCurrentUrl = "<c:url value='/actuator/metrics/tomcat.sessions.active.current'/>";
+  var sessionsCreatedUrl = "<c:url value='/actuator/metrics/tomcat.sessions.created'/>";
+  var sessionsExpiredUrl = "<c:url value='/actuator/metrics/tomcat.sessions.expired'/>";
+  var sessionsRejectedUrl = "<c:url value='/actuator/metrics/tomcat.sessions.rejected'/>";
+
+  var updateSessionsCurrentData = () => $.get(sessionsCurrentUrl, data => {
+    $('#sessionsTable > tbody .sessionscurrent').text(data.measurements[0].value);
+  });
+  var updateSessionsCreatedData = () => $.get(sessionsCreatedUrl, data => {
+    $('#sessionsTable > tbody .sessionscreated').text(data.measurements[0].value);
+  });
+  var updateSessionsExpiredData = () => $.get(sessionsExpiredUrl, data => {
+    $('#sessionsTable > tbody .sessionsexpired').text(data.measurements[0].value);
+  });
+  var updateSessionsRejectedData = () => $.get(sessionsRejectedUrl, data => {
+    $('#sessionsTable > tbody .sessionsrejected').text(data.measurements[0].value);
+  });
+  var updateSessionsData = () => {
+    updateSessionsCurrentData();
+    updateSessionsCreatedData();
+    updateSessionsExpiredData();
+    updateSessionsRejectedData();
+  };
+
+  var healthUrl = "<c:url value='/actuator/health'/>";
+  var updateHealthData = () => $.get(healthUrl).always(data => {
+      $('#healthTable > tbody').empty();
+      var appendedRows = '';
+      if (typeof data.responseJSON != 'undefined' && typeof data.responseJSON.components != 'undefined') {
+        Object.keys(data.responseJSON.components).forEach(k => {
+          appendedRows += '<tr>';
+          appendedRows +=   '<td>' + k + '</td>';
+          appendedRows +=   '<td>' + data.responseJSON.components[k].status + '</td>';
+          appendedRows +=   '<td>' + JSON.stringify(data.responseJSON.components[k].details) + '</td>';
+          appendedRows += '</tr>';
+        });
+      }
+
+      $('#healthTable > tbody').append(appendedRows);
+  });
+
   updateTransferData();
   updateUserChartData();
+  updateSessionsData();
+  updateHealthData();
 
-  setInterval(() => { updateTransferData(); updateUserChartData(); updateCachesData(); }, 40000);
+  setInterval(() => { updateTransferData(); updateUserChartData(); updateCachesData(); updateSessionsData(); updateHealthData();}, 40000);
 </script>
 
 <div class="forward"><a href="status.view?"><fmt:message key="common.refresh"/> (<fmt:message key="status.autorefresh"><fmt:param>${40000/1000}</fmt:param></fmt:message>)</a></div>
