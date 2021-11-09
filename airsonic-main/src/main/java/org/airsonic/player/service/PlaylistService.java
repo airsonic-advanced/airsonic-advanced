@@ -178,7 +178,7 @@ public class PlaylistService {
         if (username.equals(playlist.getUsername()) || playlist.getShared()) {
             return true;
         }
-        return playlistDao.getPlaylistUsers(playlist.getId()).contains(username);
+        return getPlaylistUsers(playlist.getId()).contains(username);
     }
 
     public boolean isWriteAllowed(Playlist playlist, String username) {
