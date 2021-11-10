@@ -41,6 +41,8 @@ public class NetworkService {
     private static final String X_FORWARDED_SERVER = "X-Forwarded-Server";
     private static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
     private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
+    private static final String X_FORWARDED_FOR = "X-Forwarded-For";
+    private static final String X_FORWARDED_SCHEMA = "X-Forwarded-Schema";
 
     private final static Logger LOG = LoggerFactory.getLogger(NetworkService.class);
 
@@ -67,40 +69,53 @@ public class NetworkService {
     }
 
     private static URI calculateProxyUri(HttpServletRequest request) throws URISyntaxException {
-        String xForardedHost = request.getHeader(X_FORWARDED_HOST);
+        String xForwardedHost = request.getHeader(X_FORWARDED_HOST);
         // If the request has been through multiple reverse proxies,
         // We need to return the original Host that the client used
-        if (xForardedHost != null) {
-            xForardedHost = xForardedHost.split(",")[0];
+        if (xForwardedHost != null) {
+            xForwardedHost = xForwardedHost.split(",")[0];
         }
 
-        if (!isValidXForwardedHost(xForardedHost)) {
-            xForardedHost = request.getHeader(X_FORWARDED_SERVER);
+        if (!isValidXForwardedHost(xForwardedHost)) {
+            xForwardedHost = request.getHeader(X_FORWARDED_SERVER);
 
             // If the request has been through multiple reverse proxies,
             // We need to return the original Host that the client used
-            if (xForardedHost != null) {
-                xForardedHost = xForardedHost.split(",")[0];
+            if (xForwardedHost != null) {
+                xForwardedHost = xForwardedHost.split(",")[0];
             }
 
-            if (!isValidXForwardedHost(xForardedHost)) {
-                throw new RuntimeException("Cannot calculate proxy uri without HTTP header " + X_FORWARDED_HOST);
+            if (!isValidXForwardedHost(xForwardedHost)) {
+                xForwardedHost = request.getHeader(X_FORWARDED_FOR);
+
+                // If the request has been through multiple reverse proxies,
+                // We need to return the original Host that the client used
+                if (xForwardedHost != null) {
+                    xForwardedHost = xForwardedHost.split(",")[0];
+                }
+
+                if (!isValidXForwardedHost(xForwardedHost)) {
+                    throw new RuntimeException("Cannot calculate proxy uri without HTTP headers: " + X_FORWARDED_HOST + ", " + X_FORWARDED_SERVER + ", " + X_FORWARDED_FOR);
+                }
             }
         }
 
-        URI proxyHost = new URI("ignored://" + xForardedHost);
+        URI proxyHost = new URI("ignored://" + xForwardedHost);
         String host = proxyHost.getHost();
         int port = proxyHost.getPort();
         String scheme = request.getHeader(X_FORWARDED_PROTO);
         if (StringUtils.isBlank(scheme)) {
-            throw new RuntimeException("Scheme not provided");
+            scheme = request.getHeader(X_FORWARDED_SCHEMA);
+            if (StringUtils.isBlank(scheme)) {
+                throw new RuntimeException("Scheme not provided");
+            }
         }
 
         return new URI(scheme, null, host, port, urlPathHelper.getContextPath(request), null, null);
     }
 
-    private static boolean isValidXForwardedHost(String xForardedHost) {
-        return StringUtils.isNotBlank(xForardedHost) && !StringUtils.equals("null", xForardedHost);
+    private static boolean isValidXForwardedHost(String xForwardedHost) {
+        return StringUtils.isNotBlank(xForwardedHost) && !StringUtils.equals("null", xForwardedHost);
     }
 
     private static URI calculateNonProxyUri(HttpServletRequest request) throws MalformedURLException, URISyntaxException {
@@ -111,5 +126,4 @@ public class NetworkService {
         String userInfo = url.getUserInfo();
         return new URI(scheme, userInfo, host, port, urlPathHelper.getContextPath(request), null, null);
     }
-
 }
