@@ -2,8 +2,8 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
-    <property name="array_agg_1" dbms="mariadb,mysql" value="SUBSTRING_INDEX( GROUP_CONCAT(muf.id ORDER BY LENGTH(muf.path) DESC), ',', 1)"/>
-    <property name="array_agg_1" value="(array_agg(muf.id ORDER BY LENGTH(muf.path) DESC))[1]"/>
+    <property name="array_agg_1" dbms="mariadb,mysql" value="(SELECT mufid FROM (SELECT SUBSTRING_INDEX( GROUP_CONCAT(muf.id ORDER BY LENGTH(muf.path) DESC), ',', 1) AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') WHERE mef.id=media_file.id) AS x)"/>
+    <property name="array_agg_1" value="(SELECT (array_agg(muf.id ORDER BY LENGTH(muf.path) DESC))[1] AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') WHERE mef.id=media_file.id)"/>
     <changeSet id="add-type-to-media-folder" author="anon">
         <preConditions onFail="MARK_RAN">
             <not>
@@ -198,7 +198,7 @@
             </not>
         </preConditions>
         <addColumn tableName="media_file">
-            <column name="folder_id" type="int" defaultValue="-1" valueComputed="(SELECT ${array_agg_1} AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') WHERE mef.id=media_file.id)">
+            <column name="folder_id" type="int" defaultValue="-1" valueComputed="${array_agg_1}">
                 <!-- No fk to music_folder.id because want to allow modification/deletion of music folder without affecting/deleting media file -->
                 <constraints nullable="false" />
             </column>
