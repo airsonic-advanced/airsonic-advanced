@@ -212,7 +212,11 @@
             <dbms type="mariadb,mysql"/>
         </preConditions>
         <sql>
-            UPDATE media_file AS mef1 INNER JOIN media_file AS mef2 ON mef1.id=mef2.id SET mef1.folder_id = (SELECT SUBSTRING_INDEX( GROUP_CONCAT(muf.id ORDER BY LENGTH(muf.path) DESC), ',', 1) AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') WHERE mef.id=mef2.id);
+            UPDATE media_file AS mef1 
+            INNER JOIN 
+            (SELECT mef.id, SUBSTRING_INDEX( GROUP_CONCAT(muf.id ORDER BY LENGTH(muf.path) DESC), ',', 1) AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') GROUP BY mef.id) AS mef2
+            ON mef1.id=mef2.id
+            SET mef1.folder_id = mef2.mufid;
         </sql>
         <rollback>
         </rollback>
