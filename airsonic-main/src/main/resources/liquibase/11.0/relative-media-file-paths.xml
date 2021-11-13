@@ -20,6 +20,7 @@
         </rollback>
     </changeSet>
     <changeSet id="add-podcast-media-folder" author="anon">
+        <validCheckSum>ANY</validCheckSum>
         <insert tableName="music_folder">
             <column name="path" value="${defaultPodcastFolder}"/>
             <column name="name" value="Podcasts"/>
