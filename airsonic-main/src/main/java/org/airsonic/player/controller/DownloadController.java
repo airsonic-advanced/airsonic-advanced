@@ -148,7 +148,7 @@ public class DownloadController {
             return null;
         }
 
-        String filename = Optional.ofNullable(response.getProposedName()).orElse(defaultDownloadName);
+        String filename = StringUtil.fileSystemSafe(Optional.ofNullable(response.getProposedName()).orElse(defaultDownloadName));
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDisposition(ContentDisposition.builder("attachment").filename(filename, StandardCharsets.UTF_8).build());
         headers.setContentType(MediaType.parseMediaType(StringUtil.getMimeType(FilenameUtils.getExtension(filename))));
