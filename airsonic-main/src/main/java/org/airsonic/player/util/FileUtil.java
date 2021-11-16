@@ -26,6 +26,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Comparator;
@@ -72,6 +73,9 @@ public final class FileUtil {
                 .forEach(uncheckConsumer(Files::deleteIfExists));
 
             return true;
+        } catch (NoSuchFileException e) {
+            LOG.debug("Could not delete file/folder {}", fileOrFolder, e);
+            return false;
         } catch (Exception e) {
             LOG.warn("Could not delete file/folder {}", fileOrFolder, e);
             return false;
