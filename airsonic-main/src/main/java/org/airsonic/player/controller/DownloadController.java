@@ -232,7 +232,9 @@ public class DownloadController {
                                             zipName = zipName + '/';
                                         }
                                         return Triple.of(f, Pair.of(mf.getPath().relativize(f), pf.getRight()), Pair.of(zipName, size));
-                                    });
+                                    })
+                                    // need to create a new stream, because try-with-resources will close the paths stream before it exits
+                                    .collect(Collectors.toList()).stream();
                         } catch (Exception e) {
                             LOG.warn("Error retrieving file to zip", e);
                             return Stream.empty();
