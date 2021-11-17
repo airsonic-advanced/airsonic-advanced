@@ -485,12 +485,12 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toPathList(musicFolders));
+        args.put("folders", MusicFolder.toIdList(musicFolders));
         args.put("username", username);
         args.put("count", count);
         args.put("offset", offset);
         return namedQuery("select " + prefix(QUERY_COLUMNS, "media_file") + " from starred_media_file, media_file where media_file.id = starred_media_file.media_file_id and " +
-                          "media_file.present and media_file.type = :type and media_file.folder in (:folders) and starred_media_file.username = :username " +
+                          "media_file.present and media_file.type = :type and media_file.folder_id in (:folders) and starred_media_file.username = :username " +
                           "order by starred_media_file.created desc, starred_media_file.id limit :count offset :offset",
                           rowMapper, args);
     }
@@ -511,14 +511,14 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.DIRECTORY.name());
-        args.put("folders", MusicFolder.toPathList(musicFolders));
+        args.put("folders", MusicFolder.toIdList(musicFolders));
         args.put("username", username);
         args.put("count", count);
         args.put("offset", offset);
         return namedQuery("select " + prefix(QUERY_COLUMNS, "media_file") + " from starred_media_file, media_file " +
                           "where media_file.id = starred_media_file.media_file_id and " +
                           "media_file.present and media_file.type = :type and starred_media_file.username = :username and " +
-                          "media_file.folder in (:folders) " +
+                          "media_file.folder_id in (:folders) " +
                           "order by starred_media_file.created desc, starred_media_file.id limit :count offset :offset",
                           rowMapper, args);
     }
@@ -539,13 +539,13 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("types", Arrays.asList(MediaFile.MediaType.MUSIC.name(), MediaFile.MediaType.PODCAST.name(), MediaFile.MediaType.AUDIOBOOK.name(), MediaFile.MediaType.VIDEO.name()));
-        args.put("folders", MusicFolder.toPathList(musicFolders));
+        args.put("folders", MusicFolder.toIdList(musicFolders));
         args.put("username", username);
         args.put("count", count);
         args.put("offset", offset);
         return namedQuery("select " + prefix(QUERY_COLUMNS, "media_file") + " from starred_media_file, media_file where media_file.id = starred_media_file.media_file_id and " +
                           "media_file.present and media_file.type in (:types) and starred_media_file.username = :username and " +
-                          "media_file.folder in (:folders) " +
+                          "media_file.folder_id in (:folders) " +
                           "order by starred_media_file.created desc, starred_media_file.id limit :count offset :offset",
                           rowMapper, args);
     }
@@ -556,7 +556,7 @@ public class MediaFileDao extends AbstractDao {
         }
 
         Map<String, Object> args = new HashMap<>();
-        args.put("folders", MusicFolder.toPathList(criteria.getMusicFolders()));
+        args.put("folders", MusicFolder.toIdList(criteria.getMusicFolders()));
         args.put("username", username);
         args.put("fromYear", criteria.getFromYear());
         args.put("toYear", criteria.getToYear());
@@ -588,7 +588,7 @@ public class MediaFileDao extends AbstractDao {
         query += " where media_file.present and media_file.type = 'MUSIC'";
 
         if (!criteria.getMusicFolders().isEmpty()) {
-            query += " and media_file.folder in (:folders)";
+            query += " and media_file.folder_id in (:folders)";
         }
 
         if (criteria.getGenre() != null) {
