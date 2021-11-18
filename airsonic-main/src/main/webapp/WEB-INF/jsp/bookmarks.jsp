@@ -257,8 +257,9 @@
 
 <body class="mainframe bgcolor1" onload="init()">
 
-<h1>
-    &nbsp;&nbsp;<fmt:message key="top.bookmarks"/>
+<h1 style="padding-bottom: 1em">
+    <img src="<spring:theme code='bookmarkImage'/>" alt="">
+    <span style="vertical-align: middle"><fmt:message key="top.bookmarks"/></span>
 </h1>
 
 <table class="music indent hover nowrap stripe compact" id="bookmarksTable" style="cursor: pointer; width: 100%; margin-top: 5px;">
