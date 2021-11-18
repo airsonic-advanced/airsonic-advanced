@@ -540,6 +540,10 @@ img {
     align-items: center;
 }
 
+.tableSpacer {
+    height: 1em;
+}
+
 /* Blur effect */
 .blur {
   color: transparent;
