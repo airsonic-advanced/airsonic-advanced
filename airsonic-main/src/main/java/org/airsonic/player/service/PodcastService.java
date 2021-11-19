@@ -143,6 +143,31 @@ public class PodcastService {
         scheduleDefault();
     }
 
+    private synchronized void schedule(PodcastChannelRule r) {
+        unschedule(r.getId());
+
+        int hoursBetween = r.getCheckInterval();
+
+        if (hoursBetween == -1) {
+            LOG.info("Automatic Podcast update disabled for podcast id {}", r.getId());
+            return;
+        }
+
+        long periodMillis = hoursBetween * 60L * 60L * 1000L;
+        long initialDelayMillis = 5L * 60L * 1000L;
+
+        Runnable task = () -> {
+            LOG.info("Starting scheduled Podcast refresh for podcast id {}.", r.getId());
+            refreshChannel(r.getId(), true);
+            LOG.info("Completed scheduled Podcast refresh for podcast id {}.", r.getId());
+        };
+
+        scheduledRefreshes.put(r.getId(), scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS));
+
+        Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
+        LOG.info("Automatic Podcast update for podcast id {} scheduled to run every {} hour(s), starting at {}", r.getId(), hoursBetween, firstTime);
+    }
+
     public synchronized void scheduleDefault() {
         unschedule(-1);
 
@@ -168,31 +193,6 @@ public class PodcastService {
 
         Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
         LOG.info("Automatic default Podcast update scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);
-    }
-
-    private synchronized void schedule(PodcastChannelRule r) {
-        unschedule(r.getId());
-
-        int hoursBetween = r.getCheckInterval();
-
-        if (hoursBetween == -1) {
-            LOG.info("Automatic Podcast update disabled for podcast id {}", r.getId());
-            return;
-        }
-
-        long periodMillis = hoursBetween * 60L * 60L * 1000L;
-        long initialDelayMillis = 5L * 60L * 1000L;
-
-        Runnable task = () -> {
-            LOG.info("Starting scheduled Podcast refresh for podcast id {}.", r.getId());
-            refreshChannel(r.getId(), true);
-            LOG.info("Completed scheduled Podcast refresh for podcast id {}.", r.getId());
-        };
-
-        scheduledRefreshes.put(r.getId(), scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS));
-
-        Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
-        LOG.info("Automatic Podcast update for podcast id {} scheduled to run every {} hour(s), starting at {}", r.getId(), hoursBetween, firstTime);
     }
 
     public void unschedule(Integer id) {

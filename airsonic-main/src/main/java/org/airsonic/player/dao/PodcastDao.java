@@ -106,7 +106,7 @@ public class PodcastDao extends AbstractDao {
     }
 
     public int createChannelRule(PodcastChannelRule rule) {
-        return update("insert into podcast_channel_rules(" + CHANNEL_RULES_COLUMNS + ") values (" + questionMarks(CHANNEL_RULES_COLUMNS)+ ")", rule.getId(), rule.getCheckInterval(), rule.getRetentionCount(), rule.getDownloadCount());
+        return update("insert into podcast_channel_rules(" + CHANNEL_RULES_COLUMNS + ") values (" + questionMarks(CHANNEL_RULES_COLUMNS) + ")", rule.getId(), rule.getCheckInterval(), rule.getRetentionCount(), rule.getDownloadCount());
     }
 
     public int updateChannelRule(PodcastChannelRule rule) {
