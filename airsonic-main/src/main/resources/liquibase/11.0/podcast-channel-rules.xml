@@ -1,0 +1,23 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="podcast-channel-rules" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="podcast_channel_rules" />
+            </not>
+        </preConditions>
+        <createTable tableName="podcast_channel_rules">
+            <column name="id" type="int">
+                <constraints primaryKey="true" referencedTableName="podcast_channel" referencedColumnNames="id" foreignKeyName="pcr_pc_id_fk" deleteCascade="true"/>
+            </column>
+            <column name="check_interval" type="int"/>
+            <column name="retention_count" type="int"/>
+            <column name="download_count" type="int"/>
+        </createTable>
+        <rollback>
+            <dropTable tableName="podcast_channel_rules" />
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

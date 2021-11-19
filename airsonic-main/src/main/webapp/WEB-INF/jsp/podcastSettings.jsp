@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" %>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8" %>
 <%--@elvariable id="command" type="org.airsonic.player.command.PodcastSettingsCommand"--%>
 
 <html><head>
@@ -17,9 +17,20 @@
 
 <table class="indent">
     <tr>
-        <td><fmt:message key="podcastsettings.update"/></td>
+        <th><fmt:message key="podcastsettings.podcast"/></th>
+        <th><fmt:message key="podcastsettings.update"/></th>
+        <th><fmt:message key="podcastsettings.keep"/></th>
+        <th><fmt:message key="podcastsettings.download"/></th>
+        <th style="padding-left:1em"><fmt:message key="common.delete"/></th>
+    </tr>
+  <c:forEach items="${command.rules}" var="rule" varStatus="loopStatus">
+    <tr>
         <td>
-            <form:select path="interval" cssStyle="width:20em">
+          ${rule.id} - ${fn:escapeXml(rule.name)}
+          <form:hidden path="rules[${loopStatus.index}].id" value="${rule.id}" />
+        </td>
+        <td>
+            <form:select path="rules[${loopStatus.index}].interval" cssStyle="width:20em">
                 <fmt:message key="podcastsettings.interval.manually" var="never"/>
                 <fmt:message key="podcastsettings.interval.hourly" var="hourly"/>
                 <fmt:message key="podcastsettings.interval.daily" var="daily"/>
@@ -31,12 +42,8 @@
                 <form:option value="168" label="${weekly}"/>
             </form:select>
         </td>
-    </tr>
-
-    <tr>
-        <td><fmt:message key="podcastsettings.keep"/></td>
         <td>
-            <form:select path="episodeRetentionCount" cssStyle="width:20em">
+            <form:select path="rules[${loopStatus.index}].episodeRetentionCount" cssStyle="width:20em">
                 <fmt:message key="podcastsettings.keep.all" var="all"/>
                 <fmt:message key="podcastsettings.keep.one" var="one"/>
 
@@ -50,12 +57,8 @@
 
             </form:select>
         </td>
-    </tr>
-
-    <tr>
-        <td><fmt:message key="podcastsettings.download"/></td>
         <td>
-            <form:select path="episodeDownloadCount" cssStyle="width:20em">
+            <form:select path="rules[${loopStatus.index}].episodeDownloadCount" cssStyle="width:20em">
                 <fmt:message key="podcastsettings.download.all" var="all"/>
                 <fmt:message key="podcastsettings.download.one" var="one"/>
                 <fmt:message key="podcastsettings.download.none" var="none"/>
@@ -71,21 +74,79 @@
 
             </form:select>
         </td>
+        <td align="center" style="padding-left:1em"><c:if test="${rule.id != -1}"><form:checkbox path="rules[${loopStatus.index}].delete" cssClass="checkbox"/></c:if></td>
     </tr>
-
-    <tr>
-        <td><fmt:message key="podcastsettings.folder"/></td>
-        <td><form:input path="folder" cssStyle="width:20em"/></td>
-    </tr>
-
-    <tr>
-        <td style="padding-top:1.5em" colspan="2">
-            <input type="submit" value="<fmt:message key='common.save'/>" style="margin-right:0.3em">
-            <a href='nowPlaying.view'><input type="button" value="<fmt:message key='common.cancel'/>"></a>
+  </c:forEach>
+  <tr>
+    <th colspan="5" align="left" style="padding-top:1em"><fmt:message key="podcastsettings.ruleadd"/></th>
+  </tr>
+  <tr>
+        <td>
+            <form:select path="newRule.id" cssStyle="width:13em">
+                <form:option selected="true" value="" label="-"/>
+              <c:forEach items="${command.noRuleChannels}" var="channel" varStatus="loopStatus">
+                <form:option value="${channel.id}" label="${channel.id} - ${fn:escapeXml(channel.name)}"/>
+              </c:forEach>
+            </form:select>
         </td>
-    </tr>
+        <td>
+            <form:select path="newRule.interval" cssStyle="width:20em">
+                <fmt:message key="podcastsettings.interval.manually" var="never"/>
+                <fmt:message key="podcastsettings.interval.hourly" var="hourly"/>
+                <fmt:message key="podcastsettings.interval.daily" var="daily"/>
+                <fmt:message key="podcastsettings.interval.weekly" var="weekly"/>
 
+                <form:option value="-1" label="${never}"/>
+                <form:option value="1" label="${hourly}"/>
+                <form:option value="24" label="${daily}"/>
+                <form:option value="168" label="${weekly}"/>
+            </form:select>
+        </td>
+        <td>
+            <form:select path="newRule.episodeRetentionCount" cssStyle="width:20em">
+                <fmt:message key="podcastsettings.keep.all" var="all"/>
+                <fmt:message key="podcastsettings.keep.one" var="one"/>
+
+                <form:option value="-1" label="${all}"/>
+                <form:option value="1" label="${one}"/>
+
+                <c:forTokens items="2 3 4 5 10 20 30 50" delims=" " var="count">
+                    <fmt:message key="podcastsettings.keep.many" var="many"><fmt:param value="${count}"/></fmt:message>
+                    <form:option value="${count}" label="${many}"/>
+                </c:forTokens>
+
+            </form:select>
+        </td>
+        <td>
+            <form:select path="newRule.episodeDownloadCount" cssStyle="width:20em">
+                <fmt:message key="podcastsettings.download.all" var="all"/>
+                <fmt:message key="podcastsettings.download.one" var="one"/>
+                <fmt:message key="podcastsettings.download.none" var="none"/>
+
+                <form:option value="-1" label="${all}"/>
+                <form:option value="1" label="${one}"/>
+
+                <c:forTokens items="2 3 4 5 10" delims=" " var="count">
+                    <fmt:message key="podcastsettings.download.many" var="many"><fmt:param value="${count}"/></fmt:message>
+                    <form:option value="${count}" label="${many}"/>
+                </c:forTokens>
+                <form:option value="0" label="${none}"/>
+
+            </form:select>
+        </td>
+        <td align="center" style="padding-left:1em"></td>
+    </tr>
 </table>
+<div class="tableSpacer"></div>
+<div>
+    <td><fmt:message key="podcastsettings.folder"/></td>
+    <td><form:input path="folder" cssStyle="width:20em"/></td>
+</div>
+<div class="tableSpacer"></div>
+<div>
+    <input type="submit" value="<fmt:message key='common.save'/>" style="margin-right:0.3em">
+    <a href='nowPlaying.view'><input type="button" value="<fmt:message key='common.cancel'/>"></a>
+</div>
 
 </form:form>
 

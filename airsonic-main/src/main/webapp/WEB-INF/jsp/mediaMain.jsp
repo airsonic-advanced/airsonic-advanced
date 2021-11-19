@@ -8,9 +8,6 @@
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <style type="text/css">
-        .tableSpacer {
-            height: 1em;
-        }
         #topSongsHeader, #filesHeader, #subDirsHeader {
             display: inline-block;
             border: dotted;
