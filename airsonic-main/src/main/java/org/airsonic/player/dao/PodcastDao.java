@@ -20,6 +20,7 @@
 package org.airsonic.player.dao;
 
 import org.airsonic.player.domain.PodcastChannel;
+import org.airsonic.player.domain.PodcastChannelRule;
 import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastStatus;
 import org.springframework.jdbc.core.RowMapper;
@@ -44,16 +45,19 @@ public class PodcastDao extends AbstractDao {
 
     private static final String CHANNEL_INSERT_COLUMNS = "url, title, description, image_url, status, error_message";
     private static final String CHANNEL_QUERY_COLUMNS = "id, " + CHANNEL_INSERT_COLUMNS;
+    private static final String CHANNEL_RULES_COLUMNS = "id, check_interval, retention_count, download_count";
     private static final String EPISODE_INSERT_COLUMNS = "channel_id, url, path, title, description, publish_date, " +
                                                         "duration, bytes_total, bytes_downloaded, status, error_message";
     private static final String EPISODE_QUERY_COLUMNS = "id, " + EPISODE_INSERT_COLUMNS;
 
     private PodcastChannelRowMapper channelRowMapper = new PodcastChannelRowMapper();
+    private PodcastChannelRuleRowMapper channelRuleRowMapper = new PodcastChannelRuleRowMapper();
     private PodcastEpisodeRowMapper episodeRowMapper = new PodcastEpisodeRowMapper();
 
     @PostConstruct
     public void register() throws Exception {
         registerInserts("podcast_channel", "id", Arrays.asList(CHANNEL_INSERT_COLUMNS.split(", ")), PodcastChannel.class);
+        registerInserts("podcast_channel_rules", null, Arrays.asList(CHANNEL_RULES_COLUMNS.split(", ")), PodcastChannelRule.class);
         registerInserts("podcast_episode", "id", Arrays.asList(EPISODE_INSERT_COLUMNS.split(", ")), PodcastEpisode.class);
     }
 
@@ -96,14 +100,40 @@ public class PodcastDao extends AbstractDao {
                 channel.getStatus().name(), channel.getErrorMessage(), channel.getId());
     }
 
-    /**
-     * Deletes the Podcast channel with the given ID.
-     *
-     * @param id The Podcast channel ID.
-     */
     public void deleteChannel(int id) {
         String sql = "delete from podcast_channel where id=?";
         update(sql, id);
+    }
+
+    public int createChannelRule(PodcastChannelRule rule) {
+        return update("insert into podcast_channel_rules(" + CHANNEL_RULES_COLUMNS + ") values (" + questionMarks(CHANNEL_RULES_COLUMNS) + ")", rule.getId(), rule.getCheckInterval(), rule.getRetentionCount(), rule.getDownloadCount());
+    }
+
+    public int updateChannelRule(PodcastChannelRule rule) {
+        String sql = "update podcast_channel_rules set check_interval=?, retention_count=?, download_count=? where id=?";
+        return update(sql, rule.getCheckInterval(), rule.getRetentionCount(), rule.getDownloadCount(), rule.getId());
+    }
+
+    public void createOrUpdateChannelRule(PodcastChannelRule rule) {
+        int updated = updateChannelRule(rule);
+        if (updated == 0) {
+            createChannelRule(rule);
+        }
+    }
+
+    public void deleteChannelRule(int id) {
+        String sql = "delete from podcast_channel_rules where id=?";
+        update(sql, id);
+    }
+
+    public PodcastChannelRule getChannelRule(int id) {
+        String sql = "select " + CHANNEL_RULES_COLUMNS + " from podcast_channel_rules where id=?";
+        return queryOne(sql, channelRuleRowMapper, id);
+    }
+
+    public List<PodcastChannelRule> getAllChannelRules() {
+        String sql = "select " + CHANNEL_RULES_COLUMNS + " from podcast_channel_rules";
+        return query(sql, channelRuleRowMapper);
     }
 
     /**
@@ -187,6 +217,13 @@ public class PodcastDao extends AbstractDao {
         public PodcastChannel mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new PodcastChannel(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5),
                                       PodcastStatus.valueOf(rs.getString(6)), rs.getString(7));
+        }
+    }
+
+    private static class PodcastChannelRuleRowMapper implements RowMapper<PodcastChannelRule> {
+        @Override
+        public PodcastChannelRule mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new PodcastChannelRule(rs.getInt("id"), rs.getInt("check_interval"), rs.getInt("retention_count"), rs.getInt("download_count"));
         }
     }
 

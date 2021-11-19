@@ -22,6 +22,7 @@ package org.airsonic.player.service;
 import org.airsonic.player.dao.PodcastDao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.PodcastChannel;
+import org.airsonic.player.domain.PodcastChannelRule;
 import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastExportOPML;
 import org.airsonic.player.domain.PodcastStatus;
@@ -69,6 +70,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.airsonic.player.util.XMLUtil.createSAXBuilder;
 
 /**
@@ -87,7 +90,7 @@ public class PodcastService {
     private final ExecutorService refreshExecutor;
     private final ExecutorService downloadExecutor;
     private final ScheduledExecutorService scheduledExecutor;
-    private ScheduledFuture<?> scheduledRefresh;
+    private final Map<Integer, ScheduledFuture<?>> scheduledRefreshes = new ConcurrentHashMap<>();
     @Autowired
     private PodcastDao podcastDao;
     @Autowired
@@ -109,7 +112,7 @@ public class PodcastService {
         };
         refreshExecutor = Executors.newFixedThreadPool(5, threadFactory);
         downloadExecutor = Executors.newFixedThreadPool(3, threadFactory);
-        scheduledExecutor = Executors.newSingleThreadScheduledExecutor(threadFactory);
+        scheduledExecutor = Executors.newScheduledThreadPool(10, threadFactory);
     }
 
     @PostConstruct
@@ -133,29 +136,88 @@ public class PodcastService {
     }
 
     public synchronized void schedule() {
-        Runnable task = () -> {
-            LOG.info("Starting scheduled Podcast refresh.");
-            refreshAllChannels(true);
-            LOG.info("Completed scheduled Podcast refresh.");
-        };
+        // schedule for podcasts with rules
+        podcastDao.getAllChannelRules().forEach(this::schedule);
 
-        if (scheduledRefresh != null) {
-            scheduledRefresh.cancel(true);
-        }
+        // default refresh for rest of the podcasts
+        scheduleDefault();
+    }
 
-        int hoursBetween = settingsService.getPodcastUpdateInterval();
+    private synchronized void schedule(PodcastChannelRule r) {
+        unschedule(r.getId());
+
+        int hoursBetween = r.getCheckInterval();
 
         if (hoursBetween == -1) {
-            LOG.info("Automatic Podcast update disabled.");
+            LOG.info("Automatic Podcast update disabled for podcast id {}", r.getId());
             return;
         }
 
         long periodMillis = hoursBetween * 60L * 60L * 1000L;
         long initialDelayMillis = 5L * 60L * 1000L;
 
-        scheduledRefresh = scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS);
+        Runnable task = () -> {
+            LOG.info("Starting scheduled Podcast refresh for podcast id {}.", r.getId());
+            refreshChannel(r.getId(), true);
+            LOG.info("Completed scheduled Podcast refresh for podcast id {}.", r.getId());
+        };
+
+        scheduledRefreshes.put(r.getId(), scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS));
+
         Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
-        LOG.info("Automatic Podcast update scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);
+        LOG.info("Automatic Podcast update for podcast id {} scheduled to run every {} hour(s), starting at {}", r.getId(), hoursBetween, firstTime);
+    }
+
+    public synchronized void scheduleDefault() {
+        unschedule(-1);
+
+        int hoursBetween = settingsService.getPodcastUpdateInterval();
+
+        if (hoursBetween == -1) {
+            LOG.info("Automatic default Podcast update disabled for podcasts");
+            return;
+        }
+
+        long periodMillis = hoursBetween * 60L * 60L * 1000L;
+        long initialDelayMillis = 5L * 60L * 1000L;
+
+        Runnable task = () -> {
+            LOG.info("Starting scheduled default Podcast refresh.");
+            Set<Integer> ruleIds = podcastDao.getAllChannelRules().parallelStream().map(r -> r.getId()).collect(toSet());
+            List<PodcastChannel> channelsWithoutRules = podcastDao.getAllChannels().parallelStream().filter(c -> !ruleIds.contains(c.getId())).collect(toList());
+            refreshChannels(channelsWithoutRules, true);
+            LOG.info("Completed scheduled default Podcast refresh.");
+        };
+
+        scheduledRefreshes.put(-1, scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS));
+
+        Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
+        LOG.info("Automatic default Podcast update scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);
+    }
+
+    public void unschedule(Integer id) {
+        ScheduledFuture<?> scheduledRefresh = scheduledRefreshes.remove(id);
+        if (scheduledRefresh != null) {
+            scheduledRefresh.cancel(true);
+        }
+    }
+
+    public void createOrUpdateChannelRule(PodcastChannelRule r) {
+        podcastDao.createOrUpdateChannelRule(r);
+        schedule(r);
+    }
+
+    public void deleteChannelRule(Integer id) {
+        podcastDao.deleteChannelRule(id);
+        unschedule(id);
+    }
+
+    public PodcastChannelRule getChannelRule(Integer id) {
+        return podcastDao.getChannelRule(id);
+    }
+
+    public List<PodcastChannelRule> getAllChannelRules() {
+        return podcastDao.getAllChannelRules();
     }
 
     /**
@@ -414,7 +476,9 @@ public class PodcastService {
 
     private void refreshEpisodes(PodcastChannel channel, List<Element> episodeElements) {
         // Create episodes in database, skipping the proper number of episodes.
-        int downloadCount = settingsService.getPodcastEpisodeDownloadCount();
+        int downloadCount = Optional.ofNullable(podcastDao.getChannelRule(channel.getId()))
+                .map(cr -> cr.getDownloadCount())
+                .orElseGet(() -> settingsService.getPodcastEpisodeDownloadCount());
         if (downloadCount == -1) {
             downloadCount = Integer.MAX_VALUE;
         }
@@ -613,7 +677,9 @@ public class PodcastService {
     }
 
     private synchronized void deleteObsoleteEpisodes(PodcastChannel channel) {
-        int episodeCount = settingsService.getPodcastEpisodeRetentionCount();
+        int episodeCount = Optional.ofNullable(podcastDao.getChannelRule(channel.getId()))
+                .map(cr -> cr.getRetentionCount())
+                .orElseGet(() -> settingsService.getPodcastEpisodeRetentionCount());
         if (episodeCount == -1) {
             return;
         }
