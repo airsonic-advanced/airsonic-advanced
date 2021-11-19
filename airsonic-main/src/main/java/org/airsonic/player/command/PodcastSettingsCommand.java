@@ -20,6 +20,9 @@
 package org.airsonic.player.command;
 
 import org.airsonic.player.controller.PodcastSettingsController;
+import org.airsonic.player.domain.PodcastChannelRule;
+
+import java.util.List;
 
 /**
  * Command used in {@link PodcastSettingsController}.
@@ -28,18 +31,10 @@ import org.airsonic.player.controller.PodcastSettingsController;
  */
 public class PodcastSettingsCommand {
 
-    private String interval;
     private String folder;
-    private String episodeRetentionCount;
-    private String episodeDownloadCount;
-
-    public String getInterval() {
-        return interval;
-    }
-
-    public void setInterval(String interval) {
-        this.interval = interval;
-    }
+    private List<PodcastRule> rules;
+    private PodcastRule newRule;
+    private List<PodcastRule> noRuleChannels;
 
     public String getFolder() {
         return folder;
@@ -49,20 +44,107 @@ public class PodcastSettingsCommand {
         this.folder = folder;
     }
 
-    public String getEpisodeRetentionCount() {
-        return episodeRetentionCount;
+    public List<PodcastRule> getRules() {
+        return rules;
     }
 
-    public void setEpisodeRetentionCount(String episodeRetentionCount) {
-        this.episodeRetentionCount = episodeRetentionCount;
+    public void setRules(List<PodcastRule> rules) {
+        this.rules = rules;
     }
 
-    public String getEpisodeDownloadCount() {
-        return episodeDownloadCount;
+    public PodcastRule getNewRule() {
+        return newRule;
     }
 
-    public void setEpisodeDownloadCount(String episodeDownloadCount) {
-        this.episodeDownloadCount = episodeDownloadCount;
+    public void setNewRule(PodcastRule newRule) {
+        this.newRule = newRule;
     }
 
+    public List<PodcastRule> getNoRuleChannels() {
+        return noRuleChannels;
+    }
+
+    public void setNoRuleChannels(List<PodcastRule> noRuleChannels) {
+        this.noRuleChannels = noRuleChannels;
+    }
+
+    public static class PodcastRule {
+        private Integer id;
+        private String name;
+        private Integer interval;
+        private Integer episodeRetentionCount;
+        private Integer episodeDownloadCount;
+        private boolean delete;
+
+        public PodcastRule(PodcastChannelRule rule, String name) {
+            this.id = rule.getId();
+            this.name = name;
+            this.interval = rule.getCheckInterval();
+            this.episodeRetentionCount = rule.getRetentionCount();
+            this.episodeDownloadCount = rule.getDownloadCount();
+        }
+
+        public PodcastRule() {
+        }
+
+        public PodcastRule(Integer id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        public Integer getId() {
+            return id;
+        }
+
+        public void setId(Integer id) {
+            this.id = id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public Integer getInterval() {
+            return interval;
+        }
+
+        public void setInterval(Integer interval) {
+            this.interval = interval;
+        }
+
+        public Integer getEpisodeRetentionCount() {
+            return episodeRetentionCount;
+        }
+
+        public void setEpisodeRetentionCount(Integer episodeRetentionCount) {
+            this.episodeRetentionCount = episodeRetentionCount;
+        }
+
+        public Integer getEpisodeDownloadCount() {
+            return episodeDownloadCount;
+        }
+
+        public void setEpisodeDownloadCount(Integer episodeDownloadCount) {
+            this.episodeDownloadCount = episodeDownloadCount;
+        }
+
+        public boolean getDelete() {
+            return delete;
+        }
+
+        public void setDelete(boolean delete) {
+            this.delete = delete;
+        }
+
+        public PodcastChannelRule toPodcastChannelRule() {
+            if (id == null || interval == null || episodeRetentionCount == null || episodeDownloadCount == null) {
+                return null;
+            }
+            return new PodcastChannelRule(id, interval, episodeRetentionCount, episodeDownloadCount);
+        }
+    }
 }

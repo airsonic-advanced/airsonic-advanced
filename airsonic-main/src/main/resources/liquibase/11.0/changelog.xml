@@ -15,4 +15,5 @@
     <include file="insert-mod-transcoding.xml" relativeToChangelogFile="true"/>
     <include file="add-player-id-autoincrement.xml" relativeToChangelogFile="true"/>
     <include file="remove-java-jukebox.xml" relativeToChangelogFile="true"/>
+    <include file="podcast-channel-rules.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
