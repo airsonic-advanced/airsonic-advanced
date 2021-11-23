@@ -140,10 +140,18 @@ public class PlaylistService {
 
     public void setFilesInPlaylist(int id, List<MediaFile> files) {
         playlistDao.setFilesInPlaylist(id, files);
+        refreshPlaylistStats(id);
+    }
+
+    public void refreshPlaylistsStats() {
+        getAllPlaylists().forEach(p -> refreshPlaylistStats(p.getId()));
+    }
+
+    public void refreshPlaylistStats(int id) {
         Playlist playlist = new Playlist(getPlaylist(id));
-        double duration = files.parallelStream().filter(f -> f.getDuration() != null).mapToDouble(f -> f.getDuration()).sum();
-        playlist.setFileCount(files.size());
-        playlist.setDuration(duration);
+        Pair<Integer, Double> stats = playlistDao.getPlaylistFileStats(id);
+        playlist.setFileCount(stats.getLeft());
+        playlist.setDuration(stats.getRight());
         updatePlaylist(playlist, true);
     }
 
