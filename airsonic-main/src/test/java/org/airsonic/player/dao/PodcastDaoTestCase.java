@@ -93,7 +93,7 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testCreateEpisode() {
         int channelId = createChannel();
-        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", 1, "title", "description",
+        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", null, "title", "description",
                 Instant.now(), "12:34", null, null, PodcastStatus.NEW, null);
         podcastDao.createEpisode(episode);
 
@@ -107,7 +107,7 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
         assertNull("Error in getEpisode()", podcastDao.getEpisode(23));
 
         int channelId = createChannel();
-        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", 1, "title", "description",
+        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", null, "title", "description",
                 Instant.now(), "12:34", 3276213L, 2341234L, PodcastStatus.NEW, "error");
         podcastDao.createEpisode(episode);
 
