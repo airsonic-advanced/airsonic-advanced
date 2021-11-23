@@ -582,7 +582,7 @@ public class MediaFileDao extends AbstractDao {
 
         if (joinAlbumRating) {
             query += "left outer join media_file media_album on media_album.type = 'ALBUM' and media_album.album = media_file.album and media_album.artist = media_file.artist ";
-            query += "left outer join user_rating on user_rating.path = media_album.path and user_rating.username = :username ";
+            query += "left outer join user_rating on user_rating.media_file_id = media_album.id and user_rating.username = :username ";
         }
 
         query += " where media_file.present and media_file.type = 'MUSIC'";

@@ -67,7 +67,9 @@
             <column name="media_file_id" type="int">
             </column>
         </addColumn>
+        <addForeignKeyConstraint constraintName="pc_m_fk" baseTableName="podcast_channel" baseColumnNames="media_file_id" referencedTableName="media_file" referencedColumnNames="id" onDelete="CASCADE"/>
         <rollback>
+            <dropForeignKeyConstraint baseTableName="podcast_channel" constraintName="pc_m_fk" />
             <dropColumn tableName="podcast_channel" columnName="media_file_id"></dropColumn>
         </rollback>
     </changeSet>
@@ -90,7 +92,9 @@
             <column name="media_file_id" type="int" valueComputed="(SELECT media_file.id FROM media_file WHERE media_file.path=podcast_episode.path)">
             </column>
         </addColumn>
+        <addForeignKeyConstraint constraintName="pe_m_fk" baseTableName="podcast_episode" baseColumnNames="media_file_id" referencedTableName="media_file" referencedColumnNames="id" onDelete="CASCADE" />
         <rollback>
+            <dropForeignKeyConstraint baseTableName="podcast_episode" constraintName="pe_m_fk" />
             <dropColumn tableName="podcast_episode" columnName="media_file_id"></dropColumn>
         </rollback>
     </changeSet>
@@ -117,7 +121,9 @@
                 <constraints nullable="false" />
             </column>
         </addColumn>
+        <addForeignKeyConstraint constraintName="ura_m_fk" baseTableName="user_rating" baseColumnNames="media_file_id" referencedTableName="media_file" referencedColumnNames="id" onDelete="CASCADE"/>
         <rollback>
+            <dropForeignKeyConstraint baseTableName="user_rating" constraintName="ura_m_fk"/>
             <dropColumn tableName="user_rating" columnName="media_file_id"></dropColumn>
         </rollback>
     </changeSet>
@@ -131,7 +137,7 @@
         <dropPrimaryKey tableName="user_rating"/>
         <rollback>
             <addPrimaryKey tableName="user_rating" columnNames="username,path" />
-            <addForeignKeyConstraint baseTableName="user_rating" baseColumnNames="username" constraintName="ura_u_fk" referencedTableName="user" referencedColumnNames="username" deleteCascade="true" />
+            <addForeignKeyConstraint baseTableName="user_rating" baseColumnNames="username" constraintName="ura_u_fk" referencedTableName="user" referencedColumnNames="username" onDelete="CASCADE" />
         </rollback>
     </changeSet>
     <changeSet id="drop-path-from-user-rating" author="anon">
@@ -156,7 +162,7 @@
         </preConditions>
         <addPrimaryKey tableName="user_rating" columnNames="username,media_file_id" constraintName="ur_u_mfid_pk"/>
         <!-- for mysql -->
-        <addForeignKeyConstraint baseTableName="user_rating" baseColumnNames="username" constraintName="ura_u_fk" referencedTableName="user" referencedColumnNames="username" deleteCascade="true" />
+        <addForeignKeyConstraint baseTableName="user_rating" baseColumnNames="username" constraintName="ura_u_fk" referencedTableName="user" referencedColumnNames="username" onDelete="CASCADE" />
         <rollback>
             <dropForeignKeyConstraint baseTableName="user_rating" constraintName="ura_u_fk"/>
             <dropPrimaryKey tableName="user_rating" constraintName="ur_u_mfid_pk"/>
@@ -170,10 +176,12 @@
         </preConditions>
         <addColumn tableName="share_file">
             <column name="media_file_id" type="int" defaultValue="-1" valueComputed="(SELECT media_file.id FROM media_file WHERE media_file.path=share_file.path)">
-                <constraints nullable="false" />
+                <constraints nullable="false"/>
             </column>
         </addColumn>
+        <addForeignKeyConstraint constraintName="sf_m_fk" baseTableName="share_file" baseColumnNames="media_file_id" referencedTableName="media_file" referencedColumnNames="id" onDelete="CASCADE"/>
         <rollback>
+            <dropForeignKeyConstraint baseTableName="share_file" constraintName="sf_m_fk"/>
             <dropColumn tableName="share_file" columnName="media_file_id"></dropColumn>
         </rollback>
     </changeSet>
