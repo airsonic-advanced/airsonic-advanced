@@ -76,10 +76,10 @@ public class DatabaseService {
     }
 
     Function<Connection, Path> exportFunction = LambdaUtils.uncheckFunction(
-            connection -> generateChangeLog(connection, "data", "airsonic-data", makeDiffOutputControl()));
+        connection -> generateChangeLog(connection, "data", "airsonic-data", makeDiffOutputControl()));
 
     Function<Path, Consumer<Connection>> importFunction = p -> LambdaUtils.uncheckConsumer(
-            connection -> runLiquibaseUpdate(connection, p));
+        connection -> runLiquibaseUpdate(connection, p));
 
     public synchronized Path exportDB() throws Exception {
         brokerTemplate.convertAndSend("/topic/exportStatus", "started");
