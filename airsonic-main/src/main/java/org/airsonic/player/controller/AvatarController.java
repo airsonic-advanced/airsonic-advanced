@@ -23,7 +23,10 @@ import org.airsonic.player.domain.Avatar;
 import org.airsonic.player.domain.AvatarScheme;
 import org.airsonic.player.domain.UserSettings;
 import org.airsonic.player.service.SettingsService;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.ServletRequestUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,7 +47,10 @@ public class AvatarController implements LastModified {
 
     @Autowired
     private SettingsService settingsService;
+    @Autowired
+    private ResourceLoader loader;
 
+    @Override
     public long getLastModified(HttpServletRequest request) {
         Avatar avatar = getAvatar(request);
         long result = avatar == null ? -1L : avatar.getCreatedDate().toEpochMilli();
@@ -68,7 +74,11 @@ public class AvatarController implements LastModified {
         }
 
         response.setContentType(avatar.getMimeType());
-        response.getOutputStream().write(avatar.getData());
+        Resource res = loader.getResource(avatar.getPath().toString());
+        if (!res.exists()) {
+            res = loader.getResource("file:" + avatar.getPath().toString());
+        }
+        IOUtils.copy(res.getInputStream(), response.getOutputStream());
     }
 
     private Avatar getAvatar(HttpServletRequest request) {
