@@ -411,7 +411,7 @@ public class SecurityService implements UserDetailsService {
                 .anyMatch(musicFolder -> musicFolder.getId().equals(file.getFolderId()));
     }
 
-    protected static boolean isFileInFolder(Path file, Path folder) {
+    public static boolean isFileInFolder(Path file, Path folder) {
         // not using this to account for / and \\ issues in linux
         // return file.normalize().startsWith(folder.normalize());
         return Paths.get(FilenameUtils.separatorsToUnix(file.toString())).normalize()

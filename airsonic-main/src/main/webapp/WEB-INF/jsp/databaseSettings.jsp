@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" %>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8" %>
 <%--@elvariable id="command" type="org.airsonic.player.command.DatabaseSettingsCommand"--%>
 
 <html>
@@ -19,13 +19,80 @@
             }
         }
 
+        function uploadStatus(uploadInfo) {
+            var progressBarHolder = $("#progressBarHolder" + uploadInfo.transferId);
+
+            if (uploadInfo.bytesTotal <= 0 || uploadInfo.bytesUploaded > uploadInfo.bytesTotal) {
+                if (progressBarHolder.length != 0) {
+                    // remove it
+                    progressBarHolder.remove();
+                }
+            } else {
+                if (progressBarHolder.length == 0) {
+                    // create it
+                    progressBarHolder = $("<div id='progressBarHolder" + uploadInfo.transferId + "'><p class='detail progress-text'/><div class='progress-bar'><div class='progress-bar-content'></div></div></div>");
+                    $("#progressBars").append(progressBarHolder);
+                }
+
+                var progressBarContent = progressBarHolder.find(".progress-bar-content");
+                var progressText = progressBarHolder.find(".progress-text");
+
+                var percent = Math.ceil((uploadInfo.bytesUploaded / uploadInfo.bytesTotal) * 100);
+                progressBarContent.width(parseInt(percent * 3.5));
+                progressText.text(percent + "<fmt:message key='more.upload.progress'/>");
+            }
+        }
+
+        function backupDB() {
+            $("#backupdb").prop("disabled", true);
+            $.get("databaseSettings/backup");
+        }
+
+        function exportDB() {
+            $("#exportdb").prop("disabled", true);
+            location.href="databaseSettings/export";
+        }
+
+        function importDB() {
+            $("#importdb").prop("disabled", true);
+        }
+
+        function backupStatus(msg) {
+            if (msg == "ended") {
+               $("#backupdb").prop("disabled", false);
+            }
+            $().toastmessage('showSuccessToast', 'Backup DB: ' + msg);
+        }
+
+        function importStatus(msg) {
+            if (msg == "ended") {
+               $("#importdb").prop("disabled", false);
+            }
+            $().toastmessage('showSuccessToast', 'Import DB: ' + msg);
+        }
+
+        function exportStatus(msg) {
+            if (msg == "ended") {
+               $("#exportdb").prop("disabled", false);
+            }
+            $().toastmessage('showSuccessToast', 'Export DB: ' + msg);
+        }
+
         $(document).ready(function () {
             updateShownOptions();
             $('select#configType').on('change', function () {
                 updateShownOptions();
             });
+            top.StompClient.subscribe("databaseSettingsController.jsp", {
+                '/user/queue/uploads/status': function(msg) { uploadStatus(JSON.parse(msg.body)); },
+                '/topic/backupStatus': function(msg) { backupStatus(msg.body); },
+                '/topic/importStatus': function(msg) { importStatus(msg.body); },
+                '/topic/exportStatus': function(msg) { exportStatus(msg.body); }
+            });
         });
     </script>
+    <style>
+    </style>
 </head>
 <body class="mainframe bgcolor1">
 <script type="text/javascript" src="<c:url value='/script/wz_tooltip.js'/>"></script>
@@ -124,6 +191,43 @@
     </p>
 
 </form:form>
+
+<div style="display:table;">
+  <div style="display:table-row;">
+  <c:if test="${command.backuppable}">
+    <div style="display:table-cell; padding:0.5em;">
+      <button id="backupdb" onclick="backupDB()">
+        <fmt:message key="databasesettings.backup"/>
+        <c:import url="helpToolTip.jsp"><c:param name="topic" value="backupdb"/></c:import>
+      </button>
+    </div>
+  </c:if>
+
+    <div style="display:table-cell; padding:0.5em;">
+      <button id="exportdb" onclick="exportDB()">
+        <img src="<spring:theme code='downloadImage'/>" alt=""/>
+        <fmt:message key="databasesettings.export"/>
+        <c:import url="helpToolTip.jsp"><c:param name="topic" value="exportdb"/></c:import>
+      </button>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" action="upload.view?${_csrf.parameterName}=${_csrf.token}" onsubmit="importDB()">
+        <input type="hidden" id="dir" name="dir" value="${command.importFolder}"/>
+        <input type="hidden" name="callback" value="${command.callback}"/>
+        <input type="hidden" name="unzip" value="true"/>
+        <div style="display:table-cell; padding:0.5em; padding-right:0;"><input type="file" id="file" name="file" size="40" multiple="multiple"/></div>
+        <div style="display:table-cell; padding:0.5em; padding-left:0;">
+          <button id="importdb" type="submit">
+            <img src="<spring:theme code='uploadImage'/>" alt=""/>
+            <span style="vertical-align: middle"><fmt:message key="databasesettings.import"/></span>
+            <c:import url="helpToolTip.jsp"><c:param name="topic" value="importdb"/></c:import>
+          </button>
+        </div>
+    </form>
+  </div>
+  <div id="progressBars"></div>
+</div>
+
 
 </body>
 </html>

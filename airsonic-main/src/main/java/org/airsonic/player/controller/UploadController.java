@@ -69,6 +69,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 
 /**
@@ -94,6 +96,20 @@ public class UploadController {
     private SimpMessagingTemplate brokerTemplate;
 
     private static final Set<String> SUPPORTED_ZIP_FORMATS = ImmutableSet.of("zip", "7z", "rar", "cpio", "jar", "tar");
+    public static final Map<UUID, Consumer<Path>> registeredCallbacks = new ConcurrentHashMap<>();
+
+    private void checkUploadAllowed(User user, Path p, boolean checkExistence) throws Exception {
+        if (!user.isAdminRole() && !user.isUploadRole()) {
+            throw new AccessDeniedException("User does not have privileges to upload");
+        }
+        try {
+            securityService.checkUploadAllowed(p, checkExistence);
+        } catch (AccessDeniedException ade) {
+            if (!user.isAdminRole() || !SecurityService.isFileInFolder(p, SettingsService.getAirsonicHome())) {
+                throw ade;
+            }
+        }
+    }
 
     @PostMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) {
@@ -102,7 +118,10 @@ public class UploadController {
         List<Path> uploadedFiles = new ArrayList<>();
         List<Path> unzippedFiles = new ArrayList<>();
         List<Exception> exceptions = new ArrayList<>();
+        User user = securityService.getCurrentUser(request);
         TransferStatus status = null;
+        UUID callback = null;
+        Path dir = null;
 
         try {
 
@@ -116,7 +135,6 @@ public class UploadController {
                 throw new Exception("Illegal request.");
             }
 
-            Path dir = null;
             boolean unzip = false;
 
             UploadListener listener = new UploadListenerImpl(status, settingsService.getUploadBitrateLimiter(), brokerTemplate);
@@ -134,6 +152,8 @@ public class UploadController {
                     dir = Paths.get(item.getString());
                 } else if (item.isFormField() && "unzip".equals(item.getFieldName())) {
                     unzip = true;
+                } else if (item.isFormField() && "callback".equals(item.getFieldName())) {
+                    callback = UUID.fromString(item.getString());
                 }
             }
 
@@ -141,7 +161,7 @@ public class UploadController {
                 throw new Exception("Missing 'dir' parameter.");
             }
 
-            securityService.checkUploadAllowed(dir, false);
+            checkUploadAllowed(user, dir, false);
 
             if (!Files.exists(dir)) {
                 Files.createDirectories(dir);
@@ -158,7 +178,7 @@ public class UploadController {
                         Path targetFile = dir.resolve(Paths.get(fileName).getFileName());
 
                         try {
-                            securityService.checkUploadAllowed(targetFile, true);
+                            checkUploadAllowed(user, targetFile, true);
                         } catch (IOException e) {
                             exceptions.add(e);
                             continue;
@@ -182,8 +202,15 @@ public class UploadController {
                 statusService.removeUploadStatus(status);
                 brokerTemplate.convertAndSendToUser(status.getPlayer().getUsername(), "/queue/uploads/status",
                         new UploadInfo(status.getId(), status.getBytesTotal() + 1, status.getBytesTotal()));
-                User user = securityService.getCurrentUser(request);
                 securityService.updateUserByteCounts(user, 0L, 0L, status.getBytesTransferred());
+            }
+            if (callback != null && dir != null) {
+                try {
+                    registeredCallbacks.getOrDefault(callback, p -> {}).accept(dir);
+                } catch (Exception e) {
+                    LOG.warn("Callback failed", e);
+                    exceptions.add(e);
+                }
             }
         }
 
@@ -342,8 +369,6 @@ public class UploadController {
                 if (!Files.isDirectory(parent)) {
                     throw new IOException("Failed to create directory: " + parent);
                 }
-
-                securityService.checkUploadAllowed(toPath, true);
 
                 copier.accept(toPath);
                 unzippedFiles.add(toPath);

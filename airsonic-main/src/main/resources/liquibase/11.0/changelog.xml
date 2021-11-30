@@ -16,5 +16,6 @@
     <include file="add-player-id-autoincrement.xml" relativeToChangelogFile="true"/>
     <include file="remove-java-jukebox.xml" relativeToChangelogFile="true"/>
     <include file="podcast-channel-rules.xml" relativeToChangelogFile="true"/>
+    <include file="avatar-storage.xml" relativeToChangelogFile="true"/>
     <include file="relative-media-file-paths.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

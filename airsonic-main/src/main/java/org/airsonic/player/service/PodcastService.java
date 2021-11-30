@@ -66,6 +66,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
@@ -87,6 +88,8 @@ public class PodcastService {
 
     private static final Logger LOG = LoggerFactory.getLogger(PodcastService.class);
 
+    private static final DateTimeFormatter ALTERNATIVE_RSS_DATE_FORMAT = DateTimeFormatter
+            .ofPattern("[E, ]d MMM y HH:mm:ss z");
     private static final Namespace[] ITUNES_NAMESPACES = {Namespace.getNamespace("http://www.itunes.com/DTDs/Podcast-1.0.dtd"),
         Namespace.getNamespace("http://www.itunes.com/dtds/podcast-1.0.dtd")};
 
@@ -506,8 +509,12 @@ public class PodcastService {
         try {
             return OffsetDateTime.parse(s, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
         } catch (Exception x) {
-            LOG.warn("Failed to parse publish date: {}", s);
-            return null;
+            try {
+                return ZonedDateTime.parse(s, ALTERNATIVE_RSS_DATE_FORMAT).toInstant();
+            } catch (Exception e) {
+                LOG.warn("Failed to parse publish date: {}", s);
+                return null;
+            }
         }
     }
 

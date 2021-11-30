@@ -113,7 +113,7 @@ public class LegacyHsqlMigrationUtil {
     public static Path performHsqlDbBackup(String dbPath) throws IOException {
         String timestamp = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now());
         Path source = Paths.get(dbPath).getParent();
-        Path destination = source.resolveSibling(String.format("%s.backup.%s", source.getFileName().toString(), timestamp));
+        Path destination = source.resolveSibling("backups").resolve(String.format("%s.backup.%s", source.getFileName().toString(), timestamp));
 
         LOG.debug("Performing HSQLDB database backup...");
         FileUtils.copyDirectory(source.toFile(), destination.toFile());
