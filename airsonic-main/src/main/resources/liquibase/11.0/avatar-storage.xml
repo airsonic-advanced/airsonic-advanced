@@ -11,6 +11,7 @@
         <addColumn tableName="system_avatar">
             <column name="path" type="${varchar_type}" valueComputed="concat('icons/avatars/', name, '.png')"></column>
         </addColumn>
+        <addNotNullConstraint tableName="system_avatar" columnName="path" columnDataType="${varchar_type}"/>
         <rollback>
             <dropColumn tableName="system_avatar" columnName="path"/>
         </rollback>
@@ -37,6 +38,7 @@
         <addColumn tableName="custom_avatar">
             <column name="path" type="${varchar_type}" valueComputed="concat('$[AIRSONIC_HOME]/avatars/', username, '/', name, '.', substr(mime_type, position('/' IN mime_type) + 1))"></column>
         </addColumn>
+        <addNotNullConstraint tableName="custom_avatar" columnName="path" columnDataType="${varchar_type}"/>
         <rollback>
             <dropColumn tableName="custom_avatar" columnName="path"/>
         </rollback>
