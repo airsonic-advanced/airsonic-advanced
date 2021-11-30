@@ -55,9 +55,9 @@ public class ExtractCustomAvatars implements CustomSqlChange {
 
                 while (result.next()) {
                     try {
-                        Path filePath = SettingsService.getAirsonicHome().resolve("avatars")
-                                .resolve(result.getString("username"))
-                                .resolve(result.getString("name") + "." + StringUtils.substringAfter(result.getString("mime_type"), "/"));
+                        Path folder = SettingsService.getAirsonicHome().resolve("avatars").resolve(result.getString("username"));
+                        Files.createDirectories(folder);
+                        Path filePath = folder.resolve(result.getString("name") + "." + StringUtils.substringAfter(result.getString("mime_type"), "/"));
                         Files.copy(new ByteArrayInputStream(result.getBytes("data")), filePath);
                     } catch (Exception e) {
                         LOG.warn("Exception while trying to extract avatar for user {}. Will skip this user.", result.getString("username"), e);

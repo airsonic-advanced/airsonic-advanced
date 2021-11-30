@@ -117,8 +117,9 @@ public class AvatarUploadController {
             int width = image.getWidth();
             int height = image.getHeight();
             String mimeType = StringUtil.getMimeType(FilenameUtils.getExtension(fileName));
-            Path fileOnDisk = SettingsService.getAirsonicHome().resolve("avatars").resolve(username)
-                    .resolve(fileName + "." + StringUtils.substringAfter(mimeType, "/"));
+            Path folder = SettingsService.getAirsonicHome().resolve("avatars").resolve(username);
+            Files.createDirectories(folder);
+            Path fileOnDisk = folder.resolve(fileName + "." + StringUtils.substringAfter(mimeType, "/"));
             // Scale down image if necessary.
             if (width > MAX_AVATAR_SIZE || height > MAX_AVATAR_SIZE) {
                 double scaleFactor = MAX_AVATAR_SIZE / (double)Math.max(width, height);
@@ -126,8 +127,7 @@ public class AvatarUploadController {
                 width = (int) (width * scaleFactor);
                 image = CoverArtController.scale(image, width, height);
                 mimeType = StringUtil.getMimeType("jpeg");
-                fileOnDisk = SettingsService.getAirsonicHome().resolve("avatars").resolve(username)
-                        .resolve(fileName + ".jpeg");
+                fileOnDisk = folder.resolve(fileName + ".jpeg");
                 ImageIO.write(image, "jpeg", fileOnDisk.toFile());
 
                 map.put("resized", true);
