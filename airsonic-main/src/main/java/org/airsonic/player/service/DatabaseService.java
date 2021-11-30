@@ -152,7 +152,7 @@ public class DatabaseService {
             Arrays.asList("album", "artist", "genre"),
             Arrays.asList("podcast_channel", "podcast_episode"),
             Arrays.asList("bookmark", "share", "share_file", "sonoslink"),
-            Arrays.asList("starred_album", "starred_artist", "starred_media_file", "user_rating"));
+            Arrays.asList("starred_album", "starred_artist", "starred_media_file", "user_rating", "custom_avatar"));
 
     private Path generateChangeLog(Connection connection, String snapshotTypes, String author, DiffOutputControl diffOutputControl) throws Exception {
         Database database = getDatabase(connection);
