@@ -13,6 +13,9 @@ public class DatabaseSettingsCommand {
     private String JNDIName;
     private int mysqlVarcharMaxlength;
     private String usertableQuote;
+    private String importFolder;
+    private String callback;
+    private boolean backuppable;
 
     public DataSourceConfigType getConfigType() {
         return configType;
@@ -76,6 +79,30 @@ public class DatabaseSettingsCommand {
 
     public void setUsertableQuote(String usertableQuote) {
         this.usertableQuote = usertableQuote;
+    }
+
+    public String getImportFolder() {
+        return importFolder;
+    }
+
+    public void setImportFolder(String importFolder) {
+        this.importFolder = importFolder;
+    }
+
+    public String getCallback() {
+        return callback;
+    }
+
+    public void setCallback(String callback) {
+        this.callback = callback;
+    }
+
+    public boolean getBackuppable() {
+        return backuppable;
+    }
+
+    public void setBackuppable(boolean backuppable) {
+        this.backuppable = backuppable;
     }
 
     public enum DataSourceConfigType {

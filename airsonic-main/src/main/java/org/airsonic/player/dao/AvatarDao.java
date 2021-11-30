@@ -20,6 +20,8 @@
 package org.airsonic.player.dao;
 
 import org.airsonic.player.domain.Avatar;
+import org.airsonic.player.service.SettingsService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
@@ -36,7 +38,7 @@ import java.util.Optional;
 @Repository
 public class AvatarDao extends AbstractDao {
 
-    private static final String INSERT_COLUMNS = "name, created_date, mime_type, width, height, data";
+    private static final String INSERT_COLUMNS = "name, created_date, mime_type, width, height, path";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private final AvatarRowMapper rowMapper = new AvatarRowMapper();
 
@@ -86,14 +88,14 @@ public class AvatarDao extends AbstractDao {
             update("insert into custom_avatar(" + INSERT_COLUMNS
                    + ", username) values(" + questionMarks(INSERT_COLUMNS) + ", ?)",
                    avatar.getName(), avatar.getCreatedDate(), avatar.getMimeType(),
-                   avatar.getWidth(), avatar.getHeight(), avatar.getData(), username);
+                   avatar.getWidth(), avatar.getHeight(), StringUtils.replace(avatar.getPath().toString(), SettingsService.getAirsonicHome().toString(), "$[AIRSONIC_HOME]"), username);
         }
     }
 
     private static class AvatarRowMapper implements RowMapper<Avatar> {
         public Avatar mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Avatar(rs.getInt(1), rs.getString(2), Optional.ofNullable(rs.getTimestamp(3)).map(x -> x.toInstant()).orElse(null), rs.getString(4),
-                              rs.getInt(5), rs.getInt(6), rs.getBytes(7));
+                              rs.getInt(5), rs.getInt(6), StringUtils.replace(rs.getString(7), "$[AIRSONIC_HOME]", SettingsService.getAirsonicHome().toString()));
         }
     }
 

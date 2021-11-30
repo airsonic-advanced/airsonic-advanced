@@ -216,11 +216,11 @@
 
         function onAdd(index) {
             top.playQueue.onAdd(bookmarksTable.row(index).data().mediaFileEntry.id);
-            $().toastmessage('showSuccessToast', '<fmt:message key="main.addlast.toast"/>')
+            $().toastmessage('showSuccessToast', '<fmt:message key="main.addlast.toast"/>');
         }
         function onAddNext(index) {
             top.playQueue.onAddNext(bookmarksTable.row(index).data().mediaFileEntry.id);
-            $().toastmessage('showSuccessToast', '<fmt:message key="main.addnext.toast"/>')
+            $().toastmessage('showSuccessToast', '<fmt:message key="main.addnext.toast"/>');
         }
         function onStar(index) {
             var bookmark = bookmarksTable.row(index).data();

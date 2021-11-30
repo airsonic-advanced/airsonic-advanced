@@ -455,7 +455,7 @@ public class SecurityService implements UserDetailsService {
         return settingsService.getMusicFoldersForUser(username).parallelStream().anyMatch(musicFolder -> musicFolder.getPath().toString().equals(file.getFolder()));
     }
 
-    protected static boolean isFileInFolder(Path file, Path folder) {
+    public static boolean isFileInFolder(Path file, Path folder) {
         // not using this to account for / and \\ issues in linux
         // return file.normalize().startsWith(folder.normalize());
         return Paths.get(FilenameUtils.separatorsToUnix(file.toString())).normalize()

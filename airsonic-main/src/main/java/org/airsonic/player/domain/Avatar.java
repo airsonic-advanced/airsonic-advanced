@@ -19,6 +19,8 @@
  */
 package org.airsonic.player.domain;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 
 /**
@@ -34,16 +36,20 @@ public class Avatar {
     private String mimeType;
     private int width;
     private int height;
-    private byte[] data;
+    private Path path;
 
-    public Avatar(int id, String name, Instant createdDate, String mimeType, int width, int height, byte[] data) {
+    public Avatar(int id, String name, Instant createdDate, String mimeType, int width, int height, String path) {
+        this(id, name, createdDate, mimeType, width, height, Paths.get(path));
+    }
+
+    public Avatar(int id, String name, Instant createdDate, String mimeType, int width, int height, Path path) {
         this.id = id;
         this.name = name;
         this.createdDate = createdDate;
         this.mimeType = mimeType;
         this.width = width;
         this.height = height;
-        this.data = data;
+        this.path = path;
     }
 
     public int getId() {
@@ -70,7 +76,7 @@ public class Avatar {
         return height;
     }
 
-    public byte[] getData() {
-        return data;
+    public Path getPath() {
+        return path;
     }
 }

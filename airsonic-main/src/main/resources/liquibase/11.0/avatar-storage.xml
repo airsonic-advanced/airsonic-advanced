@@ -1,0 +1,67 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="add-system-avatar-paths" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="system_avatar" columnName="path"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="system_avatar">
+            <column name="path" type="${varchar_type}" valueComputed="concat('icons/avatars/', name, '.png')"></column>
+        </addColumn>
+        <addNotNullConstraint tableName="system_avatar" columnName="path" columnDataType="${varchar_type}"/>
+        <rollback>
+            <dropColumn tableName="system_avatar" columnName="path"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-system-avatar-data" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="system_avatar" columnName="data"/>
+        </preConditions>
+        <dropColumn tableName="system_avatar" columnName="data"/>
+        <rollback>
+            <addColumn tableName="system_avatar">
+                <column name="data" type="${binary_type}" >
+                    <constraints nullable="false" />
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-custom-avatar-paths" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="custom_avatar" columnName="path"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="custom_avatar">
+            <column name="path" type="${varchar_type}" valueComputed="concat('$[AIRSONIC_HOME]/avatars/', username, '/', name, '.', substr(mime_type, position('/' IN mime_type) + 1))"></column>
+        </addColumn>
+        <addNotNullConstraint tableName="custom_avatar" columnName="path" columnDataType="${varchar_type}"/>
+        <rollback>
+            <dropColumn tableName="custom_avatar" columnName="path"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="extract-custom-avatar" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="custom_avatar" columnName="data"/>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.ExtractCustomAvatars"></customChange>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-custom-avatar-data" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="custom_avatar" columnName="data"/>
+        </preConditions>
+        <dropColumn tableName="custom_avatar" columnName="data"/>
+        <rollback>
+            <addColumn tableName="custom_avatar">
+                <column name="data" type="${binary_type}" >
+                    <constraints nullable="false" />
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

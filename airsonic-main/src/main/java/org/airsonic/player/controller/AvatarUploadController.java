@@ -22,6 +22,7 @@ package org.airsonic.player.controller;
 import org.airsonic.player.domain.Avatar;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
@@ -42,8 +43,10 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -99,7 +102,7 @@ public class AvatarUploadController {
 
         map.put("username", username);
         map.put("avatar", settingsService.getCustomAvatar(username));
-        return new ModelAndView("avatarUploadResult","model",map);
+        return new ModelAndView("avatarUploadResult", "model", map);
     }
 
     private void createAvatar(String fileName, byte[] data, String username, Map<String, Object> map) {
@@ -113,25 +116,29 @@ public class AvatarUploadController {
             int width = image.getWidth();
             int height = image.getHeight();
             String mimeType = StringUtil.getMimeType(FilenameUtils.getExtension(fileName));
-
+            Path folder = SettingsService.getAirsonicHome().resolve("avatars").resolve(username);
+            Files.createDirectories(folder);
+            Path fileOnDisk = folder.resolve(fileName + "." + StringUtils.substringAfter(mimeType, "/"));
             // Scale down image if necessary.
             if (width > MAX_AVATAR_SIZE || height > MAX_AVATAR_SIZE) {
                 double scaleFactor = MAX_AVATAR_SIZE / (double)Math.max(width, height);
                 height = (int) (height * scaleFactor);
                 width = (int) (width * scaleFactor);
                 image = CoverArtController.scale(image, width, height);
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ImageIO.write(image, "jpeg", out);
-                data = out.toByteArray();
                 mimeType = StringUtil.getMimeType("jpeg");
+                fileOnDisk = folder.resolve(fileName + ".jpeg");
+                ImageIO.write(image, "jpeg", fileOnDisk.toFile());
+
                 map.put("resized", true);
+            } else {
+                Files.copy(new ByteArrayInputStream(data), fileOnDisk, StandardCopyOption.REPLACE_EXISTING);
             }
-            Avatar avatar = new Avatar(0, fileName, Instant.now(), mimeType, width, height, data);
+            Avatar avatar = new Avatar(0, fileName, Instant.now(), mimeType, width, height, fileOnDisk);
             settingsService.setCustomAvatar(avatar, username);
-            LOG.info("Created avatar '" + fileName + "' (" + data.length + " bytes) for user " + username);
+            LOG.info("Created avatar '{}' ({} bytes) for user {}", fileName, FileUtil.size(fileOnDisk), username);
 
         } catch (IOException x) {
-            LOG.warn("Failed to upload personal image: " + x, x);
+            LOG.warn("Failed to upload personal image", x);
             map.put("error", x);
         }
     }

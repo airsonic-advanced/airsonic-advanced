@@ -21,9 +21,29 @@ package org.airsonic.player.controller;
 
 import org.airsonic.player.command.DatabaseSettingsCommand;
 import org.airsonic.player.command.DatabaseSettingsCommand.DataSourceConfigType;
+import org.airsonic.player.domain.Player;
+import org.airsonic.player.domain.TransferStatus;
+import org.airsonic.player.domain.User;
+import org.airsonic.player.io.PipeStreams;
+import org.airsonic.player.service.DatabaseService;
+import org.airsonic.player.service.PlayerService;
+import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.StatusService;
+import org.airsonic.player.util.FileUtil;
+import org.airsonic.player.util.StringUtil;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -32,22 +52,91 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import javax.annotation.PostConstruct;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.security.Principal;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @Controller
 @RequestMapping("/databaseSettings")
 public class DatabaseSettingsController {
+    private static final Logger LOG = LoggerFactory.getLogger(DatabaseSettingsController.class);
 
     @Autowired
     private SettingsService settingsService;
+    @Autowired
+    private DatabaseService databaseService;
+    @Autowired
+    private PlayerService playerService;
+    @Autowired
+    private StatusService statusService;
+    @Autowired
+    private SecurityService securityService;
+
+    private static final UUID DB_CONTROLLER_IMPORT_CALLBACK_ID = UUID.randomUUID();
+
+    @PostConstruct
+    public void registerWithUploadController() {
+        UploadController.registeredCallbacks.put(DB_CONTROLLER_IMPORT_CALLBACK_ID, this::importDB);
+    }
 
     @GetMapping
     protected String displayForm() {
         return "databaseSettings";
     }
 
+    protected void importDB(Path dir) {
+        databaseService.importDB(dir);
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<Resource> exportDB(Principal p, ServletWebRequest swr) throws Exception {
+        User user = securityService.getUserByName(p.getName());
+        Player transferPlayer = playerService.getPlayer(swr.getRequest(), swr.getResponse(), false, false);
+        Supplier<TransferStatus> statusSupplier = () -> statusService.createDownloadStatus(transferPlayer);
+
+        Consumer<TransferStatus> statusCloser = status -> {
+            statusService.removeDownloadStatus(status);
+            securityService.updateUserByteCounts(user, 0L, status.getBytesTransferred(), 0L);
+            LOG.info("Transferred {} bytes to user: {}, player: {}", status.getBytesTransferred(), user.getUsername(), transferPlayer);
+            databaseService.cleanup(status.getFile());
+        };
+
+        Path exportFile = databaseService.exportDB();
+        Resource res = new FileSystemResource(exportFile);
+        Resource monitoredRes = new PipeStreams.MonitoredResource(
+                res,
+                settingsService.getDownloadBitrateLimiter(),
+                statusSupplier,
+                statusCloser,
+            (input, status) -> {
+                status.setFile(exportFile);
+                status.setBytesTotal(FileUtil.size(exportFile));
+            });
+
+        String filename = StringUtil.fileSystemSafe(exportFile.getFileName().toString());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.builder("attachment").filename(filename, StandardCharsets.UTF_8).build());
+        headers.setContentType(MediaType.parseMediaType(StringUtil.getMimeType(FilenameUtils.getExtension(filename))));
+        return ResponseEntity.ok().headers(headers).body(monitoredRes);
+    }
+
+    @GetMapping("/backup")
+    @ResponseStatus(value = HttpStatus.NO_CONTENT)
+    public void backupDB() throws Exception {
+        databaseService.backup();
+    }
+
     @ModelAttribute
-    protected void formBackingObject(Model model) {
+    protected void formBackingObject(Model model) throws Exception {
         DatabaseSettingsCommand command = new DatabaseSettingsCommand();
         command.setUrl(settingsService.getDatabaseUrl());
         command.setDriver(settingsService.getDatabaseDriver());
@@ -66,6 +155,9 @@ public class DatabaseSettingsController {
         } else {
             command.setConfigType(DataSourceConfigType.EXTERNAL);
         }
+        command.setCallback(DB_CONTROLLER_IMPORT_CALLBACK_ID.toString());
+        command.setImportFolder(DatabaseService.getImportDBFolder().toString());
+        command.setBackuppable(databaseService.backuppable());
         model.addAttribute("command", command);
     }
 
