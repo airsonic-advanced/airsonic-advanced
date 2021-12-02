@@ -185,6 +185,56 @@
 
     <p class="warning"><fmt:message key="databasettings.restartRequired"/></p>
 
+  <c:choose>
+   <c:when test="${command.backuppable}">
+    <p><fmt:message key="databasesettings.autodbbackup"/></p>
+    <table>
+      <tr>
+        <td><fmt:message key="databasesettings.dbbackupschedule"/></td>
+
+        <td>
+          <form:select path="dbBackupInterval" cssStyle="width:20em">
+            <fmt:message key="podcastsettings.interval.manually" var="never"/>
+            <fmt:message key="podcastsettings.interval.hourly" var="hourly"/>
+            <fmt:message key="podcastsettings.interval.daily" var="daily"/>
+            <fmt:message key="podcastsettings.interval.weekly" var="weekly"/>
+            <fmt:message key="podcastsettings.interval.monthly" var="monthly"/>
+
+            <form:option value="-1" label="${never}"/>
+            <form:option value="1" label="${hourly}"/>
+            <form:option value="24" label="${daily}"/>
+            <form:option value="168" label="${weekly}"/>
+            <form:option value="720" label="${monthly}"/>
+          </form:select>
+        </td>
+      </tr>
+      <tr>
+        <td><fmt:message key="podcastsettings.keep"/></td>
+
+        <td>
+          <form:select path="dbBackupRetentionCount" cssStyle="width:20em">
+            <fmt:message key="databasesettings.keep.all" var="all"/>
+            <fmt:message key="databasesettings.keep.one" var="one"/>
+
+            <form:option value="-1" label="${all}"/>
+            <form:option value="1" label="${one}"/>
+
+            <c:forTokens items="2 3 4 5 10 20 30 50 100 500 1000" delims=" " var="count">
+                <fmt:message key="databasesettings.keep.many" var="many"><fmt:param value="${count}"/></fmt:message>
+                <form:option value="${count}" label="${many}"/>
+            </c:forTokens>
+
+          </form:select>
+        </td>
+      </tr>
+    </table>
+   </c:when>
+   <c:otherwise>
+    <form:hidden path="dbBackupInterval"/>
+    <form:hidden path="dbBackupRetentionCount"/>
+   </c:otherwise>
+  </c:choose>
+
     <p>
         <input type="submit" value="<fmt:message key='common.save'/>" style="margin-right:0.3em">
         <a href="nowPlaying.view"><input type="button" value="<fmt:message key='common.cancel'/>"></a>

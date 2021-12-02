@@ -97,6 +97,8 @@ public class SettingsService {
     private static final String KEY_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN = "ClearFullScanSettingAfterScan";
     private static final String KEY_TRANSCODE_ESTIMATE_TIME_PADDING = "TranscodeEstimateTimePadding";
     private static final String KEY_TRANSCODE_ESTIMATE_BYTE_PADDING = "TranscodeEstimateBytePadding";
+    private static final String KEY_DB_BACKUP_INTERVAL = "DbBackupUpdateInterval";
+    private static final String KEY_DB_BACKUP_RETENTION_COUNT = "DbBackupRetentionCount";
     private static final String KEY_PODCAST_UPDATE_INTERVAL = "PodcastUpdateInterval";
     private static final String KEY_PODCAST_FOLDER = "PodcastFolder";
     private static final String KEY_PODCAST_EPISODE_RETENTION_COUNT = "PodcastEpisodeRetentionCount";
@@ -198,6 +200,8 @@ public class SettingsService {
     private static final boolean DEFAULT_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN = false;
     private static final long DEFAULT_TRANSCODE_ESTIMATE_TIME_PADDING = 2000;
     private static final long DEFAULT_TRANSCODE_ESTIMATE_BYTE_PADDING = 0;
+    private static final int DEFAULT_DB_BACKUP_INTERVAL = -1;
+    private static final int DEFAULT_DB_BACKUP_RETENTION_COUNT = 2;
     private static final int DEFAULT_PODCAST_UPDATE_INTERVAL = 24;
     private static final String DEFAULT_PODCAST_FOLDER = Util.getDefaultPodcastFolder();
     private static final int DEFAULT_PODCAST_EPISODE_RETENTION_COUNT = 10;
@@ -800,6 +804,22 @@ public class SettingsService {
     public void setTranscodeEstimateBytePadding(Long bytes) {
         setLong(KEY_TRANSCODE_ESTIMATE_BYTE_PADDING, bytes);
     };
+
+    public int getDbBackupInterval() {
+        return getInt(KEY_DB_BACKUP_INTERVAL, DEFAULT_DB_BACKUP_INTERVAL);
+    }
+
+    public void setDbBackupInterval(int hours) {
+        setInt(KEY_DB_BACKUP_INTERVAL, hours);
+    }
+
+    public int getDbBackupRetentionCount() {
+        return getInt(KEY_DB_BACKUP_RETENTION_COUNT, DEFAULT_DB_BACKUP_RETENTION_COUNT);
+    }
+
+    public void setDbBackupRetentionCount(int count) {
+        setInt(KEY_DB_BACKUP_RETENTION_COUNT, count);
+    }
 
     /**
      * Returns the number of hours between Podcast updates, of -1 if automatic updates
