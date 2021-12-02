@@ -22,15 +22,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
+
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.sql.Connection;
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -52,6 +63,50 @@ public class DatabaseService {
     @Autowired
     private SimpMessagingTemplate brokerTemplate;
 
+    private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledFuture<?> scheduledBackup;
+
+    @PostConstruct
+    public void init() {
+        try {
+            schedule();
+        } catch (Throwable x) {
+            LOG.error("Failed to initialize PodcastService", x);
+        }
+    }
+
+    private synchronized void schedule() {
+        unschedule();
+
+        int hoursBetween = settingsService.getDbBackupInterval();
+
+        if (hoursBetween == -1) {
+            LOG.info("Automatic DB backup disabled");
+            return;
+        }
+
+        long periodMillis = hoursBetween * 60L * 60L * 1000L;
+        long initialDelayMillis = 5L * 60L * 1000L;
+
+        Runnable task = () -> {
+            LOG.info("Starting scheduled DB backup");
+            backup();
+            LOG.info("Completed scheduled DB backup");
+        };
+
+        scheduledBackup = scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis,
+                TimeUnit.MILLISECONDS);
+
+        Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
+        LOG.info("Automatic DB backup scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);
+    }
+
+    public void unschedule() {
+        if (scheduledBackup != null) {
+            scheduledBackup.cancel(true);
+        }
+    }
+
     public synchronized void backup() {
         brokerTemplate.convertAndSend("/topic/backupStatus", "started");
 
@@ -61,6 +116,7 @@ public class DatabaseService {
                 Path backupLocation = LegacyHsqlMigrationUtil.performHsqlDbBackup(dbPath);
                 LOG.info("Backed up DB to location: {}", backupLocation);
                 brokerTemplate.convertAndSend("/topic/backupStatus", "location: " + backupLocation);
+                deleteObsoleteBackups(backupLocation);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to backup HSQLDB database", e);
             }
@@ -68,6 +124,28 @@ public class DatabaseService {
             LOG.info("DB unable to be backed up via these means");
         }
         brokerTemplate.convertAndSend("/topic/backupStatus", "ended");
+    }
+
+    private synchronized void deleteObsoleteBackups(Path backupLocation) {
+        AtomicInteger backupCount = new AtomicInteger(settingsService.getDbBackupRetentionCount());
+        if (backupCount.get() == -1) {
+            return;
+        }
+
+        String backupNamePattern = StringUtils.substringBeforeLast(backupLocation.getFileName().toString(), ".");
+        try (Stream<Path> backups = Files.list(backupLocation.getParent());) {
+            backups.filter(p -> p.getFileName().toString().startsWith(backupNamePattern))
+                    .sorted(Comparator.comparing(
+                            LambdaUtils.<Path, FileTime, Exception>uncheckFunction(p -> Files.readAttributes(p, BasicFileAttributes.class).creationTime()),
+                            Comparator.reverseOrder()))
+                    .forEach(p -> {
+                        if (backupCount.getAndDecrement() <= 0) {
+                            FileUtil.delete(p);
+                        }
+                    });
+        } catch (Exception e) {
+            LOG.warn("Could not clean up DB backups", e);
+        }
     }
 
     public boolean backuppable() {

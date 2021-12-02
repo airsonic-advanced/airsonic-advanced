@@ -16,6 +16,8 @@ public class DatabaseSettingsCommand {
     private String importFolder;
     private String callback;
     private boolean backuppable;
+    private int dbBackupInterval;
+    private int dbBackupRetentionCount;
 
     public DataSourceConfigType getConfigType() {
         return configType;
@@ -103,6 +105,22 @@ public class DatabaseSettingsCommand {
 
     public void setBackuppable(boolean backuppable) {
         this.backuppable = backuppable;
+    }
+
+    public int getDbBackupInterval() {
+        return dbBackupInterval;
+    }
+
+    public void setDbBackupInterval(int dbBackupInterval) {
+        this.dbBackupInterval = dbBackupInterval;
+    }
+
+    public int getDbBackupRetentionCount() {
+        return dbBackupRetentionCount;
+    }
+
+    public void setDbBackupRetentionCount(int dbBackupRetentionCount) {
+        this.dbBackupRetentionCount = dbBackupRetentionCount;
     }
 
     public enum DataSourceConfigType {
