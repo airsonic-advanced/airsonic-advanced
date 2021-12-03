@@ -195,11 +195,15 @@ public class DatabaseService {
 
     public synchronized void importDB(Path p) {
         brokerTemplate.convertAndSend("/topic/importStatus", "started");
-        backup();
-        brokerTemplate.convertAndSend("/topic/importStatus", "Importing XML");
-        databaseDao.importDB(importFunction.apply(p));
-        brokerTemplate.convertAndSend("/topic/importStatus", "Import complete. Cleaning up...");
-        cleanup(p);
+        if (Files.notExists(p) || !Files.isDirectory(p) || p.toFile().list().length == 0) {
+            brokerTemplate.convertAndSend("/topic/importStatus", "Nothing imported");
+        } else {
+            backup();
+            brokerTemplate.convertAndSend("/topic/importStatus", "Importing XML");
+            databaseDao.importDB(importFunction.apply(p));
+            brokerTemplate.convertAndSend("/topic/importStatus", "Import complete. Cleaning up...");
+            cleanup(p);
+        }
         brokerTemplate.convertAndSend("/topic/importStatus", "ended");
     }
 
