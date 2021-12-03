@@ -2,7 +2,8 @@ package org.airsonic.player.service;
 
 import liquibase.Contexts;
 import liquibase.Liquibase;
-import liquibase.command.core.ExecuteSqlCommand;
+import liquibase.command.CommandScope;
+import liquibase.command.core.InternalExecuteSqlCommandStep;
 import liquibase.database.Database;
 import liquibase.database.DatabaseConnection;
 import liquibase.database.DatabaseFactory;
@@ -216,10 +217,12 @@ public class DatabaseService {
     private static void truncateAll(Database db, Connection c) throws Exception {
         String sql = TABLE_ORDER.stream().flatMap(t -> t.stream())
                 .map(t -> "delete from " + t).collect(joining("; "));
-        ExecuteSqlCommand esc = new ExecuteSqlCommand();
-        esc.setDatabase(db);
-        esc.setSql(sql);
-        esc.execute();
+        CommandScope commandScope = new CommandScope("internalExecuteSql");
+        commandScope.addArgumentValue(InternalExecuteSqlCommandStep.DATABASE_ARG, db);
+        commandScope.addArgumentValue(InternalExecuteSqlCommandStep.SQL_ARG, sql);
+        commandScope.addArgumentValue(InternalExecuteSqlCommandStep.DELIMITER_ARG, ";");
+
+        commandScope.execute();
     }
 
     private static List<List<String>> TABLE_ORDER = Arrays.asList(
