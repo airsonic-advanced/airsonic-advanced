@@ -12,7 +12,7 @@
       }
     </style>
 </head>
-<body class="mainframe bgcolor1">
+<body class="mainframe bgcolor1" onload="init()">
 
 <h1>
     <img src="<spring:theme code='statusImage'/>" alt="">
@@ -371,12 +371,14 @@
       $('#healthTable > tbody').append(appendedRows);
   });
 
-  updateTransferData();
-  updateUserChartData();
-  updateSessionsData();
-  updateHealthData();
+  function init() {
+    updateTransferData();
+    updateUserChartData();
+    updateSessionsData();
+    updateHealthData();
 
-  setInterval(() => { updateTransferData(); updateUserChartData(); updateCachesData(); updateSessionsData(); updateHealthData();}, 40000);
+    setInterval(() => { updateTransferData(); updateUserChartData(); updateCachesData(); updateSessionsData(); updateHealthData();}, 40000);
+  }
 </script>
 
 <div class="forward"><a href="status.view?"><fmt:message key="common.refresh"/> (<fmt:message key="status.autorefresh"><fmt:param>${40000/1000}</fmt:param></fmt:message>)</a></div>
