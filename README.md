@@ -94,7 +94,8 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Catalog multiple genres
   - Ability to specify custom log file location (via `logging.file.name` property/parameter)
   - Auto Bookmarks and Bookmark management
-  - Ability to backup internal database, export and import data across installations and databases
+  - Ability to backup internal database, manually and on a schedule, including specifying how many backups to keep
+  - Export and import data across installations and databases
 - Testing
   - Various fixes to make it compatible with multiple external DBs
   - Automated tests are performed against external DBs

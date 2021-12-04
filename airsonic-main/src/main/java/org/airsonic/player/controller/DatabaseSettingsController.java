@@ -158,6 +158,8 @@ public class DatabaseSettingsController {
         command.setCallback(DB_CONTROLLER_IMPORT_CALLBACK_ID.toString());
         command.setImportFolder(DatabaseService.getImportDBFolder().toString());
         command.setBackuppable(databaseService.backuppable());
+        command.setDbBackupInterval(settingsService.getDbBackupInterval());
+        command.setDbBackupRetentionCount(settingsService.getDbBackupRetentionCount());
         model.addAttribute("command", command);
     }
 
@@ -185,6 +187,8 @@ public class DatabaseSettingsController {
                 settingsService.setDatabaseMysqlVarcharMaxlength(command.getMysqlVarcharMaxlength());
                 settingsService.setDatabaseUsertableQuote(command.getUsertableQuote());
             }
+            settingsService.setDbBackupInterval(command.getDbBackupInterval());
+            settingsService.setDbBackupRetentionCount(command.getDbBackupRetentionCount());
             redirectAttributes.addFlashAttribute("settings_toast", true);
             settingsService.save();
             return "redirect:databaseSettings.view";
