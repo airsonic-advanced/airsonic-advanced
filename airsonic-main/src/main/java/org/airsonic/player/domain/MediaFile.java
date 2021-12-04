@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -430,15 +431,14 @@ public class MediaFile {
                 return false;
         } else if (!path.equals(other.path))
             return false;
+        if (!folderId.equals(other.folderId))
+            return false;
         return true;
     }
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((path == null) ? 0 : path.hashCode());
-        return result;
+        return Objects.hash(path, folderId);
     }
 
     @Override
