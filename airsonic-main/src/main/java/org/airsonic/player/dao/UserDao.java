@@ -24,8 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.util.Util;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,8 +39,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static org.airsonic.player.service.SettingsService.KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE;
 
 /**
  * Provides user-related database services.
@@ -61,13 +57,6 @@ public class UserDao extends AbstractDao {
     private UserSettingsRowMapper userSettingsRowMapper = new UserSettingsRowMapper();
     private UserCredentialRowMapper userCredentialRowMapper = new UserCredentialRowMapper();
 
-    private final String userTable;
-
-    @Autowired
-    public UserDao(@Value("${" + KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE + ":}") String userTableQuote) {
-        this.userTable = userTableQuote + "user" + userTableQuote;
-    }
-
     /**
      * Returns the user with the given username.
      *
@@ -78,9 +67,9 @@ public class UserDao extends AbstractDao {
     public User getUserByName(String username, boolean caseSensitive) {
         String sql;
         if (caseSensitive) {
-            sql = "select " + USER_COLUMNS + " from " + getUserTable() + " where username=?";
+            sql = "select " + USER_COLUMNS + " from users where username=?";
         } else {
-            sql = "select " + USER_COLUMNS + " from " + getUserTable() + " where UPPER(username)=UPPER(?)";
+            sql = "select " + USER_COLUMNS + " from users where UPPER(username)=UPPER(?)";
         }
         List<User> users = query(sql, userRowMapper, username);
         User user = null;
@@ -163,7 +152,7 @@ public class UserDao extends AbstractDao {
      * @return The user, or <code>null</code> if not found.
      */
     public User getUserByEmail(String email) {
-        String sql = "select " + USER_COLUMNS + " from " + getUserTable() + " where email=?";
+        String sql = "select " + USER_COLUMNS + " from users where email=?";
         User user = queryOne(sql, userRowMapper, email);
         return user;
     }
@@ -174,7 +163,7 @@ public class UserDao extends AbstractDao {
      * @return Possibly empty array of all users.
      */
     public List<User> getAllUsers() {
-        String sql = "select " + USER_COLUMNS + " from " + getUserTable();
+        String sql = "select " + USER_COLUMNS + " from users";
         List<User> users = query(sql, userRowMapper);
         return users;
     }
@@ -185,8 +174,7 @@ public class UserDao extends AbstractDao {
      * @param user The user to create.
      */
     public void createUser(User user, UserCredential credential) {
-        String sql = "insert into " + getUserTable() + " (" + USER_COLUMNS + ") values (" + questionMarks(USER_COLUMNS)
-                + ")";
+        String sql = "insert into users (" + USER_COLUMNS + ") values (" + questionMarks(USER_COLUMNS) + ")";
         update(sql, user.getUsername(), user.getEmail(), user.isLdapAuthenticated(),
                 user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded(),
                 Util.toJson(user.getRoles()));
@@ -205,7 +193,7 @@ public class UserDao extends AbstractDao {
 
         update("delete from player where username=?", username);
         update("delete from user_credentials where username=?", username);
-        update("delete from " + getUserTable() + " where username=?", username);
+        update("delete from users where username=?", username);
     }
 
     /**
@@ -214,7 +202,7 @@ public class UserDao extends AbstractDao {
      * @param user The user to update.
      */
     public void updateUser(User user) {
-        String sql = "update " + getUserTable() + " set email=?, ldap_authenticated=?, bytes_streamed=?, bytes_downloaded=?, bytes_uploaded=?, roles=? where username=?";
+        String sql = "update users set email=?, ldap_authenticated=?, bytes_streamed=?, bytes_downloaded=?, bytes_uploaded=?, roles=? where username=?";
         update(sql, user.getEmail(), user.isLdapAuthenticated(),
                 user.getBytesStreamed(), user.getBytesDownloaded(), user.getBytesUploaded(),
                 Util.toJson(user.getRoles()),
@@ -222,7 +210,7 @@ public class UserDao extends AbstractDao {
     }
 
     public void updateUserByteCounts(String user, long bytesStreamedDelta, long bytesDownloadedDelta, long bytesUploadedDelta) {
-        String sql = "update " + getUserTable() + " set bytes_streamed=bytes_streamed+?, bytes_downloaded=bytes_downloaded+?, bytes_uploaded=bytes_uploaded+? where username=?";
+        String sql = "update users set bytes_streamed=bytes_streamed+?, bytes_downloaded=bytes_downloaded+?, bytes_uploaded=bytes_uploaded+? where username=?";
         update(sql, bytesStreamedDelta, bytesDownloadedDelta, bytesUploadedDelta, user);
     }
 
@@ -284,9 +272,5 @@ public class UserDao extends AbstractDao {
         public UserSettings mapRow(ResultSet rs, int rowNum) throws SQLException {
             return Util.fromJson(rs.getString("settings"), UserSettings.class);
         }
-    }
-
-    String getUserTable() {
-        return userTable;
     }
 }

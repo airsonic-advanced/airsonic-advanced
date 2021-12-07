@@ -230,7 +230,7 @@ public class DatabaseService {
     }
 
     private static List<List<String>> TABLE_ORDER = Arrays.asList(
-            Arrays.asList("user", "user_credentials", "user_settings"),
+            Arrays.asList("users", "user_credentials", "user_settings"),
             Arrays.asList("music_folder", "music_folder_user", "transcoding"),
             Arrays.asList("media_file", "music_file_info", "player"),
             Arrays.asList("player_transcoding", "playlist", "playlist_file", "playlist_user", "play_queue", "play_queue_file", "internet_radio"),
