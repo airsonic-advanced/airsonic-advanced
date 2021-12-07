@@ -9,6 +9,6 @@
                 <tableExists tableName="users"/>
             </not>
         </preConditions>
-        <renameTable newTableName="users" oldTableName="${userTableQuote}user${userTableQuote}"/>
+        <renameTable newTableName="users" oldTableName="user"/>
     </changeSet>
 </databaseChangeLog>
