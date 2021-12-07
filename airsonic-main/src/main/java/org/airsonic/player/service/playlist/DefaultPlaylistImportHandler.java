@@ -40,37 +40,7 @@ public class DefaultPlaylistImportHandler implements PlaylistImportHandler {
         }
         Path playlistFolder = Paths.get(playlistFolderPath);
         try {
-            inputSpecificPlaylist.toPlaylist().acceptDown(new PlaylistVisitor() {
-                @Override
-                public void beginVisitPlaylist(Playlist playlist) {
-
-                }
-
-                @Override
-                public void endVisitPlaylist(Playlist playlist) {
-
-                }
-
-                @Override
-                public void beginVisitParallel(Parallel parallel) {
-
-                }
-
-                @Override
-                public void endVisitParallel(Parallel parallel) {
-
-                }
-
-                @Override
-                public void beginVisitSequence(Sequence sequence) {
-
-                }
-
-                @Override
-                public void endVisitSequence(Sequence sequence) {
-
-                }
-
+            inputSpecificPlaylist.toPlaylist().acceptDown(new BasePlaylistVisitor() {
                 @Override
                 public void beginVisitMedia(Media media) {
                     try {
@@ -88,11 +58,6 @@ public class DefaultPlaylistImportHandler implements PlaylistImportHandler {
                     } catch (Exception e) {
                         errors.add(e.getMessage());
                     }
-                }
-
-                @Override
-                public void endVisitMedia(Media media) {
-
                 }
             });
         } catch (Exception e) {
