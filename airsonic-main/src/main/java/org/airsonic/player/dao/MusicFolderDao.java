@@ -22,7 +22,6 @@ package org.airsonic.player.dao;
 import org.airsonic.player.domain.MusicFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,9 +47,6 @@ public class MusicFolderDao extends AbstractDao {
     private static final String INSERT_COLUMNS = "path, name, enabled, changed";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private final MusicFolderRowMapper rowMapper = new MusicFolderRowMapper();
-
-    @Autowired
-    private UserDao userDao;
 
     @PostConstruct
     public void register() throws Exception {
@@ -87,7 +83,7 @@ public class MusicFolderDao extends AbstractDao {
         if (getMusicFolderForPath(musicFolder.getPath().toString()) == null) {
             Integer id = insert("music_folder", musicFolder);
 
-            update("insert into music_folder_user (music_folder_id, username) select ?, username from " + userDao.getUserTable(), id);
+            update("insert into music_folder_user (music_folder_id, username) select ?, username from users", id);
             musicFolder.setId(id);
 
             LOG.info("Created music folder {} with id {}", musicFolder.getPath(), musicFolder.getId());
@@ -134,9 +130,5 @@ public class MusicFolderDao extends AbstractDao {
         public MusicFolder mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new MusicFolder(rs.getInt(1), Paths.get(rs.getString(2)), rs.getString(3), rs.getBoolean(4), Optional.ofNullable(rs.getTimestamp(5)).map(x -> x.toInstant()).orElse(null));
         }
-    }
-
-    public void setUserDao(UserDao userDao) {
-        this.userDao = userDao;
     }
 }
