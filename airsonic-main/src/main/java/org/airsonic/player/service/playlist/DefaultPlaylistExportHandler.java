@@ -7,6 +7,7 @@ import chameleon.playlist.SpecificPlaylist;
 import chameleon.playlist.SpecificPlaylistProvider;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,24 @@ public class DefaultPlaylistExportHandler implements PlaylistExportHandler {
         files.forEach(file -> {
             Media component = new Media();
             Content content = new Content(file.getPath());
+            if (file.getDuration() != null) {
+                content.setDuration((long) (file.getDuration() * 1000));
+            }
+            if (file.getFileSize() != null) {
+                content.setLength(file.getFileSize());
+            }
+            if (file.getChanged() != null) {
+                content.setLastModified(file.getChanged().toEpochMilli());
+            }
+            if (file.getHeight() != null) {
+                content.setHeight(file.getHeight());
+            }
+            if (file.getWidth() != null) {
+                content.setWidth(file.getWidth());
+            }
+            if (file.getFormat() != null) {
+                content.setType(StringUtil.getMimeType(file.getFormat()));
+            }
             component.setSource(content);
             newPlaylist.getRootSequence().addComponent(component);
         });
