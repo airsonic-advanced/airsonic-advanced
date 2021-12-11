@@ -84,7 +84,7 @@ public class CoverArtWSController {
             throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(newCoverFile.toString()));
         }
 
-        try (CloseableHttpClient client = HttpClients.createDefault();
+        try (CloseableHttpClient client = HttpClients.createSystem();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream input = response.getEntity().getContent()) {
 

@@ -60,7 +60,7 @@ public class ProxyController {
         method.setConfig(requestConfig);
 
         InputStream in = null;
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
+        try (CloseableHttpClient client = HttpClients.createSystem()) {
             try (CloseableHttpResponse resp = client.execute(method)) {
                 int statusCode = resp.getStatusLine().getStatusCode();
                 if (statusCode != OK.value()) {

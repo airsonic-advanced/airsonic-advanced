@@ -114,7 +114,7 @@ public class LyricsWSController {
                 .build();
         HttpGet method = new HttpGet(url);
         method.setConfig(requestConfig);
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
+        try (CloseableHttpClient client = HttpClients.createSystem()) {
             ResponseHandler<String> responseHandler = new BasicResponseHandler();
             return client.execute(method, responseHandler);
         }

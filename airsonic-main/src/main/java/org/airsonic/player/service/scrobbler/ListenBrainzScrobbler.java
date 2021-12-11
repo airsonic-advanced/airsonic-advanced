@@ -172,7 +172,7 @@ public class ListenBrainzScrobbler {
     }
 
     private boolean executeRequest(HttpUriRequest request) throws ClientProtocolException, IOException {
-        try (CloseableHttpClient client = HttpClients.createDefault();
+        try (CloseableHttpClient client = HttpClients.createSystem();
                 CloseableHttpResponse resp = client.execute(request);) {
             boolean ok = resp.getStatusLine().getStatusCode() == 200;
             if (!ok) {

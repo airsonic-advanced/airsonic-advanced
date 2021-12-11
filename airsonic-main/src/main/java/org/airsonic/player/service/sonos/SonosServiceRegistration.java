@@ -158,7 +158,7 @@ public class SonosServiceRegistration {
 
     private String executeRequest(HttpUriRequest request) throws IOException {
 
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
+        try (CloseableHttpClient client = HttpClients.createSystem()) {
             ResponseHandler<String> responseHandler = new BasicResponseHandler();
             return client.execute(request, responseHandler);
 

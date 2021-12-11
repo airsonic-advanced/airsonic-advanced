@@ -389,7 +389,7 @@ public class PodcastService {
         HttpGet method = new HttpGet(channel.getUrl());
         method.setConfig(requestConfig);
         method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
-        try (CloseableHttpClient client = HttpClients.createDefault();
+        try (CloseableHttpClient client = HttpClients.createSystem();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent()) {
 
@@ -436,7 +436,7 @@ public class PodcastService {
 
         HttpGet method = new HttpGet(imageUrl);
         method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
-        try (CloseableHttpClient client = HttpClients.createDefault();
+        try (CloseableHttpClient client = HttpClients.createSystem();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent()) {
             Files.copy(in, dir.resolve("cover." + getCoverArtSuffix(response)), StandardCopyOption.REPLACE_EXISTING);
@@ -605,7 +605,7 @@ public class PodcastService {
         method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
         Path file = getFile(channel, episode);
 
-        try (CloseableHttpClient client = HttpClients.createDefault();
+        try (CloseableHttpClient client = HttpClients.createSystem();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent();
                 OutputStream out = new BufferedOutputStream(Files.newOutputStream(file))) {

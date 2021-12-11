@@ -240,7 +240,7 @@ public class VersionService {
         HttpGet method = new HttpGet(VERSION_URL);
         method.setConfig(requestConfig);
         List<Map<String, Object>> content;
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
+        try (CloseableHttpClient client = HttpClients.createSystem()) {
             content = client.execute(method, respHandler);
         } catch (ConnectTimeoutException e) {
             LOG.warn("Got a timeout when trying to reach {}", VERSION_URL);

@@ -248,7 +248,7 @@ public class LastFMScrobbler {
     }
 
     private String[] executeRequest(HttpUriRequest request) throws ClientProtocolException, IOException {
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
+        try (CloseableHttpClient client = HttpClients.createSystem()) {
             ResponseHandler<String> responseHandler = new BasicResponseHandler();
             String response = client.execute(request, responseHandler);
             return response.split("\\r?\\n");
