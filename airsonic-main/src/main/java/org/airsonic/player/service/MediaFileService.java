@@ -19,7 +19,6 @@
  */
 package org.airsonic.player.service;
 
-import com.google.common.io.MoreFiles;
 import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;
@@ -414,7 +413,7 @@ public class MediaFileService {
     }
 
     public boolean includeMediaFile(Path candidate) {
-        String suffix = MoreFiles.getFileExtension(candidate).toLowerCase();
+        String suffix = FilenameUtils.getExtension(candidate.toString()).toLowerCase();
         return (!isExcluded(candidate) && (Files.isDirectory(candidate) || isAudioFile(suffix) || isVideoFile(suffix)));
     }
 
