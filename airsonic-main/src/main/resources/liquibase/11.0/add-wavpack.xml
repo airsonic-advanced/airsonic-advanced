@@ -7,7 +7,7 @@
             <sqlCheck expectedResult="0">select count(*) from transcoding where name='mp3 audio' and (source_formats like 'wv %' or source_formats like '% wv %' or source_formats like '% wv')</sqlCheck>
         </preConditions>
         <update tableName="transcoding">
-            <column name="source_formats" valueComputed="(concat((select source_formats from transcoding where name='mp3 audio'), ' wv'))" />
+            <column name="source_formats" valueComputed="(concat(source_formats, ' wv'))" />
             <where>name='mp3 audio'</where> 
         </update>
         <rollback />
