@@ -6,7 +6,10 @@
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from transcoding where name='mp3 audio' and (source_formats like 'wv %' or source_formats like '% wv %' or source_formats like '% wv')</sqlCheck>
         </preConditions>
-        <sql>update transcoding set source_formats=((select source_formats from transcoding where name='mp3 audio') || ' wv') where name='mp3 audio'</sql>
+        <update tableName="transcoding">
+            <column name="source_formats" valueComputed="(concat((select source_formats from transcoding where name='mp3 audio'), ' wv'))" />
+            <where>name='mp3 audio'</where> 
+        </update>
         <rollback />
     </changeSet>
 </databaseChangeLog>
