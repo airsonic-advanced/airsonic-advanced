@@ -1,0 +1,12 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="add-wavpack" author="yetangitu">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">select count(*) from transcoding where name='mp3 audio' and (source_formats like 'wv %' or source_formats like '% wv %' or source_formats like '% wv')</sqlCheck>
+        </preConditions>
+        <sql>update transcoding set source_formats=((select source_formats from transcoding where name='mp3 audio') || ' wv') where name='mp3 audio'</sql>
+        <rollback />
+    </changeSet>
+</databaseChangeLog>

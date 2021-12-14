@@ -17,4 +17,5 @@
     <include file="remove-java-jukebox.xml" relativeToChangelogFile="true"/>
     <include file="podcast-channel-rules.xml" relativeToChangelogFile="true"/>
     <include file="avatar-storage.xml" relativeToChangelogFile="true"/>
+    <include file="add-wavpack.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
