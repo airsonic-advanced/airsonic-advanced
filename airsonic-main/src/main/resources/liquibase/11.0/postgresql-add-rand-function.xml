@@ -1,0 +1,15 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="postgresql-add-rand-function" author="yetangitu" dbms="postgresql">
+        <sql>
+            create or replace function rand () returns double precision language sql as $$ select random() $$;
+        </sql>
+        <rollback>
+            drop function rand ();
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
+
+
