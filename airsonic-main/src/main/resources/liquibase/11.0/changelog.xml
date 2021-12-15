@@ -19,4 +19,5 @@
     <include file="avatar-storage.xml" relativeToChangelogFile="true"/>
     <include file="move-user-table.xml" relativeToChangelogFile="true"/>
     <include file="add-wavpack.xml" relativeToChangelogFile="true"/>
+    <include file="postgresql-add-rand-function.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
