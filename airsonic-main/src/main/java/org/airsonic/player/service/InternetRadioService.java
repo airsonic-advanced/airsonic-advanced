@@ -182,37 +182,7 @@ public class InternetRadioService {
         // Retrieve stream URLs
         List<InternetRadioSource> entries = new ArrayList<>();
         try {
-            inputPlaylist.toPlaylist().acceptDown(new PlaylistVisitor() {
-                @Override
-                public void beginVisitPlaylist(Playlist playlist) {
-
-                }
-
-                @Override
-                public void endVisitPlaylist(Playlist playlist) {
-
-                }
-
-                @Override
-                public void beginVisitParallel(Parallel parallel) {
-
-                }
-
-                @Override
-                public void endVisitParallel(Parallel parallel) {
-
-                }
-
-                @Override
-                public void beginVisitSequence(Sequence sequence) {
-
-                }
-
-                @Override
-                public void endVisitSequence(Sequence sequence) {
-
-                }
-
+            inputPlaylist.toPlaylist().acceptDown(new BasePlaylistVisitor() {
                 @Override
                 public void beginVisitMedia(Media media) throws Exception {
                     // Since we're dealing with remote content, we place a hard
@@ -224,11 +194,6 @@ public class InternetRadioService {
                     String streamUrl = media.getSource().getURI().toString();
                     LOG.debug("Got source media at {}", streamUrl);
                     entries.add(new InternetRadioSource(streamUrl));
-                }
-
-                @Override
-                public void endVisitMedia(Media media) {
-
                 }
             });
         } catch (PlaylistTooLarge e) {
