@@ -72,7 +72,7 @@ public class DatabaseService {
         try {
             schedule();
         } catch (Throwable x) {
-            LOG.error("Failed to initialize PodcastService", x);
+            LOG.error("Failed to initialize DatabaseService", x);
         }
     }
 
