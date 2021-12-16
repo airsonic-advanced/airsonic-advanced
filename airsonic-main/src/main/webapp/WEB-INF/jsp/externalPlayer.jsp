@@ -28,7 +28,7 @@
     </c:if>
 </head>
 
-<body class="mainframe bgcolor1" style="height:100%;margin:0;">
+<body class="mainframe bgcolor1" style="height:100vh;margin:0;">
 <div class="external box">
     <div class="header">
         <h1>
