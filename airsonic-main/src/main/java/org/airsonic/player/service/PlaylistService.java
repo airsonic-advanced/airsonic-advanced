@@ -238,8 +238,7 @@ public class PlaylistService {
         }
     }
 
-    public Playlist importPlaylist(String username, String playlistName, String fileName, InputStream inputStream,
-            Playlist existingPlaylist) throws Exception {
+    public Playlist importPlaylist(String username, String playlistName, String fileName, Path file, InputStream inputStream, Playlist existingPlaylist) throws Exception {
 
         // TODO: handle other encodings
         final SpecificPlaylist inputSpecificPlaylist = SpecificPlaylistFactory.getInstance().readFrom(inputStream, "UTF-8");
@@ -249,7 +248,7 @@ public class PlaylistService {
         PlaylistImportHandler importHandler = getImportHandler(inputSpecificPlaylist);
         LOG.debug("Using {} playlist import handler", importHandler.getClass().getSimpleName());
 
-        Pair<List<MediaFile>, List<String>> result = importHandler.handle(inputSpecificPlaylist);
+        Pair<List<MediaFile>, List<String>> result = importHandler.handle(inputSpecificPlaylist, file);
 
         if (result.getLeft().isEmpty() && !result.getRight().isEmpty()) {
             throw new Exception("No songs in the playlist were found.");
@@ -357,7 +356,7 @@ public class PlaylistService {
             }
         }
         try (InputStream in = Files.newInputStream(file)) {
-            importPlaylist(User.USERNAME_ADMIN, FilenameUtils.getBaseName(fileName), fileName, in, existingPlaylist);
+            importPlaylist(User.USERNAME_ADMIN, FilenameUtils.getBaseName(fileName), fileName, file, in, existingPlaylist);
             LOG.info("Auto-imported playlist {}", file);
         }
     }

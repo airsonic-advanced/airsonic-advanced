@@ -400,7 +400,11 @@ public class SecurityService implements UserDetailsService {
     }
 
     private MusicFolder getMusicFolderForFile(Path file) {
-        return settingsService.getAllMusicFolders(false, true).stream()
+        return getMusicFolderForFile(file, false, true);
+    }
+
+    public MusicFolder getMusicFolderForFile(Path file, boolean includeDisabled, boolean includeNonExisting) {
+        return settingsService.getAllMusicFolders(includeDisabled, includeNonExisting).stream()
                 .filter(folder -> isFileInFolder(file, folder.getPath()))
                 .sorted(Comparator.comparingInt(folder -> folder.getPath().toString().length()))
                 .findFirst().orElse(null);

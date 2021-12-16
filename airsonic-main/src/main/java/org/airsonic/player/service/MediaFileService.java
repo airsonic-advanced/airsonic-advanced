@@ -86,20 +86,20 @@ public class MediaFileService {
         return getMediaFile(fullPath, settingsService.isFastCacheEnabled());
     }
 
-    // This is an expensive op
+    // This may be an expensive op
     public MediaFile getMediaFile(Path fullPath, boolean minimizeDiskAccess) {
-        return settingsService.getAllMusicFolders(true, true).parallelStream()
-                .map(f -> {
-                    try {
-                        Path relativePath = f.getPath().relativize(fullPath);
-                        return getMediaFile(relativePath, f, minimizeDiskAccess);
-                    } catch (Exception e) {
-                        // ignore
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .findFirst().orElse(null);
+        MusicFolder folder = securityService.getMusicFolderForFile(fullPath, true, true);
+        if (folder == null) {
+            // can't look outside folders and not present in folder
+            return null;
+        }
+        try {
+            Path relativePath = folder.getPath().relativize(fullPath);
+            return getMediaFile(relativePath, folder, minimizeDiskAccess);
+        } catch (Exception e) {
+            // ignore
+            return null;
+        }
     }
 
     public MediaFile getMediaFile(String relativePath, MusicFolder folder) {
