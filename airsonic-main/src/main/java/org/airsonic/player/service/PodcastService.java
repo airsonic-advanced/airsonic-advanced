@@ -236,7 +236,7 @@ public class PodcastService {
     }
 
     private static String sanitizeUrl(String url, boolean force) {
-        if (!StringUtils.contains(url, "://") || force) {
+        if (url != null && (!StringUtils.contains(url, "://") || force)) {
             return URLDecoder.decode(url, StandardCharsets.UTF_8);
         }
         return url;
