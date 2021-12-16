@@ -16,6 +16,7 @@ import org.airsonic.player.dao.DatabaseDao;
 import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.LambdaUtils;
 import org.airsonic.player.util.LegacyHsqlMigrationUtil;
+import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +65,7 @@ public class DatabaseService {
     @Autowired
     private SimpMessagingTemplate brokerTemplate;
 
-    private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor(Util.getDaemonThreadfactory("db-backup"));
     private ScheduledFuture<?> scheduledBackup;
 
     @PostConstruct
@@ -72,7 +73,7 @@ public class DatabaseService {
         try {
             schedule();
         } catch (Throwable x) {
-            LOG.error("Failed to initialize PodcastService", x);
+            LOG.error("Failed to initialize DatabaseService", x);
         }
     }
 
@@ -95,8 +96,7 @@ public class DatabaseService {
             LOG.info("Completed scheduled DB backup");
         };
 
-        scheduledBackup = scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis,
-                TimeUnit.MILLISECONDS);
+        scheduledBackup = scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS);
 
         Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
         LOG.info("Automatic DB backup scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);

@@ -31,6 +31,7 @@ import org.airsonic.player.service.metadata.MetaDataParser;
 import org.airsonic.player.service.metadata.MetaDataParserFactory;
 import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.StringUtil;
+import org.airsonic.player.util.Util;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
@@ -108,14 +109,9 @@ public class PodcastService {
     private VersionService versionService;
 
     public PodcastService() {
-        ThreadFactory threadFactory = r -> {
-            Thread t = Executors.defaultThreadFactory().newThread(r);
-            t.setDaemon(true);
-            return t;
-        };
-        refreshExecutor = Executors.newFixedThreadPool(5, threadFactory);
-        downloadExecutor = Executors.newFixedThreadPool(3, threadFactory);
-        scheduledExecutor = Executors.newScheduledThreadPool(10, threadFactory);
+        refreshExecutor = Executors.newFixedThreadPool(5, Util.getDaemonThreadfactory("podcast-refresh"));
+        downloadExecutor = Executors.newFixedThreadPool(3, Util.getDaemonThreadfactory("podcast-download"));
+        scheduledExecutor = Executors.newScheduledThreadPool(10, Util.getDaemonThreadfactory("podcast-refresh-scheduler"));
     }
 
     @PostConstruct

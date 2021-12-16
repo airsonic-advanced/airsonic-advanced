@@ -37,6 +37,8 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * Miscellaneous general utility methods.
@@ -222,5 +224,14 @@ public final class Util {
         } else {
             throw new IllegalArgumentException("Created object was not valid");
         }
+    }
+
+    public static ThreadFactory getDaemonThreadfactory(String prefixName) {
+        return r -> {
+            Thread t = Executors.defaultThreadFactory().newThread(r);
+            t.setDaemon(true);
+            t.setName(prefixName + "-" + t.getName());
+            return t;
+        };
     }
 }

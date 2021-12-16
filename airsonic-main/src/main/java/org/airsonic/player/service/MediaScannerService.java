@@ -24,12 +24,14 @@ import org.airsonic.player.dao.ArtistDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.service.search.IndexManager;
+import org.airsonic.player.util.Util;
 import org.apache.commons.lang.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Service;
 import org.subsonic.restapi.ScanStatus;
 
@@ -83,6 +85,8 @@ public class MediaScannerService {
     @Autowired
     private AlbumDao albumDao;
     @Autowired
+    private TaskSchedulingService scheduleService;
+    @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
@@ -105,9 +109,12 @@ public class MediaScannerService {
      * Schedule background execution of media library scanning.
      */
     public synchronized void schedule() {
+//        scheduleService.setSchedule(MediaScannerService.class.getName() + "-scheduledTask",
+//                e -> e.schedule(() -> scanLibrary(), new CronTrigger("")));
         if (scheduler != null) {
             scheduler.shutdown();
         }
+
 
         long daysBetween = settingsService.getIndexCreationInterval();
         int hour = settingsService.getIndexCreationHour();
@@ -117,7 +124,7 @@ public class MediaScannerService {
             return;
         }
 
-        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler = Executors.newSingleThreadScheduledExecutor(Util.getDaemonThreadfactory("mediascanner"));
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime nextRun = now.withHour(hour).withMinute(0).withSecond(0);
@@ -139,6 +146,10 @@ public class MediaScannerService {
 
     boolean neverScanned() {
         return indexManager.getStatistics() == null;
+    }
+
+    void watchPlaylists() {
+
     }
 
     /**

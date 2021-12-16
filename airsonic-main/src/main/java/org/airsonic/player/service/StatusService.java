@@ -23,6 +23,7 @@ import org.airsonic.player.ajax.NowPlayingInfo;
 import org.airsonic.player.domain.PlayStatus;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.TransferStatus;
+import org.airsonic.player.util.Util;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -60,7 +61,8 @@ public class StatusService {
     private SimpMessagingTemplate messagingTemplate;
 
     // cleanup task to remove stale remote plays (every 3 hours)
-    private Object cleanup = Executors.newSingleThreadScheduledExecutor()
+    private Object cleanup = Executors
+            .newSingleThreadScheduledExecutor(Util.getDaemonThreadfactory("cleanup-remote-playstatus"))
             .scheduleWithFixedDelay(() -> cleanupRemotePlays(), 3, 3, TimeUnit.HOURS);
 
     private final List<TransferStatus> streamStatuses = Collections.synchronizedList(new ArrayList<>());
