@@ -195,6 +195,7 @@ The following property names have been changed from 10.6 to recent snapshots of 
 
 Other properties are obsolete and have been removed:
   - `DatabaseConfigType`
+  - `DatabaseUsertableQuote` (now self-managed)
 
 First migration to 11.x will create a backup DB next to the DB folder. It will be marked as `db.backup.<timestamp>`. Use this folder as the DB if a revert to an older major version is needed (11.0 -> 10.6.0).
 

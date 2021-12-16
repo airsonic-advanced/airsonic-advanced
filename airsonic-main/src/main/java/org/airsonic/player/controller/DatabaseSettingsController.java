@@ -144,7 +144,6 @@ public class DatabaseSettingsController {
         command.setUsername(settingsService.getDatabaseUsername());
         command.setJNDIName(settingsService.getDatabaseJNDIName());
         command.setMysqlVarcharMaxlength(settingsService.getDatabaseMysqlVarcharMaxlength());
-        command.setUsertableQuote(settingsService.getDatabaseUsertableQuote());
 
         if (StringUtils.isNotBlank(command.getJNDIName())) {
             command.setConfigType(DataSourceConfigType.JNDI);
@@ -185,7 +184,6 @@ public class DatabaseSettingsController {
             }
             if (command.getConfigType() != DataSourceConfigType.BUILTIN) {
                 settingsService.setDatabaseMysqlVarcharMaxlength(command.getMysqlVarcharMaxlength());
-                settingsService.setDatabaseUsertableQuote(command.getUsertableQuote());
             }
             settingsService.setDbBackupInterval(command.getDbBackupInterval());
             settingsService.setDbBackupRetentionCount(command.getDbBackupRetentionCount());
