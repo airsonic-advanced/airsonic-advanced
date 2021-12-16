@@ -19,16 +19,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class AddPodcastMediaFolderUsers implements CustomSqlChange {
-    private String userTableQuote;
-
-    public String getUserTableQuote() {
-        return userTableQuote;
-    }
-
-    public void setUserTableQuote(String userTableQuote) {
-        this.userTableQuote = userTableQuote;
-    }
-
     @Override
     public String getConfirmationMessage() {
         return "Added podcast media folder users";
@@ -59,7 +49,7 @@ public class AddPodcastMediaFolderUsers implements CustomSqlChange {
         if (conn != null) {
             try (PreparedStatement st1 = conn.prepareStatement("SELECT MAX(id) AS maxid FROM music_folder WHERE type='PODCAST';");
                     ResultSet rs1 = st1.executeQuery();
-                    PreparedStatement st2 = conn.prepareStatement("SELECT username, roles FROM " + userTableQuote + "user" + userTableQuote + ";");
+                    PreparedStatement st2 = conn.prepareStatement("SELECT username, roles FROM users;");
                     ResultSet rs2 = st2.executeQuery();) {
                 while (rs1.next()) {
                     maxFolderId = rs1.getInt("maxid");

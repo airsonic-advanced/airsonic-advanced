@@ -25,7 +25,7 @@
             <column name="type" value="PODCAST"/>
             <column name="enabled" valueBoolean="true" />
         </insert>
-        <customChange class="org.airsonic.player.spring.migrations.AddPodcastMediaFolderUsers" userTableQuote="${userTableQuote}"></customChange>
+        <customChange class="org.airsonic.player.spring.migrations.AddPodcastMediaFolderUsers"></customChange>
         <rollback>
         </rollback>
     </changeSet>
