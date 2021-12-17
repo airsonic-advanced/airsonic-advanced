@@ -155,7 +155,6 @@
                                             <spring_datasource_url>${env.spring_datasource_url}</spring_datasource_url>
                                             <spring_datasource_username>${env.spring_datasource_username}</spring_datasource_username>
                                             <spring_datasource_password>${env.spring_datasource_password}</spring_datasource_password>
-                                            <spring_liquibase_parameters_userTableQuote>${env.spring_liquibase_parameters_userTableQuote}</spring_liquibase_parameters_userTableQuote>
                                         </env>
                                         <volumes>
                                             <bind>
