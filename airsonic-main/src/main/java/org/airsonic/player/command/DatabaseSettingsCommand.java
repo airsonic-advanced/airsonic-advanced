@@ -12,7 +12,6 @@ public class DatabaseSettingsCommand {
     private String username;
     private String JNDIName;
     private int mysqlVarcharMaxlength;
-    private String usertableQuote;
     private String importFolder;
     private String callback;
     private boolean backuppable;
@@ -73,14 +72,6 @@ public class DatabaseSettingsCommand {
 
     public void setMysqlVarcharMaxlength(int mysqlVarcharMaxlength) {
         this.mysqlVarcharMaxlength = mysqlVarcharMaxlength;
-    }
-
-    public String getUsertableQuote() {
-        return usertableQuote;
-    }
-
-    public void setUsertableQuote(String usertableQuote) {
-        this.usertableQuote = usertableQuote;
     }
 
     public String getImportFolder() {

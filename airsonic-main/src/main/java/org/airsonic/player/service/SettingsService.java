@@ -159,7 +159,6 @@ public class SettingsService {
     public static final String KEY_DATABASE_JNDI_NAME = "spring.datasource.jndi-name";
     private static final String KEY_DATABASE_MIGRATION_ROLLBACK_FILE = "spring.liquibase.rollback-file";
     private static final String KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH = "spring.liquibase.parameters.mysqlVarcharLimit";
-    public static final String KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE = "spring.liquibase.parameters.userTableQuote";
     private static final String KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER = "spring.liquibase.parameters.defaultMusicFolder";
 
     public static final String KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS = "PropertiesFileRetainObsoleteKeys";
@@ -255,7 +254,6 @@ public class SettingsService {
     private static final String DEFAULT_DATABASE_PASSWORD = null;
     private static final String DEFAULT_DATABASE_JNDI_NAME = null;
     private static final Integer DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH = 384;
-    private static final String DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE = "";
 
     private static final String LOCALES_FILE = "/org/airsonic/player/i18n/locales.txt";
     private static final String THEMES_FILE = "/org/airsonic/player/theme/themes.txt";
@@ -291,7 +289,8 @@ public class SettingsService {
             "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
             "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",
             "UrlRedirectFrom", "UrlRedirectionEnabled", "UrlRedirectType", "Port", "HttpsPort",
-            "MediaLibraryStatistics", "LastScanned", "database.config.type", "DatabaseConfigType"
+            "MediaLibraryStatistics", "LastScanned", "database.config.type", "DatabaseConfigType",
+            "database.usertable.quote", "DatabaseUsertableQuote", "spring.liquibase.parameters.userTableQuote"
             );
 
     public static Map<String, String> getMigratedPropertyKeys() {
@@ -315,9 +314,6 @@ public class SettingsService {
 
         keyMaps.put("database.varchar.maxlength", "DatabaseMysqlMaxlength");
         keyMaps.put("DatabaseMysqlMaxlength", KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH);
-
-        keyMaps.put("database.usertable.quote", "DatabaseUsertableQuote");
-        keyMaps.put("DatabaseUsertableQuote", KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
 
         keyMaps.put("airsonic.rememberMeKey", KEY_REMEMBER_ME_KEY);
         keyMaps.put("IgnoreFileTimestamps", KEY_FULL_SCAN);
@@ -387,11 +383,6 @@ public class SettingsService {
             defaultConstants.put(
                     KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH,
                     DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH.toString());
-        }
-        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE))) {
-            defaultConstants.put(
-                    KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE,
-                    DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
         }
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER))) {
             defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER, Util.getDefaultMusicFolder());
@@ -1715,14 +1706,6 @@ public class SettingsService {
         setInt(KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH, maxlength);
     }
 
-    public String getDatabaseUsertableQuote() {
-        return getString(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE, DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
-    }
-
-    public void setDatabaseUsertableQuote(String usertableQuote) {
-        setString(KEY_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE, usertableQuote);
-    }
-
     public String getJWTKey() {
         return getString(KEY_JWT_KEY, DEFAULT_JWT_KEY);
     }
@@ -1782,7 +1765,6 @@ public class SettingsService {
         setDatabaseUsername(DEFAULT_DATABASE_USERNAME);
         setDatabaseJNDIName(DEFAULT_DATABASE_JNDI_NAME);
         setDatabaseMysqlVarcharMaxlength(DEFAULT_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH);
-        setDatabaseUsertableQuote(DEFAULT_DATABASE_MIGRATION_PARAMETER_USERTABLE_QUOTE);
     }
 
     String getPlaylistExportFormat() {
