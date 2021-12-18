@@ -406,7 +406,7 @@ public class SecurityService implements UserDetailsService {
     public MusicFolder getMusicFolderForFile(Path file, boolean includeDisabled, boolean includeNonExisting) {
         return settingsService.getAllMusicFolders(includeDisabled, includeNonExisting).stream()
                 .filter(folder -> isFileInFolder(file, folder.getPath()))
-                .sorted(Comparator.comparingInt(folder -> folder.getPath().toString().length()))
+                .sorted(Comparator.comparing(folder -> folder.getPath().toString().length(), Comparator.reverseOrder()))
                 .findFirst().orElse(null);
     }
 
