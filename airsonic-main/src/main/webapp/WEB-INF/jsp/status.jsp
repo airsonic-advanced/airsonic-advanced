@@ -253,12 +253,13 @@
     $.get(healthUrl).always(data => {
       $('#healthTable > tbody').empty();
       var appendedRows = '';
-      if (typeof data.responseJSON != 'undefined' && typeof data.responseJSON.components != 'undefined') {
-        Object.keys(data.responseJSON.components).forEach(k => {
+      var dc = (typeof data.responseJSON != 'undefined' && typeof data.responseJSON.components != 'undefined') ? data.responseJSON.components : data.components;
+      if (typeof dc != 'undefined') {
+        Object.keys(dc).forEach(k => {
           appendedRows += '<tr>';
           appendedRows +=   '<td>' + k + '</td>';
-          appendedRows +=   '<td>' + data.responseJSON.components[k].status + '</td>';
-          appendedRows +=   '<td>' + JSON.stringify(data.responseJSON.components[k].details) + '</td>';
+          appendedRows +=   '<td>' + dc[k].status + '</td>';
+          appendedRows +=   '<td>' + JSON.stringify(dc[k].details) + '</td>';
           appendedRows += '</tr>';
         });
       }
