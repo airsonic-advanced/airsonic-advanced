@@ -15,6 +15,7 @@ import liquibase.resource.FileSystemResourceAccessor;
 import org.airsonic.player.dao.DatabaseDao;
 import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.LambdaUtils;
+import org.airsonic.player.util.LambdaUtils.ThrowingBiFunction;
 import org.airsonic.player.util.LegacyHsqlMigrationUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -154,17 +155,25 @@ public class DatabaseService {
                 && StringUtils.startsWith(settingsService.getDatabaseUrl(), "jdbc:hsqldb:file:");
     }
 
-    Function<Connection, Path> exportFunction = LambdaUtils.uncheckFunction(
-        connection -> generateChangeLog(connection, "data", "airsonic-data", makeDiffOutputControl()));
+    ThrowingBiFunction<Path, Connection, Boolean, Exception> exportFunction = (tmpPath, connection) -> generateChangeLog(tmpPath, connection, "data", "airsonic-data", makeDiffOutputControl());
 
     Function<Path, Consumer<Connection>> importFunction = p -> LambdaUtils.uncheckConsumer(
         connection -> runLiquibaseUpdate(connection, p));
 
     public synchronized Path exportDB() throws Exception {
         brokerTemplate.convertAndSend("/topic/exportStatus", "started");
-        Path fPath = databaseDao.exportDB(exportFunction);
-        brokerTemplate.convertAndSend("/topic/exportStatus", "Local DB extraction complete, compressing...");
-        Path zPath = zip(fPath);
+        Path fPath = getChangeLogFolder();
+        Path zPath = null;
+        try {
+            databaseDao.exportDB(fPath, exportFunction);
+            zPath = zip(fPath);
+            brokerTemplate.convertAndSend("/topic/exportStatus", "Local DB extraction complete, compressing...");
+        } catch (Exception e) {
+            LOG.info("DB Export failed!", e);
+            brokerTemplate.convertAndSend("/topic/exportStatus", "Error with local DB extraction, check logs...");
+            cleanup(fPath);
+        }
+
         brokerTemplate.convertAndSend("/topic/exportStatus", "ended");
         return zPath;
     }
@@ -239,9 +248,8 @@ public class DatabaseService {
             Arrays.asList("bookmark", "share", "share_file", "sonoslink"),
             Arrays.asList("starred_album", "starred_artist", "starred_media_file", "user_rating", "custom_avatar"));
 
-    private Path generateChangeLog(Connection connection, String snapshotTypes, String author, DiffOutputControl diffOutputControl) throws Exception {
+    private boolean generateChangeLog(Path fPath, Connection connection, String snapshotTypes, String author, DiffOutputControl diffOutputControl) throws Exception {
         Database database = getDatabase(connection);
-        Path fPath = getChangeLogFolder();
         Files.createDirectories(fPath);
         for (int i = 0; i < TABLE_ORDER.size(); i++) {
             setTableFilter(diffOutputControl, TABLE_ORDER.get(i));
@@ -249,7 +257,7 @@ public class DatabaseService {
                     snapshotTypes, author, null, null, diffOutputControl);
         }
 
-        return fPath;
+        return true;
     }
 
     private Database getDatabase(Connection connection) throws Exception {
