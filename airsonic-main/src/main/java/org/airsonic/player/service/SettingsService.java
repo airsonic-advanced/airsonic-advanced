@@ -1294,7 +1294,7 @@ public class SettingsService {
      * @param musicFolder The music folder to create.
      */
     public void createMusicFolder(MusicFolder musicFolder) {
-        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder);
+        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder, getAllMusicFolders(true, true));
         if (!overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty()) {
             throw new IllegalArgumentException("Music folder with path " + musicFolder.getPath() + " overlaps with existing music folder path(s) (" + logMusicFolderOverlap(overlaps) + ") and can therefore not be created.");
         }
@@ -1318,7 +1318,7 @@ public class SettingsService {
      * @param musicFolder The music folder to update.
      */
     public void updateMusicFolder(MusicFolder musicFolder) {
-        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder);
+        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder, getAllMusicFolders(true, true));
         if (!overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty()) {
             throw new IllegalArgumentException("Music folder with path " + musicFolder.getPath() + " overlaps with existing music folder path(s) (" + logMusicFolderOverlap(overlaps) + ") and can therefore not be updated.");
         }
@@ -1326,9 +1326,8 @@ public class SettingsService {
         clearMusicFolderCache();
     }
 
-    public Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> getMusicFolderPathOverlaps(MusicFolder folder) {
+    public static Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> getMusicFolderPathOverlaps(MusicFolder folder, List<MusicFolder> allFolders) {
         Path absoluteFolderPath = folder.getPath().normalize().toAbsolutePath();
-        List<MusicFolder> allFolders = getAllMusicFolders(true, true);
         List<MusicFolder> sameFolders = allFolders.parallelStream().filter(f -> {
             // is same but not itself
             Path fAbsolute = f.getPath().normalize().toAbsolutePath();

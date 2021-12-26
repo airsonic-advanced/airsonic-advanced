@@ -38,8 +38,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,12 +62,15 @@ public class PodcastSettingsController {
     protected String formBackingObject(Model model) {
         PodcastSettingsCommand command = new PodcastSettingsCommand();
 
-        command.setFolder(settingsService.getAllMusicFolders(true, true).stream()
+        command.setFolder(settingsService.getAllMusicFolders().stream()
                 .filter(f -> f.getType() == Type.PODCAST)
-                .map(MusicFolder::getPath)
                 .findAny()
-                .map(p -> p.toString())
                 .orElse(null));
+
+        command.setFolders(settingsService.getAllMusicFolders(true, true)
+                .stream()
+                .filter(f -> f.getType() == Type.PODCAST)
+                .collect(toList()));
 
         List<PodcastChannel> channels = podcastService.getAllChannels();
         List<PodcastChannelRule> rules = podcastService.getAllChannelRules();
@@ -106,22 +107,22 @@ public class PodcastSettingsController {
         podcastService.scheduleDefault();
 
         boolean success = true;
-        MusicFolder podcastFolder = settingsService.getAllMusicFolders(true, true).stream()
-                .filter(f -> f.getType() == Type.PODCAST).findAny().orElse(null);
+        MusicFolder podcastFolder = settingsService.getAllMusicFolders(true, true)
+                .stream()
+                .filter(f -> f.getId().equals(command.getFolder().getId()))
+                .findAny().orElse(null);
         if (podcastFolder != null) {
-            podcastFolder.setPath(Paths.get(command.getFolder()));
             try {
+                settingsService.getAllMusicFolders(true, true).stream()
+                        .filter(f -> f.getType() == Type.PODCAST)
+                        .filter(f -> !f.getId().equals(podcastFolder.getId())).forEach(f -> {
+                            f.setEnabled(false);
+                            settingsService.updateMusicFolder(f);
+                        });
+                podcastFolder.setEnabled(true);
                 settingsService.updateMusicFolder(podcastFolder);
             } catch (Exception e) {
-                LOG.warn("Could not update music folder id {} ({})", podcastFolder.getId(), podcastFolder.getName(), e);
-                success = false;
-            }
-        } else {
-            podcastFolder = new MusicFolder(Paths.get(command.getFolder()), "Podcasts", Type.PODCAST, true, Instant.now());
-            try {
-                settingsService.createMusicFolder(podcastFolder);
-            } catch (Exception e) {
-                LOG.warn("Could not create music folder {}", podcastFolder.getName(), e);
+                LOG.warn("Could not enable music folder id {} ({})", podcastFolder.getId(), podcastFolder.getName(), e);
                 success = false;
             }
         }

@@ -134,7 +134,7 @@ public class MusicFolderSettingsController {
 
     private List<MusicFolderSettingsCommand.MusicFolderInfo> wrap(List<MusicFolder> musicFolders) {
         return musicFolders.stream().map(f -> {
-            Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = settingsService.getMusicFolderPathOverlaps(f);
+            Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = SettingsService.getMusicFolderPathOverlaps(f, settingsService.getAllMusicFolders(true, true));
             return new MusicFolderSettingsCommand.MusicFolderInfo(f, !overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty(), SettingsService.logMusicFolderOverlap(overlaps));
         }).collect(toList());
     }
