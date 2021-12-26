@@ -47,7 +47,7 @@ public class MusicFolderDao extends AbstractDao {
     private static final Logger LOG = LoggerFactory.getLogger(MusicFolderDao.class);
     private static final String INSERT_COLUMNS = "path, name, type, enabled, changed";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
-    private final MusicFolderRowMapper rowMapper = new MusicFolderRowMapper();
+    public static final MusicFolderRowMapper MUSICFOLDER_ROW_MAPPER = new MusicFolderRowMapper();
 
     @PostConstruct
     public void register() throws Exception {
@@ -61,7 +61,7 @@ public class MusicFolderDao extends AbstractDao {
      */
     public List<MusicFolder> getAllMusicFolders() {
         String sql = "select " + QUERY_COLUMNS + " from music_folder";
-        return query(sql, rowMapper);
+        return query(sql, MUSICFOLDER_ROW_MAPPER);
     }
 
     /**
@@ -71,7 +71,7 @@ public class MusicFolderDao extends AbstractDao {
      */
     public MusicFolder getMusicFolderForPath(String path) {
         String sql = "select " + QUERY_COLUMNS + " from music_folder where path = ?";
-        return queryOne(sql, rowMapper, path);
+        return queryOne(sql, MUSICFOLDER_ROW_MAPPER, path);
     }
 
     /**
@@ -116,7 +116,7 @@ public class MusicFolderDao extends AbstractDao {
     public List<MusicFolder> getMusicFoldersForUser(String username) {
         String sql = "select " + prefix(QUERY_COLUMNS, "music_folder") + " from music_folder, music_folder_user " +
                      "where music_folder.id = music_folder_user.music_folder_id and music_folder_user.username = ?";
-        return query(sql, rowMapper, username);
+        return query(sql, MUSICFOLDER_ROW_MAPPER, username);
     }
 
     public void setMusicFoldersForUser(String username, Collection<Integer> musicFolderIds) {
@@ -126,7 +126,7 @@ public class MusicFolderDao extends AbstractDao {
         }
     }
 
-    private static class MusicFolderRowMapper implements RowMapper<MusicFolder> {
+    public static class MusicFolderRowMapper implements RowMapper<MusicFolder> {
         @Override
         public MusicFolder mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new MusicFolder(rs.getInt(1), Paths.get(rs.getString(2)), rs.getString(3),

@@ -10,15 +10,24 @@ import liquibase.exception.ValidationErrors;
 import liquibase.resource.ResourceAccessor;
 import liquibase.statement.SqlStatement;
 import liquibase.statement.core.DeleteStatement;
+
+import org.airsonic.player.dao.MusicFolderDao;
+import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.service.SettingsService;
+import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
 
 public class UniqueMediaFolders implements CustomSqlChange {
     private static final Logger LOG = LoggerFactory.getLogger(UniqueMediaFolders.class);
@@ -45,7 +54,7 @@ public class UniqueMediaFolders implements CustomSqlChange {
 
     @Override
     public SqlStatement[] generateStatements(Database database) throws CustomChangeException {
-        Set<Integer> duplicates = new HashSet<>();
+        Set<Integer> deletionSet = new HashSet<>();
         JdbcConnection conn = null;
         if (database.getConnection() instanceof JdbcConnection) {
             conn = (JdbcConnection) database.getConnection();
@@ -59,20 +68,34 @@ public class UniqueMediaFolders implements CustomSqlChange {
                         + "order by m.id");
                     ResultSet result = st.executeQuery();) {
 
-                Set<String> paths = new HashSet<>();
+                List<MusicFolder> folders = new ArrayList<>();
+                int i = 0;
                 while (result.next()) {
-                    if (!paths.add(result.getString("path"))) {
-                        //duplicates
-                        duplicates.add(result.getInt("id"));
-                        LOG.info("Duplicate media folder found (id: {}, name: {}) and will be deleted", result.getInt("id"), result.getString("name"));
-                    }
+                    folders.add(MusicFolderDao.MUSICFOLDER_ROW_MAPPER.mapRow(result, i++));
+                }
+                for (MusicFolder.Type t : MusicFolder.Type.values()) {
+                    List<MusicFolder> folderTypeList = folders.stream().filter(f -> f.getType() == t).collect(toList());
+                    Set<String> paths = new HashSet<>();
+                    folderTypeList.forEach(f -> {
+                        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlap = SettingsService.getMusicFolderPathOverlaps(f, folderTypeList);
+                        //duplicate
+                        if (!overlap.getLeft().isEmpty() && !paths.add(f.getPath().toString())) {
+                            deletionSet.add(f.getId());
+                            LOG.info("Duplicate media folder found (id: {}, name: {}) and will be deleted", f.getId(), f.getName());
+                        }
+                        // has an ancestor
+                        if (!overlap.getMiddle().isEmpty()) {
+                            deletionSet.add(f.getId());
+                            LOG.info("Media folder with ancestor found (id: {}, name: {}) and will be deleted", f.getId(), f.getName());
+                        }
+                    });
                 }
             } catch (DatabaseException | SQLException e) {
                 throw new CustomChangeException(e);
             }
         }
 
-        return duplicates.stream()
+        return deletionSet.stream()
                 .flatMap(id -> Stream.of(
                         new DeleteStatement(database.getDefaultCatalogName(), database.getDefaultSchemaName(), "music_folder_user")
                                 .addWhereColumnName("music_folder_id")
