@@ -21,6 +21,7 @@ package org.airsonic.player.service.upnp;
 
 import org.airsonic.player.domain.*;
 import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.PlaylistService;
 import org.airsonic.player.service.search.IndexManager;
 import org.airsonic.player.util.Util;
@@ -56,6 +57,8 @@ public class FolderBasedContentDirectory extends CustomContentDirectory {
     private static final String CONTAINER_ID_FOLDER_PREFIX = "folder-";
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
     @Autowired
     private PlaylistService playlistService;
     @Autowired
@@ -108,7 +111,7 @@ public class FolderBasedContentDirectory extends CustomContentDirectory {
         root.setSearchable(false);
         root.setWriteStatus(WriteStatus.NOT_WRITABLE);
 
-        List<MusicFolder> musicFolders = settingsService.getAllMusicFolders();
+        List<MusicFolder> musicFolders = mediaFolderService.getAllMusicFolders();
         root.setChildCount(musicFolders.size() + 1);  // +1 for playlists
 
         DIDLContent didl = new DIDLContent();
@@ -152,7 +155,7 @@ public class FolderBasedContentDirectory extends CustomContentDirectory {
 
     private BrowseResult browseRoot(long firstResult, long maxResults) throws Exception {
         DIDLContent didl = new DIDLContent();
-        List<MusicFolder> allFolders = settingsService.getAllMusicFolders();
+        List<MusicFolder> allFolders = mediaFolderService.getAllMusicFolders();
         List<MusicFolder> selectedFolders = Util.subList(allFolders, firstResult, maxResults);
         for (MusicFolder folder : selectedFolders) {
             MediaFile mediaFile = mediaFileService.getMediaFile("", folder);

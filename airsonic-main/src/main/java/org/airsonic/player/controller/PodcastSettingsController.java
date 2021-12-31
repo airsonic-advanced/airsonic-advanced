@@ -25,6 +25,7 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.PodcastChannel;
 import org.airsonic.player.domain.PodcastChannelRule;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.PodcastService;
 import org.airsonic.player.service.SettingsService;
 import org.slf4j.Logger;
@@ -57,17 +58,19 @@ public class PodcastSettingsController {
     private SettingsService settingsService;
     @Autowired
     private PodcastService podcastService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
 
     @GetMapping
     protected String formBackingObject(Model model) {
         PodcastSettingsCommand command = new PodcastSettingsCommand();
 
-        command.setFolder(settingsService.getAllMusicFolders().stream()
+        command.setFolder(mediaFolderService.getAllMusicFolders().stream()
                 .filter(f -> f.getType() == Type.PODCAST)
                 .findAny()
                 .orElse(null));
 
-        command.setFolders(settingsService.getAllMusicFolders(true, true)
+        command.setFolders(mediaFolderService.getAllMusicFolders(true, true)
                 .stream()
                 .filter(f -> f.getType() == Type.PODCAST)
                 .collect(toList()));
@@ -107,20 +110,20 @@ public class PodcastSettingsController {
         podcastService.scheduleDefault();
 
         boolean success = true;
-        MusicFolder podcastFolder = settingsService.getAllMusicFolders(true, true)
+        MusicFolder podcastFolder = mediaFolderService.getAllMusicFolders(true, true)
                 .stream()
                 .filter(f -> f.getId().equals(command.getFolder().getId()))
                 .findAny().orElse(null);
         if (podcastFolder != null) {
             try {
-                settingsService.getAllMusicFolders(true, true).stream()
+                mediaFolderService.getAllMusicFolders(true, true).stream()
                         .filter(f -> f.getType() == Type.PODCAST)
                         .filter(f -> !f.getId().equals(podcastFolder.getId())).forEach(f -> {
                             f.setEnabled(false);
-                            settingsService.updateMusicFolder(f);
+                            mediaFolderService.updateMusicFolder(f);
                         });
                 podcastFolder.setEnabled(true);
-                settingsService.updateMusicFolder(podcastFolder);
+                mediaFolderService.updateMusicFolder(podcastFolder);
             } catch (Exception e) {
                 LOG.warn("Could not enable music folder id {} ({})", podcastFolder.getId(), podcastFolder.getName(), e);
                 success = false;

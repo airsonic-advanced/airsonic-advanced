@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.dao;
 
+import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -74,11 +77,6 @@ public class MusicFolderDao extends AbstractDao {
         return queryOne(sql, MUSICFOLDER_ROW_MAPPER, path);
     }
 
-    /**
-     * Creates a new music folder.
-     *
-     * @param musicFolder The music folder to create.
-     */
     @Transactional
     public void createMusicFolder(MusicFolder musicFolder) {
         if (getMusicFolderForPath(musicFolder.getPath().toString()) == null) {
@@ -91,11 +89,6 @@ public class MusicFolderDao extends AbstractDao {
         }
     }
 
-    /**
-     * Deletes the music folder with the given ID.
-     *
-     * @param id The music folder ID.
-     */
     public void deleteMusicFolder(Integer id) {
         String sql = "delete from music_folder where id=?";
         update(sql, id);

@@ -79,6 +79,8 @@ public class SecurityService implements UserDetailsService {
     private UserDao userDao;
     @Autowired
     private SettingsService settingsService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
 
     /**
      * Locates the user based on the username.
@@ -324,7 +326,7 @@ public class SecurityService implements UserDetailsService {
 
     public void createUser(User user, UserCredential credential) {
         userDao.createUser(user, credential);
-        settingsService.setMusicFoldersForUser(user.getUsername(), MusicFolder.toIdList(settingsService.getAllMusicFolders()));
+        mediaFolderService.setMusicFoldersForUser(user.getUsername(), MusicFolder.toIdList(mediaFolderService.getAllMusicFolders()));
         LOG.info("Created user {}", user.getUsername());
     }
 
@@ -375,7 +377,7 @@ public class SecurityService implements UserDetailsService {
         if (file == null) {
             return false;
         }
-        MusicFolder folder = settingsService.getMusicFolderById(file.getFolderId());
+        MusicFolder folder = mediaFolderService.getMusicFolderById(file.getFolderId());
         return folder.isEnabled() && (!checkExistence || Files.exists(file.getFullPath(folder.getPath())));
     }
 
@@ -404,14 +406,14 @@ public class SecurityService implements UserDetailsService {
     }
 
     public MusicFolder getMusicFolderForFile(Path file, boolean includeDisabled, boolean includeNonExisting) {
-        return settingsService.getAllMusicFolders(includeDisabled, includeNonExisting).stream()
+        return mediaFolderService.getAllMusicFolders(includeDisabled, includeNonExisting).stream()
                 .filter(folder -> isFileInFolder(file, folder.getPath()))
-                .sorted(Comparator.comparing(folder -> folder.getPath().toString().length(), Comparator.reverseOrder()))
+                .sorted(Comparator.comparing(folder -> folder.getPath().getNameCount(), Comparator.reverseOrder()))
                 .findFirst().orElse(null);
     }
 
     public boolean isFolderAccessAllowed(MediaFile file, String username) {
-        return settingsService.getMusicFoldersForUser(username).parallelStream()
+        return mediaFolderService.getMusicFoldersForUser(username).parallelStream()
                 .anyMatch(musicFolder -> musicFolder.getId().equals(file.getFolderId()));
     }
 

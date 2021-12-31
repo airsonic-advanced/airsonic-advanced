@@ -5,8 +5,8 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.LastFmService;
 import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.SecurityService;
-import org.airsonic.player.service.SettingsService;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -40,7 +40,7 @@ public class CoverArtWSController {
     @Autowired
     private LastFmService lastFmService;
     @Autowired
-    private SettingsService settingsService;
+    private MediaFolderService mediaFolderService;
 
     @MessageMapping("/search")
     @SendToUser(broadcast = false)
@@ -83,7 +83,7 @@ public class CoverArtWSController {
         }
 
         // Check permissions.
-        MusicFolder folder = settingsService.getMusicFolderById(dir.getFolderId());
+        MusicFolder folder = mediaFolderService.getMusicFolderById(dir.getFolderId());
         Path fullPath = dir.getFullPath(folder.getPath());
         Path newCoverFile = fullPath.resolve("cover." + suffix);
         if (!securityService.isWriteAllowed(folder.getPath().relativize(newCoverFile), folder)) {

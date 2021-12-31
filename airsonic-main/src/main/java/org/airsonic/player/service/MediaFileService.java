@@ -69,6 +69,8 @@ public class MediaFileService {
     @Autowired
     private MediaFileDao mediaFileDao;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private AlbumDao albumDao;
     @Autowired
     private JaudiotaggerParser parser;
@@ -139,14 +141,14 @@ public class MediaFileService {
             return null;
         }
 
-        return checkLastModified(mediaFile, settingsService.getMusicFolderById(mediaFile.getFolderId()), settingsService.isFastCacheEnabled());
+        return checkLastModified(mediaFile, mediaFolderService.getMusicFolderById(mediaFile.getFolderId()), settingsService.isFastCacheEnabled());
     }
 
     public MediaFile getParentOf(MediaFile mediaFile) {
         if (mediaFile.getParentPath() == null) {
             return null;
         }
-        return getMediaFile(mediaFile.getParentPath(), settingsService.getMusicFolderById(mediaFile.getFolderId()));
+        return getMediaFile(mediaFile.getParentPath(), mediaFolderService.getMusicFolderById(mediaFile.getFolderId()));
     }
 
     private MediaFile checkLastModified(MediaFile mediaFile, MusicFolder folder, boolean minimizeDiskAccess) {
@@ -196,7 +198,7 @@ public class MediaFileService {
         }
 
         if (resultStream == null) {
-            MusicFolder folder = settingsService.getMusicFolderById(parent.getFolderId());
+            MusicFolder folder = mediaFolderService.getMusicFolderById(parent.getFolderId());
             resultStream = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), true).parallelStream()
                     .map(x -> checkLastModified(x, folder, minimizeDiskAccess))
                     .filter(x -> includeMediaFile(x, folder));
@@ -218,7 +220,7 @@ public class MediaFileService {
      */
     public boolean isRoot(MediaFile mediaFile) {
         return StringUtils.isEmpty(mediaFile.getPath()) &&
-                settingsService.getAllMusicFolders(true, true).parallelStream()
+                mediaFolderService.getAllMusicFolders(true, true).parallelStream()
                         .anyMatch(x -> mediaFile.getFolderId().equals(x.getId()));
     }
 
@@ -376,7 +378,7 @@ public class MediaFileService {
         }
 
         Map<String, MediaFile> storedChildrenMap = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), false).parallelStream().collect(Collectors.toConcurrentMap(i -> i.getPath(), i -> i));
-        MusicFolder folder = settingsService.getMusicFolderById(parent.getFolderId());
+        MusicFolder folder = mediaFolderService.getMusicFolderById(parent.getFolderId());
         try (Stream<Path> children = Files.list(parent.getFullPath(folder.getPath()))) {
             List<MediaFile> result = children.parallel()
                     .filter(this::includeMediaFile)
@@ -700,7 +702,7 @@ public class MediaFileService {
     public void updateMediaFile(MediaFile mediaFile) {
         mediaFileDao.createOrUpdateMediaFile(mediaFile, file -> {
             // Copy values from obsolete table music_file_info if inserting for first time
-            MusicFolder folder = settingsService.getMusicFolderById(mediaFile.getFolderId());
+            MusicFolder folder = mediaFolderService.getMusicFolderById(mediaFile.getFolderId());
             if (folder != null) {
                 MediaFile musicFileInfo = mediaFileDao.getMusicFileInfo(file.getFullPath(folder.getPath()).toString());
                 if (musicFileInfo != null) {

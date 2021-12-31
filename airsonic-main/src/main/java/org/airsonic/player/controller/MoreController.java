@@ -23,9 +23,11 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,10 +37,13 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Controller for the "more" page.
@@ -57,6 +62,8 @@ public class MoreController {
     private PlayerService playerService;
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
 
     @GetMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -64,8 +71,16 @@ public class MoreController {
 
         User user = securityService.getCurrentUser(request);
 
-        String uploadDirectory = settingsService.resolveContextualString(settingsService.getUploadsFolder(), user.getUsername());
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(user.getUsername());
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(user.getUsername());
+        Supplier<Map<String, Object>> contextSupplier = () -> {
+            Map<String, Object> context = settingsService.buildSpelContext();
+            if (StringUtils.isNotEmpty(user.getUsername())) {
+                context.put("USER_NAME", user.getUsername());
+                context.put("USER_MUSIC_FOLDERS", musicFolders.stream().map(MusicFolder::getPath).map(Path::toString).collect(Collectors.toList()));
+            }
+            return context;
+        };
+        String uploadDirectory = settingsService.resolveContextualString(settingsService.getUploadsFolder(), contextSupplier);
 
         Player player = playerService.getPlayer(request, response);
         ModelAndView result = new ModelAndView();

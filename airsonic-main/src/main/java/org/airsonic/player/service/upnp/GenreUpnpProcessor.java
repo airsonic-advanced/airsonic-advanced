@@ -47,6 +47,7 @@ public class GenreUpnpProcessor extends UpnpContentProcessor <Genre, MediaFile> 
     /**
      * Browses the top-level content of a type.
      */
+    @Override
     public BrowseResult browseRoot(String filter, long firstResult, long maxResults, SortCriterion[] orderBy) throws Exception {
         // we have to override this to do an index-based id.
         DIDLContent didl = new DIDLContent();
@@ -65,6 +66,7 @@ public class GenreUpnpProcessor extends UpnpContentProcessor <Genre, MediaFile> 
         return createBrowseResult(didl, (int) didl.getCount(), allItems.size());
     }
 
+    @Override
     public Container createContainer(Genre item) {
         // genre uses index because we don't have a proper id
         return null;
@@ -80,10 +82,12 @@ public class GenreUpnpProcessor extends UpnpContentProcessor <Genre, MediaFile> 
         return container;
     }
 
+    @Override
     public List<Genre> getAllItems() {
         return getDispatcher().getMediaFileService().getGenres(false);
     }
 
+    @Override
     public Genre getItemById(String id) {
         int index = Integer.parseInt(id);
         List<Genre> allGenres = getAllItems();
@@ -93,11 +97,13 @@ public class GenreUpnpProcessor extends UpnpContentProcessor <Genre, MediaFile> 
         return null;
     }
 
+    @Override
     public List<MediaFile> getChildren(Genre item) {
-        List<MusicFolder> allFolders = getDispatcher().getSettingsService().getAllMusicFolders();
+        List<MusicFolder> allFolders = getDispatcher().getMediaFolderService().getAllMusicFolders();
         return getDispatcher().getMediaFileProcessor().getMediaFileDao().getSongsByGenre(item.getName(), 0, Integer.MAX_VALUE, allFolders);
     }
 
+    @Override
     public void addChild(DIDLContent didl, MediaFile child) {
         didl.addItem(getDispatcher().getMediaFileProcessor().createItem(child));
     }

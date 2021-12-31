@@ -101,6 +101,8 @@ public class DownloadController {
     private SettingsService settingsService;
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
 
     @GetMapping
     public ResponseEntity<Resource> handleRequest(Principal p,
@@ -198,7 +200,7 @@ public class DownloadController {
         if (indices.size() == 1 && (additionalFiles == null || additionalFiles.size() == 0)) {
             // single file
             MediaFile file = files.get(indices.get(0));
-            Path path = file.getFullPath(settingsService.getMusicFolderById(file.getFolderId()).getPath());
+            Path path = file.getFullPath(mediaFolderService.getMusicFolderById(file.getFolderId()).getPath());
             long changed = file.getChanged() == null ? -1 : file.getChanged().toEpochMilli();
             return new ResponseDTO(
                     new MonitoredResource(
@@ -217,7 +219,7 @@ public class DownloadController {
                             indices.stream().map(files::get).filter(Objects::nonNull).map(x -> Pair.of(x.getRelativePath(), x.getFolderId())),
                             additionalFiles.stream().filter(Objects::nonNull))
                     .flatMap(pf -> {
-                        MusicFolder mf = settingsService.getMusicFolderById(pf.getRight());
+                        MusicFolder mf = mediaFolderService.getMusicFolderById(pf.getRight());
                         Path p = mf.getPath().resolve(pf.getLeft());
                         Path parent = p.getParent();
                         try (Stream<Path> paths = Files.walk(p)) {

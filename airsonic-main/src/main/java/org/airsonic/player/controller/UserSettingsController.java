@@ -28,6 +28,7 @@ import org.airsonic.player.domain.User.Role;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.domain.UserSettings;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
@@ -74,6 +75,8 @@ public class UserSettingsController {
     @Autowired
     private SettingsService settingsService;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private TranscodingService transcodingService;
 
     @InitBinder
@@ -109,7 +112,7 @@ public class UserSettingsController {
         command.setTranscodeDirectory(SettingsService.getTranscodeDirectory().toString());
         command.setTranscodeSchemes(TranscodeScheme.values());
         command.setLdapEnabled(settingsService.isLdapEnabled());
-        command.setAllMusicFolders(settingsService.getAllMusicFolders());
+        command.setAllMusicFolders(mediaFolderService.getAllMusicFolders());
         model.addAttribute("command", command);
         return "userSettings";
     }
@@ -128,8 +131,8 @@ public class UserSettingsController {
     private List<Integer> getAllowedMusicFolderIds(User user) {
         List<Integer> result = new ArrayList<Integer>();
         List<MusicFolder> allowedMusicFolders = user == null
-                                                ? settingsService.getAllMusicFolders()
-                                                : settingsService.getMusicFoldersForUser(user.getUsername());
+                ? mediaFolderService.getAllMusicFolders()
+                : mediaFolderService.getMusicFoldersForUser(user.getUsername());
 
         for (MusicFolder musicFolder : allowedMusicFolders) {
             result.add(musicFolder.getId());
@@ -203,7 +206,7 @@ public class UserSettingsController {
         }
         if (command.isPodcastRole()) {
             roles.add(Role.PODCAST);
-            allowedMusicFolderIds.addAll(settingsService.getAllMusicFolders().stream()
+            allowedMusicFolderIds.addAll(mediaFolderService.getAllMusicFolders().stream()
                     .filter(mf -> mf.getType() == Type.PODCAST).map(mf -> mf.getId()).collect(toSet()));
         }
         if (command.isStreamRole()) {
@@ -233,7 +236,7 @@ public class UserSettingsController {
         settingsService.updateUserSettings(userSettings);
 
         Arrays.stream(command.getAllowedMusicFolderIds()).forEach(allowedMusicFolderIds::add);
-        settingsService.setMusicFoldersForUser(command.getUsername(), allowedMusicFolderIds);
+        mediaFolderService.setMusicFoldersForUser(command.getUsername(), allowedMusicFolderIds);
     }
 
 }

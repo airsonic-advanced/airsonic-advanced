@@ -78,6 +78,8 @@ public class DispatchingContentDirectory extends CustomContentDirectory {
     @Autowired
     private MediaFileService mediaFileService;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private PlaylistService playlistService;
 
     @Autowired
@@ -263,6 +265,14 @@ public class DispatchingContentDirectory extends CustomContentDirectory {
     }
     public void setMediaFileService(MediaFileService mediaFileService) {
         this.mediaFileService = mediaFileService;
+    }
+
+    public MediaFolderService getMediaFolderService() {
+        return mediaFolderService;
+    }
+
+    public void setMediaFolderService(MediaFolderService mediaFolderService) {
+        this.mediaFolderService = mediaFolderService;
     }
 
     public SettingsService getSettingsService() {

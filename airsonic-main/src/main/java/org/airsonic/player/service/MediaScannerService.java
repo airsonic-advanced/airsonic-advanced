@@ -75,6 +75,8 @@ public class MediaScannerService {
     @Autowired
     private MediaFileService mediaFileService;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private MediaFileDao mediaFileDao;
     @Autowired
     private ArtistDao artistDao;
@@ -215,7 +217,7 @@ public class MediaScannerService {
             indexManager.startIndexing();
 
             // Recurse through all files on disk.
-            settingsService.getAllMusicFolders()
+            mediaFolderService.getAllMusicFolders()
                 .parallelStream()
                     .forEach(musicFolder -> scanFile(mediaFileService.getMediaFile(Paths.get(""), musicFolder, false),
                             musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered));

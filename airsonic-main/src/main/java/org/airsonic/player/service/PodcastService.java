@@ -106,6 +106,8 @@ public class PodcastService {
     @Autowired
     private MediaFileService mediaFileService;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private MetaDataParserFactory metaDataParserFactory;
     @Autowired
     private VersionService versionService;
@@ -226,11 +228,6 @@ public class PodcastService {
         return podcastDao.getAllChannelRules();
     }
 
-    /**
-     * Creates a new Podcast channel.
-     *
-     * @param url The URL of the Podcast channel.
-     */
     public void createChannel(String url) {
         PodcastChannel channel = new PodcastChannel(sanitizeUrl(url, false));
         int channelId = podcastDao.createChannel(channel);
@@ -389,7 +386,7 @@ public class PodcastService {
         }
 
         MediaFile channelMediaFile = mediaFileService.getMediaFile(channel.getMediaFileId());
-        MusicFolder folder = settingsService.getMusicFolderById(channelMediaFile.getFolderId());
+        MusicFolder folder = mediaFolderService.getMusicFolderById(channelMediaFile.getFolderId());
         Path existingCoverArt = mediaFileService.getCoverArt(channelMediaFile);
         boolean imageFileExists = existingCoverArt != null
                 && mediaFileService.getMediaFile(existingCoverArt, folder) == null;
@@ -569,7 +566,7 @@ public class PodcastService {
         method.setConfig(requestConfig);
         method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
         MediaFile file = createEpisodeFile(channel, episode);
-        MusicFolder folder = settingsService.getMusicFolderById(file.getFolderId());
+        MusicFolder folder = mediaFolderService.getMusicFolderById(file.getFolderId());
         Path filePath = file.getFullPath(folder.getPath());
 
         try (CloseableHttpClient client = HttpClients.createDefault();
@@ -688,7 +685,7 @@ public class PodcastService {
         }
 
         MediaFile channelMediaFile = mediaFileService.getMediaFile(channel.getMediaFileId());
-        MusicFolder folder = settingsService.getMusicFolderById(channelMediaFile.getFolderId());
+        MusicFolder folder = mediaFolderService.getMusicFolderById(channelMediaFile.getFolderId());
         Path channelDir = channelMediaFile.getFullPath(folder.getPath());
 
         Path file = channelDir.resolve(filename + "." + extension);
@@ -709,7 +706,7 @@ public class PodcastService {
     }
 
     private MediaFile createChannelDirectory(PodcastChannel channel) {
-        MusicFolder podcastFolder = settingsService.getAllMusicFolders().stream()
+        MusicFolder podcastFolder = mediaFolderService.getAllMusicFolders().stream()
                 .filter(f -> f.getType() == Type.PODCAST).findFirst().orElse(null);
 
         if (podcastFolder == null || !Files.isWritable(podcastFolder.getPath())) {
@@ -744,7 +741,7 @@ public class PodcastService {
         PodcastChannel channel = podcastDao.getChannel(channelId);
         if (channel.getMediaFileId() != null) {
             MediaFile file = mediaFileService.getMediaFile(channel.getMediaFileId());
-            MusicFolder folder = settingsService.getMusicFolderById(file.getFolderId());
+            MusicFolder folder = mediaFolderService.getMusicFolderById(file.getFolderId());
             FileUtil.delete(file.getFullPath(folder.getPath()));
             mediaFileService.refreshMediaFile(file, folder);
         }
@@ -771,7 +768,7 @@ public class PodcastService {
         // Delete file and update mediaFile
         if (episode.getMediaFileId() != null) {
             MediaFile file = mediaFileService.getMediaFile(episode.getMediaFileId());
-            MusicFolder folder = settingsService.getMusicFolderById(file.getFolderId());
+            MusicFolder folder = mediaFolderService.getMusicFolderById(file.getFolderId());
             FileUtil.delete(file.getFullPath(folder.getPath()));
             mediaFileService.refreshMediaFile(file, folder);
         }

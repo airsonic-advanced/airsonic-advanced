@@ -23,14 +23,12 @@ import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.RateLimiter;
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
-import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.service.sonos.SonosServiceRegistration;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,14 +49,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Provides persistent storage of application settings and preferences.
@@ -267,8 +261,6 @@ public class SettingsService {
     @Autowired
     private InternetRadioDao internetRadioDao;
     @Autowired
-    private MusicFolderDao musicFolderDao;
-    @Autowired
     private UserDao userDao;
     @Autowired
     private AvatarDao avatarDao;
@@ -278,8 +270,6 @@ public class SettingsService {
     private Set<String> cachedCoverArtFileTypes;
     private Set<String> cachedMusicFileTypes;
     private Set<String> cachedVideoFileTypes;
-    private List<MusicFolder> cachedMusicFolders;
-    private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
     private RateLimiter downloadRateLimiter;
     private RateLimiter uploadRateLimiter;
     private Pattern excludePattern;
@@ -576,21 +566,22 @@ public class SettingsService {
         setProperty(KEY_UPLOADS_FOLDER, uploadsFolder);
     }
 
-    public String resolveContextualString(String s, String username) {
+    public Map<String, Object> buildSpelContext() {
+        Map<String, Object> context = new HashMap<>();
+        context.put("AIRSONIC_HOME", getAirsonicHome());
+        context.put("DEFAULT_PLAYLIST_FOLDER", getPlaylistFolder());
+        context.put("DEFAULT_MUSIC_FOLDER", Util.getDefaultMusicFolder());
+        return context;
+    }
+
+    public String resolveContextualString(String s, Supplier<Map<String, Object>> contextSupplier) {
         String[] contextuals = StringUtils.substringsBetween(s, "%{", "}");
         if (contextuals == null || contextuals.length == 0) {
             // if no context eval is needed, then short-circuit
             return s;
         }
-        Map<String, Object> context = new HashMap<>();
-        context.put("AIRSONIC_HOME", getAirsonicHome());
-        context.put("DEFAULT_PLAYLIST_FOLDER", getPlaylistFolder());
-        context.put("DEFAULT_MUSIC_FOLDER", Util.getDefaultMusicFolder());
-        if (StringUtils.isNotEmpty(username)) {
-            context.put("USER_NAME", username);
-            context.put("USER_MUSIC_FOLDERS", getMusicFoldersForUser(username).stream().map(MusicFolder::getPath).map(Path::toString).collect(Collectors.toList()));
-        }
 
+        Map<String, Object> context = contextSupplier.get();
         // StandardEvaluationContext spelCtx = new StandardEvaluationContext(context);
 
         return StringUtils.replaceEach(s,
@@ -1201,171 +1192,6 @@ public class SettingsService {
     }
 
     /**
-     * Returns all music folders. Non-existing and disabled folders are not included.
-     *
-     * @return Possibly empty list of all music folders.
-     */
-    public List<MusicFolder> getAllMusicFolders() {
-        return getAllMusicFolders(false, false);
-    }
-
-    /**
-     * Returns all music folders.
-     *
-     * @param includeDisabled    Whether to include disabled folders.
-     * @param includeNonExisting Whether to include non-existing folders.
-     * @return Possibly empty list of all music folders.
-     */
-    public List<MusicFolder> getAllMusicFolders(boolean includeDisabled, boolean includeNonExisting) {
-        if (cachedMusicFolders == null) {
-            cachedMusicFolders = musicFolderDao.getAllMusicFolders();
-        }
-
-        return cachedMusicFolders.parallelStream()
-                .filter(folder -> (includeDisabled || folder.isEnabled()) && (includeNonExisting || Files.exists(folder.getPath())))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Returns all music folders a user have access to. Non-existing and disabled folders are not included.
-     *
-     * @return Possibly empty list of music folders.
-     */
-    public List<MusicFolder> getMusicFoldersForUser(String username) {
-        return cachedMusicFoldersPerUser.computeIfAbsent(username, u -> {
-            List<MusicFolder> result = musicFolderDao.getMusicFoldersForUser(u);
-            result.retainAll(getAllMusicFolders(false, false));
-            return result;
-        });
-    }
-
-    /**
-     * Returns all music folders a user have access to. Non-existing and disabled folders are not included.
-     *
-     * @param selectedMusicFolderId If non-null and included in the list of allowed music folders, this methods returns
-     *                              a list of only this music folder.
-     * @return Possibly empty list of music folders.
-     */
-    public List<MusicFolder> getMusicFoldersForUser(String username, Integer selectedMusicFolderId) {
-        List<MusicFolder> allowed = getMusicFoldersForUser(username);
-        if (selectedMusicFolderId == null) {
-            return allowed;
-        }
-        MusicFolder selected = getMusicFolderById(selectedMusicFolderId);
-        return allowed.contains(selected) ? Collections.singletonList(selected) : Collections.emptyList();
-    }
-
-    /**
-     * Returns the selected music folder for a given user, or {@code null} if all music folders should be displayed.
-     */
-    public MusicFolder getSelectedMusicFolder(String username) {
-        UserSettings settings = getUserSettings(username);
-        int musicFolderId = settings.getSelectedMusicFolderId();
-
-        MusicFolder musicFolder = getMusicFolderById(musicFolderId);
-        List<MusicFolder> allowedMusicFolders = getMusicFoldersForUser(username);
-        return allowedMusicFolders.contains(musicFolder) ? musicFolder : null;
-    }
-
-    public void setMusicFoldersForUser(String username, Collection<Integer> musicFolderIds) {
-        musicFolderDao.setMusicFoldersForUser(username, musicFolderIds);
-        cachedMusicFoldersPerUser.remove(username);
-    }
-
-    /**
-     * Returns the music folder with the given ID.
-     *
-     * @param id The ID.
-     * @return The music folder with the given ID, or <code>null</code> if not found.
-     */
-    public MusicFolder getMusicFolderById(Integer id) {
-        List<MusicFolder> all = getAllMusicFolders();
-        for (MusicFolder folder : all) {
-            if (id.equals(folder.getId())) {
-                return folder;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Creates a new music folder.
-     *
-     * @param musicFolder The music folder to create.
-     */
-    public void createMusicFolder(MusicFolder musicFolder) {
-        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder, getAllMusicFolders(true, true));
-        if (!overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty()) {
-            throw new IllegalArgumentException("Music folder with path " + musicFolder.getPath() + " overlaps with existing music folder path(s) (" + logMusicFolderOverlap(overlaps) + ") and can therefore not be created.");
-        }
-        musicFolderDao.createMusicFolder(musicFolder);
-        clearMusicFolderCache();
-    }
-
-    /**
-     * Deletes the music folder with the given ID.
-     *
-     * @param id The ID of the music folder to delete.
-     */
-    public void deleteMusicFolder(Integer id) {
-        musicFolderDao.deleteMusicFolder(id);
-        clearMusicFolderCache();
-    }
-
-    /**
-     * Updates the given music folder.
-     *
-     * @param musicFolder The music folder to update.
-     */
-    public void updateMusicFolder(MusicFolder musicFolder) {
-        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder, getAllMusicFolders(true, true));
-        if (!overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty()) {
-            throw new IllegalArgumentException("Music folder with path " + musicFolder.getPath() + " overlaps with existing music folder path(s) (" + logMusicFolderOverlap(overlaps) + ") and can therefore not be updated.");
-        }
-        musicFolderDao.updateMusicFolder(musicFolder);
-        clearMusicFolderCache();
-    }
-
-    public static Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> getMusicFolderPathOverlaps(MusicFolder folder, List<MusicFolder> allFolders) {
-        Path absoluteFolderPath = folder.getPath().normalize().toAbsolutePath();
-        List<MusicFolder> sameFolders = allFolders.parallelStream().filter(f -> {
-            // is same but not itself
-            Path fAbsolute = f.getPath().normalize().toAbsolutePath();
-            return fAbsolute.equals(absoluteFolderPath) && !f.getId().equals(folder.getId());
-        }).collect(toList());
-        List<MusicFolder> ancestorFolders = allFolders.parallelStream().filter(f -> {
-            // is ancestor
-            Path fAbsolute = f.getPath().normalize().toAbsolutePath();
-            return absoluteFolderPath.getNameCount() > fAbsolute.getNameCount()
-                    && absoluteFolderPath.startsWith(fAbsolute);
-        }).collect(toList());
-        List<MusicFolder> descendantFolders = allFolders.parallelStream().filter(f -> {
-            // is descendant
-            Path fAbsolute = f.getPath().normalize().toAbsolutePath();
-            return fAbsolute.getNameCount() > absoluteFolderPath.getNameCount()
-                    && fAbsolute.startsWith(absoluteFolderPath);
-        }).collect(toList());
-
-        return Triple.of(sameFolders, ancestorFolders, descendantFolders);
-    }
-
-    public static String logMusicFolderOverlap(Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps) {
-        StringBuilder result = new StringBuilder("SAME: ");
-        result.append(overlaps.getLeft().stream().map(f -> f.getName()).collect(joining(",", "[", "]")));
-        result.append(", ANCESTOR: ");
-        result.append(overlaps.getMiddle().stream().map(f -> f.getName()).collect(joining(",", "[", "]")));
-        result.append(", DESCENDANT: ");
-        result.append(overlaps.getRight().stream().map(f -> f.getName()).collect(joining(",", "[", "]")));
-
-        return result.toString();
-    }
-
-    public void clearMusicFolderCache() {
-        cachedMusicFolders = null;
-        cachedMusicFoldersPerUser.clear();
-    }
-
-    /**
      * Returns all internet radio stations. Disabled stations are not returned.
      *
      * @return Possibly empty list of all internet radio stations.
@@ -1594,10 +1420,6 @@ public class SettingsService {
 
     public void setInternetRadioDao(InternetRadioDao internetRadioDao) {
         this.internetRadioDao = internetRadioDao;
-    }
-
-    public void setMusicFolderDao(MusicFolderDao musicFolderDao) {
-        this.musicFolderDao = musicFolderDao;
     }
 
     public void setUserDao(UserDao userDao) {

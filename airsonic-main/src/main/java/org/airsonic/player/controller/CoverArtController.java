@@ -81,6 +81,8 @@ public class CoverArtController implements LastModified {
     @Autowired
     private MediaFileService mediaFileService;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private TranscodingService transcodingService;
     @Autowired
     private SettingsService settingsService;
@@ -432,7 +434,7 @@ public class CoverArtController implements LastModified {
 
         private ArtistCoverArtRequest(Artist artist) {
             super(artist.getCoverArtPath(),
-                settingsService.getMusicFolderById(artist.getFolderId()),
+                mediaFolderService.getMusicFolderById(artist.getFolderId()),
                 () -> ARTIST_COVERART_PREFIX + artist.getId(),
                 () -> artist.getLastScanned());
             this.artist = artist;
@@ -460,7 +462,7 @@ public class CoverArtController implements LastModified {
 
         private AlbumCoverArtRequest(Album album) {
             super(album.getCoverArtPath(),
-                settingsService.getMusicFolderById(album.getFolderId()),
+                mediaFolderService.getMusicFolderById(album.getFolderId()),
                 () -> ALBUM_COVERART_PREFIX + album.getId(),
                 () -> album.getLastScanned());
             this.album = album;
@@ -564,7 +566,7 @@ public class CoverArtController implements LastModified {
 
         private MediaFileCoverArtRequest(MediaFile mediaFile) {
             super(Optional.ofNullable(mediaFileService.getCoverArt(mediaFile)).map(p -> p.toString()).orElse(null),
-                    settingsService.getMusicFolderById(mediaFile.getFolderId()),
+                    mediaFolderService.getMusicFolderById(mediaFile.getFolderId()),
                     null,
                     null);
             this.mediaFile = mediaFile;

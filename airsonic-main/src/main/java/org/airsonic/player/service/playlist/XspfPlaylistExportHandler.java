@@ -10,7 +10,7 @@ import org.airsonic.player.dao.PlaylistDao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.Playlist;
-import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.MediaFolderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +28,7 @@ public class XspfPlaylistExportHandler implements PlaylistExportHandler {
     PlaylistDao playlistDao;
 
     @Autowired
-    SettingsService settingsService;
+    MediaFolderService mediaFolderService;
 
     @Override
     public boolean canHandle(Class<? extends SpecificPlaylistProvider> providerClass) {
@@ -49,7 +49,7 @@ public class XspfPlaylistExportHandler implements PlaylistExportHandler {
         List<MediaFile> files = mediaFileDao.getFilesInPlaylist(id);
 
         files.stream().map(mediaFile -> {
-            MusicFolder folder = settingsService.getMusicFolderById(mediaFile.getFolderId());
+            MusicFolder folder = mediaFolderService.getMusicFolderById(mediaFile.getFolderId());
             Track track = new Track();
             track.setTrackNumber(mediaFile.getTrackNumber());
             track.setCreator(mediaFile.getArtist());

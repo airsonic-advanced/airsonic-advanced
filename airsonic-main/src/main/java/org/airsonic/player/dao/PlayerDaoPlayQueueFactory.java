@@ -1,7 +1,7 @@
 package org.airsonic.player.dao;
 
 import org.airsonic.player.domain.PlayQueue;
-import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.MediaFolderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 public class PlayerDaoPlayQueueFactory {
 
     @Autowired
-    SettingsService settingsService;
+    private MediaFolderService mediaFolderService;
 
     public PlayQueue createPlayQueue() {
-        return new PlayQueue(id -> settingsService.getMusicFolderById(id));
+        return new PlayQueue(id -> mediaFolderService.getMusicFolderById(id));
     }
 }

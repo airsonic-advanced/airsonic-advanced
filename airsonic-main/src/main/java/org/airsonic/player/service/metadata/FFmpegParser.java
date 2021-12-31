@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
 import org.apache.commons.lang3.StringUtils;
@@ -59,7 +60,7 @@ public class FFmpegParser extends MetaDataParser {
     @Autowired
     private TranscodingService transcodingService;
     @Autowired
-    private SettingsService settingsService;
+    private MediaFolderService mediaFolderService;
 
     /**
      * Parses meta data for the given music file. No guessing or reformatting is done.
@@ -162,11 +163,6 @@ public class FFmpegParser extends MetaDataParser {
         return false;
     }
 
-    @Override
-    SettingsService getSettingsService() {
-        return settingsService;
-    }
-
     /**
      * Returns whether this parser is applicable to the given file.
      *
@@ -182,7 +178,8 @@ public class FFmpegParser extends MetaDataParser {
         this.transcodingService = transcodingService;
     }
 
-    public void setSettingsService(SettingsService settingsService) {
-        this.settingsService = settingsService;
+    @Override
+    MediaFolderService getMediaFolderService() {
+        return mediaFolderService;
     }
 }

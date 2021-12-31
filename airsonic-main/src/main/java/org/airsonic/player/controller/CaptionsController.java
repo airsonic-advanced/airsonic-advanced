@@ -8,6 +8,7 @@ import org.airsonic.player.io.InputStreamReaderThread;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.NetworkService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
@@ -63,6 +64,8 @@ public class CaptionsController {
     @Autowired
     private MediaFileService mediaFileService;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private SecurityService securityService;
     @Autowired
     private SettingsService settingsService;
@@ -116,7 +119,7 @@ public class CaptionsController {
             }
             time = Files.getLastModifiedTime(captionsFile).toInstant();
         } else {
-            Path videoFullPath = video.getFullPath(settingsService.getMusicFolderById(video.getFolderId()).getPath());
+            Path videoFullPath = video.getFullPath(mediaFolderService.getMusicFolderById(video.getFolderId()).getPath());
             resource = getConvertedResource(videoFullPath, res.getIdentifier(), effectiveFormat);
             time = Files.getLastModifiedTime(videoFullPath).toInstant();
         }
@@ -231,7 +234,7 @@ public class CaptionsController {
     }
 
     public MetaData getVideoMetaData(MediaFile video) {
-        Path videoFullPath = video.getFullPath(settingsService.getMusicFolderById(video.getFolderId()).getPath());
+        Path videoFullPath = video.getFullPath(mediaFolderService.getMusicFolderById(video.getFolderId()).getPath());
         MetaDataParser parser = this.metaDataParserFactory.getParser(videoFullPath);
         return (parser != null) ? parser.getMetaData(videoFullPath) : null;
     }
@@ -262,7 +265,7 @@ public class CaptionsController {
         if (parent == null) {
             return Collections.emptyList();
         }
-        Path parentPath = parent.getFullPath(settingsService.getMusicFolderById(parent.getFolderId()).getPath());
+        Path parentPath = parent.getFullPath(mediaFolderService.getMusicFolderById(parent.getFolderId()).getPath());
 
         try (Stream<Path> children = Files.walk(parentPath)) {
             return children.parallel()

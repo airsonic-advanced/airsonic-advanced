@@ -55,6 +55,8 @@ public class StatusService {
     @Autowired
     private MediaFileService mediaFileService;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private SettingsService settingsService;
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -163,7 +165,8 @@ public class StatusService {
         MediaFile file = null;
         if (status.getFile() != null) {
             if (status.getFolderId() != null) {
-                file = mediaFileService.getMediaFile(status.getFile(), settingsService.getMusicFolderById(status.getFolderId()));
+                file = mediaFileService.getMediaFile(status.getFile(),
+                        mediaFolderService.getMusicFolderById(status.getFolderId()));
             } else {
                 file = mediaFileService.getMediaFile(status.getFile());
             }

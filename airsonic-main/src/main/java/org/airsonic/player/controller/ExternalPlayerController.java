@@ -61,13 +61,13 @@ public class ExternalPlayerController {
     private static final Logger LOG = LoggerFactory.getLogger(ExternalPlayerController.class);
 
     @Autowired
-    private SettingsService settingsService;
-    @Autowired
     private PlayerService playerService;
     @Autowired
     private ShareService shareService;
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
     @Autowired
     private JWTSecurityService jwtSecurityService;
     @Autowired
@@ -116,12 +116,12 @@ public class ExternalPlayerController {
     }
 
     private List<MediaFileWithUrlInfo> getMedia(HttpServletRequest request, Share share, Player player, Instant expires) {
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(player.getUsername());
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(player.getUsername());
 
         if (share != null) {
             return shareService.getSharedFiles(share.getId(), musicFolders)
                     .stream()
-                    .filter(f -> Files.exists(f.getFullPath(settingsService.getMusicFolderById(f.getFolderId()).getPath())))
+                    .filter(f -> Files.exists(f.getFullPath(mediaFolderService.getMusicFolderById(f.getFolderId()).getPath())))
                     .flatMap(f -> {
                         if (f.isDirectory()) {
                             return mediaFileService.getChildrenOf(f, true, false, true).stream()

@@ -92,7 +92,7 @@ public class MediaFileUpnpProcessor extends UpnpContentProcessor <MediaFile, Med
 
     @Override
     public List<MediaFile> getAllItems() {
-        List<MusicFolder> allFolders = getDispatcher().getSettingsService().getAllMusicFolders();
+        List<MusicFolder> allFolders = getDispatcher().getMediaFolderService().getAllMusicFolders();
 
         if (allFolders.size() == 1) {
             // if there's only one root folder just return it

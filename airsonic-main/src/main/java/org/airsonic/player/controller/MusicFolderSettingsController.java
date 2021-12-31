@@ -25,6 +25,7 @@ import org.airsonic.player.dao.ArtistDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.MediaLibraryStatistics;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.MediaScannerService;
 import org.airsonic.player.service.PlaylistService;
 import org.airsonic.player.service.SettingsService;
@@ -47,7 +48,7 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Controller for the page used to administrate the set of music folders.
+ * Controller for the page used to administer the set of music folders.
  *
  * @author Sindre Mehus
  */
@@ -61,6 +62,8 @@ public class MusicFolderSettingsController {
     private SettingsService settingsService;
     @Autowired
     private MediaScannerService mediaScannerService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
     @Autowired
     private ArtistDao artistDao;
     @Autowired
@@ -84,7 +87,7 @@ public class MusicFolderSettingsController {
         MusicFolderSettingsCommand command = new MusicFolderSettingsCommand();
 
         if (scanNow != null) {
-            settingsService.clearMusicFolderCache();
+            mediaFolderService.clearMusicFolderCache();
             mediaScannerService.scanLibrary();
         }
         if (expunge != null) {
@@ -96,7 +99,7 @@ public class MusicFolderSettingsController {
         command.setFastCache(settingsService.isFastCacheEnabled());
         command.setOrganizeByFolderStructure(settingsService.isOrganizeByFolderStructure());
         command.setScanning(mediaScannerService.isScanning());
-        command.setMusicFolders(wrap(settingsService.getAllMusicFolders(true, true)));
+        command.setMusicFolders(wrap(mediaFolderService.getAllMusicFolders(true, true)));
         command.setNewMusicFolder(new MusicFolderSettingsCommand.MusicFolderInfo());
         command.setUploadsFolder(settingsService.getUploadsFolder());
         command.setExcludePatternString(settingsService.getExcludePatternString());
@@ -106,7 +109,6 @@ public class MusicFolderSettingsController {
 
         model.addAttribute("command", command);
     }
-
 
     private void expunge() {
         // to be before dao#expunge
@@ -134,8 +136,8 @@ public class MusicFolderSettingsController {
 
     private List<MusicFolderSettingsCommand.MusicFolderInfo> wrap(List<MusicFolder> musicFolders) {
         return musicFolders.stream().map(f -> {
-            Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = SettingsService.getMusicFolderPathOverlaps(f, settingsService.getAllMusicFolders(true, true));
-            return new MusicFolderSettingsCommand.MusicFolderInfo(f, !overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty(), SettingsService.logMusicFolderOverlap(overlaps));
+            Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = MediaFolderService.getMusicFolderPathOverlaps(f, mediaFolderService.getAllMusicFolders(true, true));
+            return new MusicFolderSettingsCommand.MusicFolderInfo(f, !overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty(), MediaFolderService.logMusicFolderOverlap(overlaps));
         }).collect(toList());
     }
 
@@ -145,12 +147,12 @@ public class MusicFolderSettingsController {
         boolean success = true;
         for (MusicFolderSettingsCommand.MusicFolderInfo musicFolderInfo : command.getMusicFolders()) {
             if (musicFolderInfo.isDelete()) {
-                settingsService.deleteMusicFolder(musicFolderInfo.getId());
+                mediaFolderService.deleteMusicFolder(musicFolderInfo.getId());
             } else {
                 MusicFolder musicFolder = musicFolderInfo.toMusicFolder();
                 if (musicFolder != null) {
                     try {
-                        settingsService.updateMusicFolder(musicFolder);
+                        mediaFolderService.updateMusicFolder(musicFolder);
                     } catch (Exception e) {
                         LOG.warn("Could not update music folder id {} ({})", musicFolder.getId(), musicFolder.getName(), e);
                         success = false;
@@ -162,7 +164,7 @@ public class MusicFolderSettingsController {
         MusicFolder newMusicFolder = command.getNewMusicFolder().toMusicFolder();
         if (newMusicFolder != null) {
             try {
-                settingsService.createMusicFolder(newMusicFolder);
+                mediaFolderService.createMusicFolder(newMusicFolder);
             } catch (Exception e) {
                 LOG.warn("Could not create music folder {}", newMusicFolder.getName(), e);
                 success = false;
