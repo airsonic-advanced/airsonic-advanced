@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" %>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8" %>
 <%--@elvariable id="command" type="org.airsonic.player.command.MusicFolderSettingsCommand"--%>
 
 <html><head>
@@ -61,9 +61,7 @@
             <td align="center" style="padding-left:1em"><c:if test="${folder.type != 'PODCAST'}"><form:checkbox path="musicFolders[${loopStatus.count-1}].delete" cssClass="checkbox"/></c:if></td>
             <td>
               <c:if test="${not folder.existing}"><span class="warning"><fmt:message key="musicfoldersettings.notfound"/></span></c:if>
-              <c:if test="${folder.overlap}"><span class="warning"><fmt:message key="musicfoldersettings.overlap"><fmt:param value="${folder.overlapStatus}"/></fmt:message></span>
-                <c:import url="helpToolTip.jsp"><c:param name="topic" value="musicfolderoverlap"/></c:import>
-              </c:if>
+              <c:if test="${folder.overlap}"><span><fmt:message key="musicfoldersettings.overlap"><fmt:param value="${folder.overlapStatus}"/></fmt:message></span></c:if>
             </td>
         </tr>
     </c:forEach>
