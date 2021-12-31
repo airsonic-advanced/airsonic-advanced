@@ -380,6 +380,7 @@ public class MediaFileService {
         try (Stream<Path> children = Files.list(parent.getFullPath(folder.getPath()))) {
             List<MediaFile> result = children.parallel()
                     .filter(this::includeMediaFile)
+                    .filter(x -> securityService.getMusicFolderForFile(x, true, true).getId().equals(parent.getFolderId()))
                     .map(x -> folder.getPath().relativize(x))
                     .map(x -> {
                         MediaFile media = storedChildrenMap.remove(x.toString());
@@ -463,6 +464,11 @@ public class MediaFileService {
         Instant lastModified = FileUtil.lastModified(file);
         mediaFile.setPath(relativePath.toString());
         mediaFile.setFolderId(folder.getId());
+        //sanity check
+        MusicFolder folderActual = securityService.getMusicFolderForFile(file, true, true);
+        if (!folderActual.getId().equals(folder.getId())) {
+            LOG.warn("Inconsistent Mediafile folder for media file with path: {}, folder id should be {} and is instead {}", file, folderActual.getId(), folder.getId());
+        }
         // distinguish between null (no parent, like root folder), "" (root parent), and else
         String parentPath = null;
         if (StringUtils.isNotEmpty(relativePath.toString())) {

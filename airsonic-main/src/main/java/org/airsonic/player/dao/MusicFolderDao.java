@@ -102,11 +102,59 @@ public class MusicFolderDao extends AbstractDao {
         LOG.info("Deleted music folder with ID {}", id);
     }
 
-    /**
-     * Updates the given music folder.
-     *
-     * @param musicFolder The music folder to update.
-     */
+    public void reassignChildren(MusicFolder from, MusicFolder to) {
+        if (to.getPath().getNameCount() > from.getPath().getNameCount()) {
+            // assign ancestor -> descendant
+            MusicFolder ancestor = from;
+            MusicFolder descendant = to;
+            String relativePath = ancestor.getPath().relativize(descendant.getPath()).toString();
+            // update children
+            int len = relativePath.length();
+            String sql = "update media_file set "
+                    + "folder_id=?, "
+                    + "path=SUBSTR(path, " + (len + 2) + "), "
+                    + "cover_art_path=SUBSTR(cover_art_path, " + (len + 2) + "), "
+                    + "parent_path=(case "
+                    + "  when (length(parent_path) > " + len + ") then SUBSTR(parent_path, " + (len + 2) + ") "
+                    + "  else SUBSTR(parent_path, " + (len + 1) + ") end) "
+                    + "where folder_id=? and path like ?";
+            update(sql, descendant.getId(), ancestor.getId(), relativePath + File.separator + "%");
+            // update root
+            sql = "update media_file set "
+                    + "folder_id=?, "
+                    + "path='', "
+                    + "parent_path=null, "
+                    + "cover_art_path=SUBSTR(cover_art_path, " + (len + 2) + "), "
+                    + "title=?, "
+                    + "type=? "
+                    + "where folder_id=? and path=?";
+            update(sql, descendant.getId(), descendant.getName(), MediaFile.MediaType.DIRECTORY, ancestor.getId(), relativePath);
+        } else {
+            // assign descendant -> ancestor
+            MusicFolder ancestor = to;
+            MusicFolder descendant = from;
+            Path relativePath = ancestor.getPath().relativize(descendant.getPath());
+            // update root
+            String sql = "update media_file set "
+                    + "folder_id=?, "
+                    + "path=?, "
+                    + "parent_path=?, "
+                    + "cover_art_path=concat(?, cover_art_path)"
+                    + "where folder_id=? and path=''";
+            update(sql, ancestor.getId(), relativePath, relativePath.getParent() == null ? "" : relativePath.getParent().toString(), relativePath + File.separator, descendant.getId());
+            // update children
+            sql = "update media_file set "
+                    + "folder_id=?, "
+                    + "path=concat(?, path) "
+                    + "parent_path=(case"
+                    + "  when (parent_path = '') then ?"
+                    + "  else concat(?, parent_path) end), "
+                    + "cover_art_path=concat(?, cover_art_path)"
+                    + "where folder_id=?";
+            update(sql, ancestor.getId(), relativePath + File.separator, relativePath, relativePath + File.separator, relativePath + File.separator, descendant.getId());
+        }
+    }
+
     public void updateMusicFolder(MusicFolder musicFolder) {
         String sql = "update music_folder set path=?, name=?, type=?, enabled=?, changed=? where id=?";
         update(sql, musicFolder.getPath().toString(), musicFolder.getName(), musicFolder.getType().name(),

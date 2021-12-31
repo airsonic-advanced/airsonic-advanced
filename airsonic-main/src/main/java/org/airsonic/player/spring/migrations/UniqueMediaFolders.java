@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
-
 public class UniqueMediaFolders implements CustomSqlChange {
     private static final Logger LOG = LoggerFactory.getLogger(UniqueMediaFolders.class);
 
@@ -61,11 +59,7 @@ public class UniqueMediaFolders implements CustomSqlChange {
         }
 
         if (conn != null) {
-            try (PreparedStatement st = conn.prepareStatement(""
-                        + "select m.* from music_folder m join "
-                        + "(select path, count(*) from music_folder group by path having count(*) > 1) d "
-                        + "on m.path = d.path "
-                        + "order by m.id");
+            try (PreparedStatement st = conn.prepareStatement("select * from music_folder order by id");
                     ResultSet result = st.executeQuery();) {
 
                 List<MusicFolder> folders = new ArrayList<>();
@@ -73,23 +67,15 @@ public class UniqueMediaFolders implements CustomSqlChange {
                 while (result.next()) {
                     folders.add(MusicFolderDao.MUSICFOLDER_ROW_MAPPER.mapRow(result, i++));
                 }
-                for (MusicFolder.Type t : MusicFolder.Type.values()) {
-                    List<MusicFolder> folderTypeList = folders.stream().filter(f -> f.getType() == t).collect(toList());
-                    Set<String> paths = new HashSet<>();
-                    folderTypeList.forEach(f -> {
-                        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlap = SettingsService.getMusicFolderPathOverlaps(f, folderTypeList);
-                        //duplicate
-                        if (!overlap.getLeft().isEmpty() && !paths.add(f.getPath().toString())) {
-                            deletionSet.add(f.getId());
-                            LOG.info("Duplicate media folder found (id: {}, name: {}) and will be deleted", f.getId(), f.getName());
-                        }
-                        // has an ancestor
-                        if (!overlap.getMiddle().isEmpty()) {
-                            deletionSet.add(f.getId());
-                            LOG.info("Media folder with ancestor found (id: {}, name: {}) and will be deleted", f.getId(), f.getName());
-                        }
-                    });
-                }
+                Set<String> paths = new HashSet<>();
+                folders.forEach(f -> {
+                    Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlap = MediaFolderService.getMusicFolderPathOverlaps(f, folders);
+                    // duplicate
+                    if (!overlap.getLeft().isEmpty() && !paths.add(f.getPath().toString())) {
+                        deletionSet.add(f.getId());
+                        LOG.info("Duplicate media folder found (id: {}, name: {}) and will be deleted", f.getId(), f.getName());
+                    }
+                });
             } catch (DatabaseException | SQLException e) {
                 throw new CustomChangeException(e);
             }
