@@ -243,9 +243,6 @@ public class RandomPlayQueueController {
     private List<MusicFolder> getMusicFolders(HttpServletRequest request) throws ServletRequestBindingException {
         String username = securityService.getCurrentUsername(request);
         Integer selectedMusicFolderId = ServletRequestUtils.getRequiredIntParameter(request, "musicFolderId");
-        if (selectedMusicFolderId == -1) {
-            selectedMusicFolderId = null;
-        }
         return mediaFolderService.getMusicFoldersForUser(username, selectedMusicFolderId);
     }
 }

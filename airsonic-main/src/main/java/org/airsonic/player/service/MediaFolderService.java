@@ -68,13 +68,12 @@ public class MediaFolderService {
     /**
      * Returns all music folders a user have access to. Non-existing and disabled folders are not included.
      *
-     * @param selectedMusicFolderId If non-null and included in the list of allowed music folders, this methods returns
-     *                              a list of only this music folder.
+     * @param selectedMusicFolderId If non-null and positive and included in the list of allowed music folders, this methods returns a list of only this music folder.
      * @return Possibly empty list of music folders.
      */
     public List<MusicFolder> getMusicFoldersForUser(String username, Integer selectedMusicFolderId) {
         return getMusicFoldersForUser(username).stream()
-                .filter(f -> selectedMusicFolderId == null || f.getId().equals(selectedMusicFolderId))
+                .filter(f -> selectedMusicFolderId == null || selectedMusicFolderId < 0 || f.getId().equals(selectedMusicFolderId))
                 .collect(toList());
     }
 
