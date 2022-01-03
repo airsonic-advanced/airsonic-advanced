@@ -83,10 +83,10 @@ public class UniqueMediaFolders implements CustomSqlChange {
         return deletionSet.stream()
                 .flatMap(id -> Stream.of(
                         new DeleteStatement(database.getDefaultCatalogName(), database.getDefaultSchemaName(), "music_folder_user")
-                                .addWhereColumnName("music_folder_id")
+                                .setWhere("music_folder_id=?")
                                 .addWhereParameter(id),
                         new DeleteStatement(database.getDefaultCatalogName(), database.getDefaultSchemaName(), "music_folder")
-                                .addWhereColumnName("id")
+                                .setWhere("id=?")
                                 .addWhereParameter(id)))
                 .toArray(SqlStatement[]::new);
     }
