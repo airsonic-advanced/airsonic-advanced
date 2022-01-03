@@ -4,6 +4,7 @@ import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.domain.MusicFolder;
 import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
@@ -100,6 +101,7 @@ public class MediaFolderService {
         if (!overlaps.getMiddle().isEmpty()) {
             MusicFolder ancestor = overlaps.getMiddle().get(0);
             musicFolderDao.reassignChildren(ancestor, musicFolder);
+            clearMediaFileCache();
         }
         // if new folder has descendants, ignore. they'll stay under descendant hierarchy
 
@@ -113,6 +115,7 @@ public class MediaFolderService {
         // if folder has ancestors, reassign hierarchy to immediate ancestor
         if (!overlaps.getMiddle().isEmpty()) {
             musicFolderDao.reassignChildren(folder, overlaps.getMiddle().get(0));
+            clearMediaFileCache();
         }
         // if folder has descendants, ignore. they'll stay under descendant hierarchy
 
@@ -174,6 +177,11 @@ public class MediaFolderService {
     public void clearMusicFolderCache() {
         cachedMusicFolders = null;
         cachedMusicFoldersPerUser.clear();
+    }
+
+    @CacheEvict(cacheNames = { "mediaFilePathCache", "mediaFileIdCache" }, allEntries = true)
+    public void clearMediaFileCache() {
+        // TODO: optimize cache eviction
     }
 
 }
