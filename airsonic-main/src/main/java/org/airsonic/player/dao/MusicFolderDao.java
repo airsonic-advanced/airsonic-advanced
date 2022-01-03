@@ -170,9 +170,9 @@ public class MusicFolderDao extends AbstractDao {
     public static class MusicFolderRowMapper implements RowMapper<MusicFolder> {
         @Override
         public MusicFolder mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new MusicFolder(rs.getInt(1), Paths.get(rs.getString(2)), rs.getString(3),
-                    MusicFolder.Type.valueOf(rs.getString(4)), rs.getBoolean(5),
-                    Optional.ofNullable(rs.getTimestamp(6)).map(x -> x.toInstant()).orElse(null));
+            return new MusicFolder(rs.getInt("id"), Paths.get(rs.getString("path")), rs.getString("name"),
+                    MusicFolder.Type.valueOf(rs.getString("type")), rs.getBoolean("enabled"),
+                    Optional.ofNullable(rs.getTimestamp("changed")).map(x -> x.toInstant()).orElse(null));
         }
     }
 }
