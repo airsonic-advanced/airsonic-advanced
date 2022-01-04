@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Controller for the page used to administrate the Podcast receiver.
@@ -65,15 +66,16 @@ public class PodcastSettingsController {
     protected String formBackingObject(Model model) {
         PodcastSettingsCommand command = new PodcastSettingsCommand();
 
-        command.setFolder(mediaFolderService.getAllMusicFolders().stream()
+        command.setFolderId(mediaFolderService.getAllMusicFolders().stream()
                 .filter(f -> f.getType() == Type.PODCAST)
-                .findAny()
+                .findFirst()
+                .map(f -> f.getId())
                 .orElse(null));
 
         command.setFolders(mediaFolderService.getAllMusicFolders(true, true)
                 .stream()
                 .filter(f -> f.getType() == Type.PODCAST)
-                .collect(toList()));
+                .collect(toMap(f -> f.getId(), f -> f.getId() + " - " + f.getName())));
 
         List<PodcastChannel> channels = podcastService.getAllChannels();
         List<PodcastChannelRule> rules = podcastService.getAllChannelRules();
@@ -85,10 +87,7 @@ public class PodcastSettingsController {
                             .findFirst()
                             .map(c -> c.getTitle()).orElse(null)))
                 .collect(toList()));
-        command.getRules()
-                .add(new PodcastRule(
-                        new PodcastChannelRule(-1, settingsService.getPodcastUpdateInterval(), settingsService.getPodcastEpisodeRetentionCount(), settingsService.getPodcastEpisodeDownloadCount()),
-                        "DEFAULT"));
+        command.getRules().add(new PodcastRule(new PodcastChannelRule(-1, settingsService.getPodcastUpdateInterval(), settingsService.getPodcastEpisodeRetentionCount(), settingsService.getPodcastEpisodeDownloadCount()), "DEFAULT"));
 
         command.setNewRule(new PodcastRule());
         command.setNoRuleChannels(channels.parallelStream()
@@ -110,22 +109,20 @@ public class PodcastSettingsController {
         podcastService.scheduleDefault();
 
         boolean success = true;
-        MusicFolder podcastFolder = mediaFolderService.getAllMusicFolders(true, true)
-                .stream()
-                .filter(f -> f.getId().equals(command.getFolder().getId()))
-                .findAny().orElse(null);
-        if (podcastFolder != null) {
+        MusicFolder podcastFolder = mediaFolderService.getMusicFolderById(command.getFolderId(), true, true);
+        if (podcastFolder != null && podcastFolder.getType() == Type.PODCAST) {
             try {
                 mediaFolderService.getAllMusicFolders(true, true).stream()
                         .filter(f -> f.getType() == Type.PODCAST)
-                        .filter(f -> !f.getId().equals(podcastFolder.getId())).forEach(f -> {
+                        .filter(f -> !f.getId().equals(podcastFolder.getId()))
+                        .forEach(f -> {
                             f.setEnabled(false);
                             mediaFolderService.updateMusicFolder(f);
                         });
                 podcastFolder.setEnabled(true);
                 mediaFolderService.updateMusicFolder(podcastFolder);
             } catch (Exception e) {
-                LOG.warn("Could not enable music folder id {} ({})", podcastFolder.getId(), podcastFolder.getName(), e);
+                LOG.warn("Could not enable podcast music folder id {} ({})", podcastFolder.getId(), podcastFolder.getName(), e);
                 success = false;
             }
         }

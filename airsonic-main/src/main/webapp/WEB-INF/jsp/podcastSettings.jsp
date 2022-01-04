@@ -141,8 +141,7 @@
 <div>
     <td><fmt:message key="podcastsettings.folder" /></td>
     <td>
-      <form:select path="folder" items="${folders}" itemLabel="name" cssStyle="width:20em">
-      </form:select>
+      <form:select path="folderId" items="${command.folders}" cssStyle="width:20em"></form:select>
     </td>
 </div>
 <div class="tableSpacer"></div>

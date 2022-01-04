@@ -84,7 +84,11 @@ public class MediaFolderService {
     }
 
     public MusicFolder getMusicFolderById(Integer id) {
-        return getAllMusicFolders().parallelStream().filter(folder -> id.equals(folder.getId())).findAny().orElse(null);
+        return getMusicFolderById(id, false, false);
+    }
+
+    public MusicFolder getMusicFolderById(Integer id, boolean includeDisabled, boolean includeNonExisting) {
+        return getAllMusicFolders(includeDisabled, includeNonExisting).parallelStream().filter(folder -> id.equals(folder.getId())).findAny().orElse(null);
     }
 
     public void createMusicFolder(MusicFolder musicFolder) {

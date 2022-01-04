@@ -20,10 +20,10 @@
 package org.airsonic.player.command;
 
 import org.airsonic.player.controller.PodcastSettingsController;
-import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.PodcastChannelRule;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Command used in {@link PodcastSettingsController}.
@@ -32,26 +32,26 @@ import java.util.List;
  */
 public class PodcastSettingsCommand {
 
-    private MusicFolder folder;
-    private List<MusicFolder> folders;
+    private Integer folderId;
+    private Map<Integer, String> folders;
     private List<PodcastRule> rules;
     private PodcastRule newRule;
     private List<PodcastRule> noRuleChannels;
 
-    public List<MusicFolder> getFolders() {
+    public Integer getFolderId() {
+        return folderId;
+    }
+
+    public void setFolderId(Integer folderId) {
+        this.folderId = folderId;
+    }
+
+    public Map<Integer, String> getFolders() {
         return folders;
     }
 
-    public void setFolders(List<MusicFolder> folders) {
+    public void setFolders(Map<Integer, String> folders) {
         this.folders = folders;
-    }
-
-    public MusicFolder getFolder() {
-        return folder;
-    }
-
-    public void setFolder(MusicFolder folder) {
-        this.folder = folder;
     }
 
     public List<PodcastRule> getRules() {
