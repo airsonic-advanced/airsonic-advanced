@@ -81,7 +81,7 @@ public class MediaScannerServiceTestCase {
     private AlbumDao albumDao;
 
     @Autowired
-    private SettingsService settingsService;
+    private MediaFolderService mediaFolderService;
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -96,7 +96,7 @@ public class MediaScannerServiceTestCase {
     @After
     public void cleanup() {
         if (cleanupId != null) {
-            ScanningTestUtils.after(cleanupId, settingsService);
+            ScanningTestUtils.after(cleanupId, mediaFolderService);
             cleanupId = null;
         }
     }
@@ -110,7 +110,7 @@ public class MediaScannerServiceTestCase {
 
         Timer.Context globalTimerContext = globalTimer.time();
         List<MusicFolder> testFolders = MusicFolderTestData.getTestMusicFolders();
-        cleanupId = ScanningTestUtils.before(testFolders, settingsService, mediaScannerService);
+        cleanupId = ScanningTestUtils.before(testFolders, mediaFolderService, mediaScannerService);
         globalTimerContext.stop();
 
         // Music Folder Music must have 3 children
@@ -155,7 +155,7 @@ public class MediaScannerServiceTestCase {
         Files.copy(Paths.get(Resources.getResource("MEDIAS/piano.mp3").toURI()), musicFile);
 
         MusicFolder musicFolder = new MusicFolder(1, temporaryFolder.getRoot().toPath(), "Music", Type.MEDIA, true, Instant.now());
-        cleanupId = ScanningTestUtils.before(Arrays.asList(musicFolder), settingsService, mediaScannerService);
+        cleanupId = ScanningTestUtils.before(Arrays.asList(musicFolder), mediaFolderService, mediaScannerService);
         MediaFile mediaFile = mediaFileService.getMediaFile(musicFile);
         assertEquals(mediaFile.getRelativePath(), temporaryFolder.getRoot().toPath().relativize(musicFile));
         assertThat(mediaFile.getFolderId()).isEqualTo(musicFolder.getId());
@@ -174,7 +174,7 @@ public class MediaScannerServiceTestCase {
         // Add the "Music3" folder to the database
         Path musicFolderFile = MusicFolderTestData.resolveMusic3FolderPath();
         MusicFolder musicFolder = new MusicFolder(1, musicFolderFile, "Music3", Type.MEDIA, true, Instant.now());
-        cleanupId = ScanningTestUtils.before(Arrays.asList(musicFolder), settingsService, mediaScannerService);
+        cleanupId = ScanningTestUtils.before(Arrays.asList(musicFolder), mediaFolderService, mediaScannerService);
 
         // Retrieve the "Music3" folder from the database to make
         // sure that we don't accidentally operate on other folders

@@ -3,8 +3,8 @@ package org.airsonic.player.service.search;
 import org.airsonic.player.api.ScanningTestUtils;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.MediaScannerService;
-import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.HomeRule;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.ClassRule;
@@ -48,7 +48,7 @@ public abstract class AbstractAirsonicHomeTest {
     protected MusicFolderDao musicFolderDao;
 
     @Autowired
-    protected SettingsService settingsService;
+    protected MediaFolderService mediaFolderService;
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -65,13 +65,13 @@ public abstract class AbstractAirsonicHomeTest {
         return MusicFolderTestData.getTestMusicFolders();
     }
 
-    public static SettingsService cleanupSettingsService;
+    public static MediaFolderService cleanupMediaFolderService;
 
     public final UUID populateDatabaseOnlyOnce() {
         UUID id = null;
         if (!dataBasePopulated().get()) {
             dataBasePopulated().set(true);
-            cleanupSettingsService = settingsService;
+            cleanupMediaFolderService = mediaFolderService;
             // wait for previous startup scan to finish
             while (mediaScannerService.isScanning()) {
                 try {
@@ -81,7 +81,7 @@ public abstract class AbstractAirsonicHomeTest {
                 }
             }
 
-            id = ScanningTestUtils.before(getMusicFolders(), settingsService, mediaScannerService);
+            id = ScanningTestUtils.before(getMusicFolders(), mediaFolderService, mediaScannerService);
 
             dataBaseReady().set(true);
         } else {
@@ -102,7 +102,7 @@ public abstract class AbstractAirsonicHomeTest {
 
     public static void cleanup(UUID id) {
         if (id != null) {
-            ScanningTestUtils.after(id, cleanupSettingsService);
+            ScanningTestUtils.after(id, cleanupMediaFolderService);
         }
     }
 }
