@@ -63,6 +63,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
@@ -93,8 +94,6 @@ public class PodcastService {
 
     private final ExecutorService refreshExecutor;
     private final ExecutorService downloadExecutor;
-    private final ScheduledExecutorService scheduledExecutor;
-    private final Map<Integer, ScheduledFuture<?>> scheduledRefreshes = new ConcurrentHashMap<>();
     @Autowired
     private PodcastDao podcastDao;
     @Autowired
@@ -107,11 +106,12 @@ public class PodcastService {
     private MetaDataParserFactory metaDataParserFactory;
     @Autowired
     private VersionService versionService;
+    @Autowired
+    private TaskSchedulingService taskService;
 
     public PodcastService() {
         refreshExecutor = Executors.newFixedThreadPool(5, Util.getDaemonThreadfactory("podcast-refresh"));
         downloadExecutor = Executors.newFixedThreadPool(3, Util.getDaemonThreadfactory("podcast-download"));
-        scheduledExecutor = Executors.newScheduledThreadPool(10, Util.getDaemonThreadfactory("podcast-refresh-scheduler"));
     }
 
     @PostConstruct
@@ -143,17 +143,16 @@ public class PodcastService {
     }
 
     private synchronized void schedule(PodcastChannelRule r) {
-        unschedule(r.getId());
-
         int hoursBetween = r.getCheckInterval();
 
         if (hoursBetween == -1) {
             LOG.info("Automatic Podcast update disabled for podcast id {}", r.getId());
+            unschedule(r.getId());
             return;
         }
 
-        long periodMillis = hoursBetween * 60L * 60L * 1000L;
         long initialDelayMillis = 5L * 60L * 1000L;
+        Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
 
         Runnable task = () -> {
             LOG.info("Starting scheduled Podcast refresh for podcast id {}.", r.getId());
@@ -161,44 +160,38 @@ public class PodcastService {
             LOG.info("Completed scheduled Podcast refresh for podcast id {}.", r.getId());
         };
 
-        scheduledRefreshes.put(r.getId(), scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS));
+        taskService.setSchedule("podcast-channel-refresh-" + r.getId(), executor -> executor.scheduleAtFixedRate(task, firstTime, Duration.ofHours(hoursBetween)), true);
 
-        Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
         LOG.info("Automatic Podcast update for podcast id {} scheduled to run every {} hour(s), starting at {}", r.getId(), hoursBetween, firstTime);
     }
 
-    public synchronized void scheduleDefault() {
-        unschedule(-1);
+    private Runnable defaultTask = () -> {
+        LOG.info("Starting scheduled default Podcast refresh.");
+        Set<Integer> ruleIds = podcastDao.getAllChannelRules().parallelStream().map(r -> r.getId()).collect(toSet());
+        List<PodcastChannel> channelsWithoutRules = podcastDao.getAllChannels().parallelStream().filter(c -> !ruleIds.contains(c.getId())).collect(toList());
+        refreshChannels(channelsWithoutRules, true);
+        LOG.info("Completed scheduled default Podcast refresh.");
+    };
 
+    public synchronized void scheduleDefault() {
         int hoursBetween = settingsService.getPodcastUpdateInterval();
 
         if (hoursBetween == -1) {
             LOG.info("Automatic default Podcast update disabled for podcasts");
+            unschedule(-1);
             return;
         }
 
-        long periodMillis = hoursBetween * 60L * 60L * 1000L;
         long initialDelayMillis = 5L * 60L * 1000L;
-
-        Runnable task = () -> {
-            LOG.info("Starting scheduled default Podcast refresh.");
-            Set<Integer> ruleIds = podcastDao.getAllChannelRules().parallelStream().map(r -> r.getId()).collect(toSet());
-            List<PodcastChannel> channelsWithoutRules = podcastDao.getAllChannels().parallelStream().filter(c -> !ruleIds.contains(c.getId())).collect(toList());
-            refreshChannels(channelsWithoutRules, true);
-            LOG.info("Completed scheduled default Podcast refresh.");
-        };
-
-        scheduledRefreshes.put(-1, scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS));
-
         Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
+
+        taskService.setSchedule("podcast-channel-refresh--1", executor -> executor.scheduleAtFixedRate(defaultTask, firstTime, Duration.ofHours(hoursBetween)), true);
+
         LOG.info("Automatic default Podcast update scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);
     }
 
     public void unschedule(Integer id) {
-        ScheduledFuture<?> scheduledRefresh = scheduledRefreshes.remove(id);
-        if (scheduledRefresh != null) {
-            scheduledRefresh.cancel(true);
-        }
+        taskService.unscheduleTask("podcast-channel-refresh-" + id, true);
     }
 
     public void createOrUpdateChannelRule(PodcastChannelRule r) {

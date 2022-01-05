@@ -1,6 +1,5 @@
 package org.airsonic.player.service;
 
-import org.airsonic.player.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,13 +14,12 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -30,14 +28,14 @@ import java.util.function.Function;
 public class TaskSchedulingService {
     private static final Logger LOG = LoggerFactory.getLogger(TaskSchedulingService.class);
 
-    private final TaskScheduler executor;
+    private TaskScheduler executor;
     private final Map<String, ScheduledFuture<?>> tasks = new ConcurrentHashMap<>();
     private final Map<WatchKey, Map<Kind<? extends Object>, BiConsumer<Path, WatchEvent<Path>>>> watchFunctions = new ConcurrentHashMap<>();
     private final Map<String, WatchKey> watchNames = new ConcurrentHashMap<>();
-    private final ExecutorService watcherExecutor = Executors.newSingleThreadExecutor(Util.getDaemonThreadfactory("path-watcher"));
-    private final ExecutorService watchFunctionExecutor = Executors.newCachedThreadPool(Util.getDaemonThreadfactory("path-watch-functions"));
+    // private final ExecutorService watchFunctionExecutor =
+    // Executors.newCachedThreadPool(Util.getDaemonThreadfactory("path-watch-functions"));
     private WatchService watchService;
-    private final Runnable watcher = () -> {
+    private final Runnable watcherTask = () -> {
         for (;;) {
             WatchKey key;
             try {
@@ -52,7 +50,8 @@ public class TaskSchedulingService {
             }
             for (WatchEvent<?> event : key.pollEvents()) {
                 Optional.ofNullable(fs.get(event.kind()))
-                        .ifPresent(f -> watchFunctionExecutor.submit(() -> f.accept((Path) key.watchable(), (WatchEvent<Path>) event)));
+                        .ifPresent(f -> executor.schedule(
+                                () -> f.accept((Path) key.watchable(), (WatchEvent<Path>) event), Instant.now()));
             }
             // To keep receiving events
             key.reset();
@@ -63,7 +62,7 @@ public class TaskSchedulingService {
     public TaskSchedulingService(TaskScheduler taskExecutor) throws IOException {
         this.executor = taskExecutor;
         this.watchService = FileSystems.getDefault().newWatchService();
-        this.watcherExecutor.execute(watcher);
+        this.executor.schedule(watcherTask, Instant.now());
     }
 
     public void setSchedule(String name, Function<TaskScheduler, ScheduledFuture<?>> scheduledTask) {
@@ -81,6 +80,13 @@ public class TaskSchedulingService {
 
     public ScheduledFuture<?> getScheduledTask(String name) {
         return tasks.get(name);
+    }
+
+    public void unscheduleTask(String name, boolean mayInterrupt) {
+        ScheduledFuture<?> task = tasks.remove(name);
+        if (task != null) {
+            task.cancel(mayInterrupt);
+        }
     }
 
     public void setWatcher(Path watchable, BiConsumer<Path, WatchEvent<Path>> entryCreateConsumer,
