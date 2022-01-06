@@ -66,7 +66,11 @@ public class StatusService {
 
     @PostConstruct
     public void cleanup() {
-        taskService.scheduleFixedDelayTask("remote-playstatus-cleanup", () -> cleanupRemotePlays(), Instant.now().plus(3, ChronoUnit.HOURS), Duration.ofHours(3), true);
+        taskService.setSchedule("remote-playstatus-cleanup",
+                executor -> executor.scheduleWithFixedDelay(
+                        () -> cleanupRemotePlays(),
+                        Instant.now().plus(3, ChronoUnit.HOURS),
+                        Duration.ofHours(3)));
     }
 
     private final List<TransferStatus> streamStatuses = Collections.synchronizedList(new ArrayList<>());

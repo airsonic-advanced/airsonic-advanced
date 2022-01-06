@@ -160,7 +160,7 @@ public class PodcastService {
             LOG.info("Completed scheduled Podcast refresh for podcast id {}.", r.getId());
         };
 
-        taskService.scheduleAtFixedRate("podcast-channel-refresh-" + r.getId(), task, firstTime, Duration.ofHours(hoursBetween), true);
+        taskService.setSchedule("podcast-channel-refresh-" + r.getId(), executor -> executor.scheduleAtFixedRate(task, firstTime, Duration.ofHours(hoursBetween)), true);
 
         LOG.info("Automatic Podcast update for podcast id {} scheduled to run every {} hour(s), starting at {}", r.getId(), hoursBetween, firstTime);
     }
@@ -185,13 +185,13 @@ public class PodcastService {
         long initialDelayMillis = 5L * 60L * 1000L;
         Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
 
-        taskService.scheduleAtFixedRate("podcast-channel-refresh--1", defaultTask, firstTime, Duration.ofHours(hoursBetween), true);
+        taskService.setSchedule("podcast-channel-refresh--1", executor -> executor.scheduleAtFixedRate(defaultTask, firstTime, Duration.ofHours(hoursBetween)), true);
 
         LOG.info("Automatic default Podcast update scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);
     }
 
     public void unschedule(Integer id) {
-        taskService.unscheduleTask("podcast-channel-refresh-" + id);
+        taskService.unscheduleTask("podcast-channel-refresh-" + id, true);
     }
 
     public void createOrUpdateChannelRule(PodcastChannelRule r) {

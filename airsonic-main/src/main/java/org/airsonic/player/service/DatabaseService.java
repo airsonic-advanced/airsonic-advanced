@@ -84,13 +84,13 @@ public class DatabaseService {
         long initialDelayMillis = 5L * 60L * 1000L;
         Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
 
-        taskService.scheduleAtFixedRate("db-backup", backupTask, firstTime, Duration.ofHours(hoursBetween), true);
+        taskService.setSchedule("db-backup", executor -> executor.scheduleAtFixedRate(backupTask, firstTime, Duration.ofHours(hoursBetween)), true);
 
         LOG.info("Automatic DB backup scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);
     }
 
     public void unschedule() {
-        taskService.unscheduleTask("db-backup");
+        taskService.unscheduleTask("db-backup", true);
     }
 
     private Runnable backupTask = () -> {
