@@ -3,17 +3,7 @@ package org.airsonic.player.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
-import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
-import org.springframework.boot.actuate.endpoint.web.annotation.EndpointWebExtension;
-import org.springframework.boot.actuate.scheduling.ScheduledTasksEndpoint;
-import org.springframework.boot.task.TaskSchedulerBuilder;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.scheduling.config.ScheduledTask;
-import org.springframework.scheduling.config.ScheduledTaskHolder;
-import org.springframework.scheduling.config.ScheduledTaskRegistrar;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -25,11 +15,9 @@ import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -37,7 +25,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 @Service
-public class TaskSchedulingService implements ScheduledTaskHolder {
+public class TaskSchedulingService {
     private static final Logger LOG = LoggerFactory.getLogger(TaskSchedulingService.class);
 
     private TaskScheduler executor;
@@ -70,13 +58,9 @@ public class TaskSchedulingService implements ScheduledTaskHolder {
         }
     };
 
-    ScheduledTaskRegistrar registrar;
-
     @Autowired
-    public TaskSchedulingService(TaskSchedulerBuilder builder) throws IOException {
-        this.executor = builder.build();
-        ((ThreadPoolTaskScheduler) executor).setDaemon(true);
-        ((ThreadPoolTaskScheduler) executor).afterPropertiesSet();
+    public TaskSchedulingService(TaskScheduler taskExecutor) throws IOException {
+        this.executor = taskExecutor;
         this.watchService = FileSystems.getDefault().newWatchService();
         this.executor.schedule(watcherTask, Instant.now());
     }
@@ -92,10 +76,6 @@ public class TaskSchedulingService implements ScheduledTaskHolder {
             }
             return scheduledTask.apply(executor);
         });
-    }
-
-    public void registerScheduledTask(String name, Runnable run, Instant runAt, boolean cancelIfExists) {
-
     }
 
     public ScheduledFuture<?> getScheduledTask(String name) {
@@ -156,24 +136,6 @@ public class TaskSchedulingService implements ScheduledTaskHolder {
         if (key != null) {
             key.cancel();
             watchFunctions.remove(key);
-        }
-    }
-
-    @Override
-    public Set<ScheduledTask> getScheduledTasks() {
-        return Collections.emptySet();
-    }
-
-    @Component
-    @EndpointWebExtension(endpoint = ScheduledTasksEndpoint.class)
-    public static class ScheduledTasksEndpointExtension {
-
-        @Autowired
-        private TaskSchedulingService taskService;
-
-        @ReadOperation
-        public WebEndpointResponse<Map> info() {
-            return new WebEndpointResponse<>(taskService.tasks);
         }
     }
 
