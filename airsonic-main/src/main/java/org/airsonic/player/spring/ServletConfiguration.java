@@ -8,11 +8,15 @@ import org.airsonic.player.filter.RESTFilter;
 import org.airsonic.player.filter.RequestEncodingFilter;
 import org.airsonic.player.filter.ResponseHeaderFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.task.TaskSchedulerBuilder;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.validation.Validator;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.servlet.ViewResolver;
@@ -27,7 +31,7 @@ import javax.servlet.Servlet;
 import java.util.Properties;
 
 @Configuration
-public class ServletConfiguration implements WebMvcConfigurer {
+public class ServletConfiguration implements WebMvcConfigurer, SchedulingConfigurer {
 
     @Bean
     public ServletRegistrationBean<Servlet> cxfServletBean() {
@@ -167,5 +171,22 @@ public class ServletConfiguration implements WebMvcConfigurer {
         LocalValidatorFactoryBean factory = new LocalValidatorFactoryBean();
         factory.setValidationMessageSource(ms);
         return factory;
+    }
+
+    @Bean
+    public ScheduledTaskRegistrar scheduledTaskRegistrar(ThreadPoolTaskScheduler taskScheduler) {
+        ScheduledTaskRegistrar registrar = new ScheduledTaskRegistrar();
+        registrar.setScheduler(taskScheduler);
+        return registrar;
+    }
+
+//    @Bean
+//    public TaskScheduler taskScheduler(TaskSchedulerBuilder builder) {
+//        return builder.build();
+//    }
+
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+        taskRegistrar.equals(null);
     }
 }

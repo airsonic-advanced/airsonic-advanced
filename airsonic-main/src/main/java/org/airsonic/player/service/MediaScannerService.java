@@ -108,7 +108,7 @@ public class MediaScannerService {
 
         if (daysBetween == -1) {
             LOG.info("Automatic media scanning disabled.");
-            taskService.unscheduleTask("mediascanner-IndexingTask", true);
+            taskService.unscheduleTask("mediascanner-IndexingTask");
             return;
         }
 
@@ -120,9 +120,7 @@ public class MediaScannerService {
         long initialDelayMillis = ChronoUnit.MILLIS.between(now, nextRun);
         Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
 
-        taskService.setSchedule("mediascanner-IndexingTask",
-                executor -> executor.scheduleAtFixedRate(() -> scanLibrary(), firstTime, Duration.ofDays(daysBetween)),
-                true);
+        taskService.scheduleAtFixedRate("mediascanner-IndexingTask", () -> scanLibrary(), firstTime, Duration.ofDays(daysBetween), true);
 
         LOG.info("Automatic media library scanning scheduled to run every {} day(s), starting at {}", daysBetween, nextRun);
 
