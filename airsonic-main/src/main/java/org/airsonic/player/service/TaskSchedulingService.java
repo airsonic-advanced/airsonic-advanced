@@ -3,8 +3,17 @@ package org.airsonic.player.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.TaskScheduler;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.TriggerContext;
+import org.springframework.scheduling.config.FixedDelayTask;
+import org.springframework.scheduling.config.FixedRateTask;
+import org.springframework.scheduling.config.ScheduledTask;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+import org.springframework.scheduling.config.TriggerTask;
+import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.PostConstruct;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -14,26 +23,27 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 @Service
 public class TaskSchedulingService {
     private static final Logger LOG = LoggerFactory.getLogger(TaskSchedulingService.class);
-
-    private TaskScheduler executor;
-    private final Map<String, ScheduledFuture<?>> tasks = new ConcurrentHashMap<>();
+    @Lazy
+    @Autowired
+    private ScheduledTaskRegistrar registrar;
+    private final Map<String, ScheduledTask> tasks = new ConcurrentHashMap<>();
     private final Map<WatchKey, Map<Kind<? extends Object>, BiConsumer<Path, WatchEvent<Path>>>> watchFunctions = new ConcurrentHashMap<>();
     private final Map<String, WatchKey> watchNames = new ConcurrentHashMap<>();
-    // private final ExecutorService watchFunctionExecutor =
-    // Executors.newCachedThreadPool(Util.getDaemonThreadfactory("path-watch-functions"));
     private WatchService watchService;
     private final Runnable watcherTask = () -> {
         for (;;) {
@@ -50,42 +60,67 @@ public class TaskSchedulingService {
             }
             for (WatchEvent<?> event : key.pollEvents()) {
                 Optional.ofNullable(fs.get(event.kind()))
-                        .ifPresent(f -> executor.schedule(
-                                () -> f.accept((Path) key.watchable(), (WatchEvent<Path>) event), Instant.now()));
+                        .ifPresent(f -> scheduleOnce("path-watcher-function-execution",
+                                () -> f.accept((Path) key.watchable(), (WatchEvent<Path>) event),
+                                Instant.now(),
+                                false));
             }
             // To keep receiving events
             key.reset();
         }
     };
 
-    @Autowired
-    public TaskSchedulingService(TaskScheduler taskExecutor) throws IOException {
-        this.executor = taskExecutor;
+    // @Autowired
+    public TaskSchedulingService() throws IOException {
+        // this.registrar = new ScheduledTaskRegistrar();
         this.watchService = FileSystems.getDefault().newWatchService();
-        this.executor.schedule(watcherTask, Instant.now());
     }
 
-    public void setSchedule(String name, Function<TaskScheduler, ScheduledFuture<?>> scheduledTask) {
-        setSchedule(name, scheduledTask, true);
+    @PostConstruct
+    public void init() {
+        this.registrar.scheduleTriggerTask(new TriggerTask(watcherTask, new RunOnceTrigger(0L)));
     }
 
-    public void setSchedule(String name, Function<TaskScheduler, ScheduledFuture<?>> scheduledTask, boolean cancelIfExists) {
+
+    public void scheduleTask(String name, Function<ScheduledTaskRegistrar, ScheduledTask> scheduledTask) {
+        scheduleTask(name, scheduledTask, true);
+    }
+
+    public void scheduleTask(String name, Function<ScheduledTaskRegistrar, ScheduledTask> scheduledTask, boolean cancelIfExists) {
         tasks.compute(name, (k, v) -> {
             if (cancelIfExists && v != null) {
-                v.cancel(true);
+                v.cancel();
             }
-            return scheduledTask.apply(executor);
+            return scheduledTask.apply(registrar);
         });
     }
 
-    public ScheduledFuture<?> getScheduledTask(String name) {
+    public void scheduleFixedDelayTask(String name, Runnable task, Instant firstTime, Duration period, boolean cancelIfExists) {
+        scheduleTask(name,
+                r -> r.scheduleFixedDelayTask(new FixedDelayTask(task, period.toMillis(), ChronoUnit.MILLIS.between(Instant.now(), firstTime))),
+                cancelIfExists);
+    }
+
+    public void scheduleAtFixedRate(String name, Runnable task, Instant firstTime, Duration period, boolean cancelIfExists) {
+        scheduleTask(name,
+                r -> r.scheduleFixedRateTask(new FixedRateTask(task, period.toMillis(), ChronoUnit.MILLIS.between(Instant.now(), firstTime))),
+                cancelIfExists);
+    }
+
+    public void scheduleOnce(String name, Runnable task, Instant firstTime, boolean cancelIfExists) {
+        scheduleTask(name,
+                r -> r.scheduleTriggerTask(new TriggerTask(task, new RunOnceTrigger(ChronoUnit.MILLIS.between(Instant.now(), firstTime)))),
+                cancelIfExists);
+    }
+
+    public ScheduledTask getScheduledTask(String name) {
         return tasks.get(name);
     }
 
-    public void unscheduleTask(String name, boolean mayInterrupt) {
-        ScheduledFuture<?> task = tasks.remove(name);
+    public void unscheduleTask(String name) {
+        ScheduledTask task = tasks.remove(name);
         if (task != null) {
-            task.cancel(mayInterrupt);
+            task.cancel();
         }
     }
 
@@ -136,6 +171,21 @@ public class TaskSchedulingService {
         if (key != null) {
             key.cancel();
             watchFunctions.remove(key);
+        }
+    }
+
+    public static class RunOnceTrigger extends PeriodicTrigger {
+        public RunOnceTrigger(long initialDelay) {
+            super(0);
+            setInitialDelay(initialDelay);
+        }
+
+        @Override
+        public Date nextExecutionTime(TriggerContext triggerContext) {
+            if (triggerContext.lastCompletionTime() == null) { // hasn't executed yet
+                return super.nextExecutionTime(triggerContext);
+            }
+            return null;
         }
     }
 
