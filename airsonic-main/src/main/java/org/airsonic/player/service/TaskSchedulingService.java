@@ -1,16 +1,25 @@
 package org.airsonic.player.service;
 
+import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
+import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
+import org.springframework.boot.actuate.endpoint.web.annotation.EndpointWebExtension;
+import org.springframework.boot.actuate.scheduling.ScheduledTasksEndpoint;
+import org.springframework.boot.task.TaskSchedulerBuilder;
 import org.springframework.scheduling.TriggerContext;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.config.FixedDelayTask;
 import org.springframework.scheduling.config.FixedRateTask;
 import org.springframework.scheduling.config.ScheduledTask;
+import org.springframework.scheduling.config.ScheduledTaskHolder;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.scheduling.config.TriggerTask;
 import org.springframework.scheduling.support.PeriodicTrigger;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -26,22 +35,27 @@ import java.nio.file.WatchService;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import static java.util.stream.Collectors.toMap;
+
 @Service
-public class TaskSchedulingService {
+public class TaskSchedulingService implements ScheduledTaskHolder {
     private static final Logger LOG = LoggerFactory.getLogger(TaskSchedulingService.class);
-    @Lazy
-    @Autowired
     private ScheduledTaskRegistrar registrar;
+
     private final Map<String, ScheduledTask> tasks = new ConcurrentHashMap<>();
+    private final Map<ScheduledTask, Map<String, Object>> taskMetadata = new ConcurrentHashMap<>();
     private final Map<WatchKey, Map<Kind<? extends Object>, BiConsumer<Path, WatchEvent<Path>>>> watchFunctions = new ConcurrentHashMap<>();
     private final Map<String, WatchKey> watchNames = new ConcurrentHashMap<>();
     private WatchService watchService;
@@ -70,17 +84,22 @@ public class TaskSchedulingService {
         }
     };
 
-    // @Autowired
-    public TaskSchedulingService() throws IOException {
-        // this.registrar = new ScheduledTaskRegistrar();
+    @Autowired
+    public TaskSchedulingService(TaskSchedulerBuilder builder) throws IOException {
+        ThreadPoolTaskScheduler taskScheduler = builder.build();
+        taskScheduler.setDaemon(true);
+        taskScheduler.afterPropertiesSet();
+        this.registrar = new ScheduledTaskRegistrar();
+        registrar.setScheduler(taskScheduler);
         this.watchService = FileSystems.getDefault().newWatchService();
     }
 
     @PostConstruct
     public void init() {
-        this.registrar.scheduleTriggerTask(new TriggerTask(watcherTask, new RunOnceTrigger(0L)));
+        scheduleOnce("path-watcher", watcherTask, Instant.now(), true);
+        // this.registrar.scheduleTriggerTask(new TriggerTask(watcherTask, new
+        // RunOnceTrigger(0L)));
     }
-
 
     public void scheduleTask(String name, Function<ScheduledTaskRegistrar, ScheduledTask> scheduledTask) {
         scheduleTask(name, scheduledTask, true);
@@ -91,7 +110,9 @@ public class TaskSchedulingService {
             if (cancelIfExists && v != null) {
                 v.cancel();
             }
-            return scheduledTask.apply(registrar);
+            ScheduledTask task = scheduledTask.apply(registrar);
+            taskMetadata.put(task, ImmutableMap.of("name", k, "created", Instant.now()));
+            return task;
         });
     }
 
@@ -189,4 +210,27 @@ public class TaskSchedulingService {
         }
     }
 
+    @Component
+    @EndpointWebExtension(endpoint = ScheduledTasksEndpoint.class)
+    public class ScheduledTasksEndpointExtension {
+        @Autowired
+        private TaskSchedulingService taskService;
+
+        @ReadOperation
+        public WebEndpointResponse<Map<String, Map<String, Object>>> info() {
+            Map<String, Map<String, Object>> map = taskService.tasks.entrySet().stream().map(e -> {
+                Map<String, Object> metadata = new HashMap<>(taskMetadata.getOrDefault(e.getValue(), Collections.emptyMap()));
+                metadata.put("scheduledTask", e.getValue());
+                metadata.put("location", e.getValue().getTask().getRunnable().getClass().getName());
+                metadata.put("nextRun", e.getValue().getTask().getRunnable().getClass().getName());
+                return Pair.of(e.getKey(), metadata);
+            }).collect(toMap(p -> p.getKey(), p -> p.getValue()));
+            return new WebEndpointResponse<>(map);
+        }
+    }
+
+    @Override
+    public Set<ScheduledTask> getScheduledTasks() {
+        return new HashSet<>(tasks.values());
+    }
 }
