@@ -11,7 +11,6 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.AdviceMode;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.util.ReflectionUtils;
 
@@ -21,7 +20,6 @@ import java.lang.reflect.Method;
     JmxAutoConfiguration.class,
     MultipartAutoConfiguration.class // TODO: update to use spring boot builtin multipart support
 })
-@EnableScheduling
 @EnableTransactionManagement(mode = AdviceMode.ASPECTJ)
 public class Application extends SpringBootServletInitializer implements WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> {
 

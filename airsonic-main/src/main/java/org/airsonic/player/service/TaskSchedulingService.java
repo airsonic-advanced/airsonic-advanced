@@ -5,10 +5,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
-import org.springframework.boot.actuate.endpoint.web.annotation.EndpointWebExtension;
-import org.springframework.boot.actuate.scheduling.ScheduledTasksEndpoint;
 import org.springframework.boot.task.TaskSchedulerBuilder;
 import org.springframework.scheduling.TriggerContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -68,6 +67,7 @@ public class TaskSchedulingService implements ScheduledTaskHolder {
             }
             ScheduledTask task = scheduledTask.apply(registrar);
             taskMetadata.put(task, ImmutableMap.of("name", k, "created", Instant.now()));
+            LOG.info("Task {} scheduled", k);
             return task;
         });
     }
@@ -122,8 +122,8 @@ public class TaskSchedulingService implements ScheduledTaskHolder {
     }
 
     @Component
-    @EndpointWebExtension(endpoint = ScheduledTasksEndpoint.class)
-    public static class ScheduledTasksEndpointExtension {
+    @Endpoint(id = "customscheduledtasks")
+    public static class CustomScheduledTasksEndpoint {
         @Autowired
         private TaskSchedulingService taskService;
 
