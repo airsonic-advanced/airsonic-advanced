@@ -16,7 +16,12 @@
     null: '<fmt:message key="common.unknown"/>',
     'download': '<fmt:message key="status.download"/>',
     'upload': '<fmt:message key="status.upload"/>',
-    'stream': '<fmt:message key="status.stream"/>'
+    'stream': '<fmt:message key="status.stream"/>',
+    'never': '<fmt:message key="status.never"/>',
+    'incalculable': '<fmt:message key="status.incalculable"/>',
+    'RUN_ONCE': '<fmt:message key="status.scheduledrunonce"/>',
+    'FIXED_DELAY': '<fmt:message key="status.scheduledfixeddelay"/>',
+    'FIXED_RATE': '<fmt:message key="status.scheduledfixedrate"/>',
   };
 
   const transferTypeColors = {
@@ -224,6 +229,42 @@
     });
   };
 
+  var parseScheduledDate = date => {
+    if (date == null) {
+      return labels['never'];
+    }
+    if (date == "-1000000000-01-01T00:00Z") {
+      return labels['incalculable'];
+    }
+    try {
+      return new Date(date);
+    } catch (e) {
+      return date;
+    }
+  };
+
+  var scheduledTasksUrl = "<c:url value='/actuator/customscheduledtasks'/>";
+  function updateScheduledTasksData() {
+    $.get(scheduledTasksUrl, data => {
+      $('#scheduledTasksTable > tbody').empty();
+      var appendedRows = '';
+      Object.keys(data).forEach(k => {
+        var taskData = data[k];
+        appendedRows += '<tr>';
+        appendedRows +=   '<td>' + taskData['name'] + '</td>';
+        appendedRows +=   '<td>' + labels[taskData['runMetadata']['type']] + '</td>';
+        appendedRows +=   '<td>' + parseScheduledDate(taskData['created']) + '</td>';
+        appendedRows +=   '<td>' + parseScheduledDate(taskData['runMetadata']['firstRun']) + '</td>';
+        appendedRows +=   '<td>' + parseScheduledDate(taskData['runMetadata']['lastRun']) + '</td>';
+        appendedRows +=   '<td>' + parseScheduledDate(taskData['runMetadata']['nextRun']) + '</td>';
+        appendedRows +=   '<td>' + taskData['scheduledBy'] + '</td>';
+        appendedRows += '</tr>';
+      });
+
+      $('#scheduledTasksTable > tbody').append(appendedRows);
+    });
+  }
+
   var sessionsCurrentUrl = "<c:url value='/actuator/metrics/tomcat.sessions.active.current'/>";
   var sessionsCreatedUrl = "<c:url value='/actuator/metrics/tomcat.sessions.created'/>";
   var sessionsExpiredUrl = "<c:url value='/actuator/metrics/tomcat.sessions.expired'/>";
@@ -293,10 +334,11 @@
 
     updateTransferData();
     updateUserChartData();
+    updateScheduledTasksData();
     updateSessionsData();
     updateHealthData();
 
-    setInterval(() => { updateTransferData(); updateUserChartData(); updateCachesData(); updateSessionsData(); updateHealthData();}, 40000);
+    setInterval(() => { updateTransferData(); updateUserChartData(); updateCachesData(); updateScheduledTasksData(); updateSessionsData(); updateHealthData();}, 40000);
   }
 </script>
 
@@ -344,6 +386,41 @@
         <th class="ruleTableHeader"><fmt:message key="status.cachemiss"/></th>
         <th class="ruleTableHeader"><fmt:message key="status.cacheputs"/></th>
         <th class="ruleTableHeader"><fmt:message key="status.cacheremovals"/></th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+<div style="padding-top:3em"></div>
+
+<h2>
+  <fmt:message key="status.scheduledtasks"/>
+</h2>
+<table id="scheduledTasksTable" width="100%" class="ruleTable indent">
+    <thead>
+      <tr>
+        <th class="ruleTableHeader"><fmt:message key="status.name"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.scheduledtype"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.scheduledcreated"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.scheduledfirstrun"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.scheduledlastrun"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.schedulednextrun"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.scheduledby"/></th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+<div style="padding-top:3em"></div>
+
+<h2>
+  <fmt:message key="status.pathwatcher"/>
+</h2>
+<table id="pathWatcherTable" width="100%" class="ruleTable indent">
+    <thead>
+      <tr>
+        <th class="ruleTableHeader"><fmt:message key="status.name"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.path"/></th>
       </tr>
     </thead>
     <tbody>
