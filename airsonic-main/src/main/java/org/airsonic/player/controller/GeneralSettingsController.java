@@ -122,7 +122,7 @@ public class GeneralSettingsController {
         settingsService.setGenreSeparators(command.getGenreSeparators());
         settingsService.setShortcuts(command.getShortcuts());
         settingsService.setPlaylistFolder(command.getPlaylistFolder());
-        playlistService.schedulePlaylistFolderWatcher();
+        playlistService.addPlaylistFolderWatcher();
         settingsService.setMusicFileTypes(command.getMusicFileTypes());
         settingsService.setVideoFileTypes(command.getVideoFileTypes());
         settingsService.setCoverArtFileTypes(command.getCoverArtFileTypes());

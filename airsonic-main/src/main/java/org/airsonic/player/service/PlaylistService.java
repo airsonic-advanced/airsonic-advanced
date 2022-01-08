@@ -84,7 +84,7 @@ public class PlaylistService {
     @Autowired
     private SimpMessagingTemplate brokerTemplate;
     @Autowired
-    private TaskSchedulingService taskService;
+    private PathWatcherService pathWatcherService;
 
     public PlaylistService(
             MediaFileDao mediaFileDao,
@@ -110,7 +110,7 @@ public class PlaylistService {
 
     @PostConstruct
     public void init() throws IOException {
-        schedulePlaylistFolderWatcher();
+        addPlaylistFolderWatcher();
     }
 
     BiConsumer<Path, WatchEvent<Path>> playlistModified = (p, we) -> {
@@ -118,11 +118,11 @@ public class PlaylistService {
         importPlaylist(fullPath, playlistDao.getAllPlaylists());
     };
 
-    public void schedulePlaylistFolderWatcher() {
+    public void addPlaylistFolderWatcher() {
         Path playlistFolder = Paths.get(settingsService.getPlaylistFolder());
         if (Files.exists(playlistFolder) && Files.isDirectory(playlistFolder)) {
             try {
-                taskService.setWatcher("Playlist folder watcher", playlistFolder, playlistModified, null, playlistModified, null);
+                pathWatcherService.setWatcher("Playlist folder watcher", playlistFolder, playlistModified, null, playlistModified, null);
             } catch (Exception e) {
                 LOG.warn("Issues setting watcher for folder: {}", playlistFolder);
             }
