@@ -14,6 +14,7 @@ import org.springframework.scheduling.TriggerContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.config.FixedDelayTask;
 import org.springframework.scheduling.config.FixedRateTask;
+import org.springframework.scheduling.config.IntervalTask;
 import org.springframework.scheduling.config.ScheduledTask;
 import org.springframework.scheduling.config.ScheduledTaskHolder;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
@@ -195,6 +196,11 @@ public class TaskSchedulingService implements ScheduledTaskHolder {
         }
     }
 
+    @Override
+    public Set<ScheduledTask> getScheduledTasks() {
+        return new HashSet<>(tasks.values());
+    }
+
     public static class RunOnceTrigger extends PeriodicTrigger {
         public RunOnceTrigger(long initialDelay) {
             super(0);
@@ -212,25 +218,97 @@ public class TaskSchedulingService implements ScheduledTaskHolder {
 
     @Component
     @EndpointWebExtension(endpoint = ScheduledTasksEndpoint.class)
-    public class ScheduledTasksEndpointExtension {
+    public static class ScheduledTasksEndpointExtension {
         @Autowired
         private TaskSchedulingService taskService;
 
         @ReadOperation
         public WebEndpointResponse<Map<String, Map<String, Object>>> info() {
             Map<String, Map<String, Object>> map = taskService.tasks.entrySet().stream().map(e -> {
-                Map<String, Object> metadata = new HashMap<>(taskMetadata.getOrDefault(e.getValue(), Collections.emptyMap()));
+                Map<String, Object> metadata = new HashMap<>(taskService.taskMetadata.getOrDefault(e.getValue(), Collections.emptyMap()));
                 metadata.put("scheduledTask", e.getValue());
-                metadata.put("location", e.getValue().getTask().getRunnable().getClass().getName());
-                metadata.put("nextRun", e.getValue().getTask().getRunnable().getClass().getName());
+                metadata.put("scheduledBy", e.getValue().getTask().getRunnable().getClass().getName());
+                metadata.put("runMetadata", getRunMetadata((Instant) metadata.get("created"), e.getValue(), Instant.now()));
                 return Pair.of(e.getKey(), metadata);
             }).collect(toMap(p -> p.getKey(), p -> p.getValue()));
             return new WebEndpointResponse<>(map);
         }
-    }
 
-    @Override
-    public Set<ScheduledTask> getScheduledTasks() {
-        return new HashSet<>(tasks.values());
+        private RunMetadata getRunMetadata(Instant created, ScheduledTask scheduledTask, Instant now) {
+            if (scheduledTask.getTask() instanceof TriggerTask) {
+                TriggerTask task = (TriggerTask) scheduledTask.getTask();
+                if (task.getTrigger() instanceof RunOnceTrigger) {
+                    RunOnceTrigger trigger = (RunOnceTrigger) task.getTrigger();
+                    Instant firstRun = created.plusMillis(trigger.getInitialDelay());
+                    if (firstRun.isAfter(now)) {
+                        return new RunMetadata(firstRun, null, firstRun, RunMetadata.Type.RUN_ONCE);
+                    } else {
+                        return new RunMetadata(firstRun, firstRun, null, RunMetadata.Type.RUN_ONCE);
+                    }
+                }
+            } else if (scheduledTask.getTask() instanceof IntervalTask) {
+                IntervalTask task = (IntervalTask) scheduledTask.getTask();
+                Instant firstRun = created.plusMillis(task.getInitialDelay());
+                long millis = ChronoUnit.MILLIS.between(firstRun, now);
+                if (millis < 0) {
+                    // firstRun will happen in the future
+                    return new RunMetadata(firstRun, null, firstRun,
+                            task instanceof FixedRateTask ? RunMetadata.Type.FIXED_RATE : RunMetadata.Type.FIXED_DELAY);
+                } else {
+                    // firstRun happened in the past
+                    long runs = millis / task.getInterval();
+                    if (task instanceof FixedRateTask) {
+                        Instant lastRun = firstRun.plusMillis(task.getInterval() * runs);
+                        Instant nextRun = lastRun.plusMillis(task.getInterval());
+                        return new RunMetadata(firstRun, lastRun, nextRun, RunMetadata.Type.FIXED_RATE);
+                    } else if (task instanceof FixedDelayTask) {
+                        if (runs < 1) {
+                            // cannot calculate the next run because don't know how long the previous task lasted
+                            return new RunMetadata(firstRun, firstRun, Instant.MIN, RunMetadata.Type.FIXED_DELAY);
+                        } else {
+                            // cannot calculate the last or next runs because don't know how long previous tasks lasted
+                            return new RunMetadata(firstRun, Instant.MIN, Instant.MIN, RunMetadata.Type.FIXED_DELAY);
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public static class RunMetadata {
+            private final Instant firstRun;
+            private final Instant lastRun;
+            private final Instant nextRun;
+            private final Type type;
+
+            public RunMetadata(Instant firstRun, Instant lastRun, Instant nextRun, Type type) {
+                super();
+                this.firstRun = firstRun;
+                this.lastRun = lastRun;
+                this.nextRun = nextRun;
+                this.type = type;
+            }
+
+            public Instant getFirstRun() {
+                return firstRun;
+            }
+
+            public Instant getLastRun() {
+                return lastRun;
+            }
+
+            public Instant getNextRun() {
+                return nextRun;
+            }
+
+            public Type getType() {
+                return type;
+            }
+
+            public static enum Type {
+                FIXED_RATE, FIXED_DELAY, RUN_ONCE
+            }
+        }
     }
 }
