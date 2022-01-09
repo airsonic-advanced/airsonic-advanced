@@ -28,7 +28,8 @@ public class CsrfSecurityRequestMatcher implements RequestMatcher {
             new RegexRequestMatcher("/rest/.*\\.view(\\?.*)?", "POST"),
             new RegexRequestMatcher("/search(?:\\.view)?", "POST"),
             // websockets are protected by stomp headers
-            new AntPathRequestMatcher("/websocket/**")
+            new AntPathRequestMatcher("/websocket/**"),
+            new AntPathRequestMatcher("/actuator/caches/**", "DELETE")
         );
     }
 

@@ -61,7 +61,6 @@ jobs:
               spring_datasource_url: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified&raiseExceptionOnSilentRollback=false'
               spring_datasource_username: postgres
               spring_datasource_password: pass
-              spring_liquibase_parameters_userTableQuote: '"'
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           - jdk: 11
             services:
@@ -75,7 +74,6 @@ jobs:
               spring_datasource_url: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified&raiseExceptionOnSilentRollback=false'
               spring_datasource_username: postgres
               spring_datasource_password: pass
-              spring_liquibase_parameters_userTableQuote: '"'
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           - jdk: 11
             services:
@@ -89,7 +87,6 @@ jobs:
               spring_datasource_url: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified&raiseExceptionOnSilentRollback=false'
               spring_datasource_username: postgres
               spring_datasource_password: pass
-              spring_liquibase_parameters_userTableQuote: '"'
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           #TODO for mysql,mariadb: add collation: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin when supported by github actions on services and remove the manual run commands
           - jdk: 11

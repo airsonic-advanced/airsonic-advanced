@@ -196,6 +196,7 @@
   var cacheHitsUrl = "<c:url value='/actuator/metrics/cache.gets?tag=result:hit&'/>";
   var cachePutsUrl = "<c:url value='/actuator/metrics/cache.puts?'/>";
   var cacheRemovalsUrl = "<c:url value='/actuator/metrics/cache.removals?'/>";
+  var cacheEvictionssUrl = "<c:url value='/actuator/caches/'/>";
 
   var updateCacheUsage = c => {
     var hit = +($('#cachesTable > tbody .' + c + ' .cachehits').text());
@@ -220,13 +221,18 @@
   var updateCacheRemovalsData = c => $.get(cacheRemovalsUrl+"tag=cache:"+c, data => {
     $('#cachesTable > tbody .' + c + ' .cacheremovals').text(data.measurements[0].value);
   });
+  var evictCache = c => $.ajax(cacheEvictionssUrl+c, {type: 'DELETE'}).always((data, status) => {
+    console.log("eviction request for " + c + " completed with status: " + status);
+    updateCacheData(c);
+  });
+  var updateCacheData = c => {
+    updateCacheMissData(c);
+    updateCacheHitsData(c);
+    updateCachePutsData(c);
+    updateCacheRemovalsData(c);
+  };
   function updateCachesData() {
-    airsonicCaches.forEach(c => {
-      updateCacheMissData(c);
-      updateCacheHitsData(c);
-      updateCachePutsData(c);
-      updateCacheRemovalsData(c);
-    });
+    airsonicCaches.forEach(c => updateCacheData(c));
   };
 
   var parseScheduledDate = date => {
@@ -310,12 +316,13 @@
     $.get(healthUrl).always(data => {
       $('#healthTable > tbody').empty();
       var appendedRows = '';
-      if (typeof data.responseJSON != 'undefined' && typeof data.responseJSON.components != 'undefined') {
-        Object.keys(data.responseJSON.components).forEach(k => {
+      var dc = (typeof data.responseJSON != 'undefined' && typeof data.responseJSON.components != 'undefined') ? data.responseJSON.components : data.components;
+      if (typeof dc != 'undefined') {
+        Object.keys(dc).forEach(k => {
           appendedRows += '<tr>';
           appendedRows +=   '<td>' + k + '</td>';
-          appendedRows +=   '<td>' + data.responseJSON.components[k].status + '</td>';
-          appendedRows +=   '<td>' + JSON.stringify(data.responseJSON.components[k].details) + '</td>';
+          appendedRows +=   '<td>' + dc[k].status + '</td>';
+          appendedRows +=   '<td>' + JSON.stringify(dc[k].details) + '</td>';
           appendedRows += '</tr>';
         });
       }
@@ -329,7 +336,7 @@
       $('#userChart'),
       userChartConfig
     );
-    
+
     $.get(cacheNamesUrl, data => {
       airsonicCaches = data.availableTags.filter(i => i.tag == 'cache')[0].values.sort();
       var appendedRows = '';
@@ -341,6 +348,7 @@
         appendedRows +=   '<td class="cachemiss"></td>';
         appendedRows +=   '<td class="cacheputs"></td>';
         appendedRows +=   '<td class="cacheremovals"></td>';
+        appendedRows +=   '<td class="cacheevictions"><button onclick="evictCache(\''+row+'\')"><fmt:message key="status.cacheevict"/></button></td>';
         appendedRows += '</tr>';
       });
 
@@ -403,6 +411,7 @@
         <th class="ruleTableHeader"><fmt:message key="status.cachemiss"/></th>
         <th class="ruleTableHeader"><fmt:message key="status.cacheputs"/></th>
         <th class="ruleTableHeader"><fmt:message key="status.cacheremovals"/></th>
+        <th class="ruleTableHeader"><fmt:message key="status.cacheevict"/></th>
       </tr>
     </thead>
     <tbody>

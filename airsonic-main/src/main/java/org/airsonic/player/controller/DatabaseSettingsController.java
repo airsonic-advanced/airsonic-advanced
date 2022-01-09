@@ -99,6 +99,12 @@ public class DatabaseSettingsController {
 
     @GetMapping("/export")
     public ResponseEntity<Resource> exportDB(Principal p, ServletWebRequest swr) throws Exception {
+        Path exportFile = databaseService.exportDB();
+
+        if (exportFile == null) {
+            return ResponseEntity.internalServerError().build();
+        }
+
         User user = securityService.getUserByName(p.getName());
         Player transferPlayer = playerService.getPlayer(swr.getRequest(), swr.getResponse(), false, false);
         Supplier<TransferStatus> statusSupplier = () -> statusService.createDownloadStatus(transferPlayer);
@@ -109,8 +115,6 @@ public class DatabaseSettingsController {
             LOG.info("Transferred {} bytes to user: {}, player: {}", status.getBytesTransferred(), user.getUsername(), transferPlayer);
             databaseService.cleanup(status.getFile());
         };
-
-        Path exportFile = databaseService.exportDB();
         Resource res = new FileSystemResource(exportFile);
         Resource monitoredRes = new PipeStreams.MonitoredResource(
                 res,
@@ -144,7 +148,6 @@ public class DatabaseSettingsController {
         command.setUsername(settingsService.getDatabaseUsername());
         command.setJNDIName(settingsService.getDatabaseJNDIName());
         command.setMysqlVarcharMaxlength(settingsService.getDatabaseMysqlVarcharMaxlength());
-        command.setUsertableQuote(settingsService.getDatabaseUsertableQuote());
 
         if (StringUtils.isNotBlank(command.getJNDIName())) {
             command.setConfigType(DataSourceConfigType.JNDI);
@@ -185,7 +188,6 @@ public class DatabaseSettingsController {
             }
             if (command.getConfigType() != DataSourceConfigType.BUILTIN) {
                 settingsService.setDatabaseMysqlVarcharMaxlength(command.getMysqlVarcharMaxlength());
-                settingsService.setDatabaseUsertableQuote(command.getUsertableQuote());
             }
             settingsService.setDbBackupInterval(command.getDbBackupInterval());
             settingsService.setDbBackupRetentionCount(command.getDbBackupRetentionCount());

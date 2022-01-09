@@ -10,6 +10,8 @@
     <property name="json_type" value="json"/>
     <property name="varchar_type" dbms="mariadb,mysql" value="varchar(${mysqlVarcharLimit})" />
     <property name="varchar_type" value="varchar" />
+    <property name="userTableQuote" dbms="hsqldb,mariadb,mysql" value="" />
+    <property name="userTableQuote" dbms="postgresql" value="&quot;" />
     <include file="legacy/legacy-changelog.xml" relativeToChangelogFile="true"/>
     <include file="6.2/changelog.xml" relativeToChangelogFile="true"/>
     <include file="6.3/changelog.xml" relativeToChangelogFile="true"/>
