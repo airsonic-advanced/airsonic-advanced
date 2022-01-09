@@ -3,6 +3,11 @@ package org.airsonic.player.service;
 import org.airsonic.player.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
+import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
+import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -21,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
+
+import static java.util.stream.Collectors.toMap;
 
 @Service
 public class PathWatcherService {
@@ -104,6 +111,19 @@ public class PathWatcherService {
         if (key != null) {
             key.cancel();
             watchFunctions.remove(key);
+        }
+    }
+
+    @Component
+    @Endpoint(id = "pathwatcher")
+    public static class PathWatcherEndpoint {
+        @Autowired
+        private PathWatcherService pathWatcherService;
+
+        @ReadOperation
+        public WebEndpointResponse<Map<String, String>> info() {
+            return new WebEndpointResponse<>(pathWatcherService.watchNames.entrySet().stream()
+                    .collect(toMap(e -> e.getKey(), e -> e.getValue().watchable().toString())));
         }
     }
 

@@ -265,6 +265,22 @@
     });
   }
 
+  var pathWatcherUrl = "<c:url value='/actuator/pathwatcher'/>";
+  function updatePathWatcherData() {
+    $.get(pathWatcherUrl, data => {
+      $('#pathWatcherTable > tbody').empty();
+      var appendedRows = '';
+      Object.keys(data).forEach(k => {
+        appendedRows += '<tr>';
+        appendedRows +=   '<td>' + k + '</td>';
+        appendedRows +=   '<td>' + data[k] + '</td>';
+        appendedRows += '</tr>';
+      });
+
+      $('#pathWatcherTable > tbody').append(appendedRows);
+    });
+  }
+
   var sessionsCurrentUrl = "<c:url value='/actuator/metrics/tomcat.sessions.active.current'/>";
   var sessionsCreatedUrl = "<c:url value='/actuator/metrics/tomcat.sessions.created'/>";
   var sessionsExpiredUrl = "<c:url value='/actuator/metrics/tomcat.sessions.expired'/>";
@@ -335,10 +351,11 @@
     updateTransferData();
     updateUserChartData();
     updateScheduledTasksData();
+    updatePathWatcherData();
     updateSessionsData();
     updateHealthData();
 
-    setInterval(() => { updateTransferData(); updateUserChartData(); updateCachesData(); updateScheduledTasksData(); updateSessionsData(); updateHealthData();}, 40000);
+    setInterval(() => { updateTransferData(); updateUserChartData(); updateCachesData(); updateScheduledTasksData(); updatePathWatcherData(); updateSessionsData(); updateHealthData();}, 40000);
   }
 </script>
 
