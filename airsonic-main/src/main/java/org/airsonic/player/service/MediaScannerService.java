@@ -39,18 +39,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinWorkerThread;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -66,8 +64,6 @@ public class MediaScannerService {
 
     private volatile boolean scanning;
 
-    private ScheduledExecutorService scheduler;
-
     @Autowired
     private SettingsService settingsService;
     @Autowired
@@ -82,6 +78,8 @@ public class MediaScannerService {
     private ArtistDao artistDao;
     @Autowired
     private AlbumDao albumDao;
+    @Autowired
+    private TaskSchedulingService taskService;
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
@@ -105,28 +103,24 @@ public class MediaScannerService {
      * Schedule background execution of media library scanning.
      */
     public synchronized void schedule() {
-        if (scheduler != null) {
-            scheduler.shutdown();
-        }
-
         long daysBetween = settingsService.getIndexCreationInterval();
         int hour = settingsService.getIndexCreationHour();
 
         if (daysBetween == -1) {
             LOG.info("Automatic media scanning disabled.");
+            taskService.unscheduleTask("mediascanner-IndexingTask");
             return;
         }
-
-        scheduler = Executors.newSingleThreadScheduledExecutor();
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime nextRun = now.withHour(hour).withMinute(0).withSecond(0);
         if (now.compareTo(nextRun) > 0)
             nextRun = nextRun.plusDays(1);
 
-        long initialDelay = ChronoUnit.MILLIS.between(now, nextRun);
+        long initialDelayMillis = ChronoUnit.MILLIS.between(now, nextRun);
+        Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
 
-        scheduler.scheduleAtFixedRate(() -> scanLibrary(), initialDelay, TimeUnit.DAYS.toMillis(daysBetween), TimeUnit.MILLISECONDS);
+        taskService.scheduleAtFixedRate("mediascanner-IndexingTask", () -> scanLibrary(), firstTime, Duration.ofDays(daysBetween), true);
 
         LOG.info("Automatic media library scanning scheduled to run every {} day(s), starting at {}", daysBetween, nextRun);
 
@@ -139,6 +133,10 @@ public class MediaScannerService {
 
     boolean neverScanned() {
         return indexManager.getStatistics() == null;
+    }
+
+    void watchPlaylists() {
+
     }
 
     /**

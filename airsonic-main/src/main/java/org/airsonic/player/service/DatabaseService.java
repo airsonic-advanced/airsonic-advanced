@@ -33,16 +33,13 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.sql.Connection;
 import java.text.MessageFormat;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -64,50 +61,44 @@ public class DatabaseService {
     DatabaseDao databaseDao;
     @Autowired
     private SimpMessagingTemplate brokerTemplate;
-
-    private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-    private ScheduledFuture<?> scheduledBackup;
+    @Autowired
+    private TaskSchedulingService taskService;
 
     @PostConstruct
     public void init() {
         try {
             schedule();
         } catch (Throwable x) {
-            LOG.error("Failed to initialize PodcastService", x);
+            LOG.error("Failed to initialize DatabaseService", x);
         }
     }
 
     private synchronized void schedule() {
-        unschedule();
-
         int hoursBetween = settingsService.getDbBackupInterval();
 
         if (hoursBetween == -1) {
             LOG.info("Automatic DB backup disabled");
+            unschedule();
             return;
         }
 
-        long periodMillis = hoursBetween * 60L * 60L * 1000L;
         long initialDelayMillis = 5L * 60L * 1000L;
-
-        Runnable task = () -> {
-            LOG.info("Starting scheduled DB backup");
-            backup();
-            LOG.info("Completed scheduled DB backup");
-        };
-
-        scheduledBackup = scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis,
-                TimeUnit.MILLISECONDS);
-
         Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
+
+        taskService.scheduleAtFixedRate("db-backup", backupTask, firstTime, Duration.ofHours(hoursBetween), true);
+
         LOG.info("Automatic DB backup scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);
     }
 
     public void unschedule() {
-        if (scheduledBackup != null) {
-            scheduledBackup.cancel(true);
-        }
+        taskService.unscheduleTask("db-backup");
     }
+
+    private Runnable backupTask = () -> {
+        LOG.info("Starting scheduled DB backup");
+        backup();
+        LOG.info("Completed scheduled DB backup");
+    };
 
     public synchronized void backup() {
         brokerTemplate.convertAndSend("/topic/backupStatus", "started");
