@@ -74,20 +74,20 @@ public class TaskSchedulingService implements ScheduledTaskHolder {
 
     public void scheduleFixedDelayTask(String name, Runnable task, Instant firstTime, Duration period, boolean cancelIfExists) {
         scheduleTask(name,
-                r -> r.scheduleFixedDelayTask(new FixedDelayTask(task, period.toMillis(), ChronoUnit.MILLIS.between(Instant.now(), firstTime))),
-                cancelIfExists);
+            r -> r.scheduleFixedDelayTask(new FixedDelayTask(task, period.toMillis(), ChronoUnit.MILLIS.between(Instant.now(), firstTime))),
+            cancelIfExists);
     }
 
     public void scheduleAtFixedRate(String name, Runnable task, Instant firstTime, Duration period, boolean cancelIfExists) {
         scheduleTask(name,
-                r -> r.scheduleFixedRateTask(new FixedRateTask(task, period.toMillis(), ChronoUnit.MILLIS.between(Instant.now(), firstTime))),
-                cancelIfExists);
+            r -> r.scheduleFixedRateTask(new FixedRateTask(task, period.toMillis(), ChronoUnit.MILLIS.between(Instant.now(), firstTime))),
+            cancelIfExists);
     }
 
     public void scheduleOnce(String name, Runnable task, Instant firstTime, boolean cancelIfExists) {
         scheduleTask(name,
-                r -> r.scheduleTriggerTask(new TriggerTask(task, new RunOnceTrigger(ChronoUnit.MILLIS.between(Instant.now(), firstTime)))),
-                cancelIfExists);
+            r -> r.scheduleTriggerTask(new TriggerTask(task, new RunOnceTrigger(ChronoUnit.MILLIS.between(Instant.now(), firstTime)))),
+            cancelIfExists);
     }
 
     public ScheduledTask getScheduledTask(String name) {
