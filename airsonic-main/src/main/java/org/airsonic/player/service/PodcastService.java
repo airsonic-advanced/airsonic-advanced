@@ -33,6 +33,7 @@ import org.airsonic.player.service.metadata.MetaDataParser;
 import org.airsonic.player.service.metadata.MetaDataParserFactory;
 import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.StringUtil;
+import org.airsonic.player.util.Util;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -64,6 +65,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
@@ -72,6 +74,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -95,8 +98,6 @@ public class PodcastService {
 
     private final ExecutorService refreshExecutor;
     private final ExecutorService downloadExecutor;
-    private final ScheduledExecutorService scheduledExecutor;
-    private final Map<Integer, ScheduledFuture<?>> scheduledRefreshes = new ConcurrentHashMap<>();
     @Autowired
     private PodcastDao podcastDao;
     @Autowired
@@ -111,16 +112,12 @@ public class PodcastService {
     private MetaDataParserFactory metaDataParserFactory;
     @Autowired
     private VersionService versionService;
+    @Autowired
+    private TaskSchedulingService taskService;
 
     public PodcastService() {
-        ThreadFactory threadFactory = r -> {
-            Thread t = Executors.defaultThreadFactory().newThread(r);
-            t.setDaemon(true);
-            return t;
-        };
-        refreshExecutor = Executors.newFixedThreadPool(5, threadFactory);
-        downloadExecutor = Executors.newFixedThreadPool(3, threadFactory);
-        scheduledExecutor = Executors.newScheduledThreadPool(10, threadFactory);
+        refreshExecutor = Executors.newFixedThreadPool(5, Util.getDaemonThreadfactory("podcast-refresh"));
+        downloadExecutor = Executors.newFixedThreadPool(3, Util.getDaemonThreadfactory("podcast-download"));
     }
 
     @PostConstruct
@@ -152,17 +149,16 @@ public class PodcastService {
     }
 
     private synchronized void schedule(PodcastChannelRule r) {
-        unschedule(r.getId());
-
         int hoursBetween = r.getCheckInterval();
 
         if (hoursBetween == -1) {
             LOG.info("Automatic Podcast update disabled for podcast id {}", r.getId());
+            unschedule(r.getId());
             return;
         }
 
-        long periodMillis = hoursBetween * 60L * 60L * 1000L;
         long initialDelayMillis = 5L * 60L * 1000L;
+        Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
 
         Runnable task = () -> {
             LOG.info("Starting scheduled Podcast refresh for podcast id {}.", r.getId());
@@ -170,44 +166,38 @@ public class PodcastService {
             LOG.info("Completed scheduled Podcast refresh for podcast id {}.", r.getId());
         };
 
-        scheduledRefreshes.put(r.getId(), scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS));
+        taskService.scheduleAtFixedRate("podcast-channel-refresh-" + r.getId(), task, firstTime, Duration.ofHours(hoursBetween), true);
 
-        Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
         LOG.info("Automatic Podcast update for podcast id {} scheduled to run every {} hour(s), starting at {}", r.getId(), hoursBetween, firstTime);
     }
 
-    public synchronized void scheduleDefault() {
-        unschedule(-1);
+    private Runnable defaultTask = () -> {
+        LOG.info("Starting scheduled default Podcast refresh.");
+        Set<Integer> ruleIds = podcastDao.getAllChannelRules().parallelStream().map(r -> r.getId()).collect(toSet());
+        List<PodcastChannel> channelsWithoutRules = podcastDao.getAllChannels().parallelStream().filter(c -> !ruleIds.contains(c.getId())).collect(toList());
+        refreshChannels(channelsWithoutRules, true);
+        LOG.info("Completed scheduled default Podcast refresh.");
+    };
 
+    public synchronized void scheduleDefault() {
         int hoursBetween = settingsService.getPodcastUpdateInterval();
 
         if (hoursBetween == -1) {
             LOG.info("Automatic default Podcast update disabled for podcasts");
+            unschedule(-1);
             return;
         }
 
-        long periodMillis = hoursBetween * 60L * 60L * 1000L;
         long initialDelayMillis = 5L * 60L * 1000L;
-
-        Runnable task = () -> {
-            LOG.info("Starting scheduled default Podcast refresh.");
-            Set<Integer> ruleIds = podcastDao.getAllChannelRules().parallelStream().map(r -> r.getId()).collect(toSet());
-            List<PodcastChannel> channelsWithoutRules = podcastDao.getAllChannels().parallelStream().filter(c -> !ruleIds.contains(c.getId())).collect(toList());
-            refreshChannels(channelsWithoutRules, true);
-            LOG.info("Completed scheduled default Podcast refresh.");
-        };
-
-        scheduledRefreshes.put(-1, scheduledExecutor.scheduleAtFixedRate(task, initialDelayMillis, periodMillis, TimeUnit.MILLISECONDS));
-
         Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
+
+        taskService.scheduleAtFixedRate("podcast-channel-refresh--1", defaultTask, firstTime, Duration.ofHours(hoursBetween), true);
+
         LOG.info("Automatic default Podcast update scheduled to run every {} hour(s), starting at {}", hoursBetween, firstTime);
     }
 
     public void unschedule(Integer id) {
-        ScheduledFuture<?> scheduledRefresh = scheduledRefreshes.remove(id);
-        if (scheduledRefresh != null) {
-            scheduledRefresh.cancel(true);
-        }
+        taskService.unscheduleTask("podcast-channel-refresh-" + id);
     }
 
     public void createOrUpdateChannelRule(PodcastChannelRule r) {
@@ -258,12 +248,24 @@ public class PodcastService {
         return podcastDao.getAllChannels();
     }
 
-    private PodcastEpisode getEpisodeByUrl(String url) {
-        PodcastEpisode episode = podcastDao.getEpisodeByUrl(url);
+    private PodcastEpisode getEpisodeByCriteria(Supplier<PodcastEpisode> podcastEpisodeSupplier) {
+        PodcastEpisode episode = podcastEpisodeSupplier.get();
         if (episode == null) {
             return null;
         }
         return Optional.ofNullable(episode).filter(filterAllowed).orElse(null);
+    }
+
+    private PodcastEpisode getEpisodeByUrl(Integer channelId, String url) {
+        return getEpisodeByCriteria(() -> podcastDao.getEpisodeByUrl(channelId, url));
+    }
+
+    private PodcastEpisode getEpisodeByGuid(Integer channelId, String guid) {
+        return getEpisodeByCriteria(() -> podcastDao.getEpisodeByGuid(channelId, guid));
+    }
+
+    private PodcastEpisode getEpisodeByTitleAndDate(Integer channelId, String title, Instant date) {
+        return getEpisodeByCriteria(() -> podcastDao.getEpisodeByTitleAndDate(channelId, title, date));
     }
 
     /**
@@ -453,6 +455,8 @@ public class PodcastService {
         episodeElements.parallelStream()
                 .map(episodeElement -> {
                     String title = StringUtil.removeMarkup(episodeElement.getChildTextTrim("title"));
+                    String guid = StringUtil.removeMarkup(episodeElement.getChildTextTrim("guid"));
+                    Instant date = parseDate(episodeElement.getChildTextTrim("pubDate"));
 
                     Element enclosure = episodeElement.getChild("enclosure");
                     if (enclosure == null) {
@@ -466,8 +470,37 @@ public class PodcastService {
                         return null;
                     }
 
-                    if (getEpisodeByUrl(url) != null) {
-                        LOG.info("Episode already exists for episode {}", title);
+                    // make sure episode with same guid doesn't exist
+                    if (StringUtils.isNotBlank(guid)) {
+                        if (getEpisodeByGuid(channel.getId(), guid) != null) {
+                            LOG.info("Episode already exists for episode {} by guid {}", title, guid);
+                            return null;
+                        }
+                    }
+
+                    // make sure episode with same title and pub date doesn't exist
+                    if (StringUtils.isNotBlank(title) && date != null) {
+                        PodcastEpisode oldEpisode = getEpisodeByTitleAndDate(channel.getId(), title, date);
+                        if (oldEpisode != null) {
+                            // backfill
+                            if (StringUtils.isBlank(oldEpisode.getEpisodeGuid()) && StringUtils.isNotBlank(guid)) {
+                                oldEpisode.setEpisodeGuid(guid);
+                                podcastDao.updateEpisode(oldEpisode);
+                            }
+                            LOG.info("Episode already exists for episode {} by title and pubdate {}", title, date);
+                            return null;
+                        }
+                    }
+
+                    // make sure episode with same url doesn't exist
+                    PodcastEpisode oldEpisode = getEpisodeByUrl(channel.getId(), url);
+                    if (oldEpisode != null) {
+                        // backfill
+                        if (StringUtils.isBlank(oldEpisode.getEpisodeGuid()) && StringUtils.isNotBlank(guid)) {
+                            oldEpisode.setEpisodeGuid(guid);
+                            podcastDao.updateEpisode(oldEpisode);
+                        }
+                        LOG.info("Episode already exists for episode {} by url {}", title, url);
                         return null;
                     }
 
@@ -484,8 +517,7 @@ public class PodcastService {
                         LOG.warn("Failed to parse enclosure length.", x);
                     }
 
-                    Instant date = parseDate(episodeElement.getChildTextTrim("pubDate"));
-                    PodcastEpisode episode = new PodcastEpisode(null, channel.getId(), url, null, title, description, date,
+                    PodcastEpisode episode = new PodcastEpisode(null, channel.getId(), guid, url, null, title, description, date,
                             duration, length, 0L, PodcastStatus.NEW, null);
                     LOG.info("Created Podcast episode {}", title);
 

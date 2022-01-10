@@ -8,6 +8,7 @@ import org.airsonic.player.io.TranscodeInputStream;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
 import org.airsonic.player.util.FileUtil;
+import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,7 @@ import java.util.stream.Stream;
 public class HlsSession {
     private final Logger LOG;
 
-    private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+    private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor(Util.getDaemonThreadfactory("hls-destroy-session"));
 
     private static final long SESSION_TIMEOUT_SECONDS = 120L;
 
