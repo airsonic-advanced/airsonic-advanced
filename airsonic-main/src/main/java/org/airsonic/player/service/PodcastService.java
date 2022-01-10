@@ -71,6 +71,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -250,8 +251,8 @@ public class PodcastService {
         return addMediaFileIdToChannels(podcastDao.getAllChannels());
     }
 
-    private PodcastEpisode getEpisodeByUrl(String url) {
-        PodcastEpisode episode = podcastDao.getEpisodeByUrl(url);
+    private PodcastEpisode getEpisodeByCriteria(Supplier<PodcastEpisode> podcastEpisodeSupplier) {
+        PodcastEpisode episode = podcastEpisodeSupplier.get();
         if (episode == null) {
             return null;
         }
@@ -259,6 +260,18 @@ public class PodcastService {
         episodes = filterAllowed(episodes);
         addMediaFileIdToEpisodes(episodes);
         return episodes.isEmpty() ? null : episodes.get(0);
+    }
+
+    private PodcastEpisode getEpisodeByUrl(Integer channelId, String url) {
+        return getEpisodeByCriteria(() -> podcastDao.getEpisodeByUrl(channelId, url));
+    }
+
+    private PodcastEpisode getEpisodeByGuid(Integer channelId, String guid) {
+        return getEpisodeByCriteria(() -> podcastDao.getEpisodeByGuid(channelId, guid));
+    }
+
+    private PodcastEpisode getEpisodeByTitleAndDate(Integer channelId, String title, Instant date) {
+        return getEpisodeByCriteria(() -> podcastDao.getEpisodeByTitleAndDate(channelId, title, date));
     }
 
     /**
@@ -480,6 +493,8 @@ public class PodcastService {
         episodeElements.parallelStream()
                 .map(episodeElement -> {
                     String title = StringUtil.removeMarkup(episodeElement.getChildTextTrim("title"));
+                    String guid = StringUtil.removeMarkup(episodeElement.getChildTextTrim("guid"));
+                    Instant date = parseDate(episodeElement.getChildTextTrim("pubDate"));
 
                     Element enclosure = episodeElement.getChild("enclosure");
                     if (enclosure == null) {
@@ -493,8 +508,37 @@ public class PodcastService {
                         return null;
                     }
 
-                    if (getEpisodeByUrl(url) != null) {
-                        LOG.info("Episode already exists for episode {}", title);
+                    // make sure episode with same guid doesn't exist
+                    if (StringUtils.isNotBlank(guid)) {
+                        if (getEpisodeByGuid(channel.getId(), guid) != null) {
+                            LOG.info("Episode already exists for episode {} by guid {}", title, guid);
+                            return null;
+                        }
+                    }
+
+                    // make sure episode with same title and pub date doesn't exist
+                    if (StringUtils.isNotBlank(title) && date != null) {
+                        PodcastEpisode oldEpisode = getEpisodeByTitleAndDate(channel.getId(), title, date);
+                        if (oldEpisode != null) {
+                            // backfill
+                            if (StringUtils.isBlank(oldEpisode.getEpisodeGuid()) && StringUtils.isNotBlank(guid)) {
+                                oldEpisode.setEpisodeGuid(guid);
+                                podcastDao.updateEpisode(oldEpisode);
+                            }
+                            LOG.info("Episode already exists for episode {} by title and pubdate {}", title, date);
+                            return null;
+                        }
+                    }
+
+                    // make sure episode with same url doesn't exist
+                    PodcastEpisode oldEpisode = getEpisodeByUrl(channel.getId(), url);
+                    if (oldEpisode != null) {
+                        // backfill
+                        if (StringUtils.isBlank(oldEpisode.getEpisodeGuid()) && StringUtils.isNotBlank(guid)) {
+                            oldEpisode.setEpisodeGuid(guid);
+                            podcastDao.updateEpisode(oldEpisode);
+                        }
+                        LOG.info("Episode already exists for episode {} by url {}", title, url);
                         return null;
                     }
 
@@ -511,8 +555,7 @@ public class PodcastService {
                         LOG.warn("Failed to parse enclosure length.", x);
                     }
 
-                    Instant date = parseDate(episodeElement.getChildTextTrim("pubDate"));
-                    PodcastEpisode episode = new PodcastEpisode(null, channel.getId(), url, null, title, description, date,
+                    PodcastEpisode episode = new PodcastEpisode(null, channel.getId(), guid, url, null, title, description, date,
                             duration, length, 0L, PodcastStatus.NEW, null);
                     LOG.info("Created Podcast episode {}", title);
 
