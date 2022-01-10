@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -93,7 +94,7 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testCreateEpisode() {
         int channelId = createChannel();
-        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", "path", "title", "description",
+        PodcastEpisode episode = new PodcastEpisode(null, channelId, UUID.randomUUID().toString(), "http://bar", "path", "title", "description",
                 Instant.now(), "12:34", null, null, PodcastStatus.NEW, null);
         podcastDao.createEpisode(episode);
 
@@ -107,7 +108,7 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
         assertNull("Error in getEpisode()", podcastDao.getEpisode(23));
 
         int channelId = createChannel();
-        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", "path", "title", "description",
+        PodcastEpisode episode = new PodcastEpisode(null, channelId, UUID.randomUUID().toString(), "http://bar", "path", "title", "description",
                 Instant.now(), "12:34", 3276213L, 2341234L, PodcastStatus.NEW, "error");
         podcastDao.createEpisode(episode);
 
@@ -119,13 +120,13 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testGetEpisodes() {
         int channelId = createChannel();
-        PodcastEpisode a = new PodcastEpisode(null, channelId, "a", null, null, null,
+        PodcastEpisode a = new PodcastEpisode(null, channelId, UUID.randomUUID().toString(), "a", null, null, null,
                 Instant.ofEpochMilli(3000), null, null, null, PodcastStatus.NEW, null);
-        PodcastEpisode b = new PodcastEpisode(null, channelId, "b", null, null, null,
+        PodcastEpisode b = new PodcastEpisode(null, channelId, UUID.randomUUID().toString(), "b", null, null, null,
                 Instant.ofEpochMilli(1000), null, null, null, PodcastStatus.NEW, "error");
-        PodcastEpisode c = new PodcastEpisode(null, channelId, "c", null, null, null,
+        PodcastEpisode c = new PodcastEpisode(null, channelId, UUID.randomUUID().toString(), "c", null, null, null,
                 Instant.ofEpochMilli(2000), null, null, null, PodcastStatus.NEW, null);
-        PodcastEpisode d = new PodcastEpisode(null, channelId, "c", null, null, null,
+        PodcastEpisode d = new PodcastEpisode(null, channelId, UUID.randomUUID().toString(), "c", null, null, null,
                 null, null, null, null, PodcastStatus.NEW, "");
         podcastDao.createEpisode(a);
         podcastDao.createEpisode(b);
@@ -144,7 +145,7 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testUpdateEpisode() {
         int channelId = createChannel();
-        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", null, null, null,
+        PodcastEpisode episode = new PodcastEpisode(null, channelId, UUID.randomUUID().toString(), "http://bar", null, null, null,
                 null, null, null, null, PodcastStatus.NEW, null);
         podcastDao.createEpisode(episode);
         episode = podcastDao.getEpisodes(channelId).get(0);
@@ -172,7 +173,7 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
 
         assertEquals("Wrong number of episodes.", 0, podcastDao.getEpisodes(channelId).size());
 
-        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", null, null, null,
+        PodcastEpisode episode = new PodcastEpisode(null, channelId, UUID.randomUUID().toString(), "http://bar", null, null, null,
                 null, null, null, null, PodcastStatus.NEW, null);
 
         podcastDao.createEpisode(episode);
@@ -192,7 +193,7 @@ public class PodcastDaoTestCase extends DaoTestCaseBean2 {
     @Test
     public void testCascadingDelete() {
         int channelId = createChannel();
-        PodcastEpisode episode = new PodcastEpisode(null, channelId, "http://bar", null, null, null,
+        PodcastEpisode episode = new PodcastEpisode(null, channelId, UUID.randomUUID().toString(), "http://bar", null, null, null,
                 null, null, null, null, PodcastStatus.NEW, null);
         podcastDao.createEpisode(episode);
         podcastDao.createEpisode(episode);
