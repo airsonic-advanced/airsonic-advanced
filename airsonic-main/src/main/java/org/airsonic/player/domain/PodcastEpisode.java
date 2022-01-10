@@ -32,7 +32,7 @@ public class PodcastEpisode {
     private Integer id;
     private Integer mediaFileId;
     private Integer channelId;
-    private String guid;
+    private String episodeGuid;
     private String url;
     private String path;
     private String title;
@@ -44,12 +44,12 @@ public class PodcastEpisode {
     private PodcastStatus status;
     private String errorMessage;
 
-    public PodcastEpisode(Integer id, Integer channelId, String guid, String url, String path, String title,
+    public PodcastEpisode(Integer id, Integer channelId, String episodeGuid, String url, String path, String title,
                           String description, Instant publishDate, String duration, Long length, Long bytesDownloaded,
                           PodcastStatus status, String errorMessage) {
         this.id = id;
         this.channelId = channelId;
-        this.guid = guid;
+        this.episodeGuid = episodeGuid;
         this.url = url;
         this.path = path;
         this.title = title;
@@ -171,11 +171,11 @@ public class PodcastEpisode {
         this.mediaFileId = mediaFileId;
     }
 
-    public String getGuid() {
-        return guid;
+    public String getEpisodeGuid() {
+        return episodeGuid;
     }
 
-    public void setGuid(String guid) {
-        this.guid = guid;
+    public void setEpisodeGuid(String episodeGuid) {
+        this.episodeGuid = episodeGuid;
     }
 }

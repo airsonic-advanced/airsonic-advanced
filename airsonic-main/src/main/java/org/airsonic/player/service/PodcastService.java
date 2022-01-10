@@ -521,8 +521,8 @@ public class PodcastService {
                         PodcastEpisode oldEpisode = getEpisodeByTitleAndDate(channel.getId(), title, date);
                         if (oldEpisode != null) {
                             // backfill
-                            if (StringUtils.isBlank(oldEpisode.getGuid()) && StringUtils.isNotBlank(guid)) {
-                                oldEpisode.setGuid(guid);
+                            if (StringUtils.isBlank(oldEpisode.getEpisodeGuid()) && StringUtils.isNotBlank(guid)) {
+                                oldEpisode.setEpisodeGuid(guid);
                                 podcastDao.updateEpisode(oldEpisode);
                             }
                             LOG.info("Episode already exists for episode {} by title and pubdate {}", title, date);
@@ -534,8 +534,8 @@ public class PodcastService {
                     PodcastEpisode oldEpisode = getEpisodeByUrl(channel.getId(), url);
                     if (oldEpisode != null) {
                         // backfill
-                        if (StringUtils.isBlank(oldEpisode.getGuid()) && StringUtils.isNotBlank(guid)) {
-                            oldEpisode.setGuid(guid);
+                        if (StringUtils.isBlank(oldEpisode.getEpisodeGuid()) && StringUtils.isNotBlank(guid)) {
+                            oldEpisode.setEpisodeGuid(guid);
                             podcastDao.updateEpisode(oldEpisode);
                         }
                         LOG.info("Episode already exists for episode {} by url {}", title, url);

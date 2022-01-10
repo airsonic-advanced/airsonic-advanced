@@ -207,7 +207,7 @@ public class PodcastDao extends AbstractDao {
     public int updateEpisode(PodcastEpisode episode) {
         String sql = "update podcast_episode set episode_guid=?, url=?, path=?, title=?, description=?, publish_date=?, duration=?, " +
                 "bytes_total=?, bytes_downloaded=?, status=?, error_message=? where id=?";
-        return update(sql, episode.getGuid(), episode.getUrl(), episode.getPath(), episode.getTitle(),
+        return update(sql, episode.getEpisodeGuid(), episode.getUrl(), episode.getPath(), episode.getTitle(),
                 episode.getDescription(), episode.getPublishDate(), episode.getDuration(),
                 episode.getBytesTotal(), episode.getBytesDownloaded(), episode.getStatus().name(),
                 episode.getErrorMessage(), episode.getId());
