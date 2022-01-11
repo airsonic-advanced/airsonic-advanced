@@ -129,17 +129,17 @@ public class IndexManager {
         }
     }
 
-    public void index(MediaFile mediaFile, MusicFolder musicFolder) {
+    public void index(MediaFile mediaFile) {
         Term primarykey = documentFactory.createPrimarykey(mediaFile);
         try {
             if (mediaFile.isFile()) {
-                Document document = documentFactory.createSongDocument(mediaFile, musicFolder);
+                Document document = documentFactory.createSongDocument(mediaFile);
                 writers.get(IndexType.SONG).updateDocument(primarykey, document);
             } else if (mediaFile.isAlbum()) {
-                Document document = documentFactory.createAlbumDocument(mediaFile, musicFolder);
+                Document document = documentFactory.createAlbumDocument(mediaFile);
                 writers.get(IndexType.ALBUM).updateDocument(primarykey, document);
             } else {
-                Document document = documentFactory.createArtistDocument(mediaFile, musicFolder);
+                Document document = documentFactory.createArtistDocument(mediaFile);
                 writers.get(IndexType.ARTIST).updateDocument(primarykey, document);
             }
         } catch (Exception x) {

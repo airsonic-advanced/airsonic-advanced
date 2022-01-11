@@ -36,10 +36,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Provides services for sharing media.
@@ -66,7 +64,13 @@ public class ShareService {
     }
 
     public List<Share> getSharesForUser(User user) {
-        return getAllShares().stream().filter(share -> user.isAdminRole() || ObjectUtils.equals(user.getUsername(), share.getUsername())).collect(toList());
+        List<Share> result = new ArrayList<Share>();
+        for (Share share : getAllShares()) {
+            if (user.isAdminRole() || ObjectUtils.equals(user.getUsername(), share.getUsername())) {
+                result.add(share);
+            }
+        }
+        return result;
     }
 
     public Share getShareById(int id) {
@@ -78,7 +82,18 @@ public class ShareService {
     }
 
     public List<MediaFile> getSharedFiles(int id, List<MusicFolder> musicFolders) {
-        return shareDao.getSharedFiles(id, musicFolders).stream().map(mediaFileService::getMediaFile).filter(Objects::nonNull).collect(toList());
+        List<MediaFile> result = new ArrayList<MediaFile>();
+        for (String path : shareDao.getSharedFiles(id, musicFolders)) {
+            try {
+                MediaFile mediaFile = mediaFileService.getMediaFile(path);
+                if (mediaFile != null) {
+                    result.add(mediaFile);
+                }
+            } catch (Exception x) {
+                // Ignored
+            }
+        }
+        return result;
     }
 
     public Share createShare(HttpServletRequest request, List<MediaFile> files) {
@@ -91,7 +106,9 @@ public class ShareService {
         share.setExpires(Instant.now().plus(ChronoUnit.YEARS.getDuration()));
 
         shareDao.createShare(share);
-        shareDao.createSharedFiles(share.getId(), files.stream().map(f -> f.getId()).collect(toList()));
+        for (MediaFile file : files) {
+            shareDao.createSharedFiles(share.getId(), file.getPath());
+        }
         LOG.info("Created share '{}' with {} file(s).", share.getName(), files.size());
 
         return share;

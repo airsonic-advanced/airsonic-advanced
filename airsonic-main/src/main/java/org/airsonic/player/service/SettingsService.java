@@ -30,7 +30,6 @@ import org.airsonic.player.service.sonos.SonosServiceRegistration;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,8 +56,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Provides persistent storage of application settings and preferences.
@@ -163,7 +160,7 @@ public class SettingsService {
     private static final String KEY_DATABASE_MIGRATION_ROLLBACK_FILE = "spring.liquibase.rollback-file";
     private static final String KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH = "spring.liquibase.parameters.mysqlVarcharLimit";
     private static final String KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER = "spring.liquibase.parameters.defaultMusicFolder";
-    private static final String KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER = "spring.liquibase.parameters.defaultPodcastFolder";
+
     public static final String KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS = "PropertiesFileRetainObsoleteKeys";
 
     // Default values.
@@ -205,6 +202,7 @@ public class SettingsService {
     private static final int DEFAULT_DB_BACKUP_INTERVAL = -1;
     private static final int DEFAULT_DB_BACKUP_RETENTION_COUNT = 2;
     private static final int DEFAULT_PODCAST_UPDATE_INTERVAL = 24;
+    private static final String DEFAULT_PODCAST_FOLDER = Util.getDefaultPodcastFolder();
     private static final int DEFAULT_PODCAST_EPISODE_RETENTION_COUNT = 10;
     private static final int DEFAULT_PODCAST_EPISODE_DOWNLOAD_COUNT = 1;
     private static final long DEFAULT_DOWNLOAD_BITRATE_LIMIT = 0;
@@ -317,8 +315,6 @@ public class SettingsService {
         keyMaps.put("database.varchar.maxlength", "DatabaseMysqlMaxlength");
         keyMaps.put("DatabaseMysqlMaxlength", KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH);
 
-        keyMaps.put(KEY_PODCAST_FOLDER, KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER);
-
         keyMaps.put("airsonic.rememberMeKey", KEY_REMEMBER_ME_KEY);
         keyMaps.put("IgnoreFileTimestamps", KEY_FULL_SCAN);
 
@@ -390,9 +386,6 @@ public class SettingsService {
         }
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER))) {
             defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER, Util.getDefaultMusicFolder());
-        }
-        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER))) {
-            defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER, Util.getDefaultPodcastFolder());
         }
         if (StringUtils.isBlank(env.getProperty(LogFile.FILE_NAME_PROPERTY))) {
             defaultConstants.put(LogFile.FILE_NAME_PROPERTY, getDefaultLogFile());
@@ -864,6 +857,20 @@ public class SettingsService {
     }
 
     /**
+     * Returns the Podcast download folder.
+     */
+    public String getPodcastFolder() {
+        return getProperty(KEY_PODCAST_FOLDER, DEFAULT_PODCAST_FOLDER);
+    }
+
+    /**
+     * Sets the Podcast download folder.
+     */
+    public void setPodcastFolder(String folder) {
+        setProperty(KEY_PODCAST_FOLDER, folder);
+    }
+
+    /**
      * @return The download bitrate limit in Kbit/s. Zero if unlimited.
      */
     public long getDownloadBitrateLimit() {
@@ -1232,11 +1239,13 @@ public class SettingsService {
      * @return Possibly empty list of music folders.
      */
     public List<MusicFolder> getMusicFoldersForUser(String username) {
-        return cachedMusicFoldersPerUser.computeIfAbsent(username, u -> {
-            List<MusicFolder> result = musicFolderDao.getMusicFoldersForUser(u);
+        List<MusicFolder> result = cachedMusicFoldersPerUser.get(username);
+        if (result == null) {
+            result = musicFolderDao.getMusicFoldersForUser(username);
             result.retainAll(getAllMusicFolders(false, false));
-            return result;
-        });
+            cachedMusicFoldersPerUser.put(username, result);
+        }
+        return result;
     }
 
     /**
@@ -1267,7 +1276,7 @@ public class SettingsService {
         return allowedMusicFolders.contains(musicFolder) ? musicFolder : null;
     }
 
-    public void setMusicFoldersForUser(String username, Collection<Integer> musicFolderIds) {
+    public void setMusicFoldersForUser(String username, List<Integer> musicFolderIds) {
         musicFolderDao.setMusicFoldersForUser(username, musicFolderIds);
         cachedMusicFoldersPerUser.remove(username);
     }
@@ -1294,10 +1303,6 @@ public class SettingsService {
      * @param musicFolder The music folder to create.
      */
     public void createMusicFolder(MusicFolder musicFolder) {
-        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder);
-        if (!overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty()) {
-            throw new IllegalArgumentException("Music folder with path " + musicFolder.getPath() + " overlaps with existing music folder path(s) (" + logMusicFolderOverlap(overlaps) + ") and can therefore not be created.");
-        }
         musicFolderDao.createMusicFolder(musicFolder);
         clearMusicFolderCache();
     }
@@ -1318,47 +1323,8 @@ public class SettingsService {
      * @param musicFolder The music folder to update.
      */
     public void updateMusicFolder(MusicFolder musicFolder) {
-        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder);
-        if (!overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty()) {
-            throw new IllegalArgumentException("Music folder with path " + musicFolder.getPath() + " overlaps with existing music folder path(s) (" + logMusicFolderOverlap(overlaps) + ") and can therefore not be updated.");
-        }
         musicFolderDao.updateMusicFolder(musicFolder);
         clearMusicFolderCache();
-    }
-
-    public Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> getMusicFolderPathOverlaps(MusicFolder folder) {
-        Path absoluteFolderPath = folder.getPath().normalize().toAbsolutePath();
-        List<MusicFolder> allFolders = getAllMusicFolders(true, true);
-        List<MusicFolder> sameFolders = allFolders.parallelStream().filter(f -> {
-            // is same but not itself
-            Path fAbsolute = f.getPath().normalize().toAbsolutePath();
-            return fAbsolute.equals(absoluteFolderPath) && !f.getId().equals(folder.getId());
-        }).collect(toList());
-        List<MusicFolder> ancestorFolders = allFolders.parallelStream().filter(f -> {
-            // is ancestor
-            Path fAbsolute = f.getPath().normalize().toAbsolutePath();
-            return absoluteFolderPath.getNameCount() > fAbsolute.getNameCount()
-                    && absoluteFolderPath.startsWith(fAbsolute);
-        }).collect(toList());
-        List<MusicFolder> descendantFolders = allFolders.parallelStream().filter(f -> {
-            // is descendant
-            Path fAbsolute = f.getPath().normalize().toAbsolutePath();
-            return fAbsolute.getNameCount() > absoluteFolderPath.getNameCount()
-                    && fAbsolute.startsWith(absoluteFolderPath);
-        }).collect(toList());
-
-        return Triple.of(sameFolders, ancestorFolders, descendantFolders);
-    }
-
-    public static String logMusicFolderOverlap(Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps) {
-        StringBuilder result = new StringBuilder("SAME: ");
-        result.append(overlaps.getLeft().stream().map(f -> f.getName()).collect(joining(",", "[", "]")));
-        result.append(", ANCESTOR: ");
-        result.append(overlaps.getMiddle().stream().map(f -> f.getName()).collect(joining(",", "[", "]")));
-        result.append(", DESCENDANT: ");
-        result.append(overlaps.getRight().stream().map(f -> f.getName()).collect(joining(",", "[", "]")));
-
-        return result.toString();
     }
 
     public void clearMusicFolderCache() {

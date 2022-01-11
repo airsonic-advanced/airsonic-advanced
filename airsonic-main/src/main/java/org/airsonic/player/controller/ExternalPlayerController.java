@@ -39,7 +39,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.nio.file.Files;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -121,7 +120,7 @@ public class ExternalPlayerController {
         if (share != null) {
             return shareService.getSharedFiles(share.getId(), musicFolders)
                     .stream()
-                    .filter(f -> Files.exists(f.getFullPath(settingsService.getMusicFolderById(f.getFolderId()).getPath())))
+                    .filter(MediaFile::exists)
                     .flatMap(f -> {
                         if (f.isDirectory()) {
                             return mediaFileService.getChildrenOf(f, true, false, true).stream()
@@ -141,7 +140,7 @@ public class ExternalPlayerController {
         String baseUrl = NetworkService.getBaseUrl(request);
 
         boolean streamable = true;
-        String contentType = StringUtil.getMimeType(MoreFiles.getFileExtension(mediaFile.getRelativePath()));
+        String contentType = StringUtil.getMimeType(MoreFiles.getFileExtension(mediaFile.getFile()));
         String streamUrl = baseUrl + jwtSecurityService
                 .addJWTToken(User.USERNAME_GUEST, UriComponentsBuilder.fromUriString(prefix + "/stream")
                         .queryParam("id", mediaFile.getId())

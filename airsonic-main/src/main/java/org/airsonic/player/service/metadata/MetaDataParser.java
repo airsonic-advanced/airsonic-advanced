@@ -143,7 +143,7 @@ public abstract class MetaDataParser {
      *
      * TODO: public as it is used in EditTagsController
      */
-    public static String guessTitle(Path file) {
+    public String guessTitle(Path file) {
         return StringUtils.trim(FilenameUtils.getBaseName(file.toString()));
     }
 

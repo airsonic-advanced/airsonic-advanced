@@ -37,7 +37,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -49,7 +48,7 @@ import java.util.stream.IntStream;
 @Repository
 public class MediaFileDao extends AbstractDao {
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileDao.class);
-    private static final String INSERT_COLUMNS = "path, folder_id, type, format, title, album, artist, album_artist, disc_number, " +
+    private static final String INSERT_COLUMNS = "path, folder, type, format, title, album, artist, album_artist, disc_number, " +
                                                 "track_number, year, genre, bit_rate, variable_bit_rate, duration, file_size, width, height, cover_art_path, " +
                                                 "parent_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, " +
                                                 "version, mb_release_id, mb_recording_id";
@@ -63,10 +62,22 @@ public class MediaFileDao extends AbstractDao {
     private final MusicFileInfoMapper musicFileInfoRowMapper = new MusicFileInfoMapper();
     private final GenreMapper genreRowMapper = new GenreMapper();
 
-    public MediaFile getMediaFile(String path, int folderId) {
-        return queryOne("select " + QUERY_COLUMNS + " from media_file where path=? and folder_id=?", rowMapper, path, folderId);
+    /**
+     * Returns the media file for the given path.
+     *
+     * @param path The path.
+     * @return The media file or null.
+     */
+    public MediaFile getMediaFile(String path) {
+        return queryOne("select " + QUERY_COLUMNS + " from media_file where path=?", rowMapper, path);
     }
 
+    /**
+     * Returns the media file for the given ID.
+     *
+     * @param id The ID.
+     * @return The media file or null.
+     */
     public MediaFile getMediaFile(int id) {
         return queryOne("select " + QUERY_COLUMNS + " from media_file where id=?", rowMapper, id);
     }
@@ -77,8 +88,8 @@ public class MediaFileDao extends AbstractDao {
      * @param path The path.
      * @return The list of children.
      */
-    public List<MediaFile> getChildrenOf(String path, int folderId, boolean onlyPresent) {
-        return query("select " + QUERY_COLUMNS + " from media_file where parent_path=? and folder_id=?" + (onlyPresent ? " and present" : ""), rowMapper, path, folderId);
+    public List<MediaFile> getChildrenOf(String path) {
+        return query("select " + QUERY_COLUMNS + " from media_file where parent_path=? and present", rowMapper, path);
     }
 
     public List<MediaFile> getFilesInPlaylist(int playlistId) {
@@ -100,12 +111,12 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.VIDEO.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         args.put("count", count);
         args.put("offset", offset);
         return namedQuery("select " + QUERY_COLUMNS
-                + " from media_file where type = :type and present and folder_id in (:folders)"
-                + " order by title limit :count offset :offset", rowMapper, args);
+                          + " from media_file where type = :type and present and folder in (:folders) " +
+                          "order by title limit :count offset :offset", rowMapper, args);
     }
 
     public MediaFile getArtistByName(final String name, final List<MusicFolder> musicFolders) {
@@ -115,124 +126,73 @@ public class MediaFileDao extends AbstractDao {
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.DIRECTORY.name());
         args.put("name", name);
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         return namedQueryOne("select " + QUERY_COLUMNS + " from media_file where type = :type and artist = :name " +
-                "and present and folder_id in (:folders)", rowMapper, args);
+                             "and present and folder in (:folders)", rowMapper, args);
     }
 
+    /**
+     * Creates or updates a media file.
+     *
+     * @param file The media file to create/update.
+     */
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void createOrUpdateMediaFile(MediaFile file, Consumer<MediaFile> preInsertionCallback) {
-        LOG.trace("Creating/Updating new media file at {} in folder id {}", file.getPath(), file.getFolderId());
-        String sql = null;
-        if (file.getId() != null) {
-            sql = "" +
-                    "update media_file set " +
-                    "path=:path," +
-                    "folder_id=:fid," +
-                    "type=:type," +
-                    "format=:format," +
-                    "title=:title," +
-                    "album=:album," +
-                    "artist=:artist," +
-                    "album_artist=:albumartist," +
-                    "disc_number=:dn," +
-                    "track_number=:tn," +
-                    "year=:year," +
-                    "genre=:genre," +
-                    "bit_rate=:br," +
-                    "variable_bit_rate=:vbr," +
-                    "duration=:dur," +
-                    "file_size=:fs," +
-                    "width=:w," +
-                    "height=:h," +
-                    "cover_art_path=:cap," +
-                    "parent_path=:pp," +
-                    "play_count=:pc," +
-                    "last_played=:lp," +
-                    "comment=:comment," +
-                    "changed=:changed," +
-                    "last_scanned=:ls," +
-                    "children_last_updated=:clu," +
-                    "present=:pres," +
-                    "version=:ver," +
-                    "mb_release_id=:mbrelid," +
-                    "mb_recording_id=:mbrecid " +
-                    "where id=:id";
-        } else {
-            sql = "update media_file set " +
-                    "type=:type," +
-                    "format=:format," +
-                    "title=:title," +
-                    "album=:album," +
-                    "artist=:artist," +
-                    "album_artist=:albumartist," +
-                    "disc_number=:dn," +
-                    "track_number=:tn," +
-                    "year=:year," +
-                    "genre=:genre," +
-                    "bit_rate=:br," +
-                    "variable_bit_rate=:vbr," +
-                    "duration=:dur," +
-                    "file_size=:fs," +
-                    "width=:w," +
-                    "height=:h," +
-                    "cover_art_path=:cap," +
-                    "parent_path=:pp," +
-                    "play_count=:pc," +
-                    "last_played=:lp," +
-                    "comment=:comment," +
-                    "changed=:changed," +
-                    "last_scanned=:ls," +
-                    "children_last_updated=:clu," +
-                    "present=:pres," +
-                    "version=:ver," +
-                    "mb_release_id=:mbrelid," +
-                    "mb_recording_id=:mbrecid " +
-                    "where path=:path and folder_id=:fid";
-        }
+    public void createOrUpdateMediaFile(MediaFile file) {
+        LOG.trace("Creating/Updating new media file at {}", file.getPath());
+        String sql = "update media_file set " +
+                     "folder=?," +
+                     "type=?," +
+                     "format=?," +
+                     "title=?," +
+                     "album=?," +
+                     "artist=?," +
+                     "album_artist=?," +
+                     "disc_number=?," +
+                     "track_number=?," +
+                     "year=?," +
+                     "genre=?," +
+                     "bit_rate=?," +
+                     "variable_bit_rate=?," +
+                     "duration=?," +
+                     "file_size=?," +
+                     "width=?," +
+                     "height=?," +
+                     "cover_art_path=?," +
+                     "parent_path=?," +
+                     "play_count=?," +
+                     "last_played=?," +
+                     "comment=?," +
+                     "changed=?," +
+                     "last_scanned=?," +
+                     "children_last_updated=?," +
+                     "present=?, " +
+                     "version=?, " +
+                     "mb_release_id=?, " +
+                     "mb_recording_id=? " +
+                     "where path=?";
 
         LOG.trace("Updating media file {}", Util.debugObject(file));
-        Map<String, Object> args = new HashMap<>();
-        args.put("id", file.getId());
-        args.put("path", file.getPath());
-        args.put("fid", file.getFolderId());
-        args.put("type", file.getMediaType().name());
-        args.put("format", file.getFormat());
-        args.put("title", file.getTitle());
-        args.put("album", file.getAlbumName());
-        args.put("artist", file.getArtist());
-        args.put("albumartist", file.getAlbumArtist());
-        args.put("dn", file.getDiscNumber());
-        args.put("tn", file.getTrackNumber());
-        args.put("year", file.getYear());
-        args.put("genre", file.getGenre());
-        args.put("br", file.getBitRate());
-        args.put("vbr", file.isVariableBitRate());
-        args.put("dur", file.getDuration());
-        args.put("fs", file.getFileSize());
-        args.put("w", file.getWidth());
-        args.put("h", file.getHeight());
-        args.put("cap", file.getCoverArtPath());
-        args.put("pp", file.getParentPath());
-        args.put("pc", file.getPlayCount());
-        args.put("lp", file.getLastPlayed());
-        args.put("comment", file.getComment());
-        args.put("changed", file.getChanged());
-        args.put("ls", file.getLastScanned());
-        args.put("clu", file.getChildrenLastUpdated());
-        args.put("pres", file.isPresent());
-        args.put("ver", VERSION);
-        args.put("mbrelid", file.getMusicBrainzReleaseId());
-        args.put("mbrecid", file.getMusicBrainzRecordingId());
 
-        int n = namedUpdate(sql, args);
+        int n = update(sql,
+                       file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
+                       file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
+                file.isVariableBitRate(), file.getDuration(), file.getFileSize(), file.getWidth(), file.getHeight(),
+                       file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
+                       file.getChanged(), file.getLastScanned(), file.getChildrenLastUpdated(), file.isPresent(), VERSION,
+                       file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId(), file.getPath());
 
         if (n == 0) {
 
-            preInsertionCallback.accept(file);
+            // Copy values from obsolete table music_file_info.
+            MediaFile musicFileInfo = getMusicFileInfo(file.getPath());
+            if (musicFileInfo != null) {
+                file.setComment(musicFileInfo.getComment());
+                file.setLastPlayed(musicFileInfo.getLastPlayed());
+                file.setPlayCount(musicFileInfo.getPlayCount());
+            }
 
             update("insert into media_file (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")",
-                   file.getPath(), file.getFolderId(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
+                   file.getPath(), file.getFolder(), file.getMediaType().name(), file.getFormat(), file.getTitle(), file.getAlbumName(), file.getArtist(),
                    file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(), file.getGenre(), file.getBitRate(),
                    file.isVariableBitRate(), file.getDuration(), file.getFileSize(), file.getWidth(), file.getHeight(),
                    file.getCoverArtPath(), file.getParentPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
@@ -240,29 +200,23 @@ public class MediaFileDao extends AbstractDao {
                    file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId());
         }
 
-        if (file.getId() == null) {
-            Integer id = queryForInt("select id from media_file where path=? and folder_id=?", null, file.getPath(), file.getFolderId());
-            file.setId(id);
-        }
+        int id = queryForInt("select id from media_file where path=?", null, file.getPath());
+        file.setId(id);
     }
 
-    public MediaFile getMusicFileInfo(String path) {
+    private MediaFile getMusicFileInfo(String path) {
         return queryOne("select play_count, last_played, comment from music_file_info where path=?", musicFileInfoRowMapper, path);
     }
 
-    public void deleteMediaFile(String path, Integer folderId) {
-        deleteMediaFiles(Collections.singletonList(path), folderId);
+    public void deleteMediaFile(String path) {
+        deleteMediaFiles(Collections.singletonList(path));
     }
 
-    public void deleteMediaFiles(Collection<String> paths, Integer folderId) {
+    public void deleteMediaFiles(Collection<String> paths) {
         if (!paths.isEmpty()) {
-            batchedUpdate("update media_file set present=false, children_last_updated=? where path=? and folder_id=?",
-                    paths.parallelStream().map(p -> new Object[] { Instant.ofEpochMilli(1), p, folderId }).collect(Collectors.toList()));
+            batchedUpdate("update media_file set present=false, children_last_updated=? where path=?",
+                    paths.parallelStream().map(p -> new Object[] { Instant.ofEpochMilli(1), p }).collect(Collectors.toList()));
         }
-    }
-
-    public void deleteMediaFiles(Integer folderId) {
-        update("update media_file set present=false, children_last_updated=? where folder_id=?", Instant.ofEpochMilli(1), folderId);
     }
 
     public List<Genre> getGenres(boolean sortByAlbum) {
@@ -297,13 +251,13 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         args.put("count", count);
         args.put("offset", offset);
 
         return namedQuery("select " + QUERY_COLUMNS
-                + " from media_file where type = :type and play_count > 0 and present and folder_id in (:folders)"
-                + " order by play_count desc, id limit :count offset :offset", rowMapper, args);
+                          + " from media_file where type = :type and play_count > 0 and present and folder in (:folders) " +
+                          "order by play_count desc, id limit :count offset :offset", rowMapper, args);
     }
 
     /**
@@ -320,12 +274,12 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         args.put("count", count);
         args.put("offset", offset);
         return namedQuery("select " + QUERY_COLUMNS
-                          + " from media_file where type = :type and last_played is not null and present"
-                          + " and folder_id in (:folders) order by last_played desc, id limit :count offset :offset", rowMapper, args);
+                          + " from media_file where type = :type and last_played is not null and present " +
+                          "and folder in (:folders) order by last_played desc, id limit :count offset :offset", rowMapper, args);
     }
 
     /**
@@ -342,13 +296,13 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         args.put("count", count);
         args.put("offset", offset);
 
         return namedQuery("select " + QUERY_COLUMNS
-                + " from media_file where type = :type and folder_id in (:folders) and present"
-                + " order by created desc, id limit :count offset :offset", rowMapper, args);
+                          + " from media_file where type = :type and folder in (:folders) and present " +
+                          "order by created desc, id limit :count offset :offset", rowMapper, args);
     }
 
     /**
@@ -366,14 +320,14 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         args.put("count", count);
         args.put("offset", offset);
 
         String orderBy = byArtist ? "artist, album" : "album";
         return namedQuery("select " + QUERY_COLUMNS
-                + " from media_file where type = :type and folder_id in (:folders) and present"
-                + " order by " + orderBy + ", id limit :count offset :offset", rowMapper, args);
+                          + " from media_file where type = :type and folder in (:folders) and present " +
+                          "order by " + orderBy + ", id limit :count offset :offset", rowMapper, args);
     }
 
     /**
@@ -393,7 +347,7 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         args.put("fromYear", fromYear);
         args.put("toYear", toYear);
         args.put("count", count);
@@ -401,13 +355,13 @@ public class MediaFileDao extends AbstractDao {
 
         if (fromYear <= toYear) {
             return namedQuery("select " + QUERY_COLUMNS
-                    + " from media_file where type = :type and folder_id in (:folders) and present"
-                    + " and year between :fromYear and :toYear order by year, id limit :count offset :offset",
+                              + " from media_file where type = :type and folder in (:folders) and present " +
+                              "and year between :fromYear and :toYear order by year, id limit :count offset :offset",
                               rowMapper, args);
         } else {
             return namedQuery("select " + QUERY_COLUMNS
-                    + " from media_file where type = :type and folder_id in (:folders) and present"
-                    + " and year between :toYear and :fromYear order by year desc, id limit :count offset :offset",
+                              + " from media_file where type = :type and folder in (:folders) and present " +
+                              "and year between :toYear and :fromYear order by year desc, id limit :count offset :offset",
                               rowMapper, args);
         }
     }
@@ -429,11 +383,11 @@ public class MediaFileDao extends AbstractDao {
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
         args.put("genre", genre);
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         args.put("count", count);
         args.put("offset", offset);
-        return namedQuery("select " + QUERY_COLUMNS + " from media_file where type = :type and folder_id in (:folders) "
-                + " and present and genre = :genre order by id limit :count offset :offset", rowMapper, args);
+        return namedQuery("select " + QUERY_COLUMNS + " from media_file where type = :type and folder in (:folders) " +
+                          "and present and genre = :genre order by id limit :count offset :offset", rowMapper, args);
     }
 
     public List<MediaFile> getSongsByGenre(final String genre, final int offset, final int count, final List<MusicFolder> musicFolders) {
@@ -445,9 +399,10 @@ public class MediaFileDao extends AbstractDao {
         args.put("genre", genre);
         args.put("count", count);
         args.put("offset", offset);
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         return namedQuery("select " + QUERY_COLUMNS + " from media_file where type in (:types) and genre = :genre " +
-                "and present and folder_id in (:folders) order by id limit :count offset :offset", rowMapper, args);
+                          "and present and folder in (:folders) order by id limit :count offset :offset",
+                          rowMapper, args);
     }
 
     public List<MediaFile> getSongsByArtist(String artist, int offset, int count) {
@@ -464,9 +419,10 @@ public class MediaFileDao extends AbstractDao {
         args.put("artist", artist);
         args.put("title", title);
         args.put("type", MediaFile.MediaType.MUSIC.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         return namedQueryOne("select " + QUERY_COLUMNS + " from media_file where artist = :artist " +
-                "and title = :title and type = :type and present and folder_id in (:folders)", rowMapper, args);
+                             "and title = :title and type = :type and present and folder in (:folders)",
+                             rowMapper, args);
     }
 
     /**
@@ -485,12 +441,12 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         args.put("username", username);
         args.put("count", count);
         args.put("offset", offset);
         return namedQuery("select " + prefix(QUERY_COLUMNS, "media_file") + " from starred_media_file, media_file where media_file.id = starred_media_file.media_file_id and " +
-                          "media_file.present and media_file.type = :type and media_file.folder_id in (:folders) and starred_media_file.username = :username " +
+                          "media_file.present and media_file.type = :type and media_file.folder in (:folders) and starred_media_file.username = :username " +
                           "order by starred_media_file.created desc, starred_media_file.id limit :count offset :offset",
                           rowMapper, args);
     }
@@ -511,14 +467,14 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.DIRECTORY.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         args.put("username", username);
         args.put("count", count);
         args.put("offset", offset);
         return namedQuery("select " + prefix(QUERY_COLUMNS, "media_file") + " from starred_media_file, media_file " +
                           "where media_file.id = starred_media_file.media_file_id and " +
                           "media_file.present and media_file.type = :type and starred_media_file.username = :username and " +
-                          "media_file.folder_id in (:folders) " +
+                          "media_file.folder in (:folders) " +
                           "order by starred_media_file.created desc, starred_media_file.id limit :count offset :offset",
                           rowMapper, args);
     }
@@ -539,13 +495,13 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("types", Arrays.asList(MediaFile.MediaType.MUSIC.name(), MediaFile.MediaType.PODCAST.name(), MediaFile.MediaType.AUDIOBOOK.name(), MediaFile.MediaType.VIDEO.name()));
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         args.put("username", username);
         args.put("count", count);
         args.put("offset", offset);
         return namedQuery("select " + prefix(QUERY_COLUMNS, "media_file") + " from starred_media_file, media_file where media_file.id = starred_media_file.media_file_id and " +
                           "media_file.present and media_file.type in (:types) and starred_media_file.username = :username and " +
-                          "media_file.folder_id in (:folders) " +
+                          "media_file.folder in (:folders) " +
                           "order by starred_media_file.created desc, starred_media_file.id limit :count offset :offset",
                           rowMapper, args);
     }
@@ -556,7 +512,7 @@ public class MediaFileDao extends AbstractDao {
         }
 
         Map<String, Object> args = new HashMap<>();
-        args.put("folders", MusicFolder.toIdList(criteria.getMusicFolders()));
+        args.put("folders", MusicFolder.toPathList(criteria.getMusicFolders()));
         args.put("username", username);
         args.put("fromYear", criteria.getFromYear());
         args.put("toYear", criteria.getToYear());
@@ -582,13 +538,13 @@ public class MediaFileDao extends AbstractDao {
 
         if (joinAlbumRating) {
             query += "left outer join media_file media_album on media_album.type = 'ALBUM' and media_album.album = media_file.album and media_album.artist = media_file.artist ";
-            query += "left outer join user_rating on user_rating.media_file_id = media_album.id and user_rating.username = :username ";
+            query += "left outer join user_rating on user_rating.path = media_album.path and user_rating.username = :username ";
         }
 
         query += " where media_file.present and media_file.type = 'MUSIC'";
 
         if (!criteria.getMusicFolders().isEmpty()) {
-            query += " and media_file.folder_id in (:folders)";
+            query += " and media_file.folder in (:folders)";
         }
 
         if (criteria.getGenre() != null) {
@@ -664,8 +620,8 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
-        return namedQueryForInt("select count(*) from media_file where type = :type and folder_id in (:folders) and present", 0, args);
+        args.put("folders", MusicFolder.toPathList(musicFolders));
+        return namedQueryForInt("select count(*) from media_file where type = :type and folder in (:folders) and present", 0, args);
     }
 
     public int getPlayedAlbumCount(final List<MusicFolder> musicFolders) {
@@ -674,9 +630,9 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         return namedQueryForInt("select count(*) from media_file where type = :type " +
-                                "and play_count > 0 and present and folder_id in (:folders)", 0, args);
+                                "and play_count > 0 and present and folder in (:folders)", 0, args);
     }
 
     public int getStarredAlbumCount(final String username, final List<MusicFolder> musicFolders) {
@@ -685,13 +641,13 @@ public class MediaFileDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toIdList(musicFolders));
+        args.put("folders", MusicFolder.toPathList(musicFolders));
         args.put("username", username);
         return namedQueryForInt("select count(*) from starred_media_file, media_file " +
                                 "where media_file.id = starred_media_file.media_file_id " +
                                 "and media_file.type = :type " +
                                 "and media_file.present " +
-                                "and media_file.folder_id in (:folders) " +
+                                "and media_file.folder in (:folders) " +
                                 "and starred_media_file.username = :username",
                                 0, args);
     }
@@ -776,7 +732,7 @@ public class MediaFileDao extends AbstractDao {
             return new MediaFile(
                     rs.getInt(1),
                     rs.getString(2),
-                    rs.getInt(3),
+                    rs.getString(3),
                     MediaFile.MediaType.valueOf(rs.getString(4)),
                     rs.getString(5),
                     rs.getString(6),

@@ -36,19 +36,19 @@ import org.subsonic.restapi.ScanStatus;
 import javax.annotation.PostConstruct;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinWorkerThread;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -64,8 +64,6 @@ public class MediaScannerService {
 
     private volatile boolean scanning;
 
-    private ScheduledExecutorService scheduler;
-
     @Autowired
     private SettingsService settingsService;
     @Autowired
@@ -80,6 +78,8 @@ public class MediaScannerService {
     private ArtistDao artistDao;
     @Autowired
     private AlbumDao albumDao;
+    @Autowired
+    private TaskSchedulingService taskService;
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
@@ -103,28 +103,24 @@ public class MediaScannerService {
      * Schedule background execution of media library scanning.
      */
     public synchronized void schedule() {
-        if (scheduler != null) {
-            scheduler.shutdown();
-        }
-
         long daysBetween = settingsService.getIndexCreationInterval();
         int hour = settingsService.getIndexCreationHour();
 
         if (daysBetween == -1) {
             LOG.info("Automatic media scanning disabled.");
+            taskService.unscheduleTask("mediascanner-IndexingTask");
             return;
         }
-
-        scheduler = Executors.newSingleThreadScheduledExecutor();
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime nextRun = now.withHour(hour).withMinute(0).withSecond(0);
         if (now.compareTo(nextRun) > 0)
             nextRun = nextRun.plusDays(1);
 
-        long initialDelay = ChronoUnit.MILLIS.between(now, nextRun);
+        long initialDelayMillis = ChronoUnit.MILLIS.between(now, nextRun);
+        Instant firstTime = Instant.now().plusMillis(initialDelayMillis);
 
-        scheduler.scheduleAtFixedRate(() -> scanLibrary(), initialDelay, TimeUnit.DAYS.toMillis(daysBetween), TimeUnit.MILLISECONDS);
+        taskService.scheduleAtFixedRate("mediascanner-IndexingTask", () -> scanLibrary(), firstTime, Duration.ofDays(daysBetween), true);
 
         LOG.info("Automatic media library scanning scheduled to run every {} day(s), starting at {}", daysBetween, nextRun);
 
@@ -137,6 +133,10 @@ public class MediaScannerService {
 
     boolean neverScanned() {
         return indexManager.getStatistics() == null;
+    }
+
+    void watchPlaylists() {
+
     }
 
     /**
@@ -217,8 +217,14 @@ public class MediaScannerService {
             // Recurse through all files on disk.
             settingsService.getAllMusicFolders()
                 .parallelStream()
-                    .forEach(musicFolder -> scanFile(mediaFileService.getMediaFile(Paths.get(""), musicFolder, false),
-                            musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered));
+                .forEach(musicFolder -> scanFile(mediaFileService.getMediaFile(musicFolder.getPath(), false), musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, false));
+
+            // Scan podcast folder.
+            Path podcastFolder = Paths.get(settingsService.getPodcastFolder());
+            if (Files.exists(podcastFolder)) {
+                scanFile(mediaFileService.getMediaFile(podcastFolder), new MusicFolder(podcastFolder, null, true, null),
+                        statistics, albumCount, artists, albums, albumsInDb, genres, encountered, true);
+            }
 
             LOG.info("Scanned media library with {} entries.", scanCount.get());
 
@@ -286,28 +292,28 @@ public class MediaScannerService {
     }
 
     private void scanFile(MediaFile file, MusicFolder musicFolder, MediaLibraryStatistics statistics,
-            Map<String, AtomicInteger> albumCount, Map<String, Artist> artists, Map<String, Album> albums,
-            Map<Integer, Album> albumsInDb, Genres genres, Map<String, Boolean> encountered) {
+                          Map<String, AtomicInteger> albumCount, Map<String, Artist> artists, Map<String, Album> albums, Map<Integer, Album> albumsInDb, Genres genres, Map<String, Boolean> encountered, boolean isPodcast) {
         if (scanCount.incrementAndGet() % 250 == 0) {
             broadcastScanStatus();
             LOG.info("Scanned media library with {} entries.", scanCount.get());
         }
 
-        LOG.trace("Scanning file {} in folder {} ({})", file.getPath(), musicFolder.getId(), musicFolder.getName());
+        LOG.trace("Scanning file {}", file.getPath());
 
-        // Update the root folder if it has changed
-        if (!musicFolder.getId().equals(file.getFolderId())) {
-            file.setFolderId(musicFolder.getId());
-            mediaFileService.updateMediaFile(file);
+        // Update the root folder if it has changed.
+        if (!musicFolder.getPath().toString().equals(file.getFolder())) {
+            file.setFolder(musicFolder.getPath().toString());
+            mediaFileDao.createOrUpdateMediaFile(file);
         }
 
-        indexManager.index(file, musicFolder);
+        indexManager.index(file);
 
         if (file.isDirectory()) {
-            mediaFileService.getChildrenOf(file, true, true, false, false).parallelStream()
-                    .forEach(child -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered));
+            mediaFileService.getChildrenOf(file, true, true, false, false)
+                .parallelStream()
+                .forEach(child -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, isPodcast));
         } else {
-            if (musicFolder.getType() == MusicFolder.Type.MEDIA) {
+            if (!isPodcast) {
                 updateAlbum(file, musicFolder, statistics.getScanDate(), albumCount, albums, albumsInDb);
                 updateArtist(file, musicFolder, statistics.getScanDate(), albumCount, artists);
             }
@@ -405,7 +411,7 @@ public class MediaScannerService {
         // Update the file's album artist, if necessary.
         if (!ObjectUtils.equals(album.getArtist(), file.getAlbumArtist())) {
             file.setAlbumArtist(album.getArtist());
-            mediaFileService.updateMediaFile(file);
+            mediaFileDao.createOrUpdateMediaFile(file);
         }
     }
 

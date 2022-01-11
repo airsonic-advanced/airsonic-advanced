@@ -81,13 +81,15 @@ public class EditTagsController {
     }
 
     private Song createSong(MediaFile file, int index) {
+        MetaDataParser parser = metaDataParserFactory.getParser(file.getFile());
+
         Song song = new Song();
         song.setId(file.getId());
         song.setFileName(FilenameUtils.getBaseName(file.getPath()));
         song.setTrack(file.getTrackNumber());
         song.setSuggestedTrack(index + 1);
         song.setTitle(file.getTitle());
-        song.setSuggestedTitle(MetaDataParser.guessTitle(file.getRelativePath()));
+        song.setSuggestedTitle(parser.guessTitle(file.getFile()));
         song.setArtist(file.getArtist());
         song.setAlbum(file.getAlbumName());
         song.setYear(file.getYear());

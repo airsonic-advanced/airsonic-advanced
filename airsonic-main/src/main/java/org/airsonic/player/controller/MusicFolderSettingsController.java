@@ -26,10 +26,8 @@ import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.MediaLibraryStatistics;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.MediaScannerService;
-import org.airsonic.player.service.PlaylistService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.search.IndexManager;
-import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,9 +40,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.List;
-
-import static java.util.stream.Collectors.toList;
+import java.util.stream.Collectors;
 
 /**
  * Controller for the page used to administrate the set of music folders.
@@ -69,8 +67,6 @@ public class MusicFolderSettingsController {
     private MediaFileDao mediaFileDao;
     @Autowired
     private IndexManager indexManager;
-    @Autowired
-    private PlaylistService playlistService;
 
     @GetMapping
     protected String displayForm() {
@@ -78,8 +74,8 @@ public class MusicFolderSettingsController {
     }
 
     @ModelAttribute
-    protected void formBackingObject(@RequestParam(value = "scanNow", required = false) String scanNow,
-                                       @RequestParam(value = "expunge", required = false) String expunge,
+    protected void formBackingObject(@RequestParam(value = "scanNow",required = false) String scanNow,
+                                       @RequestParam(value = "expunge",required = false) String expunge,
                                        Model model) {
         MusicFolderSettingsCommand command = new MusicFolderSettingsCommand();
 
@@ -128,45 +124,30 @@ public class MusicFolderSettingsController {
         albumDao.expunge();
         LOG.debug("Deleting non-present media files...");
         mediaFileDao.expunge();
-        playlistService.refreshPlaylistsStats();
         LOG.debug("Database cleanup complete.");
     }
 
     private List<MusicFolderSettingsCommand.MusicFolderInfo> wrap(List<MusicFolder> musicFolders) {
-        return musicFolders.stream().map(f -> {
-            Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = settingsService.getMusicFolderPathOverlaps(f);
-            return new MusicFolderSettingsCommand.MusicFolderInfo(f, !overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty(), SettingsService.logMusicFolderOverlap(overlaps));
-        }).collect(toList());
+        return musicFolders.stream().map(MusicFolderSettingsCommand.MusicFolderInfo::new).collect(Collectors.toCollection(ArrayList::new));
     }
 
     @PostMapping
     protected String onSubmit(@ModelAttribute("command") MusicFolderSettingsCommand command, RedirectAttributes redirectAttributes) {
 
-        boolean success = true;
         for (MusicFolderSettingsCommand.MusicFolderInfo musicFolderInfo : command.getMusicFolders()) {
             if (musicFolderInfo.isDelete()) {
                 settingsService.deleteMusicFolder(musicFolderInfo.getId());
             } else {
                 MusicFolder musicFolder = musicFolderInfo.toMusicFolder();
                 if (musicFolder != null) {
-                    try {
-                        settingsService.updateMusicFolder(musicFolder);
-                    } catch (Exception e) {
-                        LOG.warn("Could not update music folder id {} ({})", musicFolder.getId(), musicFolder.getName(), e);
-                        success = false;
-                    }
+                    settingsService.updateMusicFolder(musicFolder);
                 }
             }
         }
 
         MusicFolder newMusicFolder = command.getNewMusicFolder().toMusicFolder();
         if (newMusicFolder != null) {
-            try {
-                settingsService.createMusicFolder(newMusicFolder);
-            } catch (Exception e) {
-                LOG.warn("Could not create music folder {}", newMusicFolder.getName(), e);
-                success = false;
-            }
+            settingsService.createMusicFolder(newMusicFolder);
         }
 
         settingsService.setIndexCreationInterval(Integer.parseInt(command.getInterval()));
@@ -180,8 +161,8 @@ public class MusicFolderSettingsController {
         settingsService.setClearFullScanSettingAfterScan(!command.getFullScan() ? command.getFullScan() : command.getClearFullScanSettingAfterScan());
         settingsService.save();
 
-        redirectAttributes.addFlashAttribute("settings_toast", success);
-        redirectAttributes.addFlashAttribute("settings_reload", success);
+        redirectAttributes.addFlashAttribute("settings_toast", true);
+        redirectAttributes.addFlashAttribute("settings_reload", true);
 
         mediaScannerService.schedule();
         return "redirect:musicFolderSettings.view";

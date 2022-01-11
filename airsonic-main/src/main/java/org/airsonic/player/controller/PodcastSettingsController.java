@@ -21,14 +21,10 @@ package org.airsonic.player.controller;
 
 import org.airsonic.player.command.PodcastSettingsCommand;
 import org.airsonic.player.command.PodcastSettingsCommand.PodcastRule;
-import org.airsonic.player.domain.MusicFolder;
-import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.PodcastChannel;
 import org.airsonic.player.domain.PodcastChannelRule;
 import org.airsonic.player.service.PodcastService;
 import org.airsonic.player.service.SettingsService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,8 +34,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,7 +47,6 @@ import static java.util.stream.Collectors.toList;
 @Controller
 @RequestMapping("/podcastSettings")
 public class PodcastSettingsController {
-    private static final Logger LOG = LoggerFactory.getLogger(PodcastSettingsController.class);
 
     @Autowired
     private SettingsService settingsService;
@@ -63,13 +56,6 @@ public class PodcastSettingsController {
     @GetMapping
     protected String formBackingObject(Model model) {
         PodcastSettingsCommand command = new PodcastSettingsCommand();
-
-        command.setFolder(settingsService.getAllMusicFolders(true, true).stream()
-                .filter(f -> f.getType() == Type.PODCAST)
-                .map(MusicFolder::getPath)
-                .findAny()
-                .map(p -> p.toString())
-                .orElse(null));
 
         List<PodcastChannel> channels = podcastService.getAllChannels();
         List<PodcastChannelRule> rules = podcastService.getAllChannelRules();
@@ -86,13 +72,14 @@ public class PodcastSettingsController {
                         new PodcastChannelRule(-1, settingsService.getPodcastUpdateInterval(), settingsService.getPodcastEpisodeRetentionCount(), settingsService.getPodcastEpisodeDownloadCount()),
                         "DEFAULT"));
 
+        command.setFolder(settingsService.getPodcastFolder());
         command.setNewRule(new PodcastRule());
         command.setNoRuleChannels(channels.parallelStream()
                 .filter(c -> rules.stream().noneMatch(r -> r.getId().equals(c.getId())))
                 .map(c -> new PodcastRule(c.getId(), c.getTitle()))
                 .collect(toList()));
 
-        model.addAttribute("command", command);
+        model.addAttribute("command",command);
         return "podcastSettings";
     }
 
@@ -102,29 +89,9 @@ public class PodcastSettingsController {
         settingsService.setPodcastUpdateInterval(defaultRule.getInterval());
         settingsService.setPodcastEpisodeRetentionCount(defaultRule.getEpisodeRetentionCount());
         settingsService.setPodcastEpisodeDownloadCount(defaultRule.getEpisodeDownloadCount());
+        settingsService.setPodcastFolder(command.getFolder());
         settingsService.save();
         podcastService.scheduleDefault();
-
-        boolean success = true;
-        MusicFolder podcastFolder = settingsService.getAllMusicFolders(true, true).stream()
-                .filter(f -> f.getType() == Type.PODCAST).findAny().orElse(null);
-        if (podcastFolder != null) {
-            podcastFolder.setPath(Paths.get(command.getFolder()));
-            try {
-                settingsService.updateMusicFolder(podcastFolder);
-            } catch (Exception e) {
-                LOG.warn("Could not update music folder id {} ({})", podcastFolder.getId(), podcastFolder.getName(), e);
-                success = false;
-            }
-        } else {
-            podcastFolder = new MusicFolder(Paths.get(command.getFolder()), "Podcasts", Type.PODCAST, true, Instant.now());
-            try {
-                settingsService.createMusicFolder(podcastFolder);
-            } catch (Exception e) {
-                LOG.warn("Could not create music folder {}", podcastFolder.getName(), e);
-                success = false;
-            }
-        }
 
         command.getRules().stream().filter(r -> !r.getId().equals(-1)).forEach(r -> {
             if (r.getDelete()) {
@@ -137,7 +104,8 @@ public class PodcastSettingsController {
         Optional.ofNullable(command.getNewRule().toPodcastChannelRule())
                 .ifPresent(podcastService::createOrUpdateChannelRule);
 
-        redirectAttributes.addFlashAttribute("settings_toast", success);
+        redirectAttributes.addFlashAttribute("settings_toast", true);
         return "redirect:podcastSettings.view";
     }
+
 }

@@ -77,7 +77,8 @@ public class ImportPlaylistController {
                         String playlistName = FilenameUtils.getBaseName(item.getName());
                         String fileName = FilenameUtils.getName(item.getName());
                         String username = securityService.getCurrentUsername(request);
-                        Playlist playlist = playlistService.importPlaylist(username, playlistName, fileName, null, item.getInputStream(), null);
+                        Playlist playlist = playlistService.importPlaylist(username, playlistName, fileName,
+                                item.getInputStream(), null);
                         map.put("playlist", playlist);
                     }
                 }

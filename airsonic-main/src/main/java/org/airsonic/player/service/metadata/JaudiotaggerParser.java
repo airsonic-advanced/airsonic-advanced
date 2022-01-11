@@ -140,7 +140,7 @@ public class JaudiotaggerParser extends MetaDataParser {
     public void setMetaData(MediaFile file, MetaData metaData) {
 
         try {
-            AudioFile audioFile = AudioFileIO.read(file.getFullPath(settingsService.getMusicFolderById(file.getFolderId()).getPath()).toFile());
+            AudioFile audioFile = AudioFileIO.read(file.getFile().toFile());
             Tag tag = audioFile.getTagOrCreateAndSetDefault();
 
             tag.setField(FieldKey.ARTIST, StringUtils.trimToEmpty(metaData.getArtist()));
@@ -209,7 +209,7 @@ public class JaudiotaggerParser extends MetaDataParser {
      * @param file The music file.
      * @return Whether cover art image data is available.
      */
-    public static boolean isImageAvailable(Path file) {
+    public boolean isImageAvailable(MediaFile file) {
         try {
             return getArtwork(file) != null;
         } catch (Throwable x) {
@@ -218,8 +218,8 @@ public class JaudiotaggerParser extends MetaDataParser {
         }
     }
 
-    public static Artwork getArtwork(Path file) throws Exception {
-        AudioFile audioFile = AudioFileIO.read(file.toFile());
+    public Artwork getArtwork(MediaFile file) throws Exception {
+        AudioFile audioFile = AudioFileIO.read(file.getFile().toFile());
         Tag tag = audioFile.getTag();
         Artwork artwork = null;
         if (tag != null) {

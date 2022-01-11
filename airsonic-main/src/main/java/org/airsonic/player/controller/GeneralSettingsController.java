@@ -21,6 +21,7 @@ package org.airsonic.player.controller;
 
 import org.airsonic.player.command.GeneralSettingsCommand;
 import org.airsonic.player.domain.Theme;
+import org.airsonic.player.service.PlaylistService;
 import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -44,6 +45,9 @@ public class GeneralSettingsController {
 
     @Autowired
     private SettingsService settingsService;
+
+    @Autowired
+    private PlaylistService playlistService;
 
     @GetMapping
     protected String displayForm() {
@@ -118,6 +122,8 @@ public class GeneralSettingsController {
         settingsService.setGenreSeparators(command.getGenreSeparators());
         settingsService.setShortcuts(command.getShortcuts());
         settingsService.setPlaylistFolder(command.getPlaylistFolder());
+        playlistService.addPlaylistFolderWatcher();
+        playlistService.importPlaylists();
         settingsService.setMusicFileTypes(command.getMusicFileTypes());
         settingsService.setVideoFileTypes(command.getVideoFileTypes());
         settingsService.setCoverArtFileTypes(command.getCoverArtFileTypes());

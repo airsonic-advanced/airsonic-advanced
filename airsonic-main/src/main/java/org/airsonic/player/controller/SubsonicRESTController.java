@@ -71,7 +71,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
 import static org.airsonic.player.security.RESTRequestParameterProcessingFilter.decrypt;
 import static org.springframework.web.bind.ServletRequestUtils.*;
 
@@ -1273,7 +1272,7 @@ public class SubsonicRESTController {
             child.setSuffix(suffix);
             child.setContentType(StringUtil.getMimeType(suffix));
             child.setIsVideo(mediaFile.isVideo());
-            child.setPath(mediaFile.getPath());
+            child.setPath(getRelativePath(mediaFile, settingsService));
 
             if (mediaFile.getAlbumArtist() != null && mediaFile.getAlbumName() != null) {
                 Album album = albumDao.getAlbum(mediaFile.getAlbumArtist(), mediaFile.getAlbumName());
@@ -1320,6 +1319,33 @@ public class SubsonicRESTController {
         if (dir != null && dir.getCoverArtPath() != null) {
             return String.valueOf(dir.getId());
         }
+        return null;
+    }
+
+    public static String getRelativePath(MediaFile musicFile, SettingsService settingsService) {
+
+        String filePath = musicFile.getPath();
+
+        // Convert slashes.
+        filePath = filePath.replace('\\', '/');
+
+        String filePathLower = filePath.toLowerCase();
+
+        List<org.airsonic.player.domain.MusicFolder> musicFolders = settingsService.getAllMusicFolders(false, true);
+        for (org.airsonic.player.domain.MusicFolder musicFolder : musicFolders) {
+            String folderPath = musicFolder.getPath().toString();
+            folderPath = folderPath.replace('\\', '/');
+            String folderPathLower = folderPath.toLowerCase();
+            if (!folderPathLower.endsWith("/")) {
+                folderPathLower += "/";
+            }
+
+            if (filePathLower.startsWith(folderPathLower)) {
+                String relativePath = filePath.substring(folderPath.length());
+                return relativePath.startsWith("/") ? relativePath.substring(1) : relativePath;
+            }
+        }
+
         return null;
     }
 
@@ -1596,8 +1622,9 @@ public class SubsonicRESTController {
     private org.subsonic.restapi.PodcastEpisode createJaxbPodcastEpisode(Player player, String username, org.airsonic.player.domain.PodcastEpisode episode) {
         org.subsonic.restapi.PodcastEpisode e = new org.subsonic.restapi.PodcastEpisode();
 
-        if (episode.getMediaFileId() != null) {
-            MediaFile mediaFile = mediaFileService.getMediaFile(episode.getMediaFileId());
+        String path = episode.getPath();
+        if (path != null) {
+            MediaFile mediaFile = mediaFileService.getMediaFile(path);
             e = createJaxbChild(new org.subsonic.restapi.PodcastEpisode(), player, mediaFile, username);
             e.setStreamId(String.valueOf(mediaFile.getId()));
         }
@@ -1805,7 +1832,7 @@ public class SubsonicRESTController {
     public void savePlayQueue(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String username = securityService.getCurrentUsername(request);
-        List<Integer> mediaFileIds = Arrays.stream(getIntParameters(request, "id")).boxed().collect(toList());
+        List<Integer> mediaFileIds = Util.toIntegerList(getIntParameters(request, "id"));
         Integer current = getIntParameter(request, "current");
         Long position = getLongParameter(request, "position");
         String changedBy = getRequiredStringParameter(request, "c");

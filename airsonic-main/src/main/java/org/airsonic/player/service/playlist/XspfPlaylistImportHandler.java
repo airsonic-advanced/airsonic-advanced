@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -32,17 +31,15 @@ public class XspfPlaylistImportHandler implements PlaylistImportHandler {
     }
 
     @Override
-    public Pair<List<MediaFile>, List<String>> handle(SpecificPlaylist inputSpecificPlaylist, Path location) {
+    public Pair<List<MediaFile>, List<String>> handle(SpecificPlaylist inputSpecificPlaylist) {
         List<MediaFile> mediaFiles = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         Playlist xspfPlaylist = (Playlist) inputSpecificPlaylist;
-        if (location == null) {
-            location = Optional.ofNullable(settingsService.getPlaylistFolder()).map(Paths::get).orElse(null);
+        String playlistFolderPath = settingsService.getPlaylistFolder();
+        if (playlistFolderPath == null) {
+            playlistFolderPath = "/";
         }
-        if (location == null) {
-            location = Paths.get(".").toAbsolutePath().normalize();
-        }
-        Path playlistFolder = location;
+        Path playlistFolder = Paths.get(playlistFolderPath);
         xspfPlaylist.getTracks().forEach(track -> {
             MediaFile mediaFile = null;
             for (StringContainer sc : track.getStringContainers()) {
