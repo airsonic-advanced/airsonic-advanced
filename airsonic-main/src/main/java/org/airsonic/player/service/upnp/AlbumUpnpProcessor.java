@@ -19,6 +19,7 @@
 */
 package org.airsonic.player.service.upnp;
 
+import com.google.common.primitives.Ints;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.Album;
@@ -70,12 +71,12 @@ public class AlbumUpnpProcessor extends UpnpContentProcessor <Album, MediaFile> 
         DIDLContent didl = new DIDLContent();
 
         List<MusicFolder> allFolders = getDispatchingContentDirectory().getSettingsService().getAllMusicFolders();
-        List<Album> selectedItems = getAlbumDao().getAlphabeticalAlbums((int) firstResult, (int) maxResults, false, true, allFolders);
+        List<Album> selectedItems = getAlbumDao().getAlphabeticalAlbums(Ints.saturatedCast(firstResult), Ints.saturatedCast(maxResults), false, true, allFolders);
         for (Album item : selectedItems) {
             addItem(didl, item);
         }
 
-        return createBrowseResult(didl, (int) didl.getCount(), getAllItemsSize());
+        return createBrowseResult(didl, didl.getCount(), getAllItemsSize());
     }
     @Override
     public Container createContainer(Album album) {
