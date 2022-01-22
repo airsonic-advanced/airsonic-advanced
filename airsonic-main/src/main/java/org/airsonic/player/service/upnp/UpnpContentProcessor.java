@@ -19,6 +19,7 @@
 */
 package org.airsonic.player.service.upnp;
 
+import com.google.common.primitives.Ints;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.ParamSearchResult;
 import org.airsonic.player.util.Util;
@@ -82,7 +83,7 @@ public abstract class UpnpContentProcessor<T extends Object, U extends Object> {
             addItem(didl, item);
         }
 
-        return createBrowseResult(didl, (int) didl.getCount(), allItems.size());
+        return createBrowseResult(didl, didl.getCount(), allItems.size());
     }
 
     /**
@@ -116,7 +117,7 @@ public abstract class UpnpContentProcessor<T extends Object, U extends Object> {
         return createBrowseResult(didl, selectedChildren.size(), allChildren.size());
     }
 
-    protected BrowseResult createBrowseResult(DIDLContent didl, int count, int totalMatches) throws Exception {
+    protected BrowseResult createBrowseResult(DIDLContent didl, long count, long totalMatches) throws Exception {
         return new BrowseResult(new DIDLParser().generate(didl), count, totalMatches);
     }
 
@@ -129,13 +130,13 @@ public abstract class UpnpContentProcessor<T extends Object, U extends Object> {
 
         try {
             List<MusicFolder> allFolders = getDispatchingContentDirectory().getSettingsService().getAllMusicFolders();
-            ParamSearchResult<T> result = getDispatcher().getSearchService().searchByName(name, (int) firstResult, (int) maxResults, allFolders, clazz);
+            ParamSearchResult<T> result = getDispatcher().getSearchService().searchByName(name, Ints.saturatedCast(firstResult), Ints.saturatedCast(maxResults), allFolders, clazz);
             List<T> selectedItems = result.getItems();
             for (T item : selectedItems) {
                 addItem(didl, item);
             }
 
-            return createBrowseResult(didl, (int) didl.getCount(), result.getTotalHits());
+            return createBrowseResult(didl, didl.getCount(), result.getTotalHits());
         } catch (Exception e) {
             return null;
         }

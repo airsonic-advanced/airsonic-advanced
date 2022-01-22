@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.primitives.Ints;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,8 @@ import javax.validation.Validator;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Miscellaneous general utility methods.
@@ -93,7 +96,10 @@ public final class Util {
     }
 
     public static <T> List<T> subList(List<T> list, long offset, long max) {
-        return list.subList((int) offset, Math.min(list.size(), (int) (offset + max)));
+        if (list.size() == Integer.MAX_VALUE) {
+            return list.stream().skip(offset).limit(max).collect(toList());
+        }
+        return list.subList(Math.min(list.size(), Ints.saturatedCast(offset)), Math.min(list.size(), Ints.saturatedCast(offset + max)));
     }
 
     public static List<Integer> toIntegerList(int[] values) {
