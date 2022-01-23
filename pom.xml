@@ -35,12 +35,6 @@
             <name>Local Repository</name>
             <url>file://${project.basedir}/../repo</url>
         </repository>
-        <!-- Not functional currently, so retrieve dependency from local repo
-        <repository>
-            <id>jaudiotagger-repository</id>
-            <url>https://dl.bintray.com/ijabz/maven</url>
-        </repository>
-         -->
         <repository>
             <id>4thline-repo</id>
             <url>http://4thline.org/m2</url>
