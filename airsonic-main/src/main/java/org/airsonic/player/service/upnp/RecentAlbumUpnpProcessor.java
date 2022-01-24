@@ -61,7 +61,7 @@ public class RecentAlbumUpnpProcessor extends AlbumUpnpProcessor {
             addItem(didl, item);
         }
 
-        return createBrowseResult(didl, (int) didl.getCount(), allItems.size());
+        return createBrowseResult(didl, didl.getCount(), allItems.size());
     }
 
     @Override

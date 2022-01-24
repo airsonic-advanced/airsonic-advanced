@@ -63,7 +63,7 @@ public class GenreUpnpProcessor extends UpnpContentProcessor <Genre, MediaFile> 
             Genre item = selectedItems.get(i);
             didl.addContainer(createContainer(item, (int) (i + firstResult)));
         }
-        return createBrowseResult(didl, (int) didl.getCount(), allItems.size());
+        return createBrowseResult(didl, didl.getCount(), allItems.size());
     }
 
     @Override
