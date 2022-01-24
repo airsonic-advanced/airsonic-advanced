@@ -109,6 +109,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Multiplatform builds, including for ARM v7 and ARM64
   - A more advanced build pipeline including automatic releases and deploys at merge
     - Allows people to grab the newest build without compiling from source as soon as features/enhancements are merged, instead of waiting for the next stable build (which may be months away)
+  - Available on GHCR as well as Docker Hub
 - Stepbacks
   - The Java Jukebox has been removed, due to the third-party library not being kept up to date with modern JVMs. See [PR #636](https://github.com/airsonic-advanced/airsonic-advanced/pull/636).
 
@@ -139,7 +140,7 @@ Airsonic-Advanced is run similarly to (and in lieu of) vanilla Airsonic.
 Read the [compatibility notes](#compatibility-notes).
 
 ### Docker
-Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced). Docker releases are recently multiplatform, which means ARMv7 and ARM64 are also released to Dockerhub. However, automated testing for those archs is not currently done in the CI/CD pipeline (only Linux platform is tested).
+Docker releases are at [DockerHub](https://hub.docker.com/r/airsonicadvanced/airsonic-advanced) and [GHCR](https://ghcr.io/airsonic-advanced/airsonic-advanced). Docker releases are recently multiplatform, which means ARMv7 and ARM64 are also released to Dockerhub. However, automated testing for those archs is not currently done in the CI/CD pipeline (only Linux platform is tested).
 
 Please note that for Docker images, the volume mounting points have changed and are different from Airsonic. Airsonic mount points are at `/airsonic/*` inside the container. Airsonic-Advanced tries to use the same volume locations as the default war image at `/var/*` in order to remain consistent if people want to switch between the containers and non-containers.
   - `Music:/airsonic/music` -> `Music:/var/music`
@@ -154,7 +155,7 @@ Also note that the Docker image will by default run as user root (0), group root
 Vanilla Airsonic can be downloaded from
 [GitHub](https://github.com/airsonic/airsonic/releases).
 
-Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Advanced shares similar running instructions unless stated otherwise.
+Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Advanced shares similar running instructions unless stated otherwise. Notable exceptions are available as comments or resolutions in the Issues page (please search).
 
 ### Building/Compiling
 You may compile the code yourself by using maven. One of the repositories does not have https, so you may need to allow that for maven. A custom `settings.xml` has been put in `.mvn` folder for this purpose. A sample invocation would be (in the root):
