@@ -354,7 +354,7 @@ public class MediaScannerService {
             Album a = v;
 
             if (a == null) {
-                Album dbAlbum = albumDao.getAlbumForFile(file);
+                Album dbAlbum = albumDao.getAlbum(artist, file.getAlbumName());
                 if (dbAlbum != null) {
                     a = albumsInDb.computeIfAbsent(dbAlbum.getId(), aid -> {
                         // reset stats when first retrieve from the db for new scan
