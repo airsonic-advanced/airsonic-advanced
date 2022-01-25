@@ -98,6 +98,7 @@ public class SettingsServiceTestCase {
         assertNull("Wrong default LDAP manager password.", settingsService.getLdapManagerPassword());
         assertEquals("Wrong default LDAP search filter.", "(sAMAccountName={0})", settingsService.getLdapSearchFilter());
         assertEquals("Wrong default LDAP auto-shadowing.", false, settingsService.isLdapAutoShadowing());
+        assertEquals(60, settingsService.getSessionTimeout());
     }
 
     @Test
@@ -110,6 +111,7 @@ public class SettingsServiceTestCase {
         settingsService.setCoverArtFileTypes("jpeg gif  png");
         settingsService.setWelcomeMessage("welcomeMessage");
         settingsService.setLoginMessage("loginMessage");
+        settingsService.setSessionTimeout(30);
         settingsService.setLocale(Locale.CANADA_FRENCH);
         settingsService.setThemeId("dark");
         settingsService.setIndexCreationInterval(4);
@@ -146,6 +148,7 @@ public class SettingsServiceTestCase {
         assertThat(ss.getCoverArtFileTypesSet()).containsOnly("jpeg", "gif", "png");
         assertEquals("Wrong welcome message.", "welcomeMessage", ss.getWelcomeMessage());
         assertEquals("Wrong login message.", "loginMessage", ss.getLoginMessage());
+        assertEquals("Wrong session timeout.", 30, settingsService.getSessionTimeout());
         assertEquals("Wrong locale.", Locale.CANADA_FRENCH, ss.getLocale());
         assertEquals("Wrong theme.", "dark", ss.getThemeId());
         assertEquals("Wrong index creation interval.", 4, ss.getIndexCreationInterval());
