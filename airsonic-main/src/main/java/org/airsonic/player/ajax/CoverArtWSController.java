@@ -57,11 +57,11 @@ public class CoverArtWSController {
     @SendToUser(broadcast = false)
     public String setCoverArtImage(CoverArtSetRequest req) {
         try {
-            MediaFile mediaFile = mediaFileService.getMediaFile(req.getAlbumId());
+            MediaFile mediaFile = mediaFileService.getMediaFile(req.getId());
             saveCoverArt(mediaFile, req.getUrl());
             return "OK";
         } catch (Exception e) {
-            LOG.warn("Failed to save cover art for album {}", req.getAlbumId(), e);
+            LOG.warn("Failed to save cover art for media file {}", req.getId(), e);
             return e.toString();
         }
     }
@@ -170,15 +170,15 @@ public class CoverArtWSController {
     }
 
     public static class CoverArtSetRequest {
-        private int albumId;
+        private int id;
         private String url;
 
-        public int getAlbumId() {
-            return albumId;
+        public int getId() {
+            return id;
         }
 
-        public void setAlbumId(int albumId) {
-            this.albumId = albumId;
+        public void setId(int id) {
+            this.id = id;
         }
 
         public String getUrl() {
