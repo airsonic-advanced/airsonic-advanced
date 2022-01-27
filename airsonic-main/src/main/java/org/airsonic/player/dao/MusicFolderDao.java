@@ -130,19 +130,20 @@ public class MusicFolderDao extends AbstractDao {
             // update root
             String sql = "update media_file set "
                     + "folder_id=?, "
+                    + "title=null, "
                     + "path=?, "
                     + "parent_path=?, "
-                    + "cover_art_path=concat(?, cover_art_path)"
+                    + "cover_art_path=concat(?, cover_art_path) "
                     + "where folder_id=? and path=''";
             update(sql, ancestor.getId(), relativePath, relativePath.getParent() == null ? "" : relativePath.getParent().toString(), relativePath + File.separator, descendant.getId());
             // update children
             sql = "update media_file set "
                     + "folder_id=?, "
-                    + "path=concat(?, path) "
+                    + "path=concat(?, path), "
                     + "parent_path=(case"
                     + "  when (parent_path = '') then ?"
                     + "  else concat(?, parent_path) end), "
-                    + "cover_art_path=concat(?, cover_art_path)"
+                    + "cover_art_path=concat(?, cover_art_path) "
                     + "where folder_id=?";
             update(sql, ancestor.getId(), relativePath + File.separator, relativePath, relativePath + File.separator, relativePath + File.separator, descendant.getId());
         }
