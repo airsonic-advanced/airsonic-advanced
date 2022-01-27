@@ -7,9 +7,11 @@ import chameleon.playlist.xspf.Track;
 import chameleon.playlist.xspf.XspfProvider;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.dao.PlaylistDao;
+import org.airsonic.player.domain.CoverArt.EntityType;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.Playlist;
+import org.airsonic.player.service.CoverArtService;
 import org.airsonic.player.service.MediaFolderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class XspfPlaylistExportHandler implements PlaylistExportHandler {
@@ -29,6 +32,9 @@ public class XspfPlaylistExportHandler implements PlaylistExportHandler {
 
     @Autowired
     MediaFolderService mediaFolderService;
+
+    @Autowired
+    CoverArtService coverArtService;
 
     @Override
     public boolean canHandle(Class<? extends SpecificPlaylistProvider> providerClass) {
@@ -56,7 +62,7 @@ public class XspfPlaylistExportHandler implements PlaylistExportHandler {
             track.setTitle(mediaFile.getTitle());
             track.setAlbum(mediaFile.getAlbumName());
             track.setDuration((int) Math.round(mediaFile.getDuration())); // TODO switch to Double upstream
-            track.setImage(mediaFile.getFullCoverArtPath(folder.getPath()).toString());
+            track.setImage(Optional.ofNullable(coverArtService.getFullPath(EntityType.MEDIA_FILE, mediaFile.getId())).map(p -> p.toString()).orElse(null));
             Location location = new Location();
             location.setText(mediaFile.getFullPath(folder.getPath()).toString());
             track.getStringContainers().add(location);

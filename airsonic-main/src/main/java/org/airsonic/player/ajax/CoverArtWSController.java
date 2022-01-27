@@ -1,8 +1,10 @@
 package org.airsonic.player.ajax;
 
+import org.airsonic.player.domain.CoverArt.EntityType;
 import org.airsonic.player.domain.LastFmCoverArt;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.service.CoverArtService;
 import org.airsonic.player.service.LastFmService;
 import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.MediaFolderService;
@@ -24,7 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 
@@ -41,6 +42,8 @@ public class CoverArtWSController {
     private LastFmService lastFmService;
     @Autowired
     private MediaFolderService mediaFolderService;
+    @Autowired
+    private CoverArtService coverArtService;
 
     @MessageMapping("/search")
     @SendToUser(broadcast = false)
@@ -101,28 +104,7 @@ public class CoverArtWSController {
             Files.copy(input, newCoverFile, StandardCopyOption.REPLACE_EXISTING);
         }
 
-        // Rename existing cover files if new cover file is not the preferred.
-        try {
-            while (true) {
-                Path coverFile = mediaFileService.getCoverArt(dir);
-                if (coverFile != null && !isMediaFile(coverFile) && !newCoverFile.equals(coverFile)) {
-                    Files.move(coverFile, Paths.get(coverFile.toRealPath().toString() + ".old"), StandardCopyOption.REPLACE_EXISTING);
-                    LOG.info("Renamed old image file {}", coverFile);
-
-                    // Must refresh again.
-                    mediaFileService.refreshMediaFile(dir, folder);
-                    dir = mediaFileService.getMediaFile(dir.getId());
-                } else {
-                    break;
-                }
-            }
-        } catch (Exception x) {
-            LOG.warn("Failed to rename existing cover file.", x);
-        }
-    }
-
-    private boolean isMediaFile(Path file) {
-        return mediaFileService.includeMediaFile(file);
+        coverArtService.upsert(EntityType.MEDIA_FILE, dir.getId(), folder.getPath().relativize(newCoverFile).toString(), dir.getFolderId(), true);
     }
 
     private void backup(Path newCoverFile, Path backup) {

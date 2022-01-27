@@ -20,6 +20,8 @@
 package org.airsonic.player.service;
 
 import org.airsonic.player.dao.PodcastDao;
+import org.airsonic.player.domain.CoverArt;
+import org.airsonic.player.domain.CoverArt.EntityType;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.MusicFolder.Type;
@@ -108,6 +110,8 @@ public class PodcastService {
     private MediaFileService mediaFileService;
     @Autowired
     private MediaFolderService mediaFolderService;
+    @Autowired
+    private CoverArtService coverArtService;
     @Autowired
     private MetaDataParserFactory metaDataParserFactory;
     @Autowired
@@ -387,14 +391,12 @@ public class PodcastService {
             return;
         }
 
-        MediaFile channelMediaFile = mediaFileService.getMediaFile(channel.getMediaFileId());
-        MusicFolder folder = mediaFolderService.getMusicFolderById(channelMediaFile.getFolderId());
-        Path existingCoverArt = mediaFileService.getCoverArt(channelMediaFile);
-        boolean imageFileExists = existingCoverArt != null
-                && mediaFileService.getMediaFile(existingCoverArt, folder) == null;
-        if (imageFileExists) {
+        CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, channel.getMediaFileId());
+        if (art != null) {
             return;
         }
+        MediaFile channelMediaFile = mediaFileService.getMediaFile(channel.getMediaFileId());
+        MusicFolder folder = mediaFolderService.getMusicFolderById(channelMediaFile.getFolderId());
         Path channelDir = channelMediaFile.getFullPath(folder.getPath());
 
         HttpGet method = new HttpGet(imageUrl);
@@ -402,9 +404,9 @@ public class PodcastService {
         try (CloseableHttpClient client = HttpClients.createDefault();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent()) {
-            Files.copy(in, channelDir.resolve("cover." + getCoverArtSuffix(response)),
-                    StandardCopyOption.REPLACE_EXISTING);
-            mediaFileService.refreshMediaFile(channelMediaFile, folder);
+            Path filePath = channelDir.resolve("cover." + getCoverArtSuffix(response));
+            Files.copy(in, filePath, StandardCopyOption.REPLACE_EXISTING);
+            coverArtService.upsert(EntityType.MEDIA_FILE, channelMediaFile.getId(), folder.getPath().relativize(filePath).toString(), channelMediaFile.getFolderId(), false);
         } catch (Exception x) {
             LOG.warn("Failed to download cover art for podcast channel '{}'", channel.getTitle(), x);
         }
