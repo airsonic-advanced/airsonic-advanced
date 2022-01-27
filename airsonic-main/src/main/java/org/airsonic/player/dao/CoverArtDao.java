@@ -50,9 +50,9 @@ public class CoverArtDao extends AbstractDao {
 
     @Transactional
     public void expunge() {
-        update("delete from cover_art c left join media_file m on c.entity_id=m.id and c.entity_type='MEDIA_FILE' where m.id is null");
-        update("delete from cover_art c left join album a on c.entity_id=a.id and c.entity_type='ALBUM' where a.id is null");
-        update("delete from cover_art c left join artist a on c.entity_id=a.id and c.entity_type='ARTIST' where a.id is null");
+        update("delete from cover_art c where c.entity_type='MEDIA_FILE' and c.entity_id in (select ca.entity_id from cover_art ca left join media_file m on ca.entity_id=m.id where m.id is null and ca.entity_type='MEDIA_FILE')");
+        update("delete from cover_art c where c.entity_type='ALBUM' and c.entity_id in (select ca.entity_id from cover_art ca left join album a on ca.entity_id=a.id where a.id is null and ca.entity_type='ALBUM')");
+        update("delete from cover_art c where c.entity_type='ARTTIST' and c.entity_id in (select ca.entity_id from cover_art ca left join artist a on ca.entity_id=a.id where a.id is null and ca.entity_type='ARTIST')");
     }
 
     private static class CoverArtRowMapper implements RowMapper<CoverArt> {
