@@ -95,6 +95,7 @@ public class MusicFolderDao extends AbstractDao {
         LOG.info("Deleted music folder with ID {}", id);
     }
 
+    @Transactional
     public void reassignChildren(MusicFolder from, MusicFolder to) {
         if (to.getPath().getNameCount() > from.getPath().getNameCount()) {
             // assign ancestor -> descendant
@@ -106,18 +107,22 @@ public class MusicFolderDao extends AbstractDao {
             String sql = "update media_file set "
                     + "folder_id=?, "
                     + "path=SUBSTR(path, " + (len + 2) + "), "
-                    + "cover_art_path=SUBSTR(cover_art_path, " + (len + 2) + "), "
                     + "parent_path=(case "
                     + "  when (length(parent_path) > " + len + ") then SUBSTR(parent_path, " + (len + 2) + ") "
                     + "  else SUBSTR(parent_path, " + (len + 1) + ") end) "
                     + "where folder_id=? and path like ?";
             update(sql, descendant.getId(), ancestor.getId(), relativePath + File.separator + "%");
+            sql = "update cover_art set "
+                    + "folder_id=?, "
+                    + "path=SUBSTR(path, " + (len + 2) + ") "
+                    + "where folder_id=? and path like ?";
+            update(sql, descendant.getId(), ancestor.getId(), relativePath + File.separator + "%");
+
             // update root
             sql = "update media_file set "
                     + "folder_id=?, "
                     + "path='', "
                     + "parent_path=null, "
-                    + "cover_art_path=SUBSTR(cover_art_path, " + (len + 2) + "), "
                     + "title=?, "
                     + "type=? "
                     + "where folder_id=? and path=?";
@@ -131,20 +136,20 @@ public class MusicFolderDao extends AbstractDao {
             String sql = "update media_file set "
                     + "folder_id=?, "
                     + "path=?, "
-                    + "parent_path=?, "
-                    + "cover_art_path=concat(?, cover_art_path)"
+                    + "parent_path=? "
                     + "where folder_id=? and path=''";
-            update(sql, ancestor.getId(), relativePath, relativePath.getParent() == null ? "" : relativePath.getParent().toString(), relativePath + File.separator, descendant.getId());
+            update(sql, ancestor.getId(), relativePath, relativePath.getParent() == null ? "" : relativePath.getParent().toString(), descendant.getId());
             // update children
             sql = "update media_file set "
                     + "folder_id=?, "
-                    + "path=concat(?, path) "
+                    + "path=concat(?, path), "
                     + "parent_path=(case"
                     + "  when (parent_path = '') then ?"
-                    + "  else concat(?, parent_path) end), "
-                    + "cover_art_path=concat(?, cover_art_path)"
+                    + "  else concat(?, parent_path) end) "
                     + "where folder_id=?";
-            update(sql, ancestor.getId(), relativePath + File.separator, relativePath, relativePath + File.separator, relativePath + File.separator, descendant.getId());
+            update(sql, ancestor.getId(), relativePath + File.separator, relativePath, relativePath + File.separator, descendant.getId());
+            sql = "update cover_art set folder_id=?, path=concat(?, path) where folder_id=?";
+            update(sql, ancestor.getId(), relativePath + File.separator, descendant.getId());
         }
     }
 
