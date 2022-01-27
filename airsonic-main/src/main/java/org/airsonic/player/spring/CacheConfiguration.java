@@ -1,5 +1,6 @@
 package org.airsonic.player.spring;
 
+import org.airsonic.player.domain.CoverArt;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Playlist;
 import org.airsonic.player.domain.User;
@@ -71,6 +72,11 @@ public class CacheConfiguration {
                         CacheConfigurationBuilder.newCacheConfigurationBuilder(Integer.class, MediaFile.class, pools)
                                 .withClassLoader(cl)
                                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofHours(2)))
+                                .withService(cacheLogging))
+                .withCache("coverArtCache",
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, CoverArt.class, pools)
+                                .withClassLoader(cl)
+                                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(2)))
                                 .withService(cacheLogging))
                 .withCache("playlistCache",
                         CacheConfigurationBuilder.newCacheConfigurationBuilder(Integer.class, Playlist.class, pools)

@@ -8,11 +8,15 @@ import org.airsonic.player.domain.CoverArt.EntityType;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 
 @Service
+@CacheConfig(cacheNames = "coverArtCache")
 public class CoverArtService {
     @Autowired
     CoverArtDao coverArtDao;
@@ -24,6 +28,7 @@ public class CoverArtService {
         upsert(art);
     }
 
+    @CacheEvict(key = "#art.entityType.toString().concat('-').concat(#art.entityId)")
     public void upsert(CoverArt art) {
         coverArtDao.upsert(art);
     }
@@ -61,6 +66,7 @@ public class CoverArtService {
         }
     }
 
+    @Cacheable(key = "#type.toString().concat('-').concat(#id)", unless = "#result == null")
     public CoverArt get(EntityType type, int id) {
         return coverArtDao.get(type, id);
     }
@@ -86,10 +92,12 @@ public class CoverArtService {
         return null;
     }
 
+    @CacheEvict(key = "#type.toString().concat('-').concat(#id)")
     public void delete(EntityType type, int id) {
         coverArtDao.delete(type, id);
     }
 
+    @CacheEvict(allEntries = true)
     public void expunge() {
         coverArtDao.expunge();
     }
