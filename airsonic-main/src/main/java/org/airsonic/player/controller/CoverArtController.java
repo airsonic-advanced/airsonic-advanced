@@ -567,12 +567,10 @@ public class CoverArtController implements LastModified {
 
         private MediaFileCoverArtRequest(MediaFile mediaFile, Integer proxyId) {
             super(coverArtService.get(EntityType.MEDIA_FILE, mediaFile.getId()),
-                    null,
-                    null);
+                () -> mediaFile.getFolderId() + "/" + mediaFile.getPath(),
+                () -> mediaFile.getChanged());
             this.dir = mediaFile;
             this.proxyId = proxyId;
-            keyGenerator = () -> dir.getFolderId() + "/" + dir.getPath();
-            lastModifiedGenerator = () -> dir.getChanged();
         }
 
         private MediaFileCoverArtRequest(MediaFile mediaFile) {
