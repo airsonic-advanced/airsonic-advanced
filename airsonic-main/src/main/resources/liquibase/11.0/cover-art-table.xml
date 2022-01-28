@@ -23,10 +23,10 @@
             <column name="overridden" type="boolean" defaultValueBoolean="false">
                 <constraints nullable="false"/>
             </column>
-            <column name="created" type="${timestamp_type}" defaultValueComputed="current_timestamp">
+            <column name="created" type="${timestamp_type}" defaultValueComputed="${curr_date_expr}">
                 <constraints nullable="false"/>
             </column>
-            <column name="updated" type="${timestamp_type}" defaultValueComputed="current_timestamp">
+            <column name="updated" type="${timestamp_type}" defaultValueComputed="${curr_date_expr}">
                 <constraints nullable="false"/>
             </column>
         </createTable>

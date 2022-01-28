@@ -5,6 +5,7 @@
     <property name="binary_type" dbms="hsqldb" value="binary" />
     <property name="binary_type" dbms="postgresql" value="bytea" />
     <property name="binary_type" value="blob" />
+    <property name="curr_date_expr" dbms="mysql" value="current_timestamp(6)" />
     <property name="curr_date_expr" value="current_timestamp" />
     <property name="json_type" dbms="hsqldb" value="clob"/>
     <property name="json_type" value="json"/>
