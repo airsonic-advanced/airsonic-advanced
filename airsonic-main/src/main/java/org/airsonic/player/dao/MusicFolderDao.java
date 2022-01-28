@@ -135,6 +135,7 @@ public class MusicFolderDao extends AbstractDao {
             // update root
             String sql = "update media_file set "
                     + "folder_id=?, "
+                    + "title=null, "
                     + "path=?, "
                     + "parent_path=? "
                     + "where folder_id=? and path=''";
