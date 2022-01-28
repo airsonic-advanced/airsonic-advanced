@@ -302,7 +302,8 @@ public class HLSController {
             throw new AccessDeniedException("Access to file " + id + " is forbidden for user " + user.getUsername());
         }
         TransferStatus status = this.statusService.createStreamStatus(player);
-        status.setFile(mediaFile.getFile());
+        status.setFile(mediaFile.getRelativePath());
+        status.setFolderId(mediaFile.getFolderId());
         HlsSession.Key sessionKey = new HlsSession.Key(id, playerId, maxBitRate, size, duration, audioTrack);
         HlsSession session = getOrCreateSession(sessionKey, mediaFile);
         Path segmentFile = session.waitForSegment(segmentIndex, 30000L);
@@ -321,8 +322,7 @@ public class HLSController {
             statusService.removeStreamStatus(s);
         };
         BiConsumer<InputStream, TransferStatus> inputStreamInit = (i, s) -> {
-            LOG.info("{}: {} listening to {}", player.getIpAddress(), player.getUsername(),
-                    FileUtil.getShortPath(mediaFile.getFile()));
+            LOG.info("{}: {} listening to {}", player.getIpAddress(), player.getUsername(), FileUtil.getShortPath(mediaFile.getRelativePath()));
             if (segmentIndex == 0)
                 this.mediaFileService.incrementPlayCount(mediaFile);
         };

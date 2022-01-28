@@ -86,55 +86,33 @@ public class ShareDao extends AbstractDao {
         return queryOne(sql, shareRowMapper, id);
     }
 
-    /**
-     * Updates the given share.
-     *
-     * @param share The share to update.
-     */
     public void updateShare(Share share) {
         String sql = "update share set name=?, description=?, username=?, created=?, expires=?, last_visited=?, visit_count=? where id=?";
         update(sql, share.getName(), share.getDescription(), share.getUsername(), share.getCreated(), share.getExpires(),
                 share.getLastVisited(), share.getVisitCount(), share.getId());
     }
 
-    /**
-     * Creates shared files.
-     *
-     * @param shareId The share ID.
-     * @param paths   Paths of the files to share.
-     */
     @Transactional
-    public void createSharedFiles(int shareId, String... paths) {
-        if (paths == null || paths.length == 0) {
+    public void createSharedFiles(int shareId, List<Integer> mediaFileIds) {
+        if (mediaFileIds == null || mediaFileIds.isEmpty()) {
             return;
         }
-        String sql = "insert into share_file (share_id, path) values (?, ?)";
-        batchedUpdate(sql, Arrays.asList(paths).stream().map(x -> new Object[] { shareId, x }).collect(Collectors.toList()));
+        String sql = "insert into share_file (share_id, media_file_id) values (?, ?)";
+        batchedUpdate(sql, mediaFileIds.stream().map(x -> new Object[] { shareId, x }).collect(Collectors.toList()));
     }
 
-    /**
-     * Returns files for a share.
-     *
-     * @param shareId The ID of the share.
-     * @return The paths of the shared files.
-     */
-    public List<String> getSharedFiles(final int shareId, final List<MusicFolder> musicFolders) {
+    public List<Integer> getSharedFiles(final int shareId, final List<MusicFolder> musicFolders) {
         if (musicFolders.isEmpty()) {
             return Collections.emptyList();
         }
         Map<String, Object> args = new HashMap<>();
         args.put("shareId", shareId);
-        args.put("folders", MusicFolder.toPathList(musicFolders));
-        return namedQuery("select share_file.path from share_file, media_file where share_id = :shareId and " +
-                          "share_file.path = media_file.path and media_file.present and media_file.folder in (:folders)",
+        args.put("folders", MusicFolder.toIdList(musicFolders));
+        return namedQuery("select share_file.media_file_id from share_file, media_file where share_id = :shareId and "
+                + "share_file.media_file_id = media_file.id and media_file.present and media_file.folder_id in (:folders)",
                           shareFileRowMapper, args);
     }
 
-    /**
-     * Deletes the share with the given ID.
-     *
-     * @param id The ID of the share to delete.
-     */
     public void deleteShare(Integer id) {
         update("delete from share where id=?", id);
     }
@@ -147,10 +125,10 @@ public class ShareDao extends AbstractDao {
         }
     }
 
-    private static class ShareFileRowMapper implements RowMapper<String> {
+    private static class ShareFileRowMapper implements RowMapper<Integer> {
         @Override
-        public String mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return rs.getString(1);
+        public Integer mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return rs.getInt(1);
         }
 
     }

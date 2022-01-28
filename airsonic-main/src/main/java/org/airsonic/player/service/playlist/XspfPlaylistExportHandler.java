@@ -8,7 +8,9 @@ import chameleon.playlist.xspf.XspfProvider;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.dao.PlaylistDao;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.Playlist;
+import org.airsonic.player.service.MediaFolderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +26,9 @@ public class XspfPlaylistExportHandler implements PlaylistExportHandler {
 
     @Autowired
     PlaylistDao playlistDao;
+
+    @Autowired
+    MediaFolderService mediaFolderService;
 
     @Override
     public boolean canHandle(Class<? extends SpecificPlaylistProvider> providerClass) {
@@ -44,15 +49,16 @@ public class XspfPlaylistExportHandler implements PlaylistExportHandler {
         List<MediaFile> files = mediaFileDao.getFilesInPlaylist(id);
 
         files.stream().map(mediaFile -> {
+            MusicFolder folder = mediaFolderService.getMusicFolderById(mediaFile.getFolderId());
             Track track = new Track();
             track.setTrackNumber(mediaFile.getTrackNumber());
             track.setCreator(mediaFile.getArtist());
             track.setTitle(mediaFile.getTitle());
             track.setAlbum(mediaFile.getAlbumName());
             track.setDuration((int) Math.round(mediaFile.getDuration())); // TODO switch to Double upstream
-            track.setImage(mediaFile.getCoverArtPath());
+            track.setImage(mediaFile.getFullCoverArtPath(folder.getPath()).toString());
             Location location = new Location();
-            location.setText(mediaFile.getPath());
+            location.setText(mediaFile.getFullPath(folder.getPath()).toString());
             track.getStringContainers().add(location);
             return track;
         }).forEach(newPlaylist::addTrack);

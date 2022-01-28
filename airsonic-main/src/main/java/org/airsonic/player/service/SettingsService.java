@@ -23,7 +23,6 @@ import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.RateLimiter;
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
-import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.dao.UserDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.service.sonos.SonosServiceRegistration;
@@ -50,12 +49,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 
 /**
  * Provides persistent storage of application settings and preferences.
@@ -160,7 +157,7 @@ public class SettingsService {
     private static final String KEY_DATABASE_MIGRATION_ROLLBACK_FILE = "spring.liquibase.rollback-file";
     private static final String KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH = "spring.liquibase.parameters.mysqlVarcharLimit";
     private static final String KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER = "spring.liquibase.parameters.defaultMusicFolder";
-
+    private static final String KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER = "spring.liquibase.parameters.defaultPodcastFolder";
     public static final String KEY_PROPERTIES_FILE_RETAIN_OBSOLETE_KEYS = "PropertiesFileRetainObsoleteKeys";
 
     // Default values.
@@ -202,7 +199,6 @@ public class SettingsService {
     private static final int DEFAULT_DB_BACKUP_INTERVAL = -1;
     private static final int DEFAULT_DB_BACKUP_RETENTION_COUNT = 2;
     private static final int DEFAULT_PODCAST_UPDATE_INTERVAL = 24;
-    private static final String DEFAULT_PODCAST_FOLDER = Util.getDefaultPodcastFolder();
     private static final int DEFAULT_PODCAST_EPISODE_RETENTION_COUNT = 10;
     private static final int DEFAULT_PODCAST_EPISODE_DOWNLOAD_COUNT = 1;
     private static final long DEFAULT_DOWNLOAD_BITRATE_LIMIT = 0;
@@ -265,8 +261,6 @@ public class SettingsService {
     @Autowired
     private InternetRadioDao internetRadioDao;
     @Autowired
-    private MusicFolderDao musicFolderDao;
-    @Autowired
     private UserDao userDao;
     @Autowired
     private AvatarDao avatarDao;
@@ -276,8 +270,6 @@ public class SettingsService {
     private Set<String> cachedCoverArtFileTypes;
     private Set<String> cachedMusicFileTypes;
     private Set<String> cachedVideoFileTypes;
-    private List<MusicFolder> cachedMusicFolders;
-    private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
     private RateLimiter downloadRateLimiter;
     private RateLimiter uploadRateLimiter;
     private Pattern excludePattern;
@@ -314,6 +306,8 @@ public class SettingsService {
 
         keyMaps.put("database.varchar.maxlength", "DatabaseMysqlMaxlength");
         keyMaps.put("DatabaseMysqlMaxlength", KEY_DATABASE_MIGRATION_PARAMETER_MYSQL_VARCHAR_MAXLENGTH);
+
+        keyMaps.put(KEY_PODCAST_FOLDER, KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER);
 
         keyMaps.put("airsonic.rememberMeKey", KEY_REMEMBER_ME_KEY);
         keyMaps.put("IgnoreFileTimestamps", KEY_FULL_SCAN);
@@ -386,6 +380,9 @@ public class SettingsService {
         }
         if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER))) {
             defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_MUSIC_FOLDER, Util.getDefaultMusicFolder());
+        }
+        if (StringUtils.isBlank(env.getProperty(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER))) {
+            defaultConstants.put(KEY_DATABASE_MIGRATION_PARAMETER_DEFAULT_PODCAST_FOLDER, Util.getDefaultPodcastFolder());
         }
         if (StringUtils.isBlank(env.getProperty(LogFile.FILE_NAME_PROPERTY))) {
             defaultConstants.put(LogFile.FILE_NAME_PROPERTY, getDefaultLogFile());
@@ -569,21 +566,22 @@ public class SettingsService {
         setProperty(KEY_UPLOADS_FOLDER, uploadsFolder);
     }
 
-    public String resolveContextualString(String s, String username) {
+    public Map<String, Object> buildSpelContext() {
+        Map<String, Object> context = new HashMap<>();
+        context.put("AIRSONIC_HOME", getAirsonicHome());
+        context.put("DEFAULT_PLAYLIST_FOLDER", getPlaylistFolder());
+        context.put("DEFAULT_MUSIC_FOLDER", Util.getDefaultMusicFolder());
+        return context;
+    }
+
+    public String resolveContextualString(String s, Supplier<Map<String, Object>> contextSupplier) {
         String[] contextuals = StringUtils.substringsBetween(s, "%{", "}");
         if (contextuals == null || contextuals.length == 0) {
             // if no context eval is needed, then short-circuit
             return s;
         }
-        Map<String, Object> context = new HashMap<>();
-        context.put("AIRSONIC_HOME", getAirsonicHome());
-        context.put("DEFAULT_PLAYLIST_FOLDER", getPlaylistFolder());
-        context.put("DEFAULT_MUSIC_FOLDER", Util.getDefaultMusicFolder());
-        if (StringUtils.isNotEmpty(username)) {
-            context.put("USER_NAME", username);
-            context.put("USER_MUSIC_FOLDERS", getMusicFoldersForUser(username).stream().map(MusicFolder::getPath).map(Path::toString).collect(Collectors.toList()));
-        }
 
+        Map<String, Object> context = contextSupplier.get();
         // StandardEvaluationContext spelCtx = new StandardEvaluationContext(context);
 
         return StringUtils.replaceEach(s,
@@ -854,20 +852,6 @@ public class SettingsService {
      */
     public void setPodcastEpisodeDownloadCount(int count) {
         setInt(KEY_PODCAST_EPISODE_DOWNLOAD_COUNT, count);
-    }
-
-    /**
-     * Returns the Podcast download folder.
-     */
-    public String getPodcastFolder() {
-        return getProperty(KEY_PODCAST_FOLDER, DEFAULT_PODCAST_FOLDER);
-    }
-
-    /**
-     * Sets the Podcast download folder.
-     */
-    public void setPodcastFolder(String folder) {
-        setProperty(KEY_PODCAST_FOLDER, folder);
     }
 
     /**
@@ -1208,131 +1192,6 @@ public class SettingsService {
     }
 
     /**
-     * Returns all music folders. Non-existing and disabled folders are not included.
-     *
-     * @return Possibly empty list of all music folders.
-     */
-    public List<MusicFolder> getAllMusicFolders() {
-        return getAllMusicFolders(false, false);
-    }
-
-    /**
-     * Returns all music folders.
-     *
-     * @param includeDisabled    Whether to include disabled folders.
-     * @param includeNonExisting Whether to include non-existing folders.
-     * @return Possibly empty list of all music folders.
-     */
-    public List<MusicFolder> getAllMusicFolders(boolean includeDisabled, boolean includeNonExisting) {
-        if (cachedMusicFolders == null) {
-            cachedMusicFolders = musicFolderDao.getAllMusicFolders();
-        }
-
-        return cachedMusicFolders.parallelStream()
-                .filter(folder -> (includeDisabled || folder.isEnabled()) && (includeNonExisting || Files.exists(folder.getPath())))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Returns all music folders a user have access to. Non-existing and disabled folders are not included.
-     *
-     * @return Possibly empty list of music folders.
-     */
-    public List<MusicFolder> getMusicFoldersForUser(String username) {
-        List<MusicFolder> result = cachedMusicFoldersPerUser.get(username);
-        if (result == null) {
-            result = musicFolderDao.getMusicFoldersForUser(username);
-            result.retainAll(getAllMusicFolders(false, false));
-            cachedMusicFoldersPerUser.put(username, result);
-        }
-        return result;
-    }
-
-    /**
-     * Returns all music folders a user have access to. Non-existing and disabled folders are not included.
-     *
-     * @param selectedMusicFolderId If non-null and included in the list of allowed music folders, this methods returns
-     *                              a list of only this music folder.
-     * @return Possibly empty list of music folders.
-     */
-    public List<MusicFolder> getMusicFoldersForUser(String username, Integer selectedMusicFolderId) {
-        List<MusicFolder> allowed = getMusicFoldersForUser(username);
-        if (selectedMusicFolderId == null) {
-            return allowed;
-        }
-        MusicFolder selected = getMusicFolderById(selectedMusicFolderId);
-        return allowed.contains(selected) ? Collections.singletonList(selected) : Collections.emptyList();
-    }
-
-    /**
-     * Returns the selected music folder for a given user, or {@code null} if all music folders should be displayed.
-     */
-    public MusicFolder getSelectedMusicFolder(String username) {
-        UserSettings settings = getUserSettings(username);
-        int musicFolderId = settings.getSelectedMusicFolderId();
-
-        MusicFolder musicFolder = getMusicFolderById(musicFolderId);
-        List<MusicFolder> allowedMusicFolders = getMusicFoldersForUser(username);
-        return allowedMusicFolders.contains(musicFolder) ? musicFolder : null;
-    }
-
-    public void setMusicFoldersForUser(String username, List<Integer> musicFolderIds) {
-        musicFolderDao.setMusicFoldersForUser(username, musicFolderIds);
-        cachedMusicFoldersPerUser.remove(username);
-    }
-
-    /**
-     * Returns the music folder with the given ID.
-     *
-     * @param id The ID.
-     * @return The music folder with the given ID, or <code>null</code> if not found.
-     */
-    public MusicFolder getMusicFolderById(Integer id) {
-        List<MusicFolder> all = getAllMusicFolders();
-        for (MusicFolder folder : all) {
-            if (id.equals(folder.getId())) {
-                return folder;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Creates a new music folder.
-     *
-     * @param musicFolder The music folder to create.
-     */
-    public void createMusicFolder(MusicFolder musicFolder) {
-        musicFolderDao.createMusicFolder(musicFolder);
-        clearMusicFolderCache();
-    }
-
-    /**
-     * Deletes the music folder with the given ID.
-     *
-     * @param id The ID of the music folder to delete.
-     */
-    public void deleteMusicFolder(Integer id) {
-        musicFolderDao.deleteMusicFolder(id);
-        clearMusicFolderCache();
-    }
-
-    /**
-     * Updates the given music folder.
-     *
-     * @param musicFolder The music folder to update.
-     */
-    public void updateMusicFolder(MusicFolder musicFolder) {
-        musicFolderDao.updateMusicFolder(musicFolder);
-        clearMusicFolderCache();
-    }
-
-    public void clearMusicFolderCache() {
-        cachedMusicFolders = null;
-        cachedMusicFoldersPerUser.clear();
-    }
-
-    /**
      * Returns all internet radio stations. Disabled stations are not returned.
      *
      * @return Possibly empty list of all internet radio stations.
@@ -1561,10 +1420,6 @@ public class SettingsService {
 
     public void setInternetRadioDao(InternetRadioDao internetRadioDao) {
         this.internetRadioDao = internetRadioDao;
-    }
-
-    public void setMusicFolderDao(MusicFolderDao musicFolderDao) {
-        this.musicFolderDao = musicFolderDao;
     }
 
     public void setUserDao(UserDao userDao) {

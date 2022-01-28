@@ -6,7 +6,7 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.LastFmService;
 import org.airsonic.player.service.MediaFileService;
-import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.MediaFolderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
@@ -24,7 +24,7 @@ public class ArtistWSController {
     @Autowired
     private LastFmService lastFmService;
     @Autowired
-    private SettingsService settingsService;
+    private MediaFolderService mediaFolderService;
     @Autowired
     private LocaleResolver localeResolver;
 
@@ -40,13 +40,13 @@ public class ArtistWSController {
     }
 
     private List<MediaFileEntry> getTopSongs(String username, MediaFile mediaFile, int limit) {
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(username);
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username);
 
         return mediaFileService.toMediaFileEntryList(lastFmService.getTopSongs(mediaFile, limit, musicFolders), username, true, true, null, null, null);
     }
 
     private List<SimilarArtist> getSimilarArtists(String username, int mediaFileId, int limit) {
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(username);
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username);
 
         MediaFile artist = mediaFileService.getMediaFile(mediaFileId);
         return lastFmService.getSimilarArtists(artist, limit, false, musicFolders).parallelStream()

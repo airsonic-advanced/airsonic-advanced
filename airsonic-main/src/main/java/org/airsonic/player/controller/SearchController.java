@@ -21,6 +21,7 @@ package org.airsonic.player.controller;
 
 import org.airsonic.player.command.SearchCommand;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SearchService;
 import org.airsonic.player.service.SecurityService;
@@ -62,6 +63,8 @@ public class SearchController {
     private PlayerService playerService;
     @Autowired
     private SearchService searchService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
 
     @GetMapping
     protected String displayForm() {
@@ -82,7 +85,7 @@ public class SearchController {
         command.setUser(user);
         command.setPartyModeEnabled(userSettings.getPartyModeEnabled());
 
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(user.getUsername());
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(user.getUsername());
         String query = StringUtils.trimToNull(command.getQuery());
 
         if (query != null) {

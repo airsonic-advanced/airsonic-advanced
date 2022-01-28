@@ -50,6 +50,7 @@ public class ArtistUpnpProcessor extends UpnpContentProcessor <Artist, Album> {
         setRootTitle("Artists");
     }
 
+    @Override
     public Container createContainer(Artist artist) {
         MusicArtist container = new MusicArtist();
         container.setId(getRootId() + DispatchingContentDirectory.SEPARATOR + artist.getId());
@@ -60,8 +61,9 @@ public class ArtistUpnpProcessor extends UpnpContentProcessor <Artist, Album> {
         return container;
     }
 
+    @Override
     public List<Artist> getAllItems() {
-        List<MusicFolder> allFolders = getDispatcher().getSettingsService().getAllMusicFolders();
+        List<MusicFolder> allFolders = getDispatcher().getMediaFolderService().getAllMusicFolders();
         List<Artist> allArtists = getArtistDao().getAlphabetialArtists(0, Integer.MAX_VALUE, allFolders);
         // alpha artists doesn't quite work :P
         allArtists.sort((Artist o1, Artist o2) -> o1.getName().replaceAll("\\W", "").compareToIgnoreCase(o2.getName().replaceAll("\\W", "")));
@@ -69,12 +71,14 @@ public class ArtistUpnpProcessor extends UpnpContentProcessor <Artist, Album> {
         return allArtists;
     }
 
+    @Override
     public Artist getItemById(String id) {
         return getArtistDao().getArtist(Integer.parseInt(id));
     }
 
+    @Override
     public List<Album> getChildren(Artist artist) {
-        List<MusicFolder> allFolders = getDispatcher().getSettingsService().getAllMusicFolders();
+        List<MusicFolder> allFolders = getDispatcher().getMediaFolderService().getAllMusicFolders();
         List<Album> allAlbums = getAlbumProcessor().getAlbumDao().getAlbumsForArtist(artist.getName(), allFolders);
         if (allAlbums.size() > 1) {
             // if the artist has more than one album, add in an option to
@@ -88,6 +92,7 @@ public class ArtistUpnpProcessor extends UpnpContentProcessor <Artist, Album> {
         return allAlbums;
     }
 
+    @Override
     public void addChild(DIDLContent didl, Album album) {
         didl.addContainer(getAlbumProcessor().createContainer(album));
     }

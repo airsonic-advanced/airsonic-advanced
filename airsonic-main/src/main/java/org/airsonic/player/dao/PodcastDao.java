@@ -44,10 +44,10 @@ import java.util.Optional;
 @Repository
 public class PodcastDao extends AbstractDao {
 
-    private static final String CHANNEL_INSERT_COLUMNS = "url, title, description, image_url, status, error_message";
+    private static final String CHANNEL_INSERT_COLUMNS = "url, title, description, image_url, status, error_message, media_file_id";
     private static final String CHANNEL_QUERY_COLUMNS = "id, " + CHANNEL_INSERT_COLUMNS;
     private static final String CHANNEL_RULES_COLUMNS = "id, check_interval, retention_count, download_count";
-    private static final String EPISODE_INSERT_COLUMNS = "channel_id, episode_guid, url, path, title, description, publish_date, " +
+    private static final String EPISODE_INSERT_COLUMNS = "channel_id, episode_guid, url, media_file_id, title, description, publish_date, " +
                                                         "duration, bytes_total, bytes_downloaded, status, error_message";
     private static final String EPISODE_QUERY_COLUMNS = "id, " + EPISODE_INSERT_COLUMNS;
 
@@ -96,9 +96,9 @@ public class PodcastDao extends AbstractDao {
      * @param channel The Podcast channel to update.
      */
     public void updateChannel(PodcastChannel channel) {
-        String sql = "update podcast_channel set url=?, title=?, description=?, image_url=?, status=?, error_message=? where id=?";
+        String sql = "update podcast_channel set url=?, title=?, description=?, image_url=?, status=?, error_message=?, media_file_id=? where id=?";
         update(sql, channel.getUrl(), channel.getTitle(), channel.getDescription(), channel.getImageUrl(),
-                channel.getStatus().name(), channel.getErrorMessage(), channel.getId());
+                channel.getStatus().name(), channel.getErrorMessage(), channel.getMediaFileId(), channel.getId());
     }
 
     public void deleteChannel(int id) {
@@ -205,9 +205,9 @@ public class PodcastDao extends AbstractDao {
      * @return The number of episodes updated (zero or one).
      */
     public int updateEpisode(PodcastEpisode episode) {
-        String sql = "update podcast_episode set episode_guid=?, url=?, path=?, title=?, description=?, publish_date=?, duration=?, " +
+        String sql = "update podcast_episode set episode_guid=?, url=?, media_file_id=?, title=?, description=?, publish_date=?, duration=?, " +
                 "bytes_total=?, bytes_downloaded=?, status=?, error_message=? where id=?";
-        return update(sql, episode.getEpisodeGuid(), episode.getUrl(), episode.getPath(), episode.getTitle(),
+        return update(sql, episode.getEpisodeGuid(), episode.getUrl(), episode.getMediaFileId(), episode.getTitle(),
                 episode.getDescription(), episode.getPublishDate(), episode.getDuration(),
                 episode.getBytesTotal(), episode.getBytesDownloaded(), episode.getStatus().name(),
                 episode.getErrorMessage(), episode.getId());
@@ -227,7 +227,7 @@ public class PodcastDao extends AbstractDao {
         @Override
         public PodcastChannel mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new PodcastChannel(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5),
-                                      PodcastStatus.valueOf(rs.getString(6)), rs.getString(7));
+                    PodcastStatus.valueOf(rs.getString(6)), rs.getString(7), (Integer) rs.getObject(8));
         }
     }
 
@@ -241,7 +241,7 @@ public class PodcastDao extends AbstractDao {
     private static class PodcastEpisodeRowMapper implements RowMapper<PodcastEpisode> {
         @Override
         public PodcastEpisode mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new PodcastEpisode(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), rs.getString(5),
+            return new PodcastEpisode(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), (Integer) rs.getObject(5),
                     rs.getString(6), rs.getString(7), Optional.ofNullable(rs.getTimestamp(8)).map(x -> x.toInstant()).orElse(null), rs.getString(9), (Long) rs.getObject(10),
                     (Long) rs.getObject(11), PodcastStatus.valueOf(rs.getString(12)), rs.getString(13));
         }

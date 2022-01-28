@@ -2,6 +2,7 @@
 package org.airsonic.player.service.search;
 
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.SearchCriteria;
 import org.airsonic.player.domain.SearchResult;
 import org.airsonic.player.service.SearchService;
@@ -39,7 +40,7 @@ public class SearchServiceStartWithStopwardsTestCase extends AbstractAirsonicHom
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
             Path musicDir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("StartWithStopwards");
-            musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, Instant.now()));
+            musicFolders.add(new MusicFolder(1, musicDir, "accessible", Type.MEDIA, true, Instant.now()));
         }
         return musicFolders;
     }

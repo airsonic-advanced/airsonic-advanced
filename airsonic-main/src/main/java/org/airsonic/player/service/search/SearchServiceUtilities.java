@@ -81,7 +81,7 @@ public class SearchServiceUtilities {
     };
 
     public final BiConsumer<List<MediaFile>, Integer> addMediaFileIfAnyMatch = (dist, id) -> {
-        if (!dist.stream().anyMatch(m -> id == m.getId())) {
+        if (!dist.stream().anyMatch(m -> id.equals(m.getId()))) {
             MediaFile mediaFile = mediaFileService.getMediaFile(id);
             if (!isEmpty(mediaFile)) {
                 dist.add(mediaFile);
@@ -90,7 +90,7 @@ public class SearchServiceUtilities {
     };
 
     public final BiConsumer<List<Artist>, Integer> addArtistId3IfAnyMatch = (dist, id) -> {
-        if (!dist.stream().anyMatch(a -> id == a.getId())) {
+        if (!dist.stream().anyMatch(a -> id.equals(a.getId()))) {
             Artist artist = artistDao.getArtist(id);
             if (!isEmpty(artist)) {
                 dist.add(artist);
@@ -135,8 +135,7 @@ public class SearchServiceUtilities {
         return CollectionUtils.addIgnoreNull(collection, object);
     }
 
-    public final boolean addIgnoreNull(Collection<?> collection, IndexType indexType,
-            int subjectId) {
+    public final boolean addIgnoreNull(Collection<?> collection, IndexType indexType, int subjectId) {
         if (indexType == IndexType.ALBUM || indexType == IndexType.SONG) {
             return addIgnoreNull(collection, mediaFileService.getMediaFile(subjectId));
         } else if (indexType == IndexType.ALBUM_ID3) {
@@ -145,8 +144,7 @@ public class SearchServiceUtilities {
         return false;
     }
 
-    public final <T> void addIgnoreNull(ParamSearchResult<T> dist, IndexType indexType,
-            int subjectId, Class<T> subjectClass) {
+    public final <T> void addIgnoreNull(ParamSearchResult<T> dist, IndexType indexType, int subjectId, Class<T> subjectClass) {
         if (indexType == IndexType.SONG) {
             MediaFile mediaFile = mediaFileService.getMediaFile(subjectId);
             addIgnoreNull(dist.getItems(), subjectClass.cast(mediaFile));
@@ -159,8 +157,7 @@ public class SearchServiceUtilities {
         }
     }
 
-    public final void addIfAnyMatch(SearchResult dist, IndexType subjectIndexType,
-            Document subject) {
+    public final void addIfAnyMatch(SearchResult dist, IndexType subjectIndexType, Document subject) {
         int documentId = getId.apply(subject);
         if (subjectIndexType == IndexType.ARTIST || subjectIndexType == IndexType.ALBUM
                 || subjectIndexType == IndexType.SONG) {

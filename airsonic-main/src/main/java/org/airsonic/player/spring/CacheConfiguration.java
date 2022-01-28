@@ -1,5 +1,9 @@
 package org.airsonic.player.spring;
 
+import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.Playlist;
+import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.UserSettings;
 import org.airsonic.player.service.SettingsService;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.ConfigurationBuilder;
@@ -22,7 +26,6 @@ import org.springframework.context.annotation.Configuration;
 import javax.cache.Caching;
 import javax.cache.spi.CachingProvider;
 
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.EnumSet;
 
@@ -50,22 +53,27 @@ public class CacheConfiguration {
         return ConfigurationBuilder.newConfigurationBuilder()
                 .withService(new DefaultPersistenceConfiguration(SettingsService.getAirsonicHome().resolve("cache").toFile()))
                 .withCache("userCache",
-                        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, Object.class, pools)
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, User.class, pools)
                                 .withClassLoader(cl)
                                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(2)))
                                 .withService(cacheLogging))
                 .withCache("userSettingsCache",
-                        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, Object.class, pools)
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, UserSettings.class, pools)
                                 .withClassLoader(cl)
                                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(2)))
                                 .withService(cacheLogging))
-                .withCache("mediaFileMemoryCache",
-                        CacheConfigurationBuilder.newCacheConfigurationBuilder(Path.class, Object.class, pools)
+                .withCache("mediaFilePathCache",
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, MediaFile.class, pools)
                                 .withClassLoader(cl)
-                                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofMinutes(10)))
+                                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofHours(2)))
+                                .withService(cacheLogging))
+                .withCache("mediaFileIdCache",
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(Integer.class, MediaFile.class, pools)
+                                .withClassLoader(cl)
+                                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofHours(2)))
                                 .withService(cacheLogging))
                 .withCache("playlistCache",
-                        CacheConfigurationBuilder.newCacheConfigurationBuilder(Integer.class, Object.class, pools)
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(Integer.class, Playlist.class, pools)
                                 .withClassLoader(cl)
                                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(10)))
                                 .withService(cacheLogging))
