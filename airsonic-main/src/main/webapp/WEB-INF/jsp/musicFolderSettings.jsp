@@ -105,6 +105,12 @@
     </div>
 
     <div>
+        <form:checkbox path="hideIndexedFiles" id="hideIndexedFiles"/>
+        <form:label path="hideIndexedFiles"><fmt:message key="musicfoldersettings.hideindexedfiles"/></form:label>
+        <c:import url="helpToolTip.jsp"><c:param name="topic" value="hideindexedfiles"/></c:import>
+    </div>
+
+    <div>
         <form:checkbox path="fullScan" cssClass="checkbox" id="fullScan"/>
         <form:label path="fullScan"><fmt:message key="musicfoldersettings.fullscan"/></form:label>
         <c:import url="helpToolTip.jsp"><c:param name="topic" value="fullscan"/></c:import>

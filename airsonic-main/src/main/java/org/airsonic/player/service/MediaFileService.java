@@ -19,7 +19,8 @@
  */
 package org.airsonic.player.service;
 
-import com.google.common.io.MoreFiles;
+import com.ibm.icu.text.CharsetDetector;
+import com.ibm.icu.text.CharsetMatch;
 import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;
@@ -34,6 +35,11 @@ import org.airsonic.player.service.metadata.MetaDataParserFactory;
 import org.airsonic.player.util.FileUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
+import org.digitalmediaserver.cuelib.CueParser;
+import org.digitalmediaserver.cuelib.CueSheet;
+import org.digitalmediaserver.cuelib.Position;
+import org.digitalmediaserver.cuelib.TrackData;
+import org.digitalmediaserver.cuelib.io.FLACReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +48,10 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -165,6 +174,20 @@ public class MediaFileService {
     }
 
     /**
+     * Returns all user-visible media files that are children of a given media file
+     *
+     * visibility depends on the return value of showMediaFile(mediaFile)
+     *
+     * @param sort               Whether to sort files in the same directory
+     * @return All children media files which pass this::showMediaFile
+     */
+    public List<MediaFile> getVisibleChildrenOf(MediaFile parent, boolean includeDirectories, boolean sort) {
+        return getChildrenOf(parent, true, includeDirectories, sort, settingsService.isFastCacheEnabled()).stream()
+                .filter(this::showMediaFile)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Returns all media files that are children of a given media file.
      *
      * @param includeFiles       Whether files should be included in the result.
@@ -182,6 +205,7 @@ public class MediaFileService {
      * @param includeFiles       Whether files should be included in the result.
      * @param includeDirectories Whether directories should be included in the result.
      * @param sort               Whether to sort files in the same directory.
+     * @param minimizeDiskAccess Whether to refrain from checking for new or changed files
      * @return All children media files.
      */
     public List<MediaFile> getChildrenOf(MediaFile parent, boolean includeFiles, boolean includeDirectories, boolean sort, boolean minimizeDiskAccess) {
@@ -372,19 +396,23 @@ public class MediaFileService {
     }
 
     private List<MediaFile> updateChildren(MediaFile parent) {
+
         // Check timestamps.
         if (parent.getChildrenLastUpdated().compareTo(parent.getChanged()) >= 0) {
             return null;
         }
 
-        Map<String, MediaFile> storedChildrenMap = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), false).parallelStream().collect(Collectors.toConcurrentMap(i -> i.getPath(), i -> i));
+        // do not get (non-existing) children for indexed tracks to avoid map key clashes
+        Map<String, MediaFile> storedChildrenMap = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), false, true).parallelStream().collect(Collectors.toConcurrentMap(i -> i.getPath(), i -> i));
         MusicFolder folder = mediaFolderService.getMusicFolderById(parent.getFolderId());
+
         try (Stream<Path> children = Files.list(parent.getFullPath(folder.getPath()))) {
             List<MediaFile> result = children.parallel()
                     .filter(this::includeMediaFile)
                     .filter(x -> securityService.getMusicFolderForFile(x, true, true).getId().equals(parent.getFolderId()))
                     .map(x -> folder.getPath().relativize(x))
                     .map(x -> {
+                        List<MediaFile> tracks = new ArrayList<>();
                         MediaFile media = storedChildrenMap.remove(x.toString());
                         if (media == null) {
                             media = createMediaFile(x, folder, null);
@@ -394,8 +422,18 @@ public class MediaFileService {
                             media = checkLastModified(media, folder, false); // has to be false, only time it's called
                         }
 
-                        return media;
+                        tracks.add(media);
+
+                        if (media.hasIndex()) {
+                            List<MediaFile> cueTracks = createIndexedTracks(media, folder);
+                            cueTracks.forEach(cueTrack -> {
+                                updateMediaFile(cueTrack);
+                                tracks.add(cueTrack);
+                            });
+                        }
+                        return tracks;
                     })
+                    .flatMap(List::stream)
                     .collect(Collectors.toList());
 
             // Delete children that no longer exist on disk.
@@ -414,12 +452,19 @@ public class MediaFileService {
         }
     }
 
+    /**
+     * hide specific file types in player and API
+     */
+    public boolean showMediaFile(MediaFile media) {
+        return !(settingsService.getHideIndexedFiles() && media.hasIndex());
+    }
+
     public boolean includeMediaFile(MediaFile candidate, MusicFolder folder) {
         return includeMediaFile(candidate.getFullPath(folder.getPath()));
     }
 
     public boolean includeMediaFile(Path candidate) {
-        String suffix = MoreFiles.getFileExtension(candidate).toLowerCase();
+        String suffix = FilenameUtils.getExtension(candidate.toString()).toLowerCase();
         return (!isExcluded(candidate) && (Files.isDirectory(candidate) || isAudioFile(suffix) || isVideoFile(suffix)));
     }
 
@@ -512,6 +557,9 @@ public class MediaFileService {
             String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(mediaFile.getPath())));
             mediaFile.setFormat(format);
             mediaFile.setFileSize(FileUtil.size(file));
+            getCuePath(relativePath, folder).ifPresent(cuePath -> {
+                mediaFile.setIndexPath(folder.getPath().relativize(cuePath).toString());
+            });
             mediaFile.setMediaType(getMediaType(mediaFile, folder));
 
         } else {
@@ -561,6 +609,84 @@ public class MediaFileService {
         return mediaFile;
     }
 
+    private List<MediaFile> createIndexedTracks(MediaFile media, MusicFolder folder) {
+        try {
+            List<MediaFile> children = new ArrayList<>();
+            Path audioFile = media.getFullPath(folder.getPath());
+            MetaDataParser parser = metaDataParserFactory.getParser(audioFile);
+            MetaData metaData = null;
+            if (parser != null) {
+                metaData = parser.getMetaData(audioFile);
+            }
+            long wholeFileSize = Files.size(audioFile);
+            double wholeFileLength = 0.0; //todo: find sound length without metadata
+            if (metaData != null) {
+                wholeFileLength = (metaData.getDuration() != null) ? metaData.getDuration() : 0.0;
+            }
+
+            CueSheet cueSheet = getCueSheet(media, folder);
+            if (cueSheet != null) {
+                for (int i = 0; i < cueSheet.getAllTrackData().size(); i++) {
+                    TrackData trackData = cueSheet.getAllTrackData().get(i);
+                    MediaFile mediaFile = new MediaFile();
+                    mediaFile.setPath(media.getPath().toString());
+                    mediaFile.setAlbumArtist(cueSheet.getPerformer());
+                    mediaFile.setAlbumName(cueSheet.getTitle());
+                    mediaFile.setTitle(trackData.getTitle());
+                    mediaFile.setArtist(trackData.getPerformer());
+                    mediaFile.setParentPath(media.getParentPath());
+                    Instant lastModified = FileUtil.lastModified(audioFile);
+                    mediaFile.setFolderId(media.getFolderId());
+                    mediaFile.setChanged(lastModified);
+                    mediaFile.setLastScanned(Instant.now());
+                    mediaFile.setChildrenLastUpdated(Instant.ofEpochMilli(1)); //distant past
+                    mediaFile.setCreated(lastModified);
+                    mediaFile.setPresent(true);
+                    mediaFile.setTrackNumber(trackData.getNumber());
+
+                    if (metaData != null) {
+                        mediaFile.setDiscNumber(metaData.getDiscNumber());
+                        mediaFile.setGenre(metaData.getGenre());
+                        mediaFile.setYear(metaData.getYear());
+                        mediaFile.setBitRate(metaData.getBitRate());
+                        mediaFile.setVariableBitRate(metaData.getVariableBitRate());
+                        mediaFile.setHeight(metaData.getHeight());
+                        mediaFile.setWidth(metaData.getWidth());
+                    }
+
+                    String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(audioFile.toString())));
+                    mediaFile.setFormat(format);
+
+                    Position currentPosition = trackData.getIndices().get(0).getPosition();
+                    // convert CUE timestamp (minutes:seconds:frames, 75 frames/second) to fractional seconds
+                    double currentStart = currentPosition.getMinutes() * 60 + currentPosition.getSeconds() + (currentPosition.getFrames() / 75);
+                    mediaFile.setStartPosition(currentStart);
+
+                    double nextStart = 0.0;
+                    if (cueSheet.getAllTrackData().size() - 1 != i) {
+                        Position nextPosition = cueSheet.getAllTrackData().get(i + 1).getIndices().get(0).getPosition();
+                        nextStart = nextPosition.getMinutes() * 60 + nextPosition.getSeconds() + (nextPosition.getFrames() / 75);
+                    } else {
+                        nextStart = wholeFileLength;
+                    }
+
+                    mediaFile.setDuration(nextStart - currentStart);
+                    mediaFile.setFileSize((long) (mediaFile.getDuration() / wholeFileLength * wholeFileSize)); //approximate
+                    MediaFile existingFile = mediaFileDao.getMediaFile(mediaFile.getPath(), folder.getId(), currentStart);
+                    mediaFile.setPlayCount(existingFile == null ? 0 : existingFile.getPlayCount());
+                    mediaFile.setLastPlayed(existingFile == null ? null : existingFile.getLastPlayed());
+                    mediaFile.setComment(existingFile == null ? null : existingFile.getComment());
+                    mediaFile.setMediaType(getMediaType(mediaFile, folder));
+
+                    children.add(mediaFile);
+                }
+            }
+            return children;
+        } catch (IOException e) {
+            return Collections.emptyList();
+        }
+    }
+
     private MediaFile.MediaType getMediaType(MediaFile mediaFile, MusicFolder folder) {
         if (folder.getType() == Type.PODCAST) {
             return MediaType.PODCAST;
@@ -570,12 +696,15 @@ public class MediaFileService {
         }
         String path = mediaFile.getPath().toLowerCase();
         String genre = StringUtils.trimToEmpty(mediaFile.getGenre()).toLowerCase();
-        if (path.contains("podcast") || genre.contains("podcast")) {
+        if (path.contains("podcast") || genre.contains("podcast") || path.contains("netcast") || genre.contains("netcast")) {
             return MediaFile.MediaType.PODCAST;
         }
-        if (path.contains("audiobook") || genre.contains("audiobook") || path.contains("audio book") || genre.contains("audio book")) {
+        if (path.contains("audiobook") || genre.contains("audiobook")
+                || path.contains("audio book") || genre.contains("audio book")
+                || path.contains("audio/book") || path.contains("audio\\book")) {
             return MediaFile.MediaType.AUDIOBOOK;
         }
+
         return MediaFile.MediaType.MUSIC;
     }
 
@@ -591,6 +720,68 @@ public class MediaFileService {
 
     public boolean getMemoryCacheEnabled() {
         return memoryCacheEnabled;
+    }
+
+    /**
+     * Returns an Optional Path to a CUE file for the given media file
+     * matches on file name minus extension
+     * if no separate CUE file is found it looks for an embedded cuesheet (currently only supports FLAC) and
+     * returns the resolvedPath for the mediaFile if one is found
+     */
+    private Optional<Path> getCuePath(Path path, MusicFolder folder) {
+        Path resolvedPath = folder.getPath().resolve(path);
+        Optional<Path> result = Optional.empty();
+
+        try (Stream<Path> list = Files.list(resolvedPath.getParent())) {
+            result = list
+                .filter(p -> !Files.isDirectory(p))
+                .filter(f -> "cue".equalsIgnoreCase(FilenameUtils.getExtension(f.toString()))
+                             && FilenameUtils.getBaseName(f.toString()).equals(FilenameUtils.getBaseName(resolvedPath.toString())))
+                .findFirst();
+
+            // look for embedded cuesheet in FLAC
+            if (result.isEmpty() && ("flac".equalsIgnoreCase(FilenameUtils.getExtension(resolvedPath.toString())) && (FLACReader.getCueSheet(resolvedPath) != null))) {
+                result = Optional.of(resolvedPath);
+            }
+        } catch (IOException e) {
+            LOG.warn("getCuePath {} {}", path, folder, e);
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns a parsed CueSheet for the given mediaFile
+     */
+    private CueSheet getCueSheet(MediaFile media, MusicFolder folder) {
+        try {
+            // is this an embedded cuesheet (currently only supports FLAC+CUE)?
+            if (Objects.equals(media.getIndexPath(), media.getPath())) {
+                return FLACReader.getCueSheet(media.getFullPath(folder.getPath()));
+            } else {
+                Charset cs = Charset.forName("UTF-8"); // default to UTF-8
+                Path indexPath = media.getFullIndexPath(folder.getPath());
+
+                // attempt to detect encoding for cueFile, fallback to UTF-8
+                int THRESHOLD = 35; // 0-100, the higher the more certain the guess
+                CharsetDetector cd = new CharsetDetector();
+                try (FileInputStream fis = new FileInputStream(indexPath.toFile());
+                     BufferedInputStream bis = new BufferedInputStream(fis);) {
+                    cd.setText(bis);
+                    CharsetMatch cm = cd.detect();
+                    if (cm != null && cm.getConfidence() > THRESHOLD) {
+                        cs = Charset.forName(cm.getName());
+                    }
+                } catch (IOException e) {
+                    LOG.warn("Defaulting to UTF-8 for cuesheet {}", indexPath);
+                }
+
+                return CueParser.parse(indexPath, cs);
+            }
+        } catch (IOException e) {
+            LOG.warn("Error getting cuesheet for {} {}", media, folder);
+            return null;
+        }
     }
 
     /**

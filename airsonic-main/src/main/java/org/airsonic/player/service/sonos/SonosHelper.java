@@ -126,7 +126,7 @@ public class SonosHelper {
         List<MediaFile> albums = searchService.getRandomAlbums(40, musicFolders);
         List<MediaFile> songs = new ArrayList<MediaFile>();
         for (MediaFile album : albums) {
-            songs.addAll(filterMusic(mediaFileService.getChildrenOf(album, true, false, false)));
+            songs.addAll(filterMusic(mediaFileService.getVisibleChildrenOf(album, false, false)));
         }
         Collections.shuffle(songs);
         songs = songs.subList(0, Math.min(count, songs.size()));
@@ -146,7 +146,7 @@ public class SonosHelper {
 
         List<MediaFile> songs = new ArrayList<MediaFile>();
         for (MediaFile album : albumList.getAlbums()) {
-            songs.addAll(filterMusic(mediaFileService.getChildrenOf(album, true, false, false)));
+            songs.addAll(filterMusic(mediaFileService.getVisibleChildrenOf(album, false, false)));
         }
         Collections.shuffle(songs);
         songs = songs.subList(0, Math.min(count, songs.size()));
@@ -221,7 +221,7 @@ public class SonosHelper {
     public List<AbstractMedia> forDirectoryContent(int mediaFileId, String username, HttpServletRequest request) {
         List<AbstractMedia> result = new ArrayList<AbstractMedia>();
         MediaFile dir = mediaFileService.getMediaFile(mediaFileId);
-        List<MediaFile> children = dir.isFile() ? Arrays.asList(dir) : mediaFileService.getChildrenOf(dir, true, true, true);
+        List<MediaFile> children = dir.isFile() ? Arrays.asList(dir) : mediaFileService.getVisibleChildrenOf(dir, true, true);
         boolean isArtist = true;
         for (MediaFile child : children) {
             if (child.isDirectory()) {

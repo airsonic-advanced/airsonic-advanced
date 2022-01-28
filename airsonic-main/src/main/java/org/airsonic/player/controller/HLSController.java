@@ -68,6 +68,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.awt.*;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -116,7 +117,9 @@ public class HLSController {
 
     @PostConstruct
     public void init() {
-        FileUtil.delete(HlsSession.getHlsRootDirectory());
+        if (Files.exists(HlsSession.getHlsRootDirectory())) {
+            FileUtil.delete(HlsSession.getHlsRootDirectory());
+        }
     }
 
     @GetMapping("/hls.m3u8")

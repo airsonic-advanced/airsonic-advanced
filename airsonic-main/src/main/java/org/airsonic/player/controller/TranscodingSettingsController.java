@@ -57,6 +57,8 @@ public class TranscodingSettingsController {
 
         map.put("transcodings", transcodingService.getAllTranscodings());
         map.put("transcodeDirectory", SettingsService.getTranscodeDirectory());
+        map.put("splitOptions", settingsService.getSplitOptions());
+        map.put("splitCommand", settingsService.getSplitCommand());
         map.put("downsampleCommand", settingsService.getDownsamplingCommand());
         map.put("hlsCommand", settingsService.getHlsCommand());
         map.put("jukeboxCommand", settingsService.getJukeboxCommand());
@@ -138,6 +140,8 @@ public class TranscodingSettingsController {
                 return error;
             }
         }
+        settingsService.setSplitOptions(StringUtils.trim(request.getParameter("splitOptions")));
+        settingsService.setSplitCommand(StringUtils.trim(request.getParameter("splitCommand")));
         settingsService.setDownsamplingCommand(StringUtils.trim(request.getParameter("downsampleCommand")));
         settingsService.setHlsCommand(StringUtils.trim(request.getParameter("hlsCommand")));
         settingsService.setJukeboxCommand(StringUtils.trim(request.getParameter("jukeboxCommand")));
