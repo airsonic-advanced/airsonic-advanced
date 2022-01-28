@@ -63,7 +63,7 @@ public class AddMediaFileIdToPodcastChannels implements CustomSqlChange {
                     String title = rs2.getString("title");
                     if (StringUtils.isNotEmpty(title)) {
                         Path channelFolder = folderPath.resolve(StringUtil.fileSystemSafe(title));
-                        try (PreparedStatement st3 = conn.prepareStatement("SELECT id FROM media_file WHERE path='" + channelFolder.toString() + "';");
+                        try (PreparedStatement st3 = conn.prepareStatement("SELECT id FROM media_file WHERE path='" + channelFolder.toString().replace("'","''") + "';");
                                 ResultSet rs3 = st3.executeQuery()) {
                             while (rs3.next()) {
                                 idToMediaFile.put(rs2.getInt("id"), rs3.getInt("id"));
