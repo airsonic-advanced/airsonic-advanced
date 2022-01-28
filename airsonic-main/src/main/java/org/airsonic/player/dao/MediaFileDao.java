@@ -89,7 +89,7 @@ public class MediaFileDao extends AbstractDao {
      * Returns the media file that are direct children of the given path.
      *
      * @param path The path.
-     * @param folderid root folder
+     * @param folderId root folder
      * @param onlyPresent only return files which are marked as being present
      * @param noIndexedTracks do not return indexed tracks
      * @return The list of children.
