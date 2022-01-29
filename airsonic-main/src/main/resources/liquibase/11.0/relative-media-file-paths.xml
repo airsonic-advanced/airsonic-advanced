@@ -115,7 +115,7 @@
             <columnExists tableName="user_rating" columnName="path"/>
         </preConditions>
         <delete tableName="user_rating">
-            <where>path IN (SELECT ur.path FROM user_rating ur LEFT JOIN media_file m ON ur.path=m.path WHERE m.path IS NULL)</where>
+            <where>path IN (SELECT * FROM (SELECT ur.path FROM user_rating ur LEFT JOIN media_file m ON ur.path=m.path WHERE m.path IS NULL) tbl_tmp)</where>
         </delete>
         <rollback></rollback>
     </changeSet>
@@ -213,7 +213,7 @@
             <columnExists tableName="share_file" columnName="path"/>
         </preConditions>
         <delete tableName="share_file">
-            <where>path IN (SELECT sf.path FROM share_file sf LEFT JOIN media_file m ON sf.path=m.path WHERE m.path IS NULL)</where>
+            <where>path IN (SELECT * FROM (SELECT sf.path FROM share_file sf LEFT JOIN media_file m ON sf.path=m.path WHERE m.path IS NULL) tbl_tmp)</where>
         </delete>
         <rollback></rollback>
     </changeSet>
