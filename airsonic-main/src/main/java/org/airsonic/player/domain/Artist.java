@@ -20,6 +20,8 @@
 package org.airsonic.player.domain;
 
 import java.time.Instant;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -34,6 +36,7 @@ public class Artist {
     private Instant lastScanned;
     private boolean present;
     private Integer folderId;
+    private Set<Integer> albumIds = ConcurrentHashMap.newKeySet();
 
     public Artist() {
     }
@@ -94,6 +97,15 @@ public class Artist {
     public Integer getFolderId() {
         return folderId;
     }
+
+    public Set<Integer> getAlbumIds() {
+        return albumIds;
+    }
+
+    public void setAlbumIds(Set<Integer> albumIds) {
+        this.albumIds = albumIds;
+    }
+
 
     // placeholder for persistence later
     private CoverArt art;

@@ -22,6 +22,8 @@ package org.airsonic.player.domain;
 import com.google.common.util.concurrent.AtomicDouble;
 
 import java.time.Instant;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -46,6 +48,8 @@ public class Album {
     private boolean present;
     private Integer folderId;
     private String musicBrainzReleaseId;
+    private Set<Integer> mediaFileIds = ConcurrentHashMap.newKeySet();
+    private Set<Genre> genres = ConcurrentHashMap.newKeySet();
 
     public Album() {
     }
@@ -209,6 +213,22 @@ public class Album {
 
     public void setMusicBrainzReleaseId(String musicBrainzReleaseId) {
         this.musicBrainzReleaseId = musicBrainzReleaseId;
+    }
+
+    public Set<Integer> getMediaFileIds() {
+        return mediaFileIds;
+    }
+
+    public void setMediaFileIds(Set<Integer> mediaFileIds) {
+        this.mediaFileIds = mediaFileIds;
+    }
+
+    public Set<Genre> getGenres() {
+        return genres;
+    }
+
+    public void setGenres(Set<Genre> genres) {
+        this.genres = genres;
     }
 
     // placeholder for persistence later
