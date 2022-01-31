@@ -20,6 +20,7 @@
 package org.airsonic.player.dao;
 
 import org.airsonic.player.domain.Album;
+import org.airsonic.player.domain.Genre;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.apache.commons.lang.ObjectUtils;
@@ -32,6 +33,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.reducing;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Provides database services for albums.
@@ -40,16 +47,29 @@ import java.util.*;
  */
 @Repository
 public class AlbumDao extends AbstractDao {
-    private static final String INSERT_COLUMNS = "path, name, artist, song_count, duration, " +
-                                          "year, genre, play_count, last_played, comment, created, last_scanned, present, " +
-                                          "folder_id, mb_release_id";
+    private static final String ALBUM_INSERT_COLUMNS = "name, artist, song_count, duration, year, play_count, last_played, comment, created, last_scanned, present, mb_release_id";
+    private static final String ALBUM_QUERY_COLUMNS = "id, " + ALBUM_INSERT_COLUMNS;
+    private static final String QUERY_COLUMNS = prefix(ALBUM_QUERY_COLUMNS, "a") + ", ag.genre, af.media_file_id";
 
-    private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
+    private final DBAlbumMapper rowMapper = new DBAlbumMapper();
 
-    private final AlbumMapper rowMapper = new AlbumMapper();
+    private static String constructAlbumQuery(boolean withMediaFileJoin, String... criteria) {
+        String sql = "select " + QUERY_COLUMNS + " from album a "
+                + " left join album_file af on a.id = af.album_id "
+                + " left join album_genre ag on a.id = ag.album_id";
+
+        if (withMediaFileJoin) {
+            sql = sql + " left join media_file m on af.media_file_id = m.id";
+        }
+
+        if (criteria.length == 0) {
+            return sql;
+        }
+        return sql + Stream.of(criteria).collect(joining(" and ", " where ", ""));
+    }
 
     public Album getAlbum(int id) {
-        return queryOne("select " + QUERY_COLUMNS + " from album where id=?", rowMapper, id);
+        return queryOneAlbum(consolidateDBAlbums(query(constructAlbumQuery(false, "a.id=?"), rowMapper, id)));
     }
 
     /**
@@ -60,7 +80,7 @@ public class AlbumDao extends AbstractDao {
      * @return The album or null.
      */
     public Album getAlbum(String artistName, String albumName) {
-        return queryOne("select " + QUERY_COLUMNS + " from album where artist=? and name=?", rowMapper, artistName, albumName);
+        return queryOneAlbum(consolidateDBAlbums(query(constructAlbumQuery(false, "a.artist=?", "a.name=?"), rowMapper, artistName, albumName)));
     }
 
     /**
@@ -72,7 +92,7 @@ public class AlbumDao extends AbstractDao {
     public Album getAlbumForFile(MediaFile file) {
 
         // First, get all albums with the correct album name (irrespective of artist).
-        List<Album> candidates = query("select " + QUERY_COLUMNS + " from album where name=?", rowMapper, file.getAlbumName());
+        List<Album> candidates = consolidateDBAlbums(query(constructAlbumQuery(false, "a.name=?"), rowMapper, file.getAlbumName()));
         if (candidates.isEmpty()) {
             return null;
         }
@@ -84,15 +104,8 @@ public class AlbumDao extends AbstractDao {
             }
         }
 
-        // Look for album with the same path as the file.
-        for (Album candidate : candidates) {
-            if (ObjectUtils.equals(candidate.getPath(), file.getParentPath()) && ObjectUtils.equals(candidate.getFolderId(), file.getFolderId())) {
-                return candidate;
-            }
-        }
-
-        // No appropriate album found.
-        return null;
+        // Look for album with the same mediaFileId as the file.
+        return candidates.stream().filter(c -> c.getMediaFileIds().contains(file.getId())).findAny().orElse(null);
     }
 
     public List<Album> getAlbumsForArtist(final String artist, final List<MusicFolder> musicFolders) {
@@ -102,10 +115,11 @@ public class AlbumDao extends AbstractDao {
         Map<String, Object> args = new HashMap<>();
         args.put("artist", artist);
         args.put("folders", MusicFolder.toIdList(musicFolders));
-        return namedQuery("select " + QUERY_COLUMNS
-                          + " from album where artist = :artist and present and folder_id in (:folders) " +
-                          "order by name",
-                          rowMapper, args);
+
+        return consolidateDBAlbums(namedQuery(
+                constructAlbumQuery(true, "a.artist = :artist", "a.present", "m.folder_id in (:folders)")
+                    + " order by a.name",
+                rowMapper, args));
     }
 
     /**
@@ -116,35 +130,47 @@ public class AlbumDao extends AbstractDao {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createOrUpdateAlbum(Album album) {
         String sql = "update album set " +
-                     "path=?," +
                      "song_count=?," +
                      "duration=?," +
                      "year=?," +
-                     "genre=?," +
                      "play_count=?," +
                      "last_played=?," +
                      "comment=?," +
                      "created=?," +
                      "last_scanned=?," +
                      "present=?, " +
-                     "folder_id=?, " +
                      "mb_release_id=? " +
                      "where artist=? and name=?";
 
-        int n = update(sql, album.getPath(), album.getSongCount(), album.getDuration(), album.getYear(),
-                       album.getGenre(), album.getPlayCount(), album.getLastPlayed(), album.getComment(), album.getCreated(),
-                       album.getLastScanned(), album.isPresent(), album.getFolderId(), album.getMusicBrainzReleaseId(), album.getArtist(), album.getName());
+        int n = update(sql, album.getSongCount(), album.getDuration(), album.getYear(), album.getPlayCount(),
+                album.getLastPlayed(), album.getComment(), album.getCreated(), album.getLastScanned(),
+                album.isPresent(), album.getMusicBrainzReleaseId(), album.getArtist(), album.getName());
 
         if (n == 0) {
-
-            update("insert into album (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")", album.getPath(),
+            update("insert into album (" + ALBUM_INSERT_COLUMNS + ") values (" + questionMarks(ALBUM_INSERT_COLUMNS) + ")",
                    album.getName(), album.getArtist(), album.getSongCount(), album.getDuration(),
-                   album.getYear(), album.getGenre(), album.getPlayCount(), album.getLastPlayed(),
-                   album.getComment(), album.getCreated(), album.getLastScanned(), album.isPresent(), album.getFolderId(), album.getMusicBrainzReleaseId());
+                   album.getYear(), album.getPlayCount(), album.getLastPlayed(),
+                   album.getComment(), album.getCreated(), album.getLastScanned(), album.isPresent(), album.getMusicBrainzReleaseId());
         }
 
         int id = queryForInt("select id from album where artist=? and name=?", null, album.getArtist(), album.getName());
         album.setId(id);
+        updateAlbumFileIds(album);
+        updateAlbumGenres(album);
+    }
+
+    public void updateAlbumFileIds(Album album) {
+        // TODO we could do a diff with db and insert or delete only relevant ids
+        update("delete from album_file where album_id=?", album.getId());
+        batchedUpdate("insert into album_file(album_id, media_file_id) values (?,?)",
+                album.getMediaFileIds().parallelStream().map(id -> new Object[] { album.getId(), id }).collect(Collectors.toList()));
+    }
+
+    public void updateAlbumGenres(Album album) {
+        // TODO we could do a diff with db and insert or delete only relevant genres
+        update("delete from album_genre where album_id=?", album.getId());
+        batchedUpdate("insert into album_genre(album_id, genre) values (?,?)",
+                album.getGenres().parallelStream().map(g -> new Object[] { album.getId(), g.getName() }).collect(Collectors.toList()));
     }
 
     /**
@@ -167,13 +193,15 @@ public class AlbumDao extends AbstractDao {
         args.put("offset", offset);
         String orderBy;
         if (ignoreCase) {
-            orderBy = byArtist ? "LOWER(artist),  LOWER(name)" : "LOWER(name)";
+            orderBy = byArtist ? "LOWER(a.artist),  LOWER(a.name)" : "LOWER(a.name)";
         } else {
-            orderBy = byArtist ? "artist, name" : "name";
+            orderBy = byArtist ? "a.artist, a.name" : "a.name";
         }
 
-        return namedQuery("select " + QUERY_COLUMNS + " from album where present and folder_id in (:folders) " +
-                          "order by " + orderBy + ", id limit :count offset :offset", rowMapper, args);
+        return consolidateDBAlbums(namedQuery(
+                constructAlbumQuery(true, "a.present", "m.folder_id in (:folders)")
+                    + " order by " + orderBy + ", a.id limit :count offset :offset",
+                rowMapper, args));
     }
 
     /**
@@ -189,7 +217,7 @@ public class AlbumDao extends AbstractDao {
         Map<String, Object> args = new HashMap<String, Object>();
         args.put("folders", MusicFolder.toIdList(musicFolders));
 
-        return namedQueryForInt("select count(*) from album where present and folder_id in (:folders)", 0, args);
+        return namedQueryForInt("select count(distinct a.id) from album a left join album_file af on a.id=af.album_id left join media_file mf on af.media_file_id = mf.id where a.present and m.folder_id in (:folders)", 0, args);
     }
 
     /**
@@ -208,9 +236,10 @@ public class AlbumDao extends AbstractDao {
         args.put("folders", MusicFolder.toIdList(musicFolders));
         args.put("count", count);
         args.put("offset", offset);
-        return namedQuery("select " + QUERY_COLUMNS
-                          + " from album where play_count > 0 and present and folder_id in (:folders) " +
-                          "order by play_count desc, id limit :count offset :offset", rowMapper, args);
+        return consolidateDBAlbums(namedQuery(
+                constructAlbumQuery(true, "a.present", "m.folder_id in (:folders)", "a.play_count > 0")
+                    + " order by a.play_count desc, a.id limit :count offset :offset",
+                rowMapper, args));
     }
 
     /**
@@ -229,9 +258,10 @@ public class AlbumDao extends AbstractDao {
         args.put("folders", MusicFolder.toIdList(musicFolders));
         args.put("count", count);
         args.put("offset", offset);
-        return namedQuery("select " + QUERY_COLUMNS
-                          + " from album where last_played is not null and present and folder_id in (:folders) " +
-                          "order by last_played desc, id limit :count offset :offset", rowMapper, args);
+        return consolidateDBAlbums(namedQuery(
+                constructAlbumQuery(true, "a.present", "m.folder_id in (:folders)", "a.last_played is not null")
+                    + " order by a.last_played desc, a.id limit :count offset :offset",
+                rowMapper, args));
     }
 
     /**
@@ -250,8 +280,10 @@ public class AlbumDao extends AbstractDao {
         args.put("folders", MusicFolder.toIdList(musicFolders));
         args.put("count", count);
         args.put("offset", offset);
-        return namedQuery("select " + QUERY_COLUMNS + " from album where present and folder_id in (:folders) " +
-                "order by created desc, id desc limit :count offset :offset", rowMapper, args);
+        return consolidateDBAlbums(namedQuery(
+                constructAlbumQuery(true, "a.present", "m.folder_id in (:folders)")
+                    + " order by a.created desc, a.id desc limit :count offset :offset",
+                rowMapper, args));
     }
 
     /**
@@ -272,10 +304,20 @@ public class AlbumDao extends AbstractDao {
         args.put("count", count);
         args.put("offset", offset);
         args.put("username", username);
-        return namedQuery("select " + prefix(QUERY_COLUMNS, "album") + " from starred_album, album where album.id = starred_album.album_id and " +
-                          "album.present and album.folder_id in (:folders) and starred_album.username = :username " +
-                          "order by starred_album.created desc, id limit :count offset :offset",
-                          rowMapper, args);
+
+        String sql = ""
+                + "select a.*, af.media_file_id, ag.genre "
+                + "from album a "
+                + "join starred_album sa on a.id = sa.album_id "
+                + "left join album_file af on a.id = af.album_id "
+                + "left join album_genre ag on a.id = ag.album_id "
+                + "left join media_file m on af.media_file_id = m.id "
+                + "where a.present "
+                + "and m.folder_id in (:folders) "
+                + "and sa.username = :username "
+                + "order by sa.created desc, a.id limit :count offset :offset";
+
+        return consolidateDBAlbums(namedQuery(sql, rowMapper, args));
     }
 
     /**
@@ -287,7 +329,7 @@ public class AlbumDao extends AbstractDao {
      * @param musicFolders Only return albums from these folders.
      * @return Albums in the genre.
      */
-    public List<Album> getAlbumsByGenre(final int offset, final int count, final String genre, final List<MusicFolder> musicFolders) {
+    public List<Album> getAlbumsByGenre(final int offset, final int count, final Set<Genre> genres, final List<MusicFolder> musicFolders) {
         if (musicFolders.isEmpty()) {
             return Collections.emptyList();
         }
@@ -295,9 +337,11 @@ public class AlbumDao extends AbstractDao {
         args.put("folders", MusicFolder.toIdList(musicFolders));
         args.put("count", count);
         args.put("offset", offset);
-        args.put("genre", genre);
-        return namedQuery("select " + QUERY_COLUMNS + " from album where present and folder_id in (:folders) " +
-                          "and genre = :genre order by id limit :count offset :offset", rowMapper, args);
+        args.put("genres", genres);
+        return consolidateDBAlbums(namedQuery(
+                constructAlbumQuery(true, "a.present", "m.folder_id in (:folders)", "ag.genre in (:genres)")
+                    + " order by a.id limit :count offset :offset",
+                rowMapper, args));
     }
 
     /**
@@ -310,8 +354,7 @@ public class AlbumDao extends AbstractDao {
      * @param musicFolders Only return albums from these folders.
      * @return Albums in the year range.
      */
-    public List<Album> getAlbumsByYear(final int offset, final int count, final int fromYear, final int toYear,
-                                       final List<MusicFolder> musicFolders) {
+    public List<Album> getAlbumsByYear(final int offset, final int count, final int fromYear, final int toYear, final List<MusicFolder> musicFolders) {
         if (musicFolders.isEmpty()) {
             return Collections.emptyList();
         }
@@ -322,13 +365,15 @@ public class AlbumDao extends AbstractDao {
         args.put("fromYear", fromYear);
         args.put("toYear", toYear);
         if (fromYear <= toYear) {
-            return namedQuery("select " + QUERY_COLUMNS + " from album where present and folder_id in (:folders) " +
-                              "and year between :fromYear and :toYear order by year, id limit :count offset :offset",
-                              rowMapper, args);
+            return consolidateDBAlbums(namedQuery(
+                    constructAlbumQuery(true, "a.present", "m.folder_id in (:folders)", "year between :fromYear and :toYear")
+                            + " order by a.year, a.id limit :count offset :offset",
+                    rowMapper, args));
         } else {
-            return namedQuery("select " + QUERY_COLUMNS + " from album where present and folder_id in (:folders) " +
-                              "and year between :toYear and :fromYear order by year desc, id limit :count offset :offset",
-                              rowMapper, args);
+            return consolidateDBAlbums(namedQuery(
+                    constructAlbumQuery(true, "a.present", "m.folder_id in (:folders)", "year between :toYear and :fromYear")
+                            + " order by a.year desc, a.id limit :count offset :offset",
+                    rowMapper, args));
         }
     }
 
@@ -357,26 +402,74 @@ public class AlbumDao extends AbstractDao {
         return queryForInstant("select created from starred_album where album_id=? and username=?", null, albumId, username);
     }
 
-    private static class AlbumMapper implements RowMapper<Album> {
+    private Album queryOneAlbum(List<Album> albums) {
+        if (albums.size() == 0) {
+            return null;
+        }
+        return albums.get(0);
+    }
+
+    private List<Album> consolidateDBAlbums(List<DBAlbum> albums) {
+        if (albums == null) {
+            return null;
+        }
+        return albums.stream().collect(Collectors.groupingBy(DBAlbum::getId, reducing((da1, da2) -> {
+            if (da1.getMediaFileId() != null) {
+                da1.getMediaFileIds().add(da1.getMediaFileId());
+            }
+            if (da2.getMediaFileId() != null) {
+                da1.getMediaFileIds().add(da2.getMediaFileId());
+            }
+            if (da1.getGenre() != null) {
+                da1.getGenres().add(da1.getGenre());
+            }
+            if (da2.getGenre() != null) {
+                da1.getGenres().add(da2.getGenre());
+            }
+            return da1;
+        }))).values().stream().filter(Optional::isPresent).map(Optional::get).collect(toList());
+    }
+
+    private static class DBAlbum extends Album {
+        public DBAlbum(int id, String name, String artist, int songCount, double duration, Integer year,
+                int playCount, Instant lastPlayed, String comment, Instant created, Instant lastScanned,
+                boolean present, String musicBrainzReleaseId, Integer mediaFileId, Genre genre) {
+            super(id, name, artist, songCount, duration, year, playCount, lastPlayed, comment, created, lastScanned, present, musicBrainzReleaseId);
+            this.mediaFileId = mediaFileId;
+            this.genre = genre;
+        }
+
+        private Integer mediaFileId;
+        private Genre genre;
+
+        public Integer getMediaFileId() {
+            return mediaFileId;
+        }
+
+        public Genre getGenre() {
+            return genre;
+        }
+    }
+
+    private static class DBAlbumMapper implements RowMapper<DBAlbum> {
         @Override
-        public Album mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new Album(
+        public DBAlbum mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new DBAlbum(
                     rs.getInt("id"),
-                    rs.getString("path"),
                     rs.getString("name"),
                     rs.getString("artist"),
                     rs.getInt("song_count"),
                     rs.getDouble("duration"),
                     rs.getInt("year") == 0 ? null : rs.getInt("year"),
-                    rs.getString("genre"),
                     rs.getInt("play_count"),
                     Optional.ofNullable(rs.getTimestamp("last_played")).map(x -> x.toInstant()).orElse(null),
                     rs.getString("comment"),
                     Optional.ofNullable(rs.getTimestamp("created")).map(x -> x.toInstant()).orElse(null),
                     Optional.ofNullable(rs.getTimestamp("last_scanned")).map(x -> x.toInstant()).orElse(null),
                     rs.getBoolean("present"),
-                    rs.getInt("folder_id"),
-                    rs.getString("mb_release_id"));
+                    rs.getString("mb_release_id"),
+                    (Integer) rs.getObject("media_file_id"),
+                    Optional.ofNullable((String) rs.getObject("genre")).map(Genre::new).orElse(null));
         }
     }
 }

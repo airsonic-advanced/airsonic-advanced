@@ -33,20 +33,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Album {
 
     private int id;
-    private String path;
     private String name;
     private String artist;
     private final AtomicInteger songCount = new AtomicInteger(0);
     private final AtomicDouble duration = new AtomicDouble(0);
     private Integer year;
-    private String genre;
     private final AtomicInteger playCount = new AtomicInteger(0);
     private Instant lastPlayed;
     private String comment;
     private Instant created;
     private Instant lastScanned;
     private boolean present;
-    private Integer folderId;
     private String musicBrainzReleaseId;
     private Set<Integer> mediaFileIds = ConcurrentHashMap.newKeySet();
     private Set<Genre> genres = ConcurrentHashMap.newKeySet();
@@ -54,23 +51,19 @@ public class Album {
     public Album() {
     }
 
-    public Album(int id, String path, String name, String artist, int songCount, double duration,
-            Integer year, String genre, int playCount, Instant lastPlayed, String comment, Instant created, Instant lastScanned,
-            boolean present, Integer folderId, String musicBrainzReleaseId) {
+    public Album(int id, String name, String artist, int songCount, double duration, Integer year, int playCount,
+            Instant lastPlayed, String comment, Instant created, Instant lastScanned, boolean present, String musicBrainzReleaseId) {
         this.id = id;
-        this.path = path;
         this.name = name;
         this.artist = artist;
         this.songCount.set(songCount);
         this.duration.set(duration);
         this.year = year;
-        this.genre = genre;
         this.playCount.set(playCount);
         this.lastPlayed = lastPlayed;
         this.comment = comment;
         this.created = created;
         this.lastScanned = lastScanned;
-        this.folderId = folderId;
         this.present = present;
         this.musicBrainzReleaseId = musicBrainzReleaseId;
     }
@@ -81,14 +74,6 @@ public class Album {
 
     public void setId(int id) {
         this.id = id;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
     }
 
     public String getName() {
@@ -137,14 +122,6 @@ public class Album {
 
     public void setYear(Integer year) {
         this.year = year;
-    }
-
-    public String getGenre() {
-        return genre;
-    }
-
-    public void setGenre(String genre) {
-        this.genre = genre;
     }
 
     public int getPlayCount() {
@@ -197,14 +174,6 @@ public class Album {
 
     public void setPresent(boolean present) {
         this.present = present;
-    }
-
-    public void setFolderId(Integer folderId) {
-        this.folderId = folderId;
-    }
-
-    public Integer getFolderId() {
-        return folderId;
     }
 
     public String getMusicBrainzReleaseId() {

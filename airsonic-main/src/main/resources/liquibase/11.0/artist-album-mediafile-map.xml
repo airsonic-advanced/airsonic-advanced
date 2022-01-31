@@ -28,6 +28,31 @@
         </sql>
         <rollback></rollback>
     </changeSet>
+    <changeSet id="drop-path-from-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="path"/>
+        </preConditions>
+        <dropColumn tableName="album" columnName="path"/>
+        <rollback>
+            <addColumn tableName="album" >
+                <column name="path" type="${varchar_type}" >
+                    <constraints nullable="false" />
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-folder-id-from-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="folder_id"/>
+        </preConditions>
+        <dropColumn tableName="album" columnName="folder_id"/>
+        <rollback>
+            <addColumn tableName="album" >
+                <column name="folder_id" type="int" >
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
     <changeSet id="album-genre-table" author="anon">
         <preConditions onFail="MARK_RAN">
             <not>
@@ -44,6 +69,28 @@
         </createTable>
         <addPrimaryKey tableName="album_genre" columnNames="album_id,genre"/>
     </changeSet>
+    <changeSet id="populate-album-genre-table" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="album_genre"/>
+        </preConditions>
+        <sql>
+            INSERT INTO album_genre (album_id, genre)
+            SELECT id, genre FROM album WHERE genre IS NOT NULL
+        </sql>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="drop-genre-from-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="genre"/>
+        </preConditions>
+        <dropColumn tableName="album" columnName="genre"/>
+        <rollback>
+            <addColumn tableName="album" >
+                <column name="genre" type="${varchar_type}" >
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
     <changeSet id="artist-album-table" author="anon">
         <preConditions onFail="MARK_RAN">
             <not>
@@ -59,5 +106,30 @@
             </column>
         </createTable>
         <addPrimaryKey tableName="artist_album" columnNames="artist_id,album_id"/>
+    </changeSet>
+    <changeSet id="drop-album-count-from-artist" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="artist" columnName="album_count"/>
+        </preConditions>
+        <dropColumn tableName="artist" columnName="album_count"/>
+        <rollback>
+            <addColumn tableName="artist" >
+                <column name="album_count" type="int" defaultValueNumeric="0">
+                    <constraints nullable="false"/>
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-folder-id-from-artist" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="artist" columnName="folder_id"/>
+        </preConditions>
+        <dropColumn tableName="artist" columnName="folder_id"/>
+        <rollback>
+            <addColumn tableName="artist" >
+                <column name="folder_id" type="int">
+                </column>
+            </addColumn>
+        </rollback>
     </changeSet>
 </databaseChangeLog>

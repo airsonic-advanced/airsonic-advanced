@@ -30,6 +30,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.reducing;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Provides database services for artists.
@@ -38,10 +44,26 @@ import java.util.*;
  */
 @Repository
 public class ArtistDao extends AbstractDao {
-    private static final String INSERT_COLUMNS = "name, album_count, last_scanned, present, folder_id";
-    private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
+    private static final String ARTIST_INSERT_COLUMNS = "name, last_scanned, present";
+    private static final String ARTIST_QUERY_COLUMNS = "id, " + ARTIST_INSERT_COLUMNS;
+    private static final String QUERY_COLUMNS = prefix(ARTIST_QUERY_COLUMNS, "ar") + ", aa.album_id";
 
-    private final ArtistMapper rowMapper = new ArtistMapper();
+    private final DBArtistMapper rowMapper = new DBArtistMapper();
+
+    private static String constructArtistQuery(boolean withMediaFileJoin, String... criteria) {
+        String sql = "select " + QUERY_COLUMNS + " from artist ar "
+                + " left join artist_album aa on ar.id = aa.artist_id ";
+
+        if (withMediaFileJoin) {
+            sql = sql + " left join album_file af on aa.album_id = af.album_id "
+                    + " left join media_file m on af.media_file_id = m.id";
+        }
+
+        if (criteria.length == 0) {
+            return sql;
+        }
+        return sql + Stream.of(criteria).collect(joining(" and ", " where ", ""));
+    }
 
     /**
      * Returns the artist with the given name.
@@ -50,7 +72,7 @@ public class ArtistDao extends AbstractDao {
      * @return The artist or null.
      */
     public Artist getArtist(String artistName) {
-        return queryOne("select " + QUERY_COLUMNS + " from artist where name=?", rowMapper, artistName);
+        return queryOneArtist(consolidateDBArtists(query(constructArtistQuery(false, "ar.name=?"), rowMapper, artistName)));
     }
 
     /**
@@ -67,9 +89,7 @@ public class ArtistDao extends AbstractDao {
         Map<String, Object> args = new HashMap<>();
         args.put("name", artistName);
         args.put("folders", MusicFolder.toIdList(musicFolders));
-
-        return namedQueryOne("select " + QUERY_COLUMNS + " from artist where name = :name and folder_id in (:folders)",
-                             rowMapper, args);
+        return queryOneArtist(consolidateDBArtists(namedQuery(constructArtistQuery(true, "ar.name = :name", "m.folder_id in (:folders)"), rowMapper, args)));
     }
 
     /**
@@ -79,7 +99,7 @@ public class ArtistDao extends AbstractDao {
      * @return The artist or null.
      */
     public Artist getArtist(int id) {
-        return queryOne("select " + QUERY_COLUMNS + " from artist where id=?", rowMapper, id);
+        return queryOneArtist(consolidateDBArtists(query(constructArtistQuery(false, "ar.id=?"), rowMapper, id)));
     }
 
     /**
@@ -90,21 +110,28 @@ public class ArtistDao extends AbstractDao {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createOrUpdateArtist(Artist artist) {
         String sql = "update artist set " +
-                     "album_count=?," +
-                     "last_scanned=?," +
-                     "present=?," +
-                     "folder_id=? " +
+                     "last_scanned=?, " +
+                     "present=? " +
                      "where name=?";
 
-        int n = update(sql, artist.getAlbumCount(), artist.getLastScanned(), artist.isPresent(), artist.getFolderId(), artist.getName());
+        int n = update(sql, artist.getLastScanned(), artist.isPresent(), artist.getName());
 
         if (n == 0) {
-            update("insert into artist (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")",
-                   artist.getName(), artist.getAlbumCount(), artist.getLastScanned(), artist.isPresent(), artist.getFolderId());
+            update("insert into artist (" + ARTIST_INSERT_COLUMNS + ") values (" + questionMarks(ARTIST_INSERT_COLUMNS) + ")",
+                   artist.getName(), artist.getLastScanned(), artist.isPresent());
         }
 
         int id = queryForInt("select id from artist where name=?", null, artist.getName());
         artist.setId(id);
+
+        updateArtistAlbums(artist);
+    }
+
+    public void updateArtistAlbums(Artist artist) {
+        // TODO we could do a diff with db and insert or delete only relevant ids
+        update("delete from artist_album where artist_id=?", artist.getId());
+        batchedUpdate("insert into artist_album(artist_id, album_id) values (?,?)",
+                artist.getAlbumIds().parallelStream().map(id -> new Object[] { artist.getId(), id }).collect(Collectors.toList()));
     }
 
     /**
@@ -115,7 +142,7 @@ public class ArtistDao extends AbstractDao {
      * @param musicFolders Only return artists that have at least one album in these folders.
      * @return Artists in alphabetical order.
      */
-    public List<Artist> getAlphabetialArtists(final int offset, final int count, final List<MusicFolder> musicFolders) {
+    public List<Artist> getAlphabeticalArtists(final int offset, final int count, final List<MusicFolder> musicFolders) {
         if (musicFolders.isEmpty()) {
             return Collections.emptyList();
         }
@@ -124,8 +151,10 @@ public class ArtistDao extends AbstractDao {
         args.put("count", count);
         args.put("offset", offset);
 
-        return namedQuery("select " + QUERY_COLUMNS + " from artist where present and folder_id in (:folders) " +
-                          "order by name, id limit :count offset :offset", rowMapper, args);
+        return consolidateDBArtists(namedQuery(
+                constructArtistQuery(true, "ar.present", "m.folder_id in (:folders)")
+                        + " order by ar.name, ar.id limit :count offset :offset",
+                rowMapper, args));
     }
 
     /**
@@ -137,8 +166,7 @@ public class ArtistDao extends AbstractDao {
      * @param musicFolders Only return artists that have at least one album in these folders.
      * @return The most recently starred artists for this user.
      */
-    public List<Artist> getStarredArtists(final int offset, final int count, final String username,
-                                          final List<MusicFolder> musicFolders) {
+    public List<Artist> getStarredArtists(final int offset, final int count, final String username, final List<MusicFolder> musicFolders) {
         if (musicFolders.isEmpty()) {
             return Collections.emptyList();
         }
@@ -148,16 +176,19 @@ public class ArtistDao extends AbstractDao {
         args.put("count", count);
         args.put("offset", offset);
 
-        return namedQuery("select " + prefix(QUERY_COLUMNS, "artist") + " from starred_artist, artist " +
-                          "where artist.id = starred_artist.artist_id and " +
-                          "artist.present and starred_artist.username = :username and " +
-                          "artist.folder_id in (:folders) " +
-                          "order by starred_artist.created desc, starred_artist.id limit :count offset :offset",
-                          rowMapper, args);
-    }
+        String sql = ""
+                + "select ar.*, aa.album_id "
+                + "from artist ar "
+                + "join starred_artist sa on ar.id = sa.artist_id "
+                + "left join artist_album aa on ar.id = aa.artist_id "
+                + "left join album_file af on aa.album_id = af.album_id "
+                + "left join media_file m on af.media_file_id = m.id "
+                + "where ar.present "
+                + "and m.folder_id in (:folders) "
+                + "and sa.username = :username "
+                + "order by sa.created desc, ar.id limit :count offset :offset";
 
-    public void markPresent(String artistName, Instant lastScanned) {
-        update("update artist set present=?, last_scanned = ? where name=?", true, lastScanned, artistName);
+        return consolidateDBArtists(namedQuery(sql, rowMapper, args));
     }
 
     public void markNonPresent(Instant lastScanned) {
@@ -185,16 +216,50 @@ public class ArtistDao extends AbstractDao {
         return queryForInstant("select created from starred_artist where artist_id=? and username=?", null, artistId, username);
     }
 
-    private static class ArtistMapper implements RowMapper<Artist> {
+    private Artist queryOneArtist(List<Artist> artists) {
+        if (artists.size() == 0) {
+            return null;
+        }
+        return artists.get(0);
+    }
+
+    private List<Artist> consolidateDBArtists(List<DBArtist> artists) {
+        if (artists == null) {
+            return null;
+        }
+        return artists.stream().collect(Collectors.groupingBy(DBArtist::getId, reducing((da1, da2) -> {
+            if (da1.getAlbumId() != null) {
+                da1.getAlbumIds().add(da1.getAlbumId());
+            }
+            if (da2.getAlbumId() != null) {
+                da1.getAlbumIds().add(da2.getAlbumId());
+            }
+            return da1;
+        }))).values().stream().filter(Optional::isPresent).map(Optional::get).collect(toList());
+    }
+
+    private static class DBArtist extends Artist {
+        private Integer albumId;
+
+        public DBArtist(int id, String name, Instant lastScanned, boolean present, Integer albumId) {
+            super(id, name, lastScanned, present);
+            this.albumId = albumId;
+        }
+
+        public Integer getAlbumId() {
+            return albumId;
+        }
+    }
+
+    private static class DBArtistMapper implements RowMapper<DBArtist> {
         @Override
-        public Artist mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new Artist(
+        public DBArtist mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new DBArtist(
                     rs.getInt("id"),
                     rs.getString("name"),
-                    rs.getInt("album_count"),
                     Optional.ofNullable(rs.getTimestamp("last_scanned")).map(x -> x.toInstant()).orElse(null),
                     rs.getBoolean("present"),
-                    rs.getInt("folder_id"));
+                    (Integer) rs.getObject("album_id"));
         }
     }
 }

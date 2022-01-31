@@ -122,7 +122,7 @@ public class MediaScannerServiceTestCase {
 
         System.out.println("--- List of all artists ---");
         System.out.println("artistName#albumCount");
-        List<Artist> allArtists = artistDao.getAlphabetialArtists(0, Integer.MAX_VALUE, musicFolderDao.getAllMusicFolders());
+        List<Artist> allArtists = artistDao.getAlphabeticalArtists(0, Integer.MAX_VALUE, musicFolderDao.getAllMusicFolders());
         allArtists.forEach(artist -> System.out.println(artist.getName() + "#" + artist.getAlbumCount()));
         System.out.println("--- *********************** ---");
 
@@ -184,7 +184,7 @@ public class MediaScannerServiceTestCase {
         folders.add(musicFolder);
 
         // Test that the artist is correctly imported
-        List<Artist> allArtists = artistDao.getAlphabetialArtists(0, Integer.MAX_VALUE, folders);
+        List<Artist> allArtists = artistDao.getAlphabeticalArtists(0, Integer.MAX_VALUE, folders);
         Assert.assertEquals(1, allArtists.size());
         Artist artist = allArtists.get(0);
         Assert.assertEquals("TestArtist", artist.getName());
