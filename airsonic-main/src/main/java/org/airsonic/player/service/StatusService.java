@@ -20,6 +20,7 @@
 package org.airsonic.player.service;
 
 import org.airsonic.player.ajax.NowPlayingInfo;
+import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.PlayStatus;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.TransferStatus;
@@ -37,7 +38,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,6 +57,8 @@ public class StatusService {
 
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
     @Autowired
     private SettingsService settingsService;
     @Autowired
@@ -166,8 +168,17 @@ public class StatusService {
     }
 
     public PlayStatus getPlayStatus(TransferStatus status) {
+        MediaFile file = null;
+        if (status.getFile() != null) {
+            if (status.getFolderId() != null) {
+                file = mediaFileService.getMediaFile(status.getFile(),
+                        mediaFolderService.getMusicFolderById(status.getFolderId()));
+            } else {
+                file = mediaFileService.getMediaFile(status.getFile());
+            }
+        }
         return new PlayStatus(status.getId(),
-                Optional.ofNullable(status.getFile()).map(f -> mediaFileService.getMediaFile(f)).orElse(null),
+                file,
                 status.getPlayer(),
                 status.getMillisSinceLastUpdate());
     }

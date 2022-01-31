@@ -55,6 +55,8 @@ public class PlayQueueService {
     @Autowired
     private MediaFileDao mediaFileDao;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private PlayQueueDao playQueueDao;
     @Autowired
     private InternetRadioDao internetRadioDao;
@@ -221,7 +223,7 @@ public class PlayQueueService {
     public void playTopSong(Player player, int id, Integer index, String sessionId) {
         boolean queueFollowingSongs = settingsService.getUserSettings(player.getUsername()).getQueueFollowingSongs();
 
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(player.getUsername());
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(player.getUsername());
         List<MediaFile> files = lastFmService.getTopSongs(mediaFileService.getMediaFile(id), 50, musicFolders);
         if (!files.isEmpty() && index != null) {
             if (queueFollowingSongs) {
@@ -288,16 +290,14 @@ public class PlayQueueService {
     }
 
     public void playStarred(Player player, String sessionId) {
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(player.getUsername());
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(player.getUsername());
         List<MediaFile> files = mediaFileDao.getStarredFiles(0, Integer.MAX_VALUE, player.getUsername(), musicFolders);
         doPlay(player, files, null, sessionId);
     }
 
-    public void playShuffle(Player player, String albumListType, int offset, int count, String genre, String decade,
-            String sessionId) {
-        MusicFolder selectedMusicFolder = settingsService.getSelectedMusicFolder(player.getUsername());
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(player.getUsername(),
-                selectedMusicFolder == null ? null : selectedMusicFolder.getId());
+    public void playShuffle(Player player, String albumListType, int offset, int count, String genre, String decade, String sessionId) {
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(player.getUsername(),
+                settingsService.getUserSettings(player.getUsername()).getSelectedMusicFolderId());
         List<MediaFile> albums;
         if ("highest".equals(albumListType)) {
             albums = ratingService.getHighestRatedAlbums(offset, count, musicFolders);
@@ -342,7 +342,7 @@ public class PlayQueueService {
 
     public void playSimilar(Player player, int id, int count, String sessionId) {
         MediaFile artist = mediaFileService.getMediaFile(id);
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(player.getUsername());
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(player.getUsername());
         List<MediaFile> similarSongs = lastFmService.getSimilarSongs(artist, count, musicFolders);
 
         doPlay(player, similarSongs, null, sessionId);

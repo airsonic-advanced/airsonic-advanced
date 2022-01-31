@@ -34,9 +34,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * @author Allen Petersen
@@ -62,6 +63,7 @@ public class MediaFileUpnpProcessor extends UpnpContentProcessor <MediaFile, Med
         return createBrowseResult(didl, 1, 1);
     }
 
+    @Override
     public Container createContainer(MediaFile item) {
         MusicAlbum container = new MusicAlbum();
         if (item.isAlbum()) {
@@ -88,30 +90,31 @@ public class MediaFileUpnpProcessor extends UpnpContentProcessor <MediaFile, Med
         return container;
     }
 
+    @Override
     public List<MediaFile> getAllItems() {
-        List<MusicFolder> allFolders = getDispatcher().getSettingsService().getAllMusicFolders();
-        List<MediaFile> returnValue = new ArrayList<MediaFile>();
+        List<MusicFolder> allFolders = getDispatcher().getMediaFolderService().getAllMusicFolders();
+
         if (allFolders.size() == 1) {
             // if there's only one root folder just return it
-            return getChildren(getMediaFileService().getMediaFile(allFolders.get(0).getPath()));
+            return getChildren(getMediaFileService().getMediaFile("", allFolders.get(0)));
         } else {
-            for (MusicFolder folder : allFolders) {
-                returnValue.add(getMediaFileService().getMediaFile(folder.getPath()));
-            }
+            return allFolders.stream().map(f -> getMediaFileService().getMediaFile("", f)).collect(toList());
         }
-        return returnValue;
     }
 
+    @Override
     public MediaFile getItemById(String id) {
         return getMediaFileService().getMediaFile(Integer.parseInt(id));
     }
 
+    @Override
     public List<MediaFile> getChildren(MediaFile item) {
         List<MediaFile> children = getMediaFileService().getChildrenOf(item, true, true, true);
         children.sort((MediaFile o1, MediaFile o2) -> o1.getPath().replaceAll("\\W", "").compareToIgnoreCase(o2.getPath().replaceAll("\\W", "")));
         return children;
     }
 
+    @Override
     public void addItem(DIDLContent didl, MediaFile item) {
         if (item.isFile()) {
             didl.addItem(createItem(item));
@@ -120,6 +123,7 @@ public class MediaFileUpnpProcessor extends UpnpContentProcessor <MediaFile, Med
         }
     }
 
+    @Override
     public void addChild(DIDLContent didl, MediaFile child) {
         if (child.isFile()) {
             didl.addItem(createItem(child));

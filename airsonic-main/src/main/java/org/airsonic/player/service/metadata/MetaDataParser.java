@@ -20,7 +20,7 @@
 package org.airsonic.player.service.metadata;
 
 import org.airsonic.player.domain.MediaFile;
-import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.MediaFolderService;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jaudiotagger.tag.reference.GenreTypes;
@@ -110,7 +110,7 @@ public abstract class MetaDataParser {
      */
     public abstract boolean isEditingSupported();
 
-    abstract SettingsService getSettingsService();
+    abstract MediaFolderService getMediaFolderService();
 
     /**
      * Guesses the artist for the given file.
@@ -143,12 +143,13 @@ public abstract class MetaDataParser {
      *
      * TODO: public as it is used in EditTagsController
      */
-    public String guessTitle(Path file) {
+    public static String guessTitle(Path file) {
         return StringUtils.trim(FilenameUtils.getBaseName(file.toString()));
     }
 
     private boolean isRoot(Path file) {
-        return getSettingsService().getAllMusicFolders(false, true).parallelStream().anyMatch(folder -> file.equals(folder.getPath()));
+        return getMediaFolderService().getAllMusicFolders(false, true).parallelStream()
+                .anyMatch(folder -> file.equals(folder.getPath()));
     }
 
     /**

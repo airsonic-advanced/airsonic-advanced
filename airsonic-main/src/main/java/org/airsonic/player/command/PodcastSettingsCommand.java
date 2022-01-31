@@ -23,6 +23,7 @@ import org.airsonic.player.controller.PodcastSettingsController;
 import org.airsonic.player.domain.PodcastChannelRule;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Command used in {@link PodcastSettingsController}.
@@ -31,17 +32,26 @@ import java.util.List;
  */
 public class PodcastSettingsCommand {
 
-    private String folder;
+    private Integer folderId;
+    private Map<Integer, String> folders;
     private List<PodcastRule> rules;
     private PodcastRule newRule;
     private List<PodcastRule> noRuleChannels;
 
-    public String getFolder() {
-        return folder;
+    public Integer getFolderId() {
+        return folderId;
     }
 
-    public void setFolder(String folder) {
-        this.folder = folder;
+    public void setFolderId(Integer folderId) {
+        this.folderId = folderId;
+    }
+
+    public Map<Integer, String> getFolders() {
+        return folders;
+    }
+
+    public void setFolders(Map<Integer, String> folders) {
+        this.folders = folders;
     }
 
     public List<PodcastRule> getRules() {

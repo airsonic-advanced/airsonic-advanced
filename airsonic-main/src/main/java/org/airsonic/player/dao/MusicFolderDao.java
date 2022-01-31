@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.dao;
 
+import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +29,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,9 +48,9 @@ import java.util.Optional;
 public class MusicFolderDao extends AbstractDao {
 
     private static final Logger LOG = LoggerFactory.getLogger(MusicFolderDao.class);
-    private static final String INSERT_COLUMNS = "path, name, enabled, changed";
+    private static final String INSERT_COLUMNS = "path, name, type, enabled, changed";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
-    private final MusicFolderRowMapper rowMapper = new MusicFolderRowMapper();
+    public static final MusicFolderRowMapper MUSICFOLDER_ROW_MAPPER = new MusicFolderRowMapper();
 
     @PostConstruct
     public void register() throws Exception {
@@ -60,7 +64,7 @@ public class MusicFolderDao extends AbstractDao {
      */
     public List<MusicFolder> getAllMusicFolders() {
         String sql = "select " + QUERY_COLUMNS + " from music_folder";
-        return query(sql, rowMapper);
+        return query(sql, MUSICFOLDER_ROW_MAPPER);
     }
 
     /**
@@ -70,14 +74,9 @@ public class MusicFolderDao extends AbstractDao {
      */
     public MusicFolder getMusicFolderForPath(String path) {
         String sql = "select " + QUERY_COLUMNS + " from music_folder where path = ?";
-        return queryOne(sql, rowMapper, path);
+        return queryOne(sql, MUSICFOLDER_ROW_MAPPER, path);
     }
 
-    /**
-     * Creates a new music folder.
-     *
-     * @param musicFolder The music folder to create.
-     */
     @Transactional
     public void createMusicFolder(MusicFolder musicFolder) {
         if (getMusicFolderForPath(musicFolder.getPath().toString()) == null) {
@@ -90,45 +89,91 @@ public class MusicFolderDao extends AbstractDao {
         }
     }
 
-    /**
-     * Deletes the music folder with the given ID.
-     *
-     * @param id The music folder ID.
-     */
     public void deleteMusicFolder(Integer id) {
         String sql = "delete from music_folder where id=?";
         update(sql, id);
         LOG.info("Deleted music folder with ID {}", id);
     }
 
-    /**
-     * Updates the given music folder.
-     *
-     * @param musicFolder The music folder to update.
-     */
+    public void reassignChildren(MusicFolder from, MusicFolder to) {
+        if (to.getPath().getNameCount() > from.getPath().getNameCount()) {
+            // assign ancestor -> descendant
+            MusicFolder ancestor = from;
+            MusicFolder descendant = to;
+            String relativePath = ancestor.getPath().relativize(descendant.getPath()).toString();
+            // update children
+            int len = relativePath.length();
+            String sql = "update media_file set "
+                    + "folder_id=?, "
+                    + "path=SUBSTR(path, " + (len + 2) + "), "
+                    + "cover_art_path=SUBSTR(cover_art_path, " + (len + 2) + "), "
+                    + "parent_path=(case "
+                    + "  when (length(parent_path) > " + len + ") then SUBSTR(parent_path, " + (len + 2) + ") "
+                    + "  else SUBSTR(parent_path, " + (len + 1) + ") end) "
+                    + "where folder_id=? and path like ?";
+            update(sql, descendant.getId(), ancestor.getId(), relativePath + File.separator + "%");
+            // update root
+            sql = "update media_file set "
+                    + "folder_id=?, "
+                    + "path='', "
+                    + "parent_path=null, "
+                    + "cover_art_path=SUBSTR(cover_art_path, " + (len + 2) + "), "
+                    + "title=?, "
+                    + "type=? "
+                    + "where folder_id=? and path=?";
+            update(sql, descendant.getId(), descendant.getName(), MediaFile.MediaType.DIRECTORY, ancestor.getId(), relativePath);
+        } else {
+            // assign descendant -> ancestor
+            MusicFolder ancestor = to;
+            MusicFolder descendant = from;
+            Path relativePath = ancestor.getPath().relativize(descendant.getPath());
+            // update root
+            String sql = "update media_file set "
+                    + "folder_id=?, "
+                    + "title=null, "
+                    + "path=?, "
+                    + "parent_path=?, "
+                    + "cover_art_path=concat(?, cover_art_path) "
+                    + "where folder_id=? and path=''";
+            update(sql, ancestor.getId(), relativePath, relativePath.getParent() == null ? "" : relativePath.getParent().toString(), relativePath + File.separator, descendant.getId());
+            // update children
+            sql = "update media_file set "
+                    + "folder_id=?, "
+                    + "path=concat(?, path), "
+                    + "parent_path=(case"
+                    + "  when (parent_path = '') then ?"
+                    + "  else concat(?, parent_path) end), "
+                    + "cover_art_path=concat(?, cover_art_path) "
+                    + "where folder_id=?";
+            update(sql, ancestor.getId(), relativePath + File.separator, relativePath, relativePath + File.separator, relativePath + File.separator, descendant.getId());
+        }
+    }
+
     public void updateMusicFolder(MusicFolder musicFolder) {
-        String sql = "update music_folder set path=?, name=?, enabled=?, changed=? where id=?";
-        update(sql, musicFolder.getPath().toString(), musicFolder.getName(),
+        String sql = "update music_folder set path=?, name=?, type=?, enabled=?, changed=? where id=?";
+        update(sql, musicFolder.getPath().toString(), musicFolder.getName(), musicFolder.getType().name(),
                musicFolder.isEnabled(), musicFolder.getChanged(), musicFolder.getId());
     }
 
     public List<MusicFolder> getMusicFoldersForUser(String username) {
         String sql = "select " + prefix(QUERY_COLUMNS, "music_folder") + " from music_folder, music_folder_user " +
                      "where music_folder.id = music_folder_user.music_folder_id and music_folder_user.username = ?";
-        return query(sql, rowMapper, username);
+        return query(sql, MUSICFOLDER_ROW_MAPPER, username);
     }
 
-    public void setMusicFoldersForUser(String username, List<Integer> musicFolderIds) {
+    public void setMusicFoldersForUser(String username, Collection<Integer> musicFolderIds) {
         update("delete from music_folder_user where username = ?", username);
         for (Integer musicFolderId : musicFolderIds) {
             update("insert into music_folder_user(music_folder_id, username) values (?, ?)", musicFolderId, username);
         }
     }
 
-    private static class MusicFolderRowMapper implements RowMapper<MusicFolder> {
+    public static class MusicFolderRowMapper implements RowMapper<MusicFolder> {
         @Override
         public MusicFolder mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new MusicFolder(rs.getInt(1), Paths.get(rs.getString(2)), rs.getString(3), rs.getBoolean(4), Optional.ofNullable(rs.getTimestamp(5)).map(x -> x.toInstant()).orElse(null));
+            return new MusicFolder(rs.getInt("id"), Paths.get(rs.getString("path")), rs.getString("name"),
+                    MusicFolder.Type.valueOf(rs.getString("type")), rs.getBoolean("enabled"),
+                    Optional.ofNullable(rs.getTimestamp("changed")).map(x -> x.toInstant()).orElse(null));
         }
     }
 }

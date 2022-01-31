@@ -44,22 +44,22 @@ public class RatingDao extends AbstractDao {
      * @param musicFolders Only return albums in these folders.
      * @return Paths for the highest rated albums.
      */
-    public List<String> getHighestRatedAlbums(final int offset, final int count, final List<MusicFolder> musicFolders) {
+    public List<Integer> getHighestRatedAlbums(final int offset, final int count, final List<MusicFolder> musicFolders) {
         if (count < 1 || musicFolders.isEmpty()) {
             return Collections.emptyList();
         }
 
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toPathList(musicFolders));
+        args.put("folders", MusicFolder.toIdList(musicFolders));
         args.put("count", count);
         args.put("offset", offset);
 
-        String sql = "select user_rating.path from user_rating, media_file " +
-                     "where user_rating.path=media_file.path and media_file.present and media_file.type = :type and media_file.folder in (:folders) " +
-                     "group by user_rating.path " +
-                     "order by avg(rating) desc, user_rating.path limit :count offset :offset";
-        return namedQueryForStrings(sql, args);
+        String sql = "select user_rating.media_file_id from user_rating, media_file " +
+                     "where user_rating.media_file_id=media_file.id and media_file.present and media_file.type = :type and media_file.folder_id in (:folders) " +
+                     "group by user_rating.media_file_id " +
+                     "order by avg(rating) desc, user_rating.media_file_id limit :count offset :offset";
+        return namedQueryForTypes(sql, Integer.class, args);
     }
 
     /**
@@ -74,9 +74,9 @@ public class RatingDao extends AbstractDao {
             return;
         }
 
-        update("delete from user_rating where username=? and path=?", username, mediaFile.getPath());
+        update("delete from user_rating where username=? and media_file_id=?", username, mediaFile.getId());
         if (rating != null) {
-            update("insert into user_rating values(?, ?, ?)", username, mediaFile.getPath(), rating);
+            update("insert into user_rating(username, media_file_id, rating) values(?, ?, ?)", username, mediaFile.getId(), rating);
         }
     }
 
@@ -87,7 +87,7 @@ public class RatingDao extends AbstractDao {
      * @return The average rating, or <code>null</code> if no ratings are set.
      */
     public Double getAverageRating(MediaFile mediaFile) {
-        return queryForDouble("select avg(rating) from user_rating where path=?", null, mediaFile.getPath());
+        return queryForDouble("select avg(rating) from user_rating where media_file_id=?", null, mediaFile.getId());
     }
 
     /**
@@ -98,7 +98,7 @@ public class RatingDao extends AbstractDao {
      * @return The rating, or <code>null</code> if no rating is set.
      */
     public Integer getRatingForUser(String username, MediaFile mediaFile) {
-        return queryForInt("select rating from user_rating where username=? and path=?", null, username, mediaFile.getPath());
+        return queryForInt("select rating from user_rating where username=? and media_file_id=?", null, username, mediaFile.getId());
     }
 
     public int getRatedAlbumCount(final String username, final List<MusicFolder> musicFolders) {
@@ -107,14 +107,14 @@ public class RatingDao extends AbstractDao {
         }
         Map<String, Object> args = new HashMap<>();
         args.put("type", MediaFile.MediaType.ALBUM.name());
-        args.put("folders", MusicFolder.toPathList(musicFolders));
+        args.put("folders", MusicFolder.toIdList(musicFolders));
         args.put("username", username);
 
         return namedQueryForInt("select count(*) from user_rating, media_file " +
-                                "where media_file.path = user_rating.path " +
+                                "where media_file.id = user_rating.media_file_id " +
                                 "and media_file.type = :type " +
                                 "and media_file.present " +
-                                "and media_file.folder in (:folders) " +
+                                "and media_file.folder_id in (:folders) " +
                                 "and user_rating.username = :username",
                                 0, args);
     }

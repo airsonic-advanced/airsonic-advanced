@@ -38,6 +38,7 @@ public class TransferStatus {
     private final UUID id = UUID.randomUUID();
     private final Player player;
     private Path file;
+    private Integer folderId;
     private final AtomicLong bytesTransferred = new AtomicLong();
     private final AtomicLong bytesSkipped = new AtomicLong();
     private final AtomicLong bytesTotal = new AtomicLong();
@@ -171,6 +172,14 @@ public class TransferStatus {
      */
     public void setFile(Path file) {
         this.file = file;
+    }
+
+    public Integer getFolderId() {
+        return folderId;
+    }
+
+    public void setFolderId(Integer folderId) {
+        this.folderId = folderId;
     }
 
     /**

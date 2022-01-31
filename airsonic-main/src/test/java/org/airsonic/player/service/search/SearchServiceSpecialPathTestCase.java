@@ -3,6 +3,7 @@ package org.airsonic.player.service.search;
 
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.service.SearchService;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.AfterClass;
@@ -43,13 +44,13 @@ public class SearchServiceSpecialPathTestCase extends AbstractAirsonicHomeTest {
             musicFolders = new ArrayList<>();
 
             Path musicDir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible");
-            musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, Instant.now()));
+            musicFolders.add(new MusicFolder(1, musicDir, "accessible", Type.MEDIA, true, Instant.now()));
 
             Path music2Dir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible's");
-            musicFolders.add(new MusicFolder(2, music2Dir, "accessible's", true, Instant.now()));
+            musicFolders.add(new MusicFolder(2, music2Dir, "accessible's", Type.MEDIA, true, Instant.now()));
 
             Path music3Dir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible+s");
-            musicFolders.add(new MusicFolder(3, music3Dir, "accessible+s", true, Instant.now()));
+            musicFolders.add(new MusicFolder(3, music3Dir, "accessible+s", Type.MEDIA, true, Instant.now()));
         }
         return musicFolders;
     }

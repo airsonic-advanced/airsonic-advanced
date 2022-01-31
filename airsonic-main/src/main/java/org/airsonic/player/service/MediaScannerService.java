@@ -36,8 +36,6 @@ import org.subsonic.restapi.ScanStatus;
 import javax.annotation.PostConstruct;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
@@ -72,6 +70,8 @@ public class MediaScannerService {
     private PlaylistService playlistService;
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
     @Autowired
     private MediaFileDao mediaFileDao;
     @Autowired
@@ -215,16 +215,10 @@ public class MediaScannerService {
             indexManager.startIndexing();
 
             // Recurse through all files on disk.
-            settingsService.getAllMusicFolders()
+            mediaFolderService.getAllMusicFolders()
                 .parallelStream()
-                .forEach(musicFolder -> scanFile(mediaFileService.getMediaFile(musicFolder.getPath(), false), musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, false));
-
-            // Scan podcast folder.
-            Path podcastFolder = Paths.get(settingsService.getPodcastFolder());
-            if (Files.exists(podcastFolder)) {
-                scanFile(mediaFileService.getMediaFile(podcastFolder), new MusicFolder(podcastFolder, null, true, null),
-                        statistics, albumCount, artists, albums, albumsInDb, genres, encountered, true);
-            }
+                    .forEach(musicFolder -> scanFile(mediaFileService.getMediaFile(Paths.get(""), musicFolder, false),
+                            musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered));
 
             LOG.info("Scanned media library with {} entries.", scanCount.get());
 
@@ -292,28 +286,28 @@ public class MediaScannerService {
     }
 
     private void scanFile(MediaFile file, MusicFolder musicFolder, MediaLibraryStatistics statistics,
-                          Map<String, AtomicInteger> albumCount, Map<String, Artist> artists, Map<String, Album> albums, Map<Integer, Album> albumsInDb, Genres genres, Map<String, Boolean> encountered, boolean isPodcast) {
+            Map<String, AtomicInteger> albumCount, Map<String, Artist> artists, Map<String, Album> albums,
+            Map<Integer, Album> albumsInDb, Genres genres, Map<String, Boolean> encountered) {
         if (scanCount.incrementAndGet() % 250 == 0) {
             broadcastScanStatus();
             LOG.info("Scanned media library with {} entries.", scanCount.get());
         }
 
-        LOG.trace("Scanning file {}", file.getPath());
+        LOG.trace("Scanning file {} in folder {} ({})", file.getPath(), musicFolder.getId(), musicFolder.getName());
 
-        // Update the root folder if it has changed.
-        if (!musicFolder.getPath().toString().equals(file.getFolder())) {
-            file.setFolder(musicFolder.getPath().toString());
-            mediaFileDao.createOrUpdateMediaFile(file);
+        // Update the root folder if it has changed
+        if (!musicFolder.getId().equals(file.getFolderId())) {
+            file.setFolderId(musicFolder.getId());
+            mediaFileService.updateMediaFile(file);
         }
 
-        indexManager.index(file);
+        indexManager.index(file, musicFolder);
 
         if (file.isDirectory()) {
-            mediaFileService.getChildrenOf(file, true, true, false, false)
-                .parallelStream()
-                .forEach(child -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered, isPodcast));
+            mediaFileService.getChildrenOf(file, true, true, false, false).parallelStream()
+                    .forEach(child -> scanFile(child, musicFolder, statistics, albumCount, artists, albums, albumsInDb, genres, encountered));
         } else {
-            if (!isPodcast) {
+            if (musicFolder.getType() == MusicFolder.Type.MEDIA) {
                 updateAlbum(file, musicFolder, statistics.getScanDate(), albumCount, albums, albumsInDb);
                 updateArtist(file, musicFolder, statistics.getScanDate(), albumCount, artists);
             }
@@ -411,7 +405,7 @@ public class MediaScannerService {
         // Update the file's album artist, if necessary.
         if (!ObjectUtils.equals(album.getArtist(), file.getAlbumArtist())) {
             file.setAlbumArtist(album.getArtist());
-            mediaFileDao.createOrUpdateMediaFile(file);
+            mediaFileService.updateMediaFile(file);
         }
     }
 

@@ -129,7 +129,7 @@ public abstract class UpnpContentProcessor<T extends Object, U extends Object> {
         Class clazz = (Class) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
 
         try {
-            List<MusicFolder> allFolders = getDispatchingContentDirectory().getSettingsService().getAllMusicFolders();
+            List<MusicFolder> allFolders = getDispatchingContentDirectory().getMediaFolderService().getAllMusicFolders();
             ParamSearchResult<T> result = getDispatcher().getSearchService().searchByName(name, Ints.saturatedCast(firstResult), Ints.saturatedCast(maxResults), allFolders, clazz);
             List<T> selectedItems = result.getItems();
             for (T item : selectedItems) {

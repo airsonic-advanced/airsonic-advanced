@@ -21,12 +21,14 @@ package org.airsonic.player.controller;
 
 import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.TranscodeScheme;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.User.Role;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.domain.UserSettings;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
@@ -52,9 +54,12 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Controller for the page used to administrate users.
@@ -69,6 +74,8 @@ public class UserSettingsController {
     private SecurityService securityService;
     @Autowired
     private SettingsService settingsService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
     @Autowired
     private TranscodingService transcodingService;
 
@@ -105,7 +112,7 @@ public class UserSettingsController {
         command.setTranscodeDirectory(SettingsService.getTranscodeDirectory().toString());
         command.setTranscodeSchemes(TranscodeScheme.values());
         command.setLdapEnabled(settingsService.isLdapEnabled());
-        command.setAllMusicFolders(settingsService.getAllMusicFolders());
+        command.setAllMusicFolders(mediaFolderService.getAllMusicFolders());
         model.addAttribute("command", command);
         return "userSettings";
     }
@@ -124,8 +131,8 @@ public class UserSettingsController {
     private List<Integer> getAllowedMusicFolderIds(User user) {
         List<Integer> result = new ArrayList<Integer>();
         List<MusicFolder> allowedMusicFolders = user == null
-                                                ? settingsService.getAllMusicFolders()
-                                                : settingsService.getMusicFoldersForUser(user.getUsername());
+                ? mediaFolderService.getAllMusicFolders()
+                : mediaFolderService.getMusicFoldersForUser(user.getUsername());
 
         for (MusicFolder musicFolder : allowedMusicFolders) {
             result.add(musicFolder.getId());
@@ -180,6 +187,7 @@ public class UserSettingsController {
         User user = securityService.getUserByName(command.getUsername());
         user.setEmail(StringUtils.trimToNull(command.getEmail()));
         user.setLdapAuthenticated(command.isLdapAuthenticated());
+        Set<Integer> allowedMusicFolderIds = new HashSet<>();
         Set<Role> roles = new HashSet<>();
         if (command.isAdminRole()) {
             roles.add(Role.ADMIN);
@@ -198,6 +206,8 @@ public class UserSettingsController {
         }
         if (command.isPodcastRole()) {
             roles.add(Role.PODCAST);
+            allowedMusicFolderIds.addAll(mediaFolderService.getAllMusicFolders().stream()
+                    .filter(mf -> mf.getType() == Type.PODCAST).map(mf -> mf.getId()).collect(toSet()));
         }
         if (command.isStreamRole()) {
             roles.add(Role.STREAM);
@@ -225,8 +235,8 @@ public class UserSettingsController {
         userSettings.setChanged(Instant.now());
         settingsService.updateUserSettings(userSettings);
 
-        List<Integer> allowedMusicFolderIds = Util.toIntegerList(command.getAllowedMusicFolderIds());
-        settingsService.setMusicFoldersForUser(command.getUsername(), allowedMusicFolderIds);
+        Arrays.stream(command.getAllowedMusicFolderIds()).forEach(allowedMusicFolderIds::add);
+        mediaFolderService.setMusicFoldersForUser(command.getUsername(), allowedMusicFolderIds);
     }
 
 }

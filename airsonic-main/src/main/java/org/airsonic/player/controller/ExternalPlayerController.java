@@ -39,6 +39,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -60,13 +61,13 @@ public class ExternalPlayerController {
     private static final Logger LOG = LoggerFactory.getLogger(ExternalPlayerController.class);
 
     @Autowired
-    private SettingsService settingsService;
-    @Autowired
     private PlayerService playerService;
     @Autowired
     private ShareService shareService;
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
     @Autowired
     private JWTSecurityService jwtSecurityService;
     @Autowired
@@ -115,12 +116,12 @@ public class ExternalPlayerController {
     }
 
     private List<MediaFileWithUrlInfo> getMedia(HttpServletRequest request, Share share, Player player, Instant expires) {
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(player.getUsername());
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(player.getUsername());
 
         if (share != null) {
             return shareService.getSharedFiles(share.getId(), musicFolders)
                     .stream()
-                    .filter(MediaFile::exists)
+                    .filter(f -> Files.exists(f.getFullPath(mediaFolderService.getMusicFolderById(f.getFolderId()).getPath())))
                     .flatMap(f -> {
                         if (f.isDirectory()) {
                             return mediaFileService.getChildrenOf(f, true, false, true).stream()
@@ -140,7 +141,7 @@ public class ExternalPlayerController {
         String baseUrl = NetworkService.getBaseUrl(request);
 
         boolean streamable = true;
-        String contentType = StringUtil.getMimeType(MoreFiles.getFileExtension(mediaFile.getFile()));
+        String contentType = StringUtil.getMimeType(MoreFiles.getFileExtension(mediaFile.getRelativePath()));
         String streamUrl = baseUrl + jwtSecurityService
                 .addJWTToken(User.USERNAME_GUEST, UriComponentsBuilder.fromUriString(prefix + "/stream")
                         .queryParam("id", mediaFile.getId())

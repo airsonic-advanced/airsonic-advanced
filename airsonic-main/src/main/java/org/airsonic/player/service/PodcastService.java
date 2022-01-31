@@ -21,6 +21,8 @@ package org.airsonic.player.service;
 
 import org.airsonic.player.dao.PodcastDao;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.PodcastChannel;
 import org.airsonic.player.domain.PodcastChannelRule;
 import org.airsonic.player.domain.PodcastEpisode;
@@ -34,6 +36,7 @@ import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.CookieSpecs;
@@ -61,7 +64,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
@@ -71,6 +73,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -103,6 +106,8 @@ public class PodcastService {
     private SecurityService securityService;
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
     @Autowired
     private MetaDataParserFactory metaDataParserFactory;
     @Autowired
@@ -213,11 +218,6 @@ public class PodcastService {
         return podcastDao.getAllChannelRules();
     }
 
-    /**
-     * Creates a new Podcast channel.
-     *
-     * @param url The URL of the Podcast channel.
-     */
     public void createChannel(String url) {
         PodcastChannel channel = new PodcastChannel(sanitizeUrl(url, false));
         int channelId = podcastDao.createChannel(channel);
@@ -236,10 +236,7 @@ public class PodcastService {
      * Returns a single Podcast channel.
      */
     public PodcastChannel getChannel(int channelId) {
-        PodcastChannel channel = podcastDao.getChannel(channelId);
-        if (channel.getTitle() != null)
-            addMediaFileIdToChannels(Collections.singletonList(channel));
-        return channel;
+        return podcastDao.getChannel(channelId);
     }
 
     /**
@@ -248,7 +245,7 @@ public class PodcastService {
      * @return Possibly empty list of all Podcast channels.
      */
     public List<PodcastChannel> getAllChannels() {
-        return addMediaFileIdToChannels(podcastDao.getAllChannels());
+        return podcastDao.getAllChannels();
     }
 
     private PodcastEpisode getEpisodeByCriteria(Supplier<PodcastEpisode> podcastEpisodeSupplier) {
@@ -256,10 +253,7 @@ public class PodcastService {
         if (episode == null) {
             return null;
         }
-        List<PodcastEpisode> episodes = Collections.singletonList(episode);
-        episodes = filterAllowed(episodes);
-        addMediaFileIdToEpisodes(episodes);
-        return episodes.isEmpty() ? null : episodes.get(0);
+        return Optional.ofNullable(episode).filter(filterAllowed).orElse(null);
     }
 
     private PodcastEpisode getEpisodeByUrl(Integer channelId, String url) {
@@ -282,8 +276,7 @@ public class PodcastService {
      *         reverse chronological order (newest episode first).
      */
     public List<PodcastEpisode> getEpisodes(int channelId) {
-        List<PodcastEpisode> episodes = filterAllowed(podcastDao.getEpisodes(channelId));
-        return addMediaFileIdToEpisodes(episodes);
+        return podcastDao.getEpisodes(channelId).stream().filter(filterAllowed).collect(toList());
     }
 
     /**
@@ -293,7 +286,7 @@ public class PodcastService {
      *         reverse chronological order (newest episode first).
      */
     public List<PodcastEpisode> getNewestEpisodes(int count) {
-        return addMediaFileIdToEpisodes(podcastDao.getNewestEpisodes(count)).stream().filter(episode -> {
+        return podcastDao.getNewestEpisodes(count).stream().filter(episode -> {
             Integer mediaFileId = episode.getMediaFileId();
             if (mediaFileId == null) {
                 return false;
@@ -303,9 +296,8 @@ public class PodcastService {
         }).collect(Collectors.toList());
     }
 
-    private List<PodcastEpisode> filterAllowed(List<PodcastEpisode> episodes) {
-        return episodes.stream().filter(episode -> episode.getPath() == null || securityService.isReadAllowed(Paths.get(episode.getPath()))).collect(Collectors.toList());
-    }
+    private Predicate<PodcastEpisode> filterAllowed = episode -> episode.getMediaFileId() == null
+            || securityService.isReadAllowed(mediaFileService.getMediaFile(episode.getMediaFileId()), false);
 
     public PodcastEpisode getEpisode(int episodeId, boolean includeDeleted) {
         PodcastEpisode episode = podcastDao.getEpisode(episodeId);
@@ -315,42 +307,7 @@ public class PodcastService {
         if (episode.getStatus() == PodcastStatus.DELETED && !includeDeleted) {
             return null;
         }
-        addMediaFileIdToEpisodes(Collections.singletonList(episode));
         return episode;
-    }
-
-    private List<PodcastEpisode> addMediaFileIdToEpisodes(List<PodcastEpisode> episodes) {
-        return episodes.stream().map(episode -> {
-            if (episode.getPath() != null) {
-                MediaFile mediaFile = mediaFileService.getMediaFile(episode.getPath());
-                if (mediaFile != null && mediaFile.isPresent()) {
-                    episode.setMediaFileId(mediaFile.getId());
-                }
-            }
-
-            return episode;
-        }).collect(Collectors.toList());
-    }
-
-    private List<PodcastChannel> addMediaFileIdToChannels(List<PodcastChannel> channels) {
-        return channels.stream().map(channel -> {
-            try {
-                if (channel.getTitle() == null) {
-                    LOG.warn("Podcast channel id {} has null title", channel.getId());
-                } else {
-                    Path dir = getChannelDirectory(channel);
-                    MediaFile mediaFile = mediaFileService.getMediaFile(dir);
-                    if (mediaFile != null) {
-                        channel.setMediaFileId(mediaFile.getId());
-                    }
-                }
-
-            } catch (Exception x) {
-                LOG.warn("Failed to resolve media file ID for podcast channel '{}'", channel.getTitle(), x);
-            }
-
-            return channel;
-        }).collect(Collectors.toList());
     }
 
     public PodcastExportOPML export(List<PodcastChannel> channels) {
@@ -403,6 +360,8 @@ public class PodcastService {
             channel.setImageUrl(sanitizeUrl(getChannelImageUrl(channelElement), false));
             channel.setStatus(PodcastStatus.COMPLETED);
             channel.setErrorMessage(null);
+            MediaFile mediaFile = createChannelDirectory(channel);
+            channel.setMediaFileId(mediaFile.getId());
             podcastDao.updateChannel(channel);
 
             downloadImage(channel);
@@ -428,21 +387,24 @@ public class PodcastService {
             return;
         }
 
-        Path dir = getChannelDirectory(channel);
-        MediaFile channelMediaFile = mediaFileService.getMediaFile(dir);
+        MediaFile channelMediaFile = mediaFileService.getMediaFile(channel.getMediaFileId());
+        MusicFolder folder = mediaFolderService.getMusicFolderById(channelMediaFile.getFolderId());
         Path existingCoverArt = mediaFileService.getCoverArt(channelMediaFile);
-        boolean imageFileExists = existingCoverArt != null && mediaFileService.getMediaFile(existingCoverArt) == null;
+        boolean imageFileExists = existingCoverArt != null
+                && mediaFileService.getMediaFile(existingCoverArt, folder) == null;
         if (imageFileExists) {
             return;
         }
+        Path channelDir = channelMediaFile.getFullPath(folder.getPath());
 
         HttpGet method = new HttpGet(imageUrl);
         method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
         try (CloseableHttpClient client = HttpClients.createDefault();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent()) {
-            Files.copy(in, dir.resolve("cover." + getCoverArtSuffix(response)), StandardCopyOption.REPLACE_EXISTING);
-            mediaFileService.refreshMediaFile(channelMediaFile);
+            Files.copy(in, channelDir.resolve("cover." + getCoverArtSuffix(response)),
+                    StandardCopyOption.REPLACE_EXISTING);
+            mediaFileService.refreshMediaFile(channelMediaFile, folder);
         } catch (Exception x) {
             LOG.warn("Failed to download cover art for podcast channel '{}'", channel.getTitle(), x);
         }
@@ -635,17 +597,19 @@ public class PodcastService {
         HttpGet method = new HttpGet(episode.getUrl());
         method.setConfig(requestConfig);
         method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
-        Path file = getFile(channel, episode);
+        MediaFile file = createEpisodeFile(channel, episode);
+        MusicFolder folder = mediaFolderService.getMusicFolderById(file.getFolderId());
+        Path filePath = file.getFullPath(folder.getPath());
 
         try (CloseableHttpClient client = HttpClients.createDefault();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent();
-                OutputStream out = new BufferedOutputStream(Files.newOutputStream(file))) {
+                OutputStream out = new BufferedOutputStream(Files.newOutputStream(filePath))) {
 
             episode.setStatus(PodcastStatus.DOWNLOADING);
             episode.setBytesDownloaded(0L);
             episode.setErrorMessage(null);
-            episode.setPath(file.toString());
+            episode.setMediaFileId(file.getId());
             podcastDao.updateEpisode(episode);
 
             byte[] buffer = new byte[8192];
@@ -672,14 +636,15 @@ public class PodcastService {
             if (isEpisodeDeleted(episode)) {
                 LOG.info("Podcast {} was deleted. Aborting download.", episode.getUrl());
                 FileUtil.closeQuietly(out);
-                FileUtil.delete(file);
+                FileUtil.delete(filePath);
+                // mark absent in db
+                mediaFileService.refreshMediaFile(file, folder);
             } else {
-                addMediaFileIdToEpisodes(Collections.singletonList(episode));
                 episode.setBytesDownloaded(bytesDownloaded);
                 podcastDao.updateEpisode(episode);
                 LOG.info("Downloaded {} bytes from Podcast {}", bytesDownloaded, episode.getUrl());
                 FileUtil.closeQuietly(out);
-                updateTags(file, episode);
+                updateTags(file, folder, episode);
                 episode.setStatus(PodcastStatus.COMPLETED);
                 podcastDao.updateEpisode(episode);
                 deleteObsoleteEpisodes(channel);
@@ -697,18 +662,18 @@ public class PodcastService {
         return episode == null || episode.getStatus() == PodcastStatus.DELETED;
     }
 
-    private void updateTags(Path file, PodcastEpisode episode) {
+    private void updateTags(MediaFile file, MusicFolder folder, PodcastEpisode episode) {
         try {
-            MediaFile mediaFile = mediaFileService.getMediaFile(file, false);
+            Path fullPath = file.getFullPath(folder.getPath());
             if (StringUtils.isNotBlank(episode.getTitle())) {
-                MetaDataParser parser = metaDataParserFactory.getParser(mediaFile.getFile());
+                MetaDataParser parser = metaDataParserFactory.getParser(fullPath);
                 if (!parser.isEditingSupported()) {
                     return;
                 }
-                MetaData metaData = parser.getRawMetaData(file);
+                MetaData metaData = parser.getRawMetaData(fullPath);
                 metaData.setTitle(episode.getTitle());
-                parser.setMetaData(mediaFile, metaData);
-                mediaFileService.refreshMediaFile(mediaFile);
+                parser.setMetaData(file, metaData);
+                mediaFileService.refreshMediaFile(file, folder);
             }
         } catch (Exception x) {
             LOG.warn("Failed to update tags for podcast {}", episode.getUrl(), x);
@@ -739,10 +704,7 @@ public class PodcastService {
         }
     }
 
-    private synchronized Path getFile(PodcastChannel channel, PodcastEpisode episode) {
-
-        Path channelDir = getChannelDirectory(channel);
-
+    private synchronized MediaFile createEpisodeFile(PodcastChannel channel, PodcastEpisode episode) {
         String filename = StringUtil.getUrlFile(sanitizeUrl(episode.getUrl(), true));
         if (filename == null) {
             filename = episode.getTitle();
@@ -754,24 +716,39 @@ public class PodcastService {
             extension = "mp3";
         }
 
+        MediaFile channelMediaFile = mediaFileService.getMediaFile(channel.getMediaFileId());
+        MusicFolder folder = mediaFolderService.getMusicFolderById(channelMediaFile.getFolderId());
+        Path channelDir = channelMediaFile.getFullPath(folder.getPath());
+
         Path file = channelDir.resolve(filename + "." + extension);
         for (int i = 0; Files.exists(file); i++) {
             file = channelDir.resolve(filename + i + "." + extension);
         }
-
-        if (!securityService.isWriteAllowed(file)) {
+        Path relativeFile = folder.getPath().relativize(file);
+        if (!securityService.isWriteAllowed(relativeFile, folder)) {
             throw new SecurityException("Access denied to file " + file);
         }
-        return file;
+        try {
+            Files.createFile(file);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create file " + file, e);
+        }
+
+        return mediaFileService.getMediaFile(relativeFile, folder);
     }
 
-    private Path getChannelDirectory(PodcastChannel channel) {
-        Path podcastDir = Paths.get(settingsService.getPodcastFolder());
-        Path channelDir = podcastDir.resolve(StringUtil.fileSystemSafe(channel.getTitle()));
+    private MediaFile createChannelDirectory(PodcastChannel channel) {
+        MusicFolder podcastFolder = mediaFolderService.getAllMusicFolders().stream()
+                .filter(f -> f.getType() == Type.PODCAST).findFirst().orElse(null);
 
-        if (!Files.isWritable(podcastDir)) {
-            throw new RuntimeException("The podcasts directory " + podcastDir + " isn't writeable.");
+        if (podcastFolder == null || !Files.isWritable(podcastFolder.getPath())) {
+            throw new RuntimeException("The podcasts directory " + podcastFolder + " isn't enabled or writeable.");
         }
+
+        String relativeChannelDir = channel.getTitle() != null ? StringUtil.fileSystemSafe(channel.getTitle())
+                : RandomStringUtils.randomAlphanumeric(10);
+
+        Path channelDir = podcastFolder.getPath().resolve(relativeChannelDir);
 
         if (!Files.exists(channelDir)) {
             try {
@@ -779,13 +756,9 @@ public class PodcastService {
             } catch (IOException e) {
                 throw new RuntimeException("Failed to create directory " + channelDir, e);
             }
-
-            MediaFile mediaFile = mediaFileService.getMediaFile(channelDir);
-            mediaFile.setComment(channel.getDescription());
-            mediaFileService.updateMediaFile(mediaFile);
         }
 
-        return channelDir;
+        return mediaFileService.getMediaFile(relativeChannelDir, podcastFolder);
     }
 
     /**
@@ -796,6 +769,14 @@ public class PodcastService {
     public void deleteChannel(int channelId) {
         // Delete all associated episodes (in case they have files that need to be deleted).
         getEpisodes(channelId).parallelStream().forEach(ep -> deleteEpisode(ep, false));
+
+        PodcastChannel channel = podcastDao.getChannel(channelId);
+        if (channel.getMediaFileId() != null) {
+            MediaFile file = mediaFileService.getMediaFile(channel.getMediaFileId());
+            MusicFolder folder = mediaFolderService.getMusicFolderById(file.getFolderId());
+            FileUtil.delete(file.getFullPath(folder.getPath()));
+            mediaFileService.refreshMediaFile(file, folder);
+        }
 
         podcastDao.deleteChannel(channelId);
     }
@@ -816,9 +797,12 @@ public class PodcastService {
             return;
         }
 
-        // Delete file.
-        if (episode.getPath() != null) {
-            FileUtil.delete(Paths.get(episode.getPath()));
+        // Delete file and update mediaFile
+        if (episode.getMediaFileId() != null) {
+            MediaFile file = mediaFileService.getMediaFile(episode.getMediaFileId());
+            MusicFolder folder = mediaFolderService.getMusicFolderById(file.getFolderId());
+            FileUtil.delete(file.getFullPath(folder.getPath()));
+            mediaFileService.refreshMediaFile(file, folder);
         }
 
         if (logicalDelete) {

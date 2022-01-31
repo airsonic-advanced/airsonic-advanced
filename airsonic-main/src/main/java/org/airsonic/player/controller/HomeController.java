@@ -59,6 +59,8 @@ public class HomeController {
     @Autowired
     private MediaFileService mediaFileService;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private SearchService searchService;
 
     @GetMapping
@@ -75,9 +77,8 @@ public class HomeController {
             listType = userSettings.getDefaultAlbumList();
         }
 
-        MusicFolder selectedMusicFolder = settingsService.getSelectedMusicFolder(user.getUsername());
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(user.getUsername(),
-                                                                                selectedMusicFolder == null ? null : selectedMusicFolder.getId());
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(user.getUsername(), userSettings.getSelectedMusicFolderId());
+        MusicFolder selectedMusicFolder = musicFolders.parallelStream().filter(f -> f.getId().equals(userSettings.getSelectedMusicFolderId())).findAny().orElse(null);
 
         Map<String, Object> map = new HashMap<>();
         List<Album> albums = Collections.emptyList();
@@ -128,7 +129,7 @@ public class HomeController {
         map.put("welcomeSubtitle", settingsService.getWelcomeSubtitle());
         map.put("welcomeMessage", settingsService.getWelcomeMessage());
         map.put("isIndexBeingCreated", mediaScannerService.isScanning());
-        map.put("musicFoldersExist", !settingsService.getAllMusicFolders().isEmpty());
+        map.put("musicFoldersExist", !mediaFolderService.getAllMusicFolders().isEmpty());
         map.put("listType", listType.getId());
         map.put("listSize", LIST_SIZE);
         map.put("coverArtSize", CoverArtScheme.MEDIUM.getSize());

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="iso-8859-1" %>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8" %>
 <%--@elvariable id="command" type="org.airsonic.player.command.MusicFolderSettingsCommand"--%>
 
 <html><head>
@@ -46,6 +46,7 @@
     <tr>
         <th><fmt:message key="musicfoldersettings.name"/></th>
         <th><fmt:message key="musicfoldersettings.path"/></th>
+        <th><fmt:message key="status.type"/></th>
         <th style="padding-left:1em"><fmt:message key="musicfoldersettings.enabled"/></th>
         <th style="padding-left:1em"><fmt:message key="common.delete"/></th>
         <th></th>
@@ -55,9 +56,13 @@
         <tr>
             <td><form:input path="musicFolders[${loopStatus.count-1}].name" size="20"/></td>
             <td><form:input path="musicFolders[${loopStatus.count-1}].path" size="40"/></td>
+            <td align="center"><span><c:out value="${folder.type}"/></span></td>
             <td align="center" style="padding-left:1em"><form:checkbox path="musicFolders[${loopStatus.count-1}].enabled" cssClass="checkbox"/></td>
-            <td align="center" style="padding-left:1em"><form:checkbox path="musicFolders[${loopStatus.count-1}].delete" cssClass="checkbox"/></td>
-            <td><c:if test="${not folder.existing}"><span class="warning"><fmt:message key="musicfoldersettings.notfound"/></span></c:if></td>
+            <td align="center" style="padding-left:1em"><c:if test="${folder.type != 'PODCAST'}"><form:checkbox path="musicFolders[${loopStatus.count-1}].delete" cssClass="checkbox"/></c:if></td>
+            <td>
+              <c:if test="${not folder.existing}"><span class="warning"><fmt:message key="musicfoldersettings.notfound"/></span></c:if>
+              <c:if test="${folder.overlap}"><span><fmt:message key="musicfoldersettings.overlap"><fmt:param value="${folder.overlapStatus}"/></fmt:message></span></c:if>
+            </td>
         </tr>
     </c:forEach>
 
@@ -70,6 +75,7 @@
     <tr>
         <td><form:input id="newMusicFolderName" path="newMusicFolder.name" size="20"/></td>
         <td><form:input id="newMusicFolderPath" path="newMusicFolder.path" size="40"/></td>
+        <td align="center"><span><c:out value="${newMusicFolder.type}"/><span></td>
         <td align="center" style="padding-left:1em"><form:checkbox path="newMusicFolder.enabled" cssClass="checkbox"/></td>
         <td></td>
     </tr>

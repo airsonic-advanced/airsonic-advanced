@@ -22,7 +22,7 @@ package org.airsonic.player.service.metadata;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.MoreFiles;
 import org.airsonic.player.domain.MediaFile;
-import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.MediaFolderService;
 import org.apache.commons.lang.StringUtils;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
@@ -55,10 +55,10 @@ public class JaudiotaggerParser extends MetaDataParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(JaudiotaggerParser.class);
     @Autowired
-    private final SettingsService settingsService;
+    private MediaFolderService mediaFolderService;
 
-    public JaudiotaggerParser(SettingsService settingsService) {
-        this.settingsService = settingsService;
+    public JaudiotaggerParser(MediaFolderService mediaFolderService) {
+        this.mediaFolderService = mediaFolderService;
     }
 
     static {
@@ -140,7 +140,7 @@ public class JaudiotaggerParser extends MetaDataParser {
     public void setMetaData(MediaFile file, MetaData metaData) {
 
         try {
-            AudioFile audioFile = AudioFileIO.read(file.getFile().toFile());
+            AudioFile audioFile = AudioFileIO.read(file.getFullPath(mediaFolderService.getMusicFolderById(file.getFolderId()).getPath()).toFile());
             Tag tag = audioFile.getTagOrCreateAndSetDefault();
 
             tag.setField(FieldKey.ARTIST, StringUtils.trimToEmpty(metaData.getArtist()));
@@ -185,11 +185,6 @@ public class JaudiotaggerParser extends MetaDataParser {
         return true;
     }
 
-    @Override
-    SettingsService getSettingsService() {
-        return settingsService;
-    }
-
     private static Set<String> applicableFormats = ImmutableSet.of("mp3", "m4a", "m4b", "m4p", "aac", "ogg", "flac", "wav", "mpc", "mp+", "aif", "dsf", "aiff", "wma");
 
     /**
@@ -209,7 +204,7 @@ public class JaudiotaggerParser extends MetaDataParser {
      * @param file The music file.
      * @return Whether cover art image data is available.
      */
-    public boolean isImageAvailable(MediaFile file) {
+    public static boolean isImageAvailable(Path file) {
         try {
             return getArtwork(file) != null;
         } catch (Throwable x) {
@@ -218,8 +213,8 @@ public class JaudiotaggerParser extends MetaDataParser {
         }
     }
 
-    public Artwork getArtwork(MediaFile file) throws Exception {
-        AudioFile audioFile = AudioFileIO.read(file.getFile().toFile());
+    public static Artwork getArtwork(Path file) throws Exception {
+        AudioFile audioFile = AudioFileIO.read(file.toFile());
         Tag tag = audioFile.getTag();
         Artwork artwork = null;
         if (tag != null) {
@@ -227,5 +222,10 @@ public class JaudiotaggerParser extends MetaDataParser {
             artwork = artworkOptional.orElse(tag.getFirstArtwork());
         }
         return artwork;
+    }
+
+    @Override
+    MediaFolderService getMediaFolderService() {
+        return mediaFolderService;
     }
 }

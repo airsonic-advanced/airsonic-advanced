@@ -159,9 +159,10 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
     }
 
     private void onSongStart(MediaFile file) {
-        LOG.info(player.getUsername() + " starting jukebox for \"" + FileUtil.getShortPath(file.getFile()) + "\"");
+        LOG.info("{} starting jukebox for {} in folder {}", player.getUsername(), FileUtil.getShortPath(file.getRelativePath()), file.getFolderId());
         status = statusService.createStreamStatus(player);
-        status.setFile(file.getFile());
+        status.setFile(file.getRelativePath());
+        status.setFolderId(file.getFolderId());
         status.addBytesTransferred(file.getFileSize());
         mediaFileService.incrementPlayCount(file);
         playStatus = new PlayStatus(status.getId(), file, status.getPlayer(), status.getMillisSinceLastUpdate());
@@ -170,7 +171,7 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
     }
 
     private void onSongEnd(MediaFile file) {
-        LOG.info(player.getUsername() + " stopping jukebox for \"" + FileUtil.getShortPath(file.getFile()) + "\"");
+        LOG.info("{} stopping jukebox for {} in folder {}", player.getUsername(), FileUtil.getShortPath(file.getRelativePath()), file.getFolderId());
         if (playStatus != null) {
             statusService.removeActiveLocalPlay(playStatus);
             playStatus = null;

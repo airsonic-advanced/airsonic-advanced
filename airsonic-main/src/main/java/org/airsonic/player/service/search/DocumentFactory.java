@@ -146,12 +146,12 @@ public class DocumentFactory {
      * @return document
      * @since legacy
      */
-    public Document createAlbumDocument(MediaFile mediaFile) {
+    public Document createAlbumDocument(MediaFile mediaFile, MusicFolder musicFolder) {
         Document doc = new Document();
         fieldId.accept(doc, mediaFile.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
         fieldWords.accept(doc, FieldNames.ALBUM, mediaFile.getAlbumName());
-        fieldFolderPath.accept(doc, mediaFile.getFolder());
+        fieldFolderPath.accept(doc, musicFolder.getPath().toString());
         return doc;
     }
 
@@ -162,11 +162,11 @@ public class DocumentFactory {
      * @return document
      * @since legacy
      */
-    public Document createArtistDocument(MediaFile mediaFile) {
+    public Document createArtistDocument(MediaFile mediaFile, MusicFolder musicFolder) {
         Document doc = new Document();
         fieldId.accept(doc, mediaFile.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
-        fieldFolderPath.accept(doc, mediaFile.getFolder());
+        fieldFolderPath.accept(doc, musicFolder.getPath().toString());
         return doc;
     }
 
@@ -220,7 +220,7 @@ public class DocumentFactory {
      * @return document
      * @since legacy
      */
-    public Document createSongDocument(MediaFile mediaFile) {
+    public Document createSongDocument(MediaFile mediaFile, MusicFolder musicFolder) {
         Document doc = new Document();
         fieldId.accept(doc, mediaFile.getId());
         fieldMediatype.accept(doc, mediaFile.getMediaType().name());
@@ -228,7 +228,7 @@ public class DocumentFactory {
         fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
         fieldGenre.accept(doc, mediaFile.getGenre());
         fieldYear.accept(doc, FieldNames.YEAR, mediaFile.getYear());
-        fieldFolderPath.accept(doc, mediaFile.getFolder());
+        fieldFolderPath.accept(doc, musicFolder.getPath().toString());
         return doc;
     }
 

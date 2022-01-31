@@ -2,8 +2,10 @@ package org.airsonic.player.ajax;
 
 import org.airsonic.player.domain.LastFmCoverArt;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.LastFmService;
 import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.SecurityService;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.http.client.config.RequestConfig;
@@ -37,6 +39,8 @@ public class CoverArtWSController {
     private MediaFileService mediaFileService;
     @Autowired
     private LastFmService lastFmService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
 
     @MessageMapping("/search")
     @SendToUser(broadcast = false)
@@ -54,7 +58,7 @@ public class CoverArtWSController {
     public String setCoverArtImage(CoverArtSetRequest req) {
         try {
             MediaFile mediaFile = mediaFileService.getMediaFile(req.getAlbumId());
-            saveCoverArt(mediaFile.getPath(), req.getUrl());
+            saveCoverArt(mediaFile, req.getUrl());
             return "OK";
         } catch (Exception e) {
             LOG.warn("Failed to save cover art for album {}", req.getAlbumId(), e);
@@ -62,7 +66,7 @@ public class CoverArtWSController {
         }
     }
 
-    private void saveCoverArt(String path, String url) throws Exception {
+    private void saveCoverArt(MediaFile dir, String url) throws Exception {
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(20 * 1000) // 20 seconds
                 .setSocketTimeout(20 * 1000) // 20 seconds
@@ -79,9 +83,11 @@ public class CoverArtWSController {
         }
 
         // Check permissions.
-        Path newCoverFile = Paths.get(path, "cover." + suffix);
-        if (!securityService.isWriteAllowed(newCoverFile)) {
-            throw new Exception("Permission denied: " + StringEscapeUtils.escapeHtml(newCoverFile.toString()));
+        MusicFolder folder = mediaFolderService.getMusicFolderById(dir.getFolderId());
+        Path fullPath = dir.getFullPath(folder.getPath());
+        Path newCoverFile = fullPath.resolve("cover." + suffix);
+        if (!securityService.isWriteAllowed(folder.getPath().relativize(newCoverFile), folder)) {
+            throw new SecurityException("Permission denied: " + StringEscapeUtils.escapeHtml(newCoverFile.toString()));
         }
 
         try (CloseableHttpClient client = HttpClients.createDefault();
@@ -89,17 +95,11 @@ public class CoverArtWSController {
                 InputStream input = response.getEntity().getContent()) {
 
             // If file exists, create a backup.
-            backup(newCoverFile, Paths.get(path, "cover." + suffix + ".backup"));
+            backup(newCoverFile, fullPath.resolve("cover." + suffix + ".backup"));
 
             // Write file.
             Files.copy(input, newCoverFile, StandardCopyOption.REPLACE_EXISTING);
         }
-
-        MediaFile dir = mediaFileService.getMediaFile(path);
-
-        // Refresh database.
-        mediaFileService.refreshMediaFile(dir);
-        dir = mediaFileService.getMediaFile(dir.getId());
 
         // Rename existing cover files if new cover file is not the preferred.
         try {
@@ -107,10 +107,10 @@ public class CoverArtWSController {
                 Path coverFile = mediaFileService.getCoverArt(dir);
                 if (coverFile != null && !isMediaFile(coverFile) && !newCoverFile.equals(coverFile)) {
                     Files.move(coverFile, Paths.get(coverFile.toRealPath().toString() + ".old"), StandardCopyOption.REPLACE_EXISTING);
-                    LOG.info("Renamed old image file " + coverFile);
+                    LOG.info("Renamed old image file {}", coverFile);
 
                     // Must refresh again.
-                    mediaFileService.refreshMediaFile(dir);
+                    mediaFileService.refreshMediaFile(dir, folder);
                     dir = mediaFileService.getMediaFile(dir.getId());
                 } else {
                     break;
@@ -129,9 +129,9 @@ public class CoverArtWSController {
         if (Files.exists(newCoverFile)) {
             try {
                 Files.move(newCoverFile, backup, StandardCopyOption.REPLACE_EXISTING);
-                LOG.info("Backed up old image file to " + backup);
+                LOG.info("Backed up old image file to {}", backup);
             } catch (IOException e) {
-                LOG.warn("Failed to create image file backup " + backup, e);
+                LOG.warn("Failed to create image file backup {}", backup, e);
             }
         }
     }

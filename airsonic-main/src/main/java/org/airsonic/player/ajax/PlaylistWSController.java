@@ -7,9 +7,9 @@ import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.Playlist;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.PlaylistService;
-import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -41,7 +41,7 @@ public class PlaylistWSController {
     @Autowired
     private MediaFileDao mediaFileDao;
     @Autowired
-    private SettingsService settingsService;
+    private MediaFolderService mediaFolderService;
     @Autowired
     private PlayerService playerService;
     @Autowired
@@ -94,7 +94,7 @@ public class PlaylistWSController {
         playlist.setName(bundle.getString("top.starred") + " " + dateFormat.format(now.atZone(ZoneId.systemDefault())));
 
         playlistService.createPlaylist(playlist);
-        List<MusicFolder> musicFolders = settingsService.getMusicFoldersForUser(p.getName());
+        List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(p.getName());
         List<MediaFile> songs = mediaFileDao.getStarredFiles(0, Integer.MAX_VALUE, p.getName(), musicFolders);
         playlistService.setFilesInPlaylist(playlist.getId(), songs);
 
@@ -227,10 +227,6 @@ public class PlaylistWSController {
 
     public void setMediaFileDao(MediaFileDao mediaFileDao) {
         this.mediaFileDao = mediaFileDao;
-    }
-
-    public void setSettingsService(SettingsService settingsService) {
-        this.settingsService = settingsService;
     }
 
     public void setPlayerService(PlayerService playerService) {

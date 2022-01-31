@@ -21,15 +21,18 @@ package org.airsonic.player.service;
 
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.MusicIndex.SortableArtist;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
-import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Provides services for grouping artists by index.
@@ -68,20 +71,17 @@ public class MusicIndexService {
     }
 
     private List<MediaFile> getSingleSongs(List<MusicFolder> folders, boolean refresh) {
-        List<MediaFile> result = new ArrayList<MediaFile>();
-        for (MusicFolder folder : folders) {
-            MediaFile parent = mediaFileService.getMediaFile(folder.getPath(), !refresh);
-            result.addAll(mediaFileService.getChildrenOf(parent, true, false, true, !refresh));
-        }
-        return result;
+        return folders.stream().flatMap(f -> mediaFileService
+                .getChildrenOf(mediaFileService.getMediaFile(Paths.get(""), f, !refresh), true, false, true, !refresh)
+                .stream()).collect(toList());
     }
 
     public List<MediaFile> getShortcuts(List<MusicFolder> musicFoldersToUse) {
         return Stream.of(settingsService.getShortcutsAsArray())
                 .flatMap(shortcut -> musicFoldersToUse.parallelStream()
-                        .map(musicFolder -> musicFolder.getPath().resolve(shortcut)))
-                .filter(Files::exists)
-                .map(file -> mediaFileService.getMediaFile(file, true))
+                        .map(musicFolder -> Pair.of(Paths.get(shortcut), musicFolder)))
+                .map(pair -> mediaFileService.getMediaFile(pair.getLeft(), pair.getRight(), true))
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -160,8 +160,7 @@ public class MusicIndexService {
         Collator collator = createCollator();
 
         for (MusicFolder folder : folders) {
-
-            MediaFile root = mediaFileService.getMediaFile(folder.getPath(), !refresh);
+            MediaFile root = mediaFileService.getMediaFile(Paths.get(""), folder, !refresh);
             List<MediaFile> children = mediaFileService.getChildrenOf(root, false, true, true, !refresh);
             for (MediaFile child : children) {
                 if (shortcutSet.contains(child.getName())) {
@@ -245,6 +244,7 @@ public class MusicIndexService {
             this.indexes = indexes;
         }
 
+        @Override
         public int compare(MusicIndex a, MusicIndex b) {
             int indexA = indexes.indexOf(a);
             int indexB = indexes.indexOf(b);

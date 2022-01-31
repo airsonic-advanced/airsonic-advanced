@@ -21,6 +21,7 @@ package org.airsonic.player.command;
 
 import org.airsonic.player.controller.MusicFolderSettingsController;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.apache.commons.lang.StringUtils;
 
 import java.nio.file.Files;
@@ -150,16 +151,22 @@ public class MusicFolderSettingsCommand {
         private Integer id;
         private String path;
         private String name;
+        private String type = Type.MEDIA.name();
         private boolean enabled;
         private boolean delete;
         private boolean existing;
+        private boolean overlap;
+        private String overlapStatus;
 
-        public MusicFolderInfo(MusicFolder musicFolder) {
+        public MusicFolderInfo(MusicFolder musicFolder, boolean overlap, String overlapStatus) {
             id = musicFolder.getId();
             path = musicFolder.getPath().toString();
             name = musicFolder.getName();
+            type = musicFolder.getType().name();
             enabled = musicFolder.isEnabled();
             existing = Files.exists(musicFolder.getPath()) && Files.isDirectory(musicFolder.getPath());
+            this.overlap = overlap;
+            this.overlapStatus = overlapStatus;
         }
 
         public MusicFolderInfo() {
@@ -190,6 +197,14 @@ public class MusicFolderSettingsCommand {
             this.name = name;
         }
 
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -206,6 +221,14 @@ public class MusicFolderSettingsCommand {
             this.delete = delete;
         }
 
+        public boolean getOverlap() {
+            return overlap;
+        }
+
+        public String getOverlapStatus() {
+            return overlapStatus;
+        }
+
         public MusicFolder toMusicFolder() {
             String path = StringUtils.trimToNull(this.path);
             if (path == null) {
@@ -216,7 +239,7 @@ public class MusicFolderSettingsCommand {
             if (name == null) {
                 name = file.getFileName().toString();
             }
-            return new MusicFolder(id, file, name, enabled, Instant.now());
+            return new MusicFolder(id, file, name, MusicFolder.Type.valueOf(type), enabled, Instant.now());
         }
 
         public boolean isExisting() {

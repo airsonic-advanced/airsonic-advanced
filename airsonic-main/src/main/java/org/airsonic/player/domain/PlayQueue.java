@@ -21,7 +21,9 @@ package org.airsonic.player.domain;
 
 import org.apache.commons.lang.StringUtils;
 
+import java.nio.file.Files;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 /**
@@ -38,6 +40,12 @@ public class PlayQueue {
 
     private RandomSearchCriteria randomSearchCriteria;
     private InternetRadio internetRadio;
+
+    private Function<Integer, MusicFolder> folderIdToFolder;
+
+    public PlayQueue(Function<Integer, MusicFolder> folderIdToFolder) {
+        this.folderIdToFolder = folderIdToFolder;
+    }
 
     /**
      * The index of the current song, or -1 if the end of the playlist is reached.
@@ -82,7 +90,7 @@ public class PlayQueue {
             MediaFile file = files.get(index);
 
             // Remove file from playlist if it doesn't exist.
-            if (!file.exists()) {
+            if (!Files.exists(file.getFullPath(folderIdToFolder.apply(file.getFolderId()).getPath()))) {
                 files.remove(index);
                 index = Math.max(0, Math.min(index, size() - 1));
                 return getCurrentFile();
