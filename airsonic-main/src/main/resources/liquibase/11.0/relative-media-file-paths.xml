@@ -120,6 +120,7 @@
         <rollback></rollback>
     </changeSet>
     <changeSet id="add-media-file-id-to-user-rating" author="anon">
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <not>
                 <columnExists tableName="user_rating" columnName="media_file_id"/>
