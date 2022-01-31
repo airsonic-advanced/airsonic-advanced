@@ -629,6 +629,7 @@
                 </execution>
               </executions>
               <configuration>
+                <revisionOnScmFailure>UNKNOWN</revisionOnScmFailure>
                 <timezone>UTC</timezone>
                 <timestampFormat>yyyyMMddHHmmss</timestampFormat>
                 <attach>true</attach>
