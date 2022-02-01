@@ -228,14 +228,14 @@ public class UploadController {
         // rar files
         if (file.getFileName().toString().toLowerCase().endsWith(".rar")) {
             LOG.info("Trying rar-specific extraction method for {}", file);
-            try (Archive zip = new Archive(file.toFile(), null)) {
+            try (Archive zip = new Archive(file.toFile())) {
                 if (zip.isEncrypted()) {
                     throw new AccessDeniedException(file.toString(), null, "Archive is encrypted");
                 }
 
                 for (FileHeader fh : zip) {
                     if (fh.isEncrypted()) {
-                        LOG.info("Can't read {} in {}", fh.getFileNameString(), file);
+                        LOG.info("Can't read {} in {}", fh.getFileName(), file);
                         continue;
                     }
 
@@ -252,11 +252,7 @@ public class UploadController {
 
                         @Override
                         public String getName() {
-                            if (fh.isFileHeader() && fh.isUnicode()) {
-                                return fh.getFileNameW();
-                            } else {
-                                return fh.getFileNameString();
-                            }
+                            return fh.getFileName();
                         }
 
                         @Override
