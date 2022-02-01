@@ -3,18 +3,20 @@
 Airsonic is using [Maven](https://maven.apache.org/) to manage its build
 process. Any version above 3.3+ should do the job.
 
+Recent versions of Mavens block http repos. One dependency we use is on an http repo (clingline). As such we specify our own Maven settings file to allow Maven to fetch artifacts from the http repo.
+
 If you want to run the testsuite and get a `.war` is everything went fine,
 you this command:
 
 ```
-$ mvn clean package 
+ mvn --settings=./.mvn/settings.xml clean package
 ```
 
 If you don't care about the result of the testsuite, but only
 want a `.war` as quick as possible, you can use this instead:
 
 ```
-$ mvn -Dmaven.test.skip=true clean package 
+mvn --settings=./.mvn/settings.xml -DskipTests -Dcheckstyle.skip=true clean package
 ```
 
 
