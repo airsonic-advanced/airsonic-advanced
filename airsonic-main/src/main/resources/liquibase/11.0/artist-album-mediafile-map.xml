@@ -61,7 +61,7 @@
         </preConditions>
         <createTable tableName="album_genre">
             <column name="album_id" type="int">
-                <constraints nullable="false" referencedTableName="album" referencedColumnNames="id" foreignKeyName="alf_al_id_fk" deleteCascade="true"/>
+                <constraints nullable="false" referencedTableName="album" referencedColumnNames="id" foreignKeyName="alg_al_id_fk" deleteCascade="true"/>
             </column>
             <column name="genre" type="${varchar_type}">
                 <constraints nullable="false"/>

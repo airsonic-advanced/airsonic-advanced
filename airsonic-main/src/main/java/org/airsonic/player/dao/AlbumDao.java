@@ -221,6 +221,9 @@ public class AlbumDao extends AbstractDao {
     }
 
     public Collection<Integer> getFolderIds(Album a) {
+        if (a.getMediaFileIds().isEmpty()) {
+            return Collections.emptyList();
+        }
         String sql = "select distinct(folder_id) from media_file where id in (:ids)";
         Map<String, Object> args = new HashMap<>();
         args.put("ids", a.getMediaFileIds());
@@ -419,6 +422,15 @@ public class AlbumDao extends AbstractDao {
     private List<Album> consolidateDBAlbums(List<DBAlbum> albums) {
         if (albums == null) {
             return null;
+        }
+        if (albums.size() == 1) {
+            if (albums.get(0).getMediaFileId() != null) {
+                albums.get(0).getMediaFileIds().add(albums.get(0).getMediaFileId());
+            }
+            if (albums.get(0).getGenre() != null) {
+                albums.get(0).getGenres().add(albums.get(0).getGenre());
+            }
+            return Collections.singletonList(albums.get(0));
         }
         return albums.stream().collect(Collectors.groupingBy(DBAlbum::getId, reducing((da1, da2) -> {
             if (da1.getMediaFileId() != null) {

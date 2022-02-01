@@ -229,7 +229,7 @@ public class MediaScannerService {
                         albumDao.createOrUpdateAlbum(a);
                         return a;
                     }, pool)).collect(toList());
-            CompletableFuture<Void> albumsInDBAll = CompletableFuture.allOf((CompletableFuture<?>[]) albumsInDB.toArray());
+            CompletableFuture<Void> albumsInDBAll = CompletableFuture.allOf(albumsInDB.toArray(new CompletableFuture[0]));
             albumsInDBAll.thenAcceptAsync(v -> LOG.info("Albums persisted in DB."), pool);
 
             CompletableFuture<Void> albumsInIndexAll = CompletableFuture.allOf(albumsInDB.parallelStream()
@@ -259,7 +259,7 @@ public class MediaScannerService {
                         .orElse(null));
                 return ar;
             }, pool)).collect(toList());
-            CompletableFuture<Void> artistsInMemAll = CompletableFuture.allOf((CompletableFuture<?>[]) artistsInMem.toArray());
+            CompletableFuture<Void> artistsInMemAll = CompletableFuture.allOf(artistsInMem.toArray(new CompletableFuture[0]));
             artistsInMemAll.thenAcceptAsync(v -> LOG.info("Artist list generated."), pool);
 
             CompletableFuture<Void> albumsCoverArtAll = CompletableFuture.allOf(albumsInDB.parallelStream()
@@ -272,7 +272,7 @@ public class MediaScannerService {
                         artistDao.createOrUpdateArtist(a);
                         return a;
                     }, pool)).collect(toList());
-            CompletableFuture<Void> artistsInDBAll = CompletableFuture.allOf((CompletableFuture<?>[]) artistsInDB.toArray());
+            CompletableFuture<Void> artistsInDBAll = CompletableFuture.allOf(artistsInDB.toArray(new CompletableFuture[0]));
             artistsInDBAll.thenAcceptAsync(v -> LOG.info("Artists persisted in DB."), pool);
 
             CompletableFuture<Void> artistsInIndexAll = CompletableFuture.allOf(artistsInDB.parallelStream()
