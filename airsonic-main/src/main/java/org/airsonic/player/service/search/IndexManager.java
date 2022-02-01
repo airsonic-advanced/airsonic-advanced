@@ -73,7 +73,7 @@ public class IndexManager {
      *    DocumentFactory or the class that they use.
      *
      */
-    private static final int INDEX_VERSION = 19;
+    private static final int INDEX_VERSION = 20;
 
     /**
      * Literal name of index top directory.
@@ -111,7 +111,7 @@ public class IndexManager {
 
     public void index(Album album) {
         Term primarykey = documentFactory.createPrimarykey(album);
-        Document document = documentFactory.createAlbumId3Document(album);
+        Document document = documentFactory.createAlbumId3Document(album, albumDao.getFolderIds(album));
         try {
             writers.get(IndexType.ALBUM_ID3).updateDocument(primarykey, document);
         } catch (Exception x) {
@@ -119,9 +119,9 @@ public class IndexManager {
         }
     }
 
-    public void index(Artist artist, MusicFolder musicFolder) {
+    public void index(Artist artist) {
         Term primarykey = documentFactory.createPrimarykey(artist);
-        Document document = documentFactory.createArtistId3Document(artist, musicFolder);
+        Document document = documentFactory.createArtistId3Document(artist, artistDao.getFolderIds(artist));
         try {
             writers.get(IndexType.ARTIST_ID3).updateDocument(primarykey, document);
         } catch (Exception x) {

@@ -220,6 +220,13 @@ public class AlbumDao extends AbstractDao {
         return namedQueryForInt("select count(distinct a.id) from album a left join album_file af on a.id=af.album_id left join media_file mf on af.media_file_id = mf.id where a.present and m.folder_id in (:folders)", 0, args);
     }
 
+    public Collection<Integer> getFolderIds(Album a) {
+        String sql = "select distinct(folder_id) from media_file where id in (:ids)";
+        Map<String, Object> args = new HashMap<>();
+        args.put("ids", a.getMediaFileIds());
+        return namedQueryForTypes(sql, Integer.class, args);
+    }
+
     /**
      * Returns the most frequently played albums.
      *

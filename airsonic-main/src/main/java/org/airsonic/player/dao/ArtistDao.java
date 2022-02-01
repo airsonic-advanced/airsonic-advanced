@@ -102,6 +102,13 @@ public class ArtistDao extends AbstractDao {
         return queryOneArtist(consolidateDBArtists(query(constructArtistQuery(false, "ar.id=?"), rowMapper, id)));
     }
 
+    public Collection<Integer> getFolderIds(Artist a) {
+        String sql = "select distinct(m.folder_id) from album_file af join media_file m on af.media_file_id = m.id where af.album_id in (:ids)";
+        Map<String, Object> args = new HashMap<>();
+        args.put("ids", a.getAlbumIds());
+        return namedQueryForTypes(sql, Integer.class, args);
+    }
+
     /**
      * Creates or updates an artist.
      *

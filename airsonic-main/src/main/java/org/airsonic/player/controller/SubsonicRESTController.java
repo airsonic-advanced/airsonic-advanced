@@ -506,7 +506,7 @@ public class SubsonicRESTController {
         jaxbArtist.setId(String.valueOf(artist.getId()));
         jaxbArtist.setName(artist.getName());
         jaxbArtist.setStarred(jaxbWriter.convertDate(artistDao.getArtistStarredDate(artist.getId(), username)));
-        jaxbArtist.setAlbumCount(artist.getAlbumCount());
+        jaxbArtist.setAlbumCount(artist.getAlbumIds().size());
         if (coverArtService.get(EntityType.ARTIST, artist.getId()) != null) {
             jaxbArtist.setCoverArt(CoverArtController.ARTIST_COVERART_PREFIX + artist.getId());
         }
@@ -1115,7 +1115,7 @@ public class SubsonicRESTController {
         } else if ("alphabeticalByName".equals(type)) {
             albums = mediaFileService.getAlphabeticalAlbums(offset, size, false, musicFolders);
         } else if ("byGenre".equals(type)) {
-            albums = mediaFileService.getAlbumsByGenre(offset, size, Genres.parseGenres(getRequiredStringParameter(request, "genre")), musicFolders);
+            albums = mediaFileService.getAlbumsByGenre(offset, size, getRequiredStringParameter(request, "genre"), musicFolders);
         } else if ("byYear".equals(type)) {
             albums = mediaFileService.getAlbumsByYear(offset, size, getRequiredIntParameter(request, "fromYear"),
                     getRequiredIntParameter(request, "toYear"), musicFolders);
@@ -1159,7 +1159,7 @@ public class SubsonicRESTController {
         } else if ("alphabeticalByName".equals(type)) {
             albums = albumDao.getAlphabeticalAlbums(offset, size, false, false, musicFolders);
         } else if ("byGenre".equals(type)) {
-            albums = albumDao.getAlbumsByGenre(offset, size, Genres.parseGenres(getRequiredStringParameter(request, "genre")), musicFolders);
+            albums = albumDao.getAlbumsByGenre(offset, size, Genres.parseGenres(getRequiredStringParameter(request, "genre"), settingsService.getGenreSeparators()), musicFolders);
         } else if ("byYear".equals(type)) {
             albums = albumDao.getAlbumsByYear(offset, size, getRequiredIntParameter(request, "fromYear"),
                                               getRequiredIntParameter(request, "toYear"), musicFolders);

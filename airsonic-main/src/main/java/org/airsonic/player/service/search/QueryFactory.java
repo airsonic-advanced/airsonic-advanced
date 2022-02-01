@@ -167,8 +167,7 @@ public class QueryFactory {
      * @return Query
      * @throws IOException When parsing of MultiFieldQueryParser fails
      */
-    public Query search(SearchCriteria criteria, List<MusicFolder> musicFolders,
-            IndexType indexType) throws IOException {
+    public Query search(SearchCriteria criteria, List<MusicFolder> musicFolders, IndexType indexType) throws IOException {
 
         BooleanQuery.Builder mainQuery = new BooleanQuery.Builder();
 

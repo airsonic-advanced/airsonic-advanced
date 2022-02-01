@@ -36,6 +36,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.function.BiConsumer;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
@@ -152,6 +153,7 @@ public class DocumentFactory {
         fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
         fieldWords.accept(doc, FieldNames.ALBUM, mediaFile.getAlbumName());
         fieldFolderPath.accept(doc, musicFolder.getPath().toString());
+        fieldFolderId.accept(doc, musicFolder.getId());
         return doc;
     }
 
@@ -167,6 +169,7 @@ public class DocumentFactory {
         fieldId.accept(doc, mediaFile.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
         fieldFolderPath.accept(doc, musicFolder.getPath().toString());
+        fieldFolderId.accept(doc, musicFolder.getId());
         return doc;
     }
 
@@ -177,12 +180,12 @@ public class DocumentFactory {
      * @return document
      * @since legacy
      */
-    public Document createAlbumId3Document(Album album) {
+    public Document createAlbumId3Document(Album album, Collection<Integer> folderIds) {
         Document doc = new Document();
         fieldId.accept(doc, album.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, album.getArtist());
         fieldWords.accept(doc, FieldNames.ALBUM, album.getName());
-        fieldFolderId.accept(doc, album.getFolderId());
+        folderIds.stream().forEach(fid -> fieldFolderId.accept(doc, fid));
         return doc;
     }
 
@@ -205,11 +208,11 @@ public class DocumentFactory {
      *  In implementation ARTIST and ALBUM became nullable,
      *  but null is not input at this point in data flow.
      */
-    public Document createArtistId3Document(Artist artist, MusicFolder musicFolder) {
+    public Document createArtistId3Document(Artist artist, Collection<Integer> folderIds) {
         Document doc = new Document();
         fieldId.accept(doc, artist.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, artist.getName());
-        fieldFolderId.accept(doc, musicFolder.getId());
+        folderIds.stream().forEach(fid -> fieldFolderId.accept(doc, fid));
         return doc;
     }
 
