@@ -12,6 +12,7 @@ import liquibase.statement.SqlStatement;
 import liquibase.statement.core.DeleteStatement;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.service.MediaFolderService;
 import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
@@ -67,10 +68,16 @@ public class UniqueMediaFolders implements CustomSqlChange {
                     folders.add(MusicFolderDao.MUSICFOLDER_ROW_MAPPER.mapRow(result, i++));
                 }
                 Set<String> paths = new HashSet<>();
+                // skip deleting podcast folder
+                MusicFolder podcastFolder = folders.stream().filter(f -> f.getType() == Type.PODCAST).findFirst().orElse(null);
+                if (podcastFolder == null) {
+                    throw new RuntimeException("Cannot find podcast folder!");
+                }
+                paths.add(podcastFolder.getPath().toString());
                 folders.forEach(f -> {
                     Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlap = MediaFolderService.getMusicFolderPathOverlaps(f, folders);
                     // duplicate
-                    if (!overlap.getLeft().isEmpty() && !paths.add(f.getPath().toString())) {
+                    if (!overlap.getLeft().isEmpty() && !paths.add(f.getPath().toString()) && f.getType() != Type.PODCAST) {
                         deletionSet.add(f.getId());
                         LOG.info("Duplicate media folder found (id: {}, name: {}) and will be deleted", f.getId(), f.getName());
                     }

@@ -212,7 +212,7 @@ public class MediaFile {
     }
 
     public String getName() {
-        return title != null ? title : FilenameUtils.getBaseName(path);
+        return title != null ? title : isDirectory() ? FilenameUtils.getName(path) : FilenameUtils.getBaseName(path);
     }
 
     public Integer getDiscNumber() {

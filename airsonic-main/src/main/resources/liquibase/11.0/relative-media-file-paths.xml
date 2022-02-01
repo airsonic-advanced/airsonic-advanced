@@ -110,7 +110,17 @@
             </addColumn>
         </rollback>
     </changeSet>
+    <changeSet id="clean-user-rating-for-absent-paths" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="path"/>
+        </preConditions>
+        <delete tableName="user_rating">
+            <where>path IN (SELECT * FROM (SELECT ur.path FROM user_rating ur LEFT JOIN media_file m ON ur.path=m.path WHERE m.path IS NULL) tbl_tmp)</where>
+        </delete>
+        <rollback></rollback>
+    </changeSet>
     <changeSet id="add-media-file-id-to-user-rating" author="anon">
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <not>
                 <columnExists tableName="user_rating" columnName="media_file_id"/>
@@ -121,10 +131,32 @@
                 <constraints nullable="false" />
             </column>
         </addColumn>
+        <rollback>
+            <dropColumn tableName="user_rating" columnName="media_file_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="populate-user-rating-media-file-id" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <sqlCheck expectedResult="0">select count(*) from user_rating where media_file_id = '-1'</sqlCheck>
+            </not>
+        </preConditions>
+        <update tableName="user_rating">
+            <column name="media_file_id" valueComputed="(SELECT media_file.id FROM media_file WHERE media_file.path=user_rating.path)"></column>
+            <where>media_file_id='-1'</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-user-rating-media-file-id-fk" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyTableName="user_rating" foreignKeyName="ura_m_fk"/>
+            </not>
+        </preConditions>
         <addForeignKeyConstraint constraintName="ura_m_fk" baseTableName="user_rating" baseColumnNames="media_file_id" referencedTableName="media_file" referencedColumnNames="id" onDelete="CASCADE"/>
         <rollback>
             <dropForeignKeyConstraint baseTableName="user_rating" constraintName="ura_m_fk"/>
-            <dropColumn tableName="user_rating" columnName="media_file_id"></dropColumn>
         </rollback>
     </changeSet>
     <changeSet id="drop-user-rating-path-pk" author="anon">
@@ -153,6 +185,15 @@
             </addColumn>
         </rollback>
     </changeSet>
+    <changeSet id="clean-user-rating-for-uniqueness" author="anon">
+        <preConditions onFail="WARN">
+            <columnExists tableName="user_rating" columnName="media_file_id"/>
+        </preConditions>
+        <delete tableName="user_rating">
+            <where>media_file_id = '-1'</where>
+        </delete>
+        <rollback></rollback>
+    </changeSet>
     <changeSet id="add-user-rating-pk" author="anon">
         <preConditions onFail="MARK_RAN">
             <columnExists tableName="user_rating" columnName="media_file_id"/>
@@ -167,6 +208,15 @@
             <dropForeignKeyConstraint baseTableName="user_rating" constraintName="ura_u_fk"/>
             <dropPrimaryKey tableName="user_rating" constraintName="ur_u_mfid_pk"/>
         </rollback>
+    </changeSet>
+    <changeSet id="clean-share-file-for-absent-paths" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="share_file" columnName="path"/>
+        </preConditions>
+        <delete tableName="share_file">
+            <where>path IN (SELECT * FROM (SELECT sf.path FROM share_file sf LEFT JOIN media_file m ON sf.path=m.path WHERE m.path IS NULL) tbl_tmp)</where>
+        </delete>
+        <rollback></rollback>
     </changeSet>
     <changeSet id="add-media-file-id-to-share-file" author="anon">
         <preConditions onFail="MARK_RAN">
