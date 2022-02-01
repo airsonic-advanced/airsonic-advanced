@@ -23,4 +23,5 @@
     <include file="podcast-episode-guid.xml" relativeToChangelogFile="true"/>
     <include file="relative-media-file-paths.xml" relativeToChangelogFile="true"/>
     <include file="cover-art-table.xml" relativeToChangelogFile="true"/>
+    <include file="artist-album-mediafile-map.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
