@@ -172,6 +172,16 @@
             <addForeignKeyConstraint baseTableName="user_rating" baseColumnNames="username" constraintName="ura_u_fk" referencedTableName="users" referencedColumnNames="username" onDelete="CASCADE" />
         </rollback>
     </changeSet>
+    <changeSet id="drop-user-rating-path-pk2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="path"/>
+            <primaryKeyExists tableName="user_rating"/>
+        </preConditions>
+        <dropPrimaryKey tableName="user_rating"/>
+        <rollback>
+            <addPrimaryKey tableName="user_rating" columnNames="username,path" />
+        </rollback>
+    </changeSet>
     <changeSet id="drop-path-from-user-rating" author="anon">
         <preConditions onFail="MARK_RAN">
             <columnExists tableName="user_rating" columnName="path"/>
@@ -206,6 +216,18 @@
         <addForeignKeyConstraint baseTableName="user_rating" baseColumnNames="username" constraintName="ura_u_fk" referencedTableName="users" referencedColumnNames="username" onDelete="CASCADE" />
         <rollback>
             <dropForeignKeyConstraint baseTableName="user_rating" constraintName="ura_u_fk"/>
+            <dropPrimaryKey tableName="user_rating" constraintName="ur_u_mfid_pk"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-user-rating-pk2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="media_file_id"/>
+            <not>
+                <primaryKeyExists tableName="user_rating"/>
+            </not>
+        </preConditions>
+        <addPrimaryKey tableName="user_rating" columnNames="username,media_file_id" constraintName="ur_u_mfid_pk"/>
+        <rollback>
             <dropPrimaryKey tableName="user_rating" constraintName="ur_u_mfid_pk"/>
         </rollback>
     </changeSet>
