@@ -192,8 +192,8 @@ public class DocumentFactory {
     /**
      * Create a document.
      *
-     * @param artist target of document
-     * @param musicFolder target folder exists
+     * @param artist    target of document
+     * @param folderIds target folders for artists
      * @return document
      * @since legacy
      */

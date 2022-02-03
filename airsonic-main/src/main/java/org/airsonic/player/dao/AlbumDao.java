@@ -335,7 +335,7 @@ public class AlbumDao extends AbstractDao {
      *
      * @param offset       Number of albums to skip.
      * @param count        Maximum number of albums to return.
-     * @param genre        The genre name.
+     * @param genres       The list of genres.
      * @param musicFolders Only return albums from these folders.
      * @return Albums in the genre.
      */
