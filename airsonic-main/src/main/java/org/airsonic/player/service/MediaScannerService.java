@@ -391,16 +391,15 @@ public class MediaScannerService {
     private void updateAlbumAndArtist(MediaFile file, MusicFolder musicFolder, Instant lastScanned,
             Map<String, Album> albums, Map<String, Set<Album>> artistAlbums, Set<Genre> fileGenres) {
         String artist = file.getAlbumArtist() != null ? file.getAlbumArtist() : file.getArtist();
-        if (file.isAudio() && file.getAlbumName() == null && artist != null) {
-            // add an artist, even though no album processing will happen
-            artistAlbums.computeIfAbsent(artist, art -> ConcurrentHashMap.newKeySet());
-        }
-        if (file.getAlbumName() == null || artist == null || file.getParentPath() == null || !file.isAudio()) {
+        String albumName = file.getAlbumName() != null ? file.getAlbumName() : "(Unknown)";
+
+        // albumName is never null
+        if (artist == null || file.getParentPath() == null || !file.isAudio()) {
             return;
         }
 
-        Album album = albums.computeIfAbsent(file.getAlbumName() + "|" + artist, k -> {
-            Album a = albumDao.getAlbum(artist, file.getAlbumName());
+        Album album = albums.computeIfAbsent(albumName + "|" + artist, k -> {
+            Album a = albumDao.getAlbum(artist, albumName);
             if (a != null) {
                 // reset stats when first retrieve from the db for new scan
                 a.setDuration(0);
@@ -409,7 +408,7 @@ public class MediaScannerService {
                 a.getGenres().clear();
             } else {
                 a = new Album();
-                a.setName(file.getAlbumName());
+                a.setName(albumName);
                 a.setArtist(artist);
                 a.setCreated(file.getChanged());
             }
