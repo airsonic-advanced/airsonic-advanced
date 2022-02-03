@@ -542,8 +542,8 @@ public class PodcastService {
                 })
                 .filter(Objects::nonNull)
                 // Sort episode in reverse chronological order (newest first)
-                .sorted(Comparator.comparingLong(k -> k.getPublishDate() == null ? 0L : -k.getPublishDate().toEpochMilli()))
-                .forEach(episode -> {
+                .sorted(Comparator.comparing((PodcastEpisode episode) -> episode.getPublishDate()).reversed())
+                .forEachOrdered(episode -> {
                     if (counter.decrementAndGet() < 0) {
                         episode.setStatus(PodcastStatus.SKIPPED);
                     }
