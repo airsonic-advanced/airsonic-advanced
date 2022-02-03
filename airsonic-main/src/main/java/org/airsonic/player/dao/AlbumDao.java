@@ -40,7 +40,7 @@ import java.util.*;
  */
 @Repository
 public class AlbumDao extends AbstractDao {
-    private static final String INSERT_COLUMNS = "path, name, artist, song_count, duration, cover_art_path, " +
+    private static final String INSERT_COLUMNS = "path, name, artist, song_count, duration, " +
                                           "year, genre, play_count, last_played, comment, created, last_scanned, present, " +
                                           "folder_id, mb_release_id";
 
@@ -119,7 +119,6 @@ public class AlbumDao extends AbstractDao {
                      "path=?," +
                      "song_count=?," +
                      "duration=?," +
-                     "cover_art_path=?," +
                      "year=?," +
                      "genre=?," +
                      "play_count=?," +
@@ -132,7 +131,7 @@ public class AlbumDao extends AbstractDao {
                      "mb_release_id=? " +
                      "where artist=? and name=?";
 
-        int n = update(sql, album.getPath(), album.getSongCount(), album.getDuration(), album.getCoverArtPath(), album.getYear(),
+        int n = update(sql, album.getPath(), album.getSongCount(), album.getDuration(), album.getYear(),
                        album.getGenre(), album.getPlayCount(), album.getLastPlayed(), album.getComment(), album.getCreated(),
                        album.getLastScanned(), album.isPresent(), album.getFolderId(), album.getMusicBrainzReleaseId(), album.getArtist(), album.getName());
 
@@ -140,7 +139,7 @@ public class AlbumDao extends AbstractDao {
 
             update("insert into album (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")", album.getPath(),
                    album.getName(), album.getArtist(), album.getSongCount(), album.getDuration(),
-                   album.getCoverArtPath(), album.getYear(), album.getGenre(), album.getPlayCount(), album.getLastPlayed(),
+                   album.getYear(), album.getGenre(), album.getPlayCount(), album.getLastPlayed(),
                    album.getComment(), album.getCreated(), album.getLastScanned(), album.isPresent(), album.getFolderId(), album.getMusicBrainzReleaseId());
         }
 
@@ -362,23 +361,22 @@ public class AlbumDao extends AbstractDao {
         @Override
         public Album mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Album(
-                    rs.getInt(1),
-                    rs.getString(2),
-                    rs.getString(3),
-                    rs.getString(4),
-                    rs.getInt(5),
-                    rs.getDouble(6),
-                    rs.getString(7),
-                    rs.getInt(8) == 0 ? null : rs.getInt(8),
-                    rs.getString(9),
-                    rs.getInt(10),
-                    Optional.ofNullable(rs.getTimestamp(11)).map(x -> x.toInstant()).orElse(null),
-                    rs.getString(12),
-                    Optional.ofNullable(rs.getTimestamp(13)).map(x -> x.toInstant()).orElse(null),
-                    Optional.ofNullable(rs.getTimestamp(14)).map(x -> x.toInstant()).orElse(null),
-                    rs.getBoolean(15),
-                    rs.getInt(16),
-                    rs.getString(17));
+                    rs.getInt("id"),
+                    rs.getString("path"),
+                    rs.getString("name"),
+                    rs.getString("artist"),
+                    rs.getInt("song_count"),
+                    rs.getDouble("duration"),
+                    rs.getInt("year") == 0 ? null : rs.getInt("year"),
+                    rs.getString("genre"),
+                    rs.getInt("play_count"),
+                    Optional.ofNullable(rs.getTimestamp("last_played")).map(x -> x.toInstant()).orElse(null),
+                    rs.getString("comment"),
+                    Optional.ofNullable(rs.getTimestamp("created")).map(x -> x.toInstant()).orElse(null),
+                    Optional.ofNullable(rs.getTimestamp("last_scanned")).map(x -> x.toInstant()).orElse(null),
+                    rs.getBoolean("present"),
+                    rs.getInt("folder_id"),
+                    rs.getString("mb_release_id"));
         }
     }
 }

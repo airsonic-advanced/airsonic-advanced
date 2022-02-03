@@ -29,7 +29,7 @@
             $("#error").hide();
             $("#errorDetails").hide();
             $("#noImagesFound").hide();
-            top.StompClient.send("/app/coverart/set", JSON.stringify({albumId: ${model.id}, url: imageUrl}));
+            top.StompClient.send("/app/coverart/set", JSON.stringify({id: ${model.id}, url: imageUrl}));
         }
 
         function setImageComplete(errorDetails) {
