@@ -39,6 +39,7 @@ import org.airsonic.player.util.Util;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.CookieSpecs;
@@ -137,6 +138,15 @@ public class PodcastService {
                 .forEach(e -> {
                     deleteEpisode(e, false);
                     LOG.info("Deleted Podcast episode '{}' since download was interrupted.", e.getTitle());
+                });
+            // Reset channel status
+            getAllChannels()
+                .parallelStream()
+                .filter(c -> c.getStatus() == PodcastStatus.DOWNLOADING)
+                .forEach(c -> {
+                    c.setStatus(PodcastStatus.COMPLETED);
+                    podcastDao.updateChannel(c);
+                    LOG.info("Reset channel status '{}' since refresh was interrupted.", c.getTitle());
                 });
             schedule();
         } catch (Throwable x) {
@@ -342,6 +352,10 @@ public class PodcastService {
     }
 
     private void doRefreshChannel(PodcastChannel channel, boolean downloadEpisodes) {
+        if (channel.getStatus() == PodcastStatus.DOWNLOADING) {
+            LOG.warn("Channel '{}' already refreshing", channel.getTitle());
+            return;
+        }
         channel.setStatus(PodcastStatus.DOWNLOADING);
         channel.setErrorMessage(null);
         podcastDao.updateChannel(channel);
@@ -362,7 +376,6 @@ public class PodcastService {
             channel.setTitle(StringUtil.removeMarkup(channelElement.getChildTextTrim("title")));
             channel.setDescription(StringUtil.removeMarkup(channelElement.getChildTextTrim("description")));
             channel.setImageUrl(sanitizeUrl(getChannelImageUrl(channelElement), false));
-            channel.setStatus(PodcastStatus.COMPLETED);
             channel.setErrorMessage(null);
             MediaFile mediaFile = createChannelDirectory(channel);
             channel.setMediaFileId(mediaFile.getId());
@@ -375,6 +388,7 @@ public class PodcastService {
             channel.setStatus(PodcastStatus.ERROR);
             channel.setErrorMessage(getErrorMessage(x));
             podcastDao.updateChannel(channel);
+            return;
         }
 
         if (downloadEpisodes) {
@@ -383,6 +397,9 @@ public class PodcastService {
                 .filter(episode -> episode.getStatus() == PodcastStatus.NEW && episode.getUrl() != null)
                 .forEach(this::downloadEpisode);
         }
+
+        channel.setStatus(PodcastStatus.COMPLETED);
+        podcastDao.updateChannel(channel);
     }
 
     private void downloadImage(PodcastChannel channel) {
@@ -527,8 +544,8 @@ public class PodcastService {
                 })
                 .filter(Objects::nonNull)
                 // Sort episode in reverse chronological order (newest first)
-                .sorted(Comparator.comparingLong(k -> k.getPublishDate() == null ? 0L : -k.getPublishDate().toEpochMilli()))
-                .forEach(episode -> {
+                .sorted(Comparator.comparing((PodcastEpisode episode) -> episode.getPublishDate()).reversed())
+                .forEachOrdered(episode -> {
                     if (counter.decrementAndGet() < 0) {
                         episode.setStatus(PodcastStatus.SKIPPED);
                     }
@@ -585,6 +602,13 @@ public class PodcastService {
             return;
         }
 
+        if (isEpisodeQueued(episode)) {
+            LOG.info("Episode '{}' is already (being) downloaded. Aborting download.", episode.getTitle());
+            return;
+        }
+
+        episode.setStatus(PodcastStatus.DOWNLOADING);
+        podcastDao.updateEpisode(episode);
         LOG.info("Starting to download Podcast from {}", episode.getUrl());
 
         PodcastChannel channel = getChannel(episode.getChannelId());
@@ -599,19 +623,18 @@ public class PodcastService {
         HttpGet method = new HttpGet(episode.getUrl());
         method.setConfig(requestConfig);
         method.addHeader("User-Agent", "Airsonic/" + versionService.getLocalVersion());
-        MediaFile file = createEpisodeFile(channel, episode);
-        MusicFolder folder = mediaFolderService.getMusicFolderById(file.getFolderId());
-        Path filePath = file.getFullPath(folder.getPath());
+        Pair<Path, MusicFolder> episodeFile = createEpisodeFile(channel, episode);
+        Path relativeFile = episodeFile.getLeft();
+        MusicFolder folder = episodeFile.getRight();
+        Path filePath = folder.getPath().resolve(relativeFile);
 
         try (CloseableHttpClient client = HttpClients.createDefault();
                 CloseableHttpResponse response = client.execute(method);
                 InputStream in = response.getEntity().getContent();
                 OutputStream out = new BufferedOutputStream(Files.newOutputStream(filePath))) {
 
-            episode.setStatus(PodcastStatus.DOWNLOADING);
             episode.setBytesDownloaded(0L);
             episode.setErrorMessage(null);
-            episode.setMediaFileId(file.getId());
             podcastDao.updateEpisode(episode);
 
             byte[] buffer = new byte[8192];
@@ -639,13 +662,12 @@ public class PodcastService {
                 LOG.info("Podcast {} was deleted. Aborting download.", episode.getUrl());
                 FileUtil.closeQuietly(out);
                 FileUtil.delete(filePath);
-                // mark absent in db
-                mediaFileService.refreshMediaFile(file, folder);
             } else {
-                episode.setBytesDownloaded(bytesDownloaded);
-                podcastDao.updateEpisode(episode);
-                LOG.info("Downloaded {} bytes from Podcast {}", bytesDownloaded, episode.getUrl());
                 FileUtil.closeQuietly(out);
+                episode.setBytesDownloaded(bytesDownloaded);
+                LOG.info("Downloaded {} bytes from Podcast {}", bytesDownloaded, episode.getUrl());
+                MediaFile file = mediaFileService.getMediaFile(relativeFile, folder);
+                episode.setMediaFileId(file.getId());
                 updateTags(file, folder, episode);
                 episode.setStatus(PodcastStatus.COMPLETED);
                 podcastDao.updateEpisode(episode);
@@ -662,6 +684,12 @@ public class PodcastService {
     private boolean isEpisodeDeleted(PodcastEpisode episode) {
         episode = podcastDao.getEpisode(episode.getId());
         return episode == null || episode.getStatus() == PodcastStatus.DELETED;
+    }
+
+    // include episode == null to avoid attempts to download episodes for deleted channels
+    private boolean isEpisodeQueued(PodcastEpisode episode) {
+        episode = podcastDao.getEpisode(episode.getId());
+        return episode == null || episode.getStatus() == PodcastStatus.DOWNLOADING || episode.getStatus() == PodcastStatus.COMPLETED;
     }
 
     private void updateTags(MediaFile file, MusicFolder folder, PodcastEpisode episode) {
@@ -706,7 +734,7 @@ public class PodcastService {
         }
     }
 
-    private synchronized MediaFile createEpisodeFile(PodcastChannel channel, PodcastEpisode episode) {
+    private synchronized Pair<Path, MusicFolder> createEpisodeFile(PodcastChannel channel, PodcastEpisode episode) {
         String filename = StringUtil.getUrlFile(sanitizeUrl(episode.getUrl(), true));
         if (filename == null) {
             filename = episode.getTitle();
@@ -736,7 +764,7 @@ public class PodcastService {
             throw new RuntimeException("Failed to create file " + file, e);
         }
 
-        return mediaFileService.getMediaFile(relativeFile, folder);
+        return Pair.of(relativeFile, folder);
     }
 
     private MediaFile createChannelDirectory(PodcastChannel channel) {

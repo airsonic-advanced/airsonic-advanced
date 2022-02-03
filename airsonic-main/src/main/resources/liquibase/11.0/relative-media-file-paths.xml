@@ -110,7 +110,17 @@
             </addColumn>
         </rollback>
     </changeSet>
+    <changeSet id="clean-user-rating-for-absent-paths" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="path"/>
+        </preConditions>
+        <delete tableName="user_rating">
+            <where>path IN (SELECT * FROM (SELECT ur.path FROM user_rating ur LEFT JOIN media_file m ON ur.path=m.path WHERE m.path IS NULL) tbl_tmp)</where>
+        </delete>
+        <rollback></rollback>
+    </changeSet>
     <changeSet id="add-media-file-id-to-user-rating" author="anon">
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <not>
                 <columnExists tableName="user_rating" columnName="media_file_id"/>
@@ -121,23 +131,61 @@
                 <constraints nullable="false" />
             </column>
         </addColumn>
-        <addForeignKeyConstraint constraintName="ura_m_fk" baseTableName="user_rating" baseColumnNames="media_file_id" referencedTableName="media_file" referencedColumnNames="id" onDelete="CASCADE"/>
         <rollback>
-            <dropForeignKeyConstraint baseTableName="user_rating" constraintName="ura_m_fk"/>
             <dropColumn tableName="user_rating" columnName="media_file_id"></dropColumn>
         </rollback>
     </changeSet>
-    <changeSet id="drop-user-rating-path-pk" author="anon">
+    <changeSet id="populate-user-rating-media-file-id" author="anon">
         <preConditions onFail="MARK_RAN">
-            <columnExists tableName="user_rating" columnName="path"/>
-            <foreignKeyConstraintExists foreignKeyTableName="user_rating" foreignKeyName="ura_u_fk"/>
+            <not>
+                <sqlCheck expectedResult="0">select count(*) from user_rating where media_file_id = '-1'</sqlCheck>
+            </not>
+        </preConditions>
+        <update tableName="user_rating">
+            <column name="media_file_id" valueComputed="(SELECT media_file.id FROM media_file WHERE media_file.path=user_rating.path)"></column>
+            <where>media_file_id='-1'</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-user-rating-media-file-id-fk" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyTableName="user_rating" foreignKeyName="ura_m_fk"/>
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint constraintName="ura_m_fk" baseTableName="user_rating" baseColumnNames="media_file_id" referencedTableName="media_file" referencedColumnNames="id" onDelete="CASCADE"/>
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="user_rating" constraintName="ura_m_fk"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-user-rating-user-fk" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <sqlCheck expectedResult="0">
+                    select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='user_rating' and lower(tc.constraint_type)='foreign key' and lower(kcu.column_name)='username'
+                </sqlCheck>
+            </not>
         </preConditions>
         <!-- for mysql -->
-        <dropForeignKeyConstraint baseTableName="user_rating" constraintName="ura_u_fk"/>
+        <customChange class="org.airsonic.player.spring.migrations.DropConstraintWithoutName">
+            <param name="tableName" value="user_rating"/>
+            <param name="columns" value="username"/>
+            <param name="constraintType" value="foreign key"/>
+        </customChange>
+        <rollback>
+            <addForeignKeyConstraint baseTableName="user_rating" baseColumnNames="username" constraintName="ura_u_fk" referencedTableName="users" referencedColumnNames="username" onDelete="CASCADE" />
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-user-rating-path-pk" author="anon">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="path"/>
+            <primaryKeyExists tableName="user_rating"/>
+        </preConditions>
         <dropPrimaryKey tableName="user_rating"/>
         <rollback>
             <addPrimaryKey tableName="user_rating" columnNames="username,path" />
-            <addForeignKeyConstraint baseTableName="user_rating" baseColumnNames="username" constraintName="ura_u_fk" referencedTableName="users" referencedColumnNames="username" onDelete="CASCADE" />
         </rollback>
     </changeSet>
     <changeSet id="drop-path-from-user-rating" author="anon">
@@ -153,20 +201,48 @@
             </addColumn>
         </rollback>
     </changeSet>
-    <changeSet id="add-user-rating-pk" author="anon">
-        <preConditions onFail="MARK_RAN">
+    <changeSet id="clean-user-rating-for-uniqueness" author="anon">
+        <preConditions onFail="WARN">
             <columnExists tableName="user_rating" columnName="media_file_id"/>
-            <not>
-                <foreignKeyConstraintExists foreignKeyTableName="user_rating" foreignKeyName="ura_u_fk"/>
-            </not>
         </preConditions>
-        <addPrimaryKey tableName="user_rating" columnNames="username,media_file_id" constraintName="ur_u_mfid_pk"/>
+        <delete tableName="user_rating">
+            <where>media_file_id = '-1'</where>
+        </delete>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="add-user-rating-user-fk" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='user_rating' and lower(tc.constraint_type)='foreign key' and lower(kcu.column_name)='username'
+            </sqlCheck>
+        </preConditions>
         <!-- for mysql -->
         <addForeignKeyConstraint baseTableName="user_rating" baseColumnNames="username" constraintName="ura_u_fk" referencedTableName="users" referencedColumnNames="username" onDelete="CASCADE" />
         <rollback>
             <dropForeignKeyConstraint baseTableName="user_rating" constraintName="ura_u_fk"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-user-rating-pk" author="anon">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="media_file_id"/>
+            <not>
+                <primaryKeyExists tableName="user_rating"/>
+            </not>
+        </preConditions>
+        <addPrimaryKey tableName="user_rating" columnNames="username,media_file_id" constraintName="ur_u_mfid_pk"/>
+        <rollback>
             <dropPrimaryKey tableName="user_rating" constraintName="ur_u_mfid_pk"/>
         </rollback>
+    </changeSet>
+    <changeSet id="clean-share-file-for-absent-paths" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="share_file" columnName="path"/>
+        </preConditions>
+        <delete tableName="share_file">
+            <where>path IN (SELECT * FROM (SELECT sf.path FROM share_file sf LEFT JOIN media_file m ON sf.path=m.path WHERE m.path IS NULL) tbl_tmp)</where>
+        </delete>
+        <rollback></rollback>
     </changeSet>
     <changeSet id="add-media-file-id-to-share-file" author="anon">
         <preConditions onFail="MARK_RAN">
@@ -247,6 +323,25 @@
             <indexExists tableName="media_file" indexName="idx_media_file_path"/>
         </preConditions>
         <dropIndex tableName="media_file" indexName="idx_media_file_path"></dropIndex>
+        <rollback>
+            <createIndex tableName="media_file" indexName="idx_media_file_path" unique="true">
+                <column name="path"></column>
+            </createIndex>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-uniqueness-constraint-to-media-file-path-2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <sqlCheck expectedResult="0">
+                    select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='media_file' and lower(tc.constraint_type)='unique' and lower(kcu.column_name) = 'path'
+                </sqlCheck>
+            </not>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.DropConstraintWithoutName">
+            <param name="tableName" value="media_file"/>
+            <param name="columns" value="path"/>
+            <param name="constraintType" value="unique"/>
+        </customChange>
         <rollback>
             <createIndex tableName="media_file" indexName="idx_media_file_path" unique="true">
                 <column name="path"></column>
