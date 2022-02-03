@@ -163,7 +163,7 @@
         <preConditions onFail="MARK_RAN">
             <not>
                 <sqlCheck expectedResult="0">
-                    select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND table_name='USER_RATING' and constraint_type='FOREIGN KEY' and column_name='USERNAME'
+                    select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='user_rating' and lower(tc.constraint_type)='foreign key' and lower(kcu.column_name)='username'
                 </sqlCheck>
             </not>
         </preConditions>
@@ -213,7 +213,7 @@
     <changeSet id="add-user-rating-user-fk" author="anon">
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">
-                select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND table_name='USER_RATING' and constraint_type='FOREIGN KEY' and column_name='USERNAME'
+                select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='user_rating' and lower(tc.constraint_type)='foreign key' and lower(kcu.column_name)='username'
             </sqlCheck>
         </preConditions>
         <!-- for mysql -->
@@ -333,7 +333,7 @@
         <preConditions onFail="MARK_RAN">
             <not>
                 <sqlCheck expectedResult="0">
-                    select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(table_name)='media_file' and lower(constraint_type)='unique' and lower(column_name) = 'path'
+                    select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='media_file' and lower(tc.constraint_type)='unique' and lower(kcu.column_name) = 'path'
                 </sqlCheck>
             </not>
         </preConditions>
