@@ -23,14 +23,14 @@
             </createIndex>
         </rollback>
     </changeSet>
-    <changeSet id="adduniqueindexfolderpathstartposition_001" author="yetangitu">
-        <createIndex tableName="media_file" indexName="idx_media_file_folder_path_start_position" unique="true">
+    <changeSet id="adduniqueindexstartposition_001" author="yetangitu">
+        <createIndex tableName="media_file" indexName="idx_media_file_start_position" unique="true">
             <column name="folder_id"/>
             <column name="path"/>
             <column name="start_position"/>
         </createIndex>
         <rollback>
-            <dropIndex tableName="media_file" indexName="idx_media_file_folder_path_start_position" />
+            <dropIndex tableName="media_file" indexName="idx_media_file_start_position" />
         </rollback>
     </changeSet>
     <changeSet id="indexpath_001" author="yetangitu">
