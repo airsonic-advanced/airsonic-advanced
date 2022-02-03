@@ -58,7 +58,6 @@ public class MediaFile {
     private Long fileSize;
     private Integer width;
     private Integer height;
-    private String coverArtPath;
     private String parentPath;
     private String indexPath;
     private int playCount;
@@ -76,9 +75,9 @@ public class MediaFile {
 
     public MediaFile(Integer id, String path, Integer folderId, MediaType mediaType, Double startPosition, String format, String title,
                      String albumName, String artist, String albumArtist, Integer discNumber, Integer trackNumber, Integer year, String genre, Integer bitRate,
-                     boolean variableBitRate, Double duration, Long fileSize, Integer width, Integer height, String coverArtPath,
-                     String parentPath, String indexPath, int playCount, Instant lastPlayed, String comment, Instant created, Instant changed, Instant lastScanned,
-                     Instant childrenLastUpdated, boolean present, int version, String musicBrainzReleaseId, String musicBrainzRecordingId) {
+                     boolean variableBitRate, Double duration, Long fileSize, Integer width, Integer height, String parentPath, String indexPath, int playCount,
+                     Instant lastPlayed, String comment, Instant created, Instant changed, Instant lastScanned, Instant childrenLastUpdated, boolean present,
+                     int version, String musicBrainzReleaseId, String musicBrainzRecordingId) {
         this.id = id;
         this.path = path;
         this.folderId = folderId;
@@ -99,7 +98,6 @@ public class MediaFile {
         this.fileSize = fileSize;
         this.width = width;
         this.height = height;
-        this.coverArtPath = coverArtPath;
         this.parentPath = parentPath;
         this.indexPath = indexPath;
         this.playCount = playCount;
@@ -334,23 +332,6 @@ public class MediaFile {
         this.height = height;
     }
 
-    public String getCoverArtPath() {
-        return coverArtPath;
-    }
-
-    public Path getRelativeCoverArtPath() {
-        return coverArtPath == null ? null : Paths.get(coverArtPath);
-    }
-
-    public Path getFullCoverArtPath(Path relativeMediaFolderPath) {
-        return coverArtPath == null ? null : relativeMediaFolderPath.resolve(coverArtPath);
-    }
-
-    public void setCoverArtPath(String coverArtPath) {
-        this.coverArtPath = coverArtPath;
-    }
-
-
     public String getParentPath() {
         return parentPath;
     }
@@ -452,6 +433,17 @@ public class MediaFile {
 
     public int getVersion() {
         return version;
+    }
+
+    // placeholder to use prior to persistence
+    private CoverArt art;
+
+    public CoverArt getArt() {
+        return art;
+    }
+
+    public void setArt(CoverArt art) {
+        this.art = art;
     }
 
     @Override

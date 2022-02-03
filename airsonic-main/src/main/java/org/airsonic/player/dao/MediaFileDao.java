@@ -50,9 +50,9 @@ import java.util.stream.IntStream;
 public class MediaFileDao extends AbstractDao {
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileDao.class);
     private static final String INSERT_COLUMNS = "path, folder_id, type, start_position, format, title, album, artist, album_artist, disc_number, " +
-                                                "track_number, year, genre, bit_rate, variable_bit_rate, duration, file_size, width, height, cover_art_path, " +
-                                                "parent_path, index_path, play_count, last_played, comment, created, changed, last_scanned, children_last_updated, present, " +
-                                                "version, mb_release_id, mb_recording_id";
+                                                "track_number, year, genre, bit_rate, variable_bit_rate, duration, file_size, width, height, " +
+                                                "parent_path, index_path, play_count, last_played, comment, created, changed, last_scanned, " +
+                                                "children_last_updated, present, version, mb_release_id, mb_recording_id";
 
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
     private static final String GENRE_COLUMNS = "name, song_count, album_count";
@@ -169,7 +169,6 @@ public class MediaFileDao extends AbstractDao {
                     "file_size=:fs," +
                     "width=:w," +
                     "height=:h," +
-                    "cover_art_path=:cap," +
                     "parent_path=:pp," +
                     "index_path=:ip," +
                     "play_count=:pc," +
@@ -201,7 +200,6 @@ public class MediaFileDao extends AbstractDao {
                     "file_size=:fs," +
                     "width=:w," +
                     "height=:h," +
-                    "cover_art_path=:cap," +
                     "parent_path=:pp," +
                     "index_path=:ip," +
                     "play_count=:pc," +
@@ -239,7 +237,6 @@ public class MediaFileDao extends AbstractDao {
         args.put("fs", file.getFileSize());
         args.put("w", file.getWidth());
         args.put("h", file.getHeight());
-        args.put("cap", file.getCoverArtPath());
         args.put("pp", file.getParentPath());
         args.put("ip", file.getIndexPath());
         args.put("pc", file.getPlayCount());
@@ -263,9 +260,8 @@ public class MediaFileDao extends AbstractDao {
                    file.getPath(), file.getFolderId(), file.getMediaType().name(), file.getStartPosition(), file.getFormat(), file.getTitle(),
                    file.getAlbumName(), file.getArtist(), file.getAlbumArtist(), file.getDiscNumber(), file.getTrackNumber(), file.getYear(),
                    file.getGenre(), file.getBitRate(), file.isVariableBitRate(), file.getDuration(), file.getFileSize(), file.getWidth(), file.getHeight(),
-                   file.getCoverArtPath(), file.getParentPath(), file.getIndexPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(),
-                   file.getCreated(), file.getChanged(), file.getLastScanned(),
-                   file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId());
+                   file.getParentPath(), file.getIndexPath(), file.getPlayCount(), file.getLastPlayed(), file.getComment(), file.getCreated(), file.getChanged(),
+                   file.getLastScanned(), file.getChildrenLastUpdated(), file.isPresent(), VERSION, file.getMusicBrainzReleaseId(), file.getMusicBrainzRecordingId());
         }
 
         if (file.getId() == null) {
@@ -813,40 +809,39 @@ public class MediaFileDao extends AbstractDao {
         @Override
         public MediaFile mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new MediaFile(
-                    rs.getInt(1),
-                    rs.getString(2),
-                    rs.getInt(3),
-                    MediaFile.MediaType.valueOf(rs.getString(4)),
-                    rs.getDouble(5),
-                    rs.getString(6),
-                    rs.getString(7),
-                    rs.getString(8),
-                    rs.getString(9),
-                    rs.getString(10),
-                    rs.getInt(11) == 0 ? null : rs.getInt(11),
-                    rs.getInt(12) == 0 ? null : rs.getInt(12),
-                    rs.getInt(13) == 0 ? null : rs.getInt(13),
-                    rs.getString(14),
-                    rs.getInt(15) == 0 ? null : rs.getInt(15),
-                    rs.getBoolean(16),
-                    rs.getDouble(17),
-                    rs.getLong(18) == 0 ? null : rs.getLong(18),
-                    rs.getInt(19) == 0 ? null : rs.getInt(19),
-                    rs.getInt(20) == 0 ? null : rs.getInt(20),
-                    rs.getString(21),
-                    rs.getString(22),
-                    rs.getString(23),
-                    rs.getInt(24),
-                    Optional.ofNullable(rs.getTimestamp(25)).map(x -> x.toInstant()).orElse(null),
-                    rs.getString(26),
-                    Optional.ofNullable(rs.getTimestamp(27)).map(x -> x.toInstant()).orElse(null),
-                    Optional.ofNullable(rs.getTimestamp(28)).map(x -> x.toInstant()).orElse(null),
-                    Optional.ofNullable(rs.getTimestamp(29)).map(x -> x.toInstant()).orElse(null),
-                    Optional.ofNullable(rs.getTimestamp(30)).map(x -> x.toInstant()).orElse(null),
-                    rs.getBoolean(31),
-                    rs.getInt(32),
-                    rs.getString(33),
-                    rs.getString(34));
+                    rs.getInt("id"),
+                    rs.getString("path"),
+                    rs.getInt("folder_id"),
+                    MediaFile.MediaType.valueOf(rs.getString("type")),
+                    rs.getDouble("start_position"),
+                    rs.getString("format"),
+                    rs.getString("title"),
+                    rs.getString("album"),
+                    rs.getString("artist"),
+                    rs.getString("album_artist"),
+                    rs.getInt("disc_number") == 0 ? null : rs.getInt("disc_number"),
+                    rs.getInt("track_number") == 0 ? null : rs.getInt("track_number"),
+                    rs.getInt("year") == 0 ? null : rs.getInt("year"),
+                    rs.getString("genre"),
+                    rs.getInt("bit_rate") == 0 ? null : rs.getInt("bit_rate"),
+                    rs.getBoolean("variable_bit_rate"),
+                    rs.getDouble("duration"),
+                    rs.getLong("file_size") == 0 ? null : rs.getLong("file_size"),
+                    rs.getInt("width") == 0 ? null : rs.getInt("width"),
+                    rs.getInt("height") == 0 ? null : rs.getInt("height"),
+                    rs.getString("parent_path"),
+                    rs.getString("index_path"),
+                    rs.getInt("play_count"),
+                    Optional.ofNullable(rs.getTimestamp("last_played")).map(x -> x.toInstant()).orElse(null),
+                    rs.getString("comment"),
+                    Optional.ofNullable(rs.getTimestamp("created")).map(x -> x.toInstant()).orElse(null),
+                    Optional.ofNullable(rs.getTimestamp("changed")).map(x -> x.toInstant()).orElse(null),
+                    Optional.ofNullable(rs.getTimestamp("last_scanned")).map(x -> x.toInstant()).orElse(null),
+                    Optional.ofNullable(rs.getTimestamp("children_last_updated")).map(x -> x.toInstant()).orElse(null),
+                    rs.getBoolean("present"),
+                    rs.getInt("version"),
+                    rs.getString("mb_release_id"),
+                    rs.getString("mb_recording_id"));
         }
     }
 

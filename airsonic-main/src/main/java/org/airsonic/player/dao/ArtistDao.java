@@ -38,7 +38,7 @@ import java.util.*;
  */
 @Repository
 public class ArtistDao extends AbstractDao {
-    private static final String INSERT_COLUMNS = "name, cover_art_path, album_count, last_scanned, present, folder_id";
+    private static final String INSERT_COLUMNS = "name, album_count, last_scanned, present, folder_id";
     private static final String QUERY_COLUMNS = "id, " + INSERT_COLUMNS;
 
     private final ArtistMapper rowMapper = new ArtistMapper();
@@ -90,18 +90,17 @@ public class ArtistDao extends AbstractDao {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createOrUpdateArtist(Artist artist) {
         String sql = "update artist set " +
-                     "cover_art_path=?," +
                      "album_count=?," +
                      "last_scanned=?," +
                      "present=?," +
                      "folder_id=? " +
                      "where name=?";
 
-        int n = update(sql, artist.getCoverArtPath(), artist.getAlbumCount(), artist.getLastScanned(), artist.isPresent(), artist.getFolderId(), artist.getName());
+        int n = update(sql, artist.getAlbumCount(), artist.getLastScanned(), artist.isPresent(), artist.getFolderId(), artist.getName());
 
         if (n == 0) {
             update("insert into artist (" + INSERT_COLUMNS + ") values (" + questionMarks(INSERT_COLUMNS) + ")",
-                   artist.getName(), artist.getCoverArtPath(), artist.getAlbumCount(), artist.getLastScanned(), artist.isPresent(), artist.getFolderId());
+                   artist.getName(), artist.getAlbumCount(), artist.getLastScanned(), artist.isPresent(), artist.getFolderId());
         }
 
         int id = queryForInt("select id from artist where name=?", null, artist.getName());
@@ -190,13 +189,12 @@ public class ArtistDao extends AbstractDao {
         @Override
         public Artist mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Artist(
-                    rs.getInt(1),
-                    rs.getString(2),
-                    rs.getString(3),
-                    rs.getInt(4),
-                    Optional.ofNullable(rs.getTimestamp(5)).map(x -> x.toInstant()).orElse(null),
-                    rs.getBoolean(6),
-                    rs.getInt(7));
+                    rs.getInt("id"),
+                    rs.getString("name"),
+                    rs.getInt("album_count"),
+                    Optional.ofNullable(rs.getTimestamp("last_scanned")).map(x -> x.toInstant()).orElse(null),
+                    rs.getBoolean("present"),
+                    rs.getInt("folder_id"));
         }
     }
 }

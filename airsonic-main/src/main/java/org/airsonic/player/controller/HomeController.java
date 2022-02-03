@@ -237,10 +237,8 @@ public class HomeController {
     private Album createAlbum(MediaFile file) {
         Album album = new Album();
         album.setId(file.getId());
-        album.setPath(file.getPath());
         album.setArtist(file.getArtist());
         album.setAlbumTitle(file.getAlbumName());
-        album.setCoverArtPath(file.getCoverArtPath());
         return album;
     }
 
@@ -248,8 +246,6 @@ public class HomeController {
      * Contains info for a single album.
      */
     public static class Album {
-        private String path;
-        private String coverArtPath;
         private String artist;
         private String albumTitle;
         private Instant created;
@@ -265,22 +261,6 @@ public class HomeController {
 
         public void setId(int id) {
             this.id = id;
-        }
-
-        public String getPath() {
-            return path;
-        }
-
-        public void setPath(String path) {
-            this.path = path;
-        }
-
-        public String getCoverArtPath() {
-            return coverArtPath;
-        }
-
-        public void setCoverArtPath(String coverArtPath) {
-            this.coverArtPath = coverArtPath;
         }
 
         public String getArtist() {

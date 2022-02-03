@@ -29,6 +29,7 @@ import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.dao.PlayQueueDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.Bookmark;
+import org.airsonic.player.domain.CoverArt.EntityType;
 import org.airsonic.player.domain.PlayQueue;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential.App;
@@ -152,6 +153,8 @@ public class SubsonicRESTController {
     private MediaScannerService mediaScannerService;
     @Autowired
     private MediaFolderService mediaFolderService;
+    @Autowired
+    private CoverArtService coverArtService;
     @Autowired
     private LocaleResolver localeResolver;
 
@@ -501,7 +504,7 @@ public class SubsonicRESTController {
         jaxbArtist.setName(artist.getName());
         jaxbArtist.setStarred(jaxbWriter.convertDate(artistDao.getArtistStarredDate(artist.getId(), username)));
         jaxbArtist.setAlbumCount(artist.getAlbumCount());
-        if (artist.getCoverArtPath() != null) {
+        if (coverArtService.get(EntityType.ARTIST, artist.getId()) != null) {
             jaxbArtist.setCoverArt(CoverArtController.ARTIST_COVERART_PREFIX + artist.getId());
         }
         return jaxbArtist;
@@ -549,7 +552,7 @@ public class SubsonicRESTController {
                 jaxbAlbum.setArtistId(String.valueOf(artist.getId()));
             }
         }
-        if (album.getCoverArtPath() != null) {
+        if (coverArtService.get(EntityType.ALBUM, album.getId()) != null) {
             jaxbAlbum.setCoverArt(CoverArtController.ALBUM_COVERART_PREFIX + album.getId());
         }
         jaxbAlbum.setSongCount(album.getSongCount());
@@ -1319,7 +1322,7 @@ public class SubsonicRESTController {
 
     private String findCoverArt(MediaFile mediaFile, MediaFile parent) {
         MediaFile dir = mediaFile.isDirectory() ? mediaFile : parent;
-        if (dir != null && dir.getCoverArtPath() != null) {
+        if (dir != null && coverArtService.get(EntityType.MEDIA_FILE, dir.getId()) != null) {
             return String.valueOf(dir.getId());
         }
         return null;

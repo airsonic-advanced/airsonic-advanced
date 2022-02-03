@@ -1,0 +1,110 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="add-cover-art-table" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="cover_art"/>
+            </not>
+        </preConditions>
+        <createTable tableName="cover_art">
+            <column name="entity_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_type" type="${varchar_type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="path" type="${varchar_type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="folder_id" type="int">
+            </column>
+            <column name="overridden" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="${timestamp_type}" defaultValueComputed="${curr_date_expr}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated" type="${timestamp_type}" defaultValueComputed="${curr_date_expr}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="cover_art" columnNames="entity_id,entity_type"/>
+    </changeSet>
+    <changeSet id="populate-cover-art-from-media-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="cover_art"/>
+            <columnExists tableName="media_file" columnName="cover_art_path"/>
+            <columnExists tableName="media_file" columnName="folder_id"/>
+        </preConditions>
+        <sql>
+            INSERT INTO cover_art(entity_id, entity_type, path, folder_id)
+            SELECT id, 'MEDIA_FILE', cover_art_path, folder_id
+            FROM media_file
+            WHERE cover_art_path IS NOT NULL;
+        </sql>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="drop-cover-art-path-from-media-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="cover_art_path"/>
+        </preConditions>
+        <dropColumn tableName="media_file" columnName="cover_art_path"/>
+        <rollback>
+            <addColumn tableName="media_file">
+                <column name="cover_art_path" type="${varchar_type}" ></column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="populate-cover-art-from-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="cover_art"/>
+            <columnExists tableName="album" columnName="cover_art_path"/>
+            <columnExists tableName="album" columnName="folder_id"/>
+        </preConditions>
+        <sql>
+            INSERT INTO cover_art(entity_id, entity_type, path, folder_id)
+            SELECT id, 'ALBUM', cover_art_path, folder_id
+            FROM album
+            WHERE cover_art_path IS NOT NULL;
+        </sql>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="drop-cover-art-path-from-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="cover_art_path"/>
+        </preConditions>
+        <dropColumn tableName="album" columnName="cover_art_path"/>
+        <rollback>
+            <addColumn tableName="album">
+                <column name="cover_art_path" type="${varchar_type}" ></column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+        <changeSet id="populate-cover-art-from-artist" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="cover_art"/>
+            <columnExists tableName="artist" columnName="cover_art_path"/>
+            <columnExists tableName="artist" columnName="folder_id"/>
+        </preConditions>
+        <sql>
+            INSERT INTO cover_art(entity_id, entity_type, path, folder_id)
+            SELECT id, 'ARTIST', cover_art_path, folder_id
+            FROM artist
+            WHERE cover_art_path IS NOT NULL;
+        </sql>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="drop-cover-art-path-from-artist" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="artist" columnName="cover_art_path"/>
+        </preConditions>
+        <dropColumn tableName="artist" columnName="cover_art_path"/>
+        <rollback>
+            <addColumn tableName="artist">
+                <column name="cover_art_path" type="${varchar_type}" ></column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

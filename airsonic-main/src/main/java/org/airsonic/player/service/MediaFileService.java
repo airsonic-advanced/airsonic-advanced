@@ -25,6 +25,7 @@ import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.CoverArt.EntityType;
 import org.airsonic.player.domain.MediaFile.MediaType;
 import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.i18n.LocaleResolver;
@@ -85,6 +86,8 @@ public class MediaFileService {
     private JaudiotaggerParser parser;
     @Autowired
     private MetaDataParserFactory metaDataParserFactory;
+    @Autowired
+    private CoverArtService coverArtService;
     @Autowired
     private LocaleResolver localeResolver;
     private boolean memoryCacheEnabled = true;
@@ -589,7 +592,8 @@ public class MediaFileService {
                         // Look for cover art.
                         Path coverArt = findCoverArt(children);
                         if (coverArt != null) {
-                            mediaFile.setCoverArtPath(folder.getPath().relativize(coverArt).toString());
+                            // placeholder to be persisted later
+                            mediaFile.setArt(new CoverArt(-1, EntityType.MEDIA_FILE, folder.getPath().relativize(coverArt).toString(), folder.getId(), false));
                         }
                     } else {
                         mediaFile.setArtist(file.getFileName().toString());
@@ -785,17 +789,6 @@ public class MediaFileService {
     }
 
     /**
-     * Returns a cover art image for the given media file.
-     */
-    public Path getCoverArt(MediaFile mediaFile) {
-        if (mediaFile.getRelativeCoverArtPath() != null) {
-            return mediaFile.getRelativeCoverArtPath();
-        }
-        MediaFile parent = getParentOf(mediaFile);
-        return parent == null ? null : parent.getRelativeCoverArtPath();
-    }
-
-    /**
      * Finds a cover art image for the given directory, by looking for it on the disk.
      */
     private Path findCoverArt(Collection<Path> candidates) {
@@ -839,10 +832,11 @@ public class MediaFileService {
     }
 
     private Path findTagCover(Collection<Path> candidates) {
-        // Look for embedded images in audiofiles. (Only check first audio file encountered).
-        return candidates.parallelStream()
-                .filter(parser::isApplicable).findFirst()
+        // Look for embedded images in audiofiles.
+        return candidates.stream()
+                .filter(parser::isApplicable)
                 .filter(JaudiotaggerParser::isImageAvailable)
+                .findFirst()
                 .orElse(null);
     }
 
@@ -903,6 +897,9 @@ public class MediaFileService {
                 }
             }
         });
+
+        // persist cover art if not overridden
+        coverArtService.persistIfNeeded(mediaFile);
     }
 
     /**
