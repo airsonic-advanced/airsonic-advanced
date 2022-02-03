@@ -4,6 +4,7 @@ import org.airsonic.player.domain.CoverArt;
 import org.airsonic.player.domain.CoverArt.EntityType;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
@@ -25,7 +26,7 @@ public class CoverArtDao extends AbstractDao {
         registerInserts("cover_art", null, Arrays.asList(COLUMNS.split(", ")), CoverArt.class);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void upsert(CoverArt art) {
         int n = update(art);
 
@@ -48,7 +49,7 @@ public class CoverArtDao extends AbstractDao {
         update("delete from cover_art where entity_id=? and entity_type=?", id, type);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void expunge() {
         update("delete from cover_art c where c.entity_type='MEDIA_FILE' and c.entity_id in (select ca.entity_id from cover_art ca left join media_file m on ca.entity_id=m.id where m.id is null and ca.entity_type='MEDIA_FILE')");
         update("delete from cover_art c where c.entity_type='ALBUM' and c.entity_id in (select ca.entity_id from cover_art ca left join album a on ca.entity_id=a.id where a.id is null and ca.entity_type='ALBUM')");

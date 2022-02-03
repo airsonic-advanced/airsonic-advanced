@@ -32,9 +32,11 @@
         </createTable>
         <addPrimaryKey tableName="cover_art" columnNames="entity_id,entity_type"/>
     </changeSet>
-   <changeSet id="populate-cover-art" author="anon">
+    <changeSet id="populate-cover-art-from-media-file" author="anon">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="cover_art"/>
+            <columnExists tableName="media_file" columnName="cover_art_path"/>
+            <columnExists tableName="media_file" columnName="folder_id"/>
         </preConditions>
         <sql>
             INSERT INTO cover_art(entity_id, entity_type, path, folder_id)
@@ -42,12 +44,50 @@
             FROM media_file
             WHERE cover_art_path IS NOT NULL;
         </sql>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="drop-cover-art-path-from-media-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="cover_art_path"/>
+        </preConditions>
+        <dropColumn tableName="media_file" columnName="cover_art_path"/>
+        <rollback>
+            <addColumn tableName="media_file">
+                <column name="cover_art_path" type="${varchar_type}" ></column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="populate-cover-art-from-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="cover_art"/>
+            <columnExists tableName="album" columnName="cover_art_path"/>
+            <columnExists tableName="album" columnName="folder_id"/>
+        </preConditions>
         <sql>
             INSERT INTO cover_art(entity_id, entity_type, path, folder_id)
             SELECT id, 'ALBUM', cover_art_path, folder_id
             FROM album
             WHERE cover_art_path IS NOT NULL;
         </sql>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="drop-cover-art-path-from-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="cover_art_path"/>
+        </preConditions>
+        <dropColumn tableName="album" columnName="cover_art_path"/>
+        <rollback>
+            <addColumn tableName="album">
+                <column name="cover_art_path" type="${varchar_type}" ></column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+        <changeSet id="populate-cover-art-from-artist" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="cover_art"/>
+            <columnExists tableName="artist" columnName="cover_art_path"/>
+            <columnExists tableName="artist" columnName="folder_id"/>
+        </preConditions>
         <sql>
             INSERT INTO cover_art(entity_id, entity_type, path, folder_id)
             SELECT id, 'ARTIST', cover_art_path, folder_id
@@ -56,22 +96,12 @@
         </sql>
         <rollback></rollback>
     </changeSet>
-    <changeSet id="drop-cover-art-paths" author="anon">
+    <changeSet id="drop-cover-art-path-from-artist" author="anon">
         <preConditions onFail="MARK_RAN">
-            <columnExists tableName="media_file" columnName="cover_art_path"/>
-            <columnExists tableName="album" columnName="cover_art_path"/>
             <columnExists tableName="artist" columnName="cover_art_path"/>
         </preConditions>
-        <dropColumn tableName="media_file" columnName="cover_art_path"/>
-        <dropColumn tableName="album" columnName="cover_art_path"/>
         <dropColumn tableName="artist" columnName="cover_art_path"/>
         <rollback>
-            <addColumn tableName="media_file">
-                <column name="cover_art_path" type="${varchar_type}" ></column>
-            </addColumn>
-            <addColumn tableName="album">
-                <column name="cover_art_path" type="${varchar_type}" ></column>
-            </addColumn>
             <addColumn tableName="artist">
                 <column name="cover_art_path" type="${varchar_type}" ></column>
             </addColumn>
