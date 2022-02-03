@@ -193,7 +193,7 @@ public class MediaScannerServiceTestCase {
         // Test that the album is correctly imported, along with its MusicBrainz release ID
         List<Album> allAlbums = albumDao.getAlphabeticalAlbums(0, Integer.MAX_VALUE, true, true, folders);
         Assert.assertEquals(1, allAlbums.size());
-        MediaFile mediaFile = mediaFileDao.getMediaFile("TestAlbum", 1);
+        MediaFile mediaFile = mediaFileDao.getMediaFile("TestAlbum", musicFolder.getId());
         Album album = allAlbums.get(0);
         Assert.assertEquals("TestAlbum", album.getName());
         Assert.assertEquals("TestArtist", album.getArtist());
