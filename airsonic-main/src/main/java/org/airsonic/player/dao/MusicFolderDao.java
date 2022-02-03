@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
@@ -95,7 +96,7 @@ public class MusicFolderDao extends AbstractDao {
         LOG.info("Deleted music folder with ID {}", id);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void reassignChildren(MusicFolder from, MusicFolder to) {
         if (to.getPath().getNameCount() > from.getPath().getNameCount()) {
             // assign ancestor -> descendant

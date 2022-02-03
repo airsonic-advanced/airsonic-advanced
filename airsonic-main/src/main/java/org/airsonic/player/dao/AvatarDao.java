@@ -24,6 +24,8 @@ import org.airsonic.player.service.SettingsService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -80,6 +82,7 @@ public class AvatarDao extends AbstractDao {
      * @param avatar   The avatar, or <code>null</code> to remove the avatar.
      * @param username The username.
      */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void setCustomAvatar(Avatar avatar, String username) {
         String sql = "delete from custom_avatar where username=?";
         update(sql, username);

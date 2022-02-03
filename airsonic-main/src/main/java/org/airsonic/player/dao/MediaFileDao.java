@@ -800,7 +800,8 @@ public class MediaFileDao extends AbstractDao {
                     Optional.ofNullable(rs.getTimestamp("children_last_updated")).map(x -> x.toInstant()).orElse(null),
                     rs.getBoolean("present"),
                     rs.getInt("version"),
-                    rs.getString("mb_release_id"), rs.getString("mb_recording_id"));
+                    rs.getString("mb_release_id"),
+                    rs.getString("mb_recording_id"));
         }
     }
 
