@@ -425,6 +425,17 @@
             </addColumn>
         </rollback>
     </changeSet>
+    <changeSet id="remove-albums-with-non-existent-folders" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="id"/>
+            <columnExists tableName="album" columnName="folder_id"/>
+        </preConditions>
+        <delete tableName="album">
+            <where>folder_id NOT IN (SELECT id FROM music_folder)</where>
+        </delete>
+        <rollback>
+        </rollback>
+    </changeSet>
     <changeSet id="relativize-album-cover-art-path" author="anon">
         <preConditions onFail="MARK_RAN">
             <columnExists tableName="album" columnName="cover_art_path"/>
@@ -454,6 +465,17 @@
             <column name="path" valueComputed="SUBSTR(path, 2)"></column>
             <where>LENGTH(path) != 0</where>
         </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="remove-artists-with-non-existent-folders" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="id"/>
+            <columnExists tableName="artist" columnName="folder_id"/>
+        </preConditions>
+        <delete tableName="artist">
+            <where>folder_id NOT IN (SELECT id FROM music_folder)</where>
+        </delete>
         <rollback>
         </rollback>
     </changeSet>
