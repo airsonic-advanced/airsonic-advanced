@@ -25,6 +25,8 @@ import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastStatus;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 
@@ -115,6 +117,7 @@ public class PodcastDao extends AbstractDao {
         return update(sql, rule.getCheckInterval(), rule.getRetentionCount(), rule.getDownloadCount(), rule.getId());
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createOrUpdateChannelRule(PodcastChannelRule rule) {
         int updated = updateChannelRule(rule);
         if (updated == 0) {

@@ -230,13 +230,15 @@ public class DatabaseService {
     }
 
     private static List<List<String>> TABLE_ORDER = Arrays.asList(
-            Arrays.asList("users", "user_credentials", "user_settings"),
-            Arrays.asList("music_folder", "music_folder_user", "transcoding"),
-            Arrays.asList("media_file", "music_file_info", "player"),
-            Arrays.asList("player_transcoding", "playlist", "playlist_file", "playlist_user", "play_queue", "play_queue_file", "internet_radio"),
+            Arrays.asList("users", "music_folder", "transcoding", "player"),
+            Arrays.asList("music_folder_user", "user_credentials", "user_settings", "player_transcoding"),
+            Arrays.asList("media_file", "music_file_info"),
+            Arrays.asList("playlist", "play_queue", "internet_radio"),
+            Arrays.asList("playlist_file", "playlist_user", "play_queue_file"),
             Arrays.asList("album", "artist", "genre"),
-            Arrays.asList("podcast_channel", "podcast_episode"),
-            Arrays.asList("bookmark", "share", "share_file", "sonoslink"),
+            Arrays.asList("podcast_channel", "share"),
+            Arrays.asList("cover_art"),
+            Arrays.asList("podcast_channel_rules", "podcast_episode", "bookmark", "share_file", "sonoslink"),
             Arrays.asList("starred_album", "starred_artist", "starred_media_file", "user_rating", "custom_avatar"));
 
     private boolean generateChangeLog(Path fPath, Connection connection, String snapshotTypes, String author, DiffOutputControl diffOutputControl) throws Exception {

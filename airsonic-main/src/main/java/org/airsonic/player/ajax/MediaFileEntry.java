@@ -9,6 +9,7 @@ import java.util.Locale;
 public class MediaFileEntry {
     private final int id;
     private final Integer trackNumber;
+    private final Integer discNumber;
     private final String title;
     private String artist;
     private String album;
@@ -37,6 +38,7 @@ public class MediaFileEntry {
     public MediaFileEntry(
             int id,
             Integer trackNumber,
+            Integer discNumber,
             String title,
             String artist,
             String album,
@@ -63,6 +65,7 @@ public class MediaFileEntry {
             String remoteCoverArtUrl) {
         this.id = id;
         this.trackNumber = trackNumber;
+        this.discNumber = discNumber;
         this.title = title;
         this.artist = artist;
         this.album = album;
@@ -95,6 +98,10 @@ public class MediaFileEntry {
 
     public Integer getTrackNumber() {
         return trackNumber;
+    }
+
+    public Integer getDiscNumber() {
+        return discNumber;
     }
 
     public String getTitle() {
@@ -206,7 +213,7 @@ public class MediaFileEntry {
     }
 
     public static MediaFileEntry fromMediaFile(MediaFile file, Locale locale, boolean starred, boolean folderAccess, String streamUrl, String remoteStreamUrl, String remoteCoverArtUrl) {
-        return new MediaFileEntry(file.getId(), file.getTrackNumber(), file.getName(), file.getArtist(),
+        return new MediaFileEntry(file.getId(), file.getTrackNumber(), file.getDiscNumber(), file.getName(), file.getArtist(),
                 file.getAlbumName(), file.getGenre(), file.getYear(), formatBitRate(file),
                 (file.getWidth() != null && file.getHeight() != null) ? file.getWidth() + "x" + file.getHeight() : null,
                 file.getDuration(), file.getFormat(), StringUtil.getMimeType(file.getFormat()), file.getMediaType().toString(),

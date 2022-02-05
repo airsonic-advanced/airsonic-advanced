@@ -23,6 +23,7 @@ import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.ArtistDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.CoverArt.EntityType;
 import org.airsonic.player.service.search.IndexManager;
 import org.apache.commons.lang.ObjectUtils;
 import org.slf4j.Logger;
@@ -72,6 +73,8 @@ public class MediaScannerService {
     private MediaFileService mediaFileService;
     @Autowired
     private MediaFolderService mediaFolderService;
+    @Autowired
+    private CoverArtService coverArtService;
     @Autowired
     private MediaFileDao mediaFileDao;
     @Autowired
@@ -230,7 +233,10 @@ public class MediaScannerService {
             CompletableFuture<Void> albumPersistence = CompletableFuture
                     .allOf(albums.values().parallelStream()
                             .distinct()
-                            .map(a -> CompletableFuture.runAsync(() -> albumDao.createOrUpdateAlbum(a), pool))
+                            .map(a -> CompletableFuture.supplyAsync(() -> {
+                                albumDao.createOrUpdateAlbum(a);
+                                return a;
+                            }, pool).thenAcceptAsync(coverArtService::persistIfNeeded))
                             .toArray(CompletableFuture[]::new))
                     .thenRunAsync(() -> {
                         LOG.info("Marking non-present albums.");
@@ -241,7 +247,10 @@ public class MediaScannerService {
             LOG.info("Persisting artists");
             CompletableFuture<Void> artistPersistence = CompletableFuture
                     .allOf(artists.values().parallelStream()
-                            .map(a -> CompletableFuture.runAsync(() -> artistDao.createOrUpdateArtist(a), pool))
+                            .map(a -> CompletableFuture.supplyAsync(() -> {
+                                artistDao.createOrUpdateArtist(a);
+                                return a;
+                            }, pool).thenAcceptAsync(coverArtService::persistIfNeeded))
                             .toArray(CompletableFuture[]::new))
                     .thenRunAsync(() -> {
                         LOG.info("Marking non-present artists.");
@@ -391,9 +400,15 @@ public class MediaScannerService {
         if (file.getGenre() != null) {
             album.setGenre(file.getGenre());
         }
-        MediaFile parent = mediaFileService.getParentOf(file);
-        if (parent != null && parent.getCoverArtPath() != null) {
-            album.setCoverArtPath(parent.getCoverArtPath());
+
+        if (album.getArt() == null) {
+            MediaFile parent = mediaFileService.getParentOf(file);
+            if (parent != null) {
+                CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, parent.getId());
+                if (art != null) {
+                    album.setArt(new CoverArt(-1, EntityType.ALBUM, art.getPath(), art.getFolderId(), false));
+                }
+            }
         }
 
         if (firstEncounter.get()) {
@@ -439,10 +454,13 @@ public class MediaScannerService {
             return a;
         });
 
-        if (artist.getCoverArtPath() == null) {
+        if (artist.getArt() == null) {
             MediaFile parent = mediaFileService.getParentOf(file);
             if (parent != null) {
-                artist.setCoverArtPath(parent.getCoverArtPath());
+                CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, parent.getId());
+                if (art != null) {
+                    artist.setArt(new CoverArt(-1, EntityType.ARTIST, art.getPath(), art.getFolderId(), false));
+                }
             }
         }
 

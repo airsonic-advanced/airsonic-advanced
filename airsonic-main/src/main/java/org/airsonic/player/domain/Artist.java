@@ -30,7 +30,6 @@ public class Artist {
 
     private int id;
     private String name;
-    private String coverArtPath;
     private final AtomicInteger albumCount = new AtomicInteger();
     private Instant lastScanned;
     private boolean present;
@@ -39,10 +38,9 @@ public class Artist {
     public Artist() {
     }
 
-    public Artist(int id, String name, String coverArtPath, int albumCount, Instant lastScanned, boolean present, Integer folderId) {
+    public Artist(int id, String name, int albumCount, Instant lastScanned, boolean present, Integer folderId) {
         this.id = id;
         this.name = name;
-        this.coverArtPath = coverArtPath;
         this.albumCount.set(albumCount);
         this.lastScanned = lastScanned;
         this.present = present;
@@ -63,14 +61,6 @@ public class Artist {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getCoverArtPath() {
-        return coverArtPath;
-    }
-
-    public void setCoverArtPath(String coverArtPath) {
-        this.coverArtPath = coverArtPath;
     }
 
     public int getAlbumCount() {
@@ -103,5 +93,16 @@ public class Artist {
 
     public Integer getFolderId() {
         return folderId;
+    }
+
+    // placeholder for persistence later
+    private CoverArt art;
+
+    public CoverArt getArt() {
+        return art;
+    }
+
+    public void setArt(CoverArt art) {
+        this.art = art;
     }
 }

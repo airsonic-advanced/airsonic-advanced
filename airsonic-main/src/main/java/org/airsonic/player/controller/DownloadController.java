@@ -21,6 +21,7 @@ package org.airsonic.player.controller;
 
 import com.google.common.collect.Streams;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.CoverArt.EntityType;
 import org.airsonic.player.io.PipeStreams.MonitoredResource;
 import org.airsonic.player.io.PipeStreams.PipedInputStream;
 import org.airsonic.player.io.PipeStreams.PipedOutputStream;
@@ -103,6 +104,8 @@ public class DownloadController {
     private MediaFileService mediaFileService;
     @Autowired
     private MediaFolderService mediaFolderService;
+    @Autowired
+    private CoverArtService coverArtService;
 
     @GetMapping
     public ResponseEntity<Resource> handleRequest(Principal p,
@@ -125,25 +128,30 @@ public class DownloadController {
         };
 
         MediaFile mediaFile = id.map(mediaFileService::getMediaFile).orElse(null);
+        Collection<Pair<Path, Integer>> additionalFiles = Collections.emptyList();
 
         if (mediaFile != null) {
             if (!securityService.isFolderAccessAllowed(mediaFile, user.getUsername())) {
                 throw new AccessDeniedException("Access to file " + mediaFile.getId() + " is forbidden for user " + user.getUsername());
             }
-
             if (mediaFile.isFile()) {
-                response = prepareResponse(Collections.singletonList(mediaFile), null, statusSupplier, statusCloser, Collections.emptyList());
+                response = prepareResponse(Collections.singletonList(mediaFile), null, statusSupplier, statusCloser, additionalFiles);
                 defaultDownloadName = FilenameUtils.getName(mediaFile.getPath());
             } else {
-                response = prepareResponse(mediaFileService.getChildrenOf(mediaFile, true, false, true), indices,
-                        statusSupplier, statusCloser, indices == null ? Collections.singletonList(Pair.of(mediaFile.getRelativeCoverArtPath(), mediaFile.getFolderId())) : Collections.emptyList());
+                if (indices == null) {
+                    CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, mediaFile.getId());
+                    if (art != null) {
+                        additionalFiles = Collections.singletonList(Pair.of(art.getRelativePath(), art.getFolderId()));
+                    }
+                }
+                response = prepareResponse(mediaFileService.getChildrenOf(mediaFile, true, false, true), indices, statusSupplier, statusCloser, additionalFiles);
                 defaultDownloadName = FilenameUtils.getBaseName(mediaFile.getPath()) + ".zip";
             }
         } else if (playlist != null) {
-            response = prepareResponse(playlistService.getFilesInPlaylist(playlist), indices, statusSupplier, statusCloser, Collections.emptyList());
+            response = prepareResponse(playlistService.getFilesInPlaylist(playlist), indices, statusSupplier, statusCloser, additionalFiles);
             defaultDownloadName = playlistService.getPlaylist(playlist).getName() + ".zip";
         } else if (player != null) {
-            response = prepareResponse(transferPlayer.getPlayQueue().getFiles(), indices, statusSupplier, statusCloser, Collections.emptyList());
+            response = prepareResponse(transferPlayer.getPlayQueue().getFiles(), indices, statusSupplier, statusCloser, additionalFiles);
             defaultDownloadName = "player-" + transferPlayer.getId() + "-" + transferPlayer.getName() + "-" + "playqueue.zip";
         }
 

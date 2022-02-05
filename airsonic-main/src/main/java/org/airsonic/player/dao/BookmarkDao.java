@@ -22,6 +22,7 @@ package org.airsonic.player.dao;
 import org.airsonic.player.domain.Bookmark;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
@@ -78,7 +79,7 @@ public class BookmarkDao extends AbstractDao {
     /**
      * Creates or updates a bookmark.  If created, the ID of the bookmark will be set by this method.
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createOrUpdateBookmark(Bookmark bookmark) {
         int n = update("update bookmark set position_millis=?, comment=?, changed=? where media_file_id=? and username=?",
                 bookmark.getPositionMillis(), bookmark.getComment(), bookmark.getChanged(), bookmark.getMediaFileId(), bookmark.getUsername());
