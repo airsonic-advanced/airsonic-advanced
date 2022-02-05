@@ -224,7 +224,7 @@ public class MediaFileWSController {
         private String musicBrainzReleaseId;
 
         public MediaFileDirectoryEntry(MediaFileEntry mfe) {
-            super(mfe.getId(), mfe.getTrackNumber(), mfe.getTitle(), mfe.getArtist(), mfe.getAlbum(), mfe.getGenre(),
+            super(mfe.getId(), mfe.getTrackNumber(), mfe.getDiscNumber(), mfe.getTitle(), mfe.getArtist(), mfe.getAlbum(), mfe.getGenre(),
                     mfe.getYear(), mfe.getBitRate(), mfe.getDimensions(), mfe.getDuration(),
                     mfe.getFormat(), mfe.getContentType(), mfe.getEntryType(), mfe.getFileSize(), mfe.getPlayCount(),
                     mfe.getLastPlayed(), mfe.getCreated(), mfe.getChanged(), mfe.getLastScanned(), mfe.getStarred(), mfe.getPresent(),

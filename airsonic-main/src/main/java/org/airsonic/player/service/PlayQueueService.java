@@ -565,10 +565,12 @@ public class PlayQueueService {
         for (InternetRadioSource streamSource : sources) {
             // Fake entry id so that the source can be selected in the UI
             int streamId = -(1 + entries.size());
-            Integer streamTrackNumber = entries.size();
+            Integer streamDiscNumber = entries.size();
             String streamUrl = streamSource.getStreamUrl();
+            int i = 1;
             entries.add(new MediaFileEntry(streamId, // Entry id
-                    streamTrackNumber, // Track number
+                    i++, // Track number
+                    streamDiscNumber, // Disc number
                     streamUrl, // Track title (use radio stream URL for now)
                     "", // Track artist
                     radioName, // Album name (use radio name)
