@@ -97,6 +97,12 @@
             <td style="text-align:center"><form:checkbox path="playqueueVisibility.trackNumberVisible" cssClass="checkbox"/></td>
         </tr>
         <tr>
+            <td><fmt:message key="personalsettings.discnumber"/></td>
+            <td style="text-align:center"><form:checkbox path="mainVisibility.discNumberVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playlistVisibility.discNumberVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playqueueVisibility.discNumberVisible" cssClass="checkbox"/></td>
+        </tr>
+        <tr>
             <td><fmt:message key="personalsettings.artist"/></td>
             <td style="text-align:center"><form:checkbox path="mainVisibility.artistVisible" cssClass="checkbox"/></td>
             <td style="text-align:center"><form:checkbox path="playlistVisibility.artistVisible" cssClass="checkbox"/></td>

@@ -117,6 +117,7 @@
                       }
                     },
                     { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
+                    { data: "discNumber", className: "detail fit", visible: ${model.visibility.discNumberVisible}, title: "<fmt:message key='personalsettings.discnumber'/>" },
                     { data: "title",
                       className: "detail songTitle truncate",
                       title: "<fmt:message key='edittags.songtitle'/>",
