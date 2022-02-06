@@ -122,7 +122,7 @@
                     }
 
                     if (rowNode.hasClass("selected")) {
-                        rowNode.find(".songIndex input").prop("checked", true);
+                        rowNode.find(".songIndex").prop("checked", true);
                     }
                 },
                 colReorder: true,
