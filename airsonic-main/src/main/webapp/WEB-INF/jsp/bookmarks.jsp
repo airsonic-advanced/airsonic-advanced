@@ -20,6 +20,7 @@
             bookmarksTable = $("#bookmarksTable").DataTable( {
                 deferRender: true,
                 colReorder: true,
+                fixedHeader: true,
                 stateSave: true,
                 stateDuration: 60 * 60 * 24 * 365,
                 ordering: true,
