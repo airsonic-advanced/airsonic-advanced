@@ -180,6 +180,13 @@
                 columnDefs: [{ targets: "_all", orderable: false }],
                 columns: [
                     { data: "seq", className: "detail fit", visible: true },
+                    { data: null,
+                      searchable: false,
+                      name: "songcheckbox",
+                      className: "fit not-draggable",
+                      title: "<input type='checkbox' class='songSelectAll'>",
+                      defaultContent: "<input type='checkbox' class='songIndex'>"
+                    },
                     { data: "starred",
                       name: "starred",
                       className: "fit not-draggable",
@@ -195,12 +202,6 @@
                       name: "remove",
                       className: "fit not-draggable",
                       defaultContent: "<img class='removeSong' src=\"<spring:theme code='removeImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist.remove'/>\" title=\"<fmt:message key='playlist.remove'/>\">"
-                    },
-                    { data: null,
-                      searchable: false,
-                      name: "songcheckbox",
-                      className: "fit not-draggable",
-                      defaultContent: "<input type='checkbox' class='songIndex'>"
                     },
                     { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
                     { data: "discNumber", className: "detail fit", visible: ${model.visibility.discNumberVisible}, title: "<fmt:message key='personalsettings.discnumber'/>" },
@@ -329,9 +330,11 @@
 
             pq.musicTable.on( 'select', function ( e, dt, type, indexes ) {
                 pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", true);
+                pq.updateSelectAllCheckboxStatus();
             } );
             pq.musicTable.on( 'deselect', function ( e, dt, type, indexes ) {
                 pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
+                pq.updateSelectAllCheckboxStatus();
             } );
             $("#playQueueMusic tbody").on( "click", ".starSong", function () {
                 pq.onToggleStar(pq.musicTable.row( $(this).parents('tr') ).index());
@@ -341,6 +344,9 @@
             } );
             $("#playQueueMusic tbody").on( "click", ".titleUrl", function () {
                 pq.onSkip(pq.musicTable.row( $(this).parents('tr') ).index());
+            } );
+            $(".songSelectAll").on( "change", function (e) {
+                pq.selectAll(e.target.checked);
             } );
             pq.musicTable.on( "row-reordered", function (e, diff, edit) {
                 if (diff.length > 0) {
@@ -1035,8 +1041,6 @@
             $("select#moreActions #sortByTrack").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #sortByAlbum").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #sortByArtist").prop("disabled", this.internetRadioEnabled);
-            $("select#moreActions #selectAll").prop("disabled", this.internetRadioEnabled);
-            $("select#moreActions #selectNone").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #removeSelected").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #download").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #appendPlaylist").prop("disabled", this.internetRadioEnabled);
@@ -1154,10 +1158,6 @@
                 this.onSortByArtist();
             } else if (id == "sortByAlbum") {
                 this.onSortByAlbum();
-            } else if (id == "selectAll") {
-                this.selectAll(true);
-            } else if (id == "selectNone") {
-                this.selectAll(false);
             } else if (id == "removeSelected") {
                 this.onRemoveSelected();
             } else if ((selectedIndexes = this.getSelectedIndexes()).length > 0 && id == "star") { // define selectedIndexes first so it always evaluates
@@ -1183,6 +1183,19 @@
                 this.musicTable.rows().select();
             } else {
                 this.musicTable.rows().deselect();
+            }
+        },
+
+        updateSelectAllCheckboxStatus() {
+            var pq = this;
+            if (pq.musicTable.rows({selected: true}).indexes().length == 0) {
+                $('.songSelectAll').prop('checked', false);
+                $('.songSelectAll').prop('indeterminate', false);
+            } else if (pq.musicTable.rows({selected: true}).indexes().length == pq.musicTable.rows().indexes().length) {
+                $('.songSelectAll').prop('checked', true);
+                $('.songSelectAll').prop('indeterminate', false);
+            } else {
+                $('.songSelectAll').prop('indeterminate', true);
             }
         },
 
@@ -1303,8 +1316,6 @@
                     <option id="sortByArtist"><fmt:message key="playlist.more.sortbyartist"/></option>
                 </optgroup>
                 <optgroup label="<fmt:message key='playlist.more.selection'/>">
-                    <option id="selectAll"><fmt:message key="playlist.more.selectall"/></option>
-                    <option id="selectNone"><fmt:message key="playlist.more.selectnone"/></option>
                     <option id="removeSelected"><fmt:message key="playlist.remove"/></option>
                   <c:if test="${model.user.downloadRole}">
                     <option id="download"><fmt:message key="common.download"/></option>
