@@ -24,6 +24,7 @@
                 }
             },
             colReorder: true,
+            fixedHeader: true,
             stateSave: true,
             stateDuration: 60 * 60 * 24 * 365,
             ordering: true,
@@ -56,6 +57,13 @@
                 { data: "id", className: "detail fit" },
                 { data: null,
                   searchable: false,
+                  name: "playlistcheckbox",
+                  className: "fit not-draggable playlistIndex",
+                  title: "<input type='checkbox' class='playlistsSelectAll'>",
+                  defaultContent: "<input type='checkbox'>"
+                },
+                { data: null,
+                  searchable: false,
                   name: "play",
                   className: "fit not-draggable",
                   defaultContent: "<img class='playSong' src=\"<spring:theme code='playImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.play'/>\" title=\"<fmt:message key='common.play'/>\">"
@@ -65,12 +73,6 @@
                   name: "addLast",
                   className: "fit not-draggable",
                   defaultContent: "<img class='addSongLast' src=\"<spring:theme code='addImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.add'/>\" title=\"<fmt:message key='common.add'/>\">"
-                },
-                { data: null,
-                  searchable: false,
-                  name: "playlistcheckbox",
-                  className: "fit not-draggable playlistIndex",
-                  defaultContent: "<input type='checkbox'>"
                 },
                 { data: "name",
                   className: "detail fit",
@@ -173,9 +175,11 @@
 
         playlistsTable.on( 'select', function ( e, dt, type, indexes ) {
              playlistsTable.cells( indexes, "playlistcheckbox:name" ).nodes().to$().find("input").prop("checked", true);
+             updateSelectAllCheckboxStatus();
         } );
         playlistsTable.on( 'deselect', function ( e, dt, type, indexes ) {
              playlistsTable.cells( indexes, "playlistcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
+             updateSelectAllCheckboxStatus();
         } );
         $("#playlistsTable tbody").on( "click", ".playSong", function () {
             onPlay(playlistsTable.row( $(this).parents('tr') ).index());
@@ -188,6 +192,9 @@
         } );
         $("#playlistsTable tbody").on( "click", ".removePlaylist", function () {
             onDelete(playlistsTable.row( $(this).parents('tr') ).index());
+        } );
+        $(".playlistsSelectAll").on( "change", function (e) {
+            selectAll(e.target.checked);
         } );
 
         top.StompClient.subscribe("playlists.jsp", {
@@ -226,7 +233,15 @@
         location.href="exportPlaylist.view?id="+playlists[index].id;
       }
       function onDelete(index) {
-        top.StompClient.send("/app/playlists/delete", playlists[index].id);
+        if (playlists[index].username == user) {
+          top.StompClient.send("/app/playlists/delete", playlists[index].id);
+        }
+      }
+      function onDeleteSelected() {
+        var indices = playlistsTable.rows({ selected: true }).indexes().toArray();
+        for (let i of indices) {
+          onDelete(i);
+        }
       }
 
       function deletedPlaylistCallback(id) {
@@ -279,9 +294,11 @@
         if (!viewAsList) {
             $('#thumbs_wrapper').show();
             $('#playlistsTable_wrapper').hide();
+            $('#moreactions').hide();
         } else {
             $('#thumbs_wrapper').hide();
             $('#playlistsTable_wrapper').show();
+            $('#moreactions').show();
         }
       }
       function generateThumbs() {
@@ -302,6 +319,35 @@
       function removeThumb(playlistId) {
         $('#playlistThumb-' + playlistId).remove();
       }
+
+      <!-- actionSelected() is invoked when the users selects from the "More actions..." combo box. -->
+      function actionSelected(id) {
+        if (id == "top") {
+            return;
+        } else if (id == "removeSelected") {
+            this.onDeleteSelected();
+        }
+      }
+
+      function selectAll(b) {
+          if (b) {
+              playlistsTable.rows().select();
+          } else {
+              playlistsTable.rows().deselect();
+          }
+      }
+
+      function updateSelectAllCheckboxStatus() {
+          if (playlistsTable.rows({selected: true}).indexes().length == 0) {
+              $('.playlistsSelectAll').prop('checked', false);
+              $('.playlistsSelectAll').prop('indeterminate', false);
+          } else if (playlistsTable.rows({selected: true}).indexes().length == playlistsTable.rows().indexes().length) {
+              $('.playlistsSelectAll').prop('checked', true);
+              $('.playlistsSelectAll').prop('indeterminate', false);
+          } else {
+              $('.playlistsSelectAll').prop('indeterminate', true);
+          }
+      }
     </script>
 </head>
 <body class="mainframe bgcolor1" onload="init()">
@@ -321,6 +367,19 @@
 
 <table class="music indent hover nowrap stripe compact" id="playlistsTable" style="cursor: pointer; width: 100%; margin-top: 5px;">
 </table>
+
+<div class="tableSpacer"></div>
+
+<div id="moreactions" style="white-space:nowrap;">
+    <span class="header">
+        <select id="moreActions" onchange="actionSelected(options[selectedIndex].id)">
+            <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
+            <optgroup label="<fmt:message key='playlists.more.selection'/>">
+                <option id="removeSelected"><fmt:message key="playlist.remove"/></option>
+            </optgroup>
+        </select>
+    </span>
+</div>
 
 <div class="tableSpacer"></div>
 
