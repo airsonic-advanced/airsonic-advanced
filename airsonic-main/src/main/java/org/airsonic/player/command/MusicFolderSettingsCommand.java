@@ -47,6 +47,7 @@ public class MusicFolderSettingsCommand {
     private String uploadsFolder;
     private String excludePatternString;
     private boolean ignoreSymLinks;
+    private boolean hideIndexedFiles;
     private Boolean fullScan;
     private Boolean clearFullScanSettingAfterScan;
 
@@ -116,6 +117,14 @@ public class MusicFolderSettingsCommand {
 
     public boolean getIgnoreSymLinks() {
         return ignoreSymLinks;
+    }
+
+    public boolean getHideIndexedFiles() {
+        return hideIndexedFiles;
+    }
+
+    public void setHideIndexedFiles(boolean hideIndexedFiles) {
+        this.hideIndexedFiles = hideIndexedFiles;
     }
 
     public void setIgnoreSymLinks(boolean ignoreSymLinks) {

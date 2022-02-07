@@ -1,0 +1,59 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="startposition_001" author="yetangitu">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="media_file" columnName="start_position" />
+            </not>
+        </preConditions>
+        <addColumn tableName="media_file">
+            <column name="start_position" afterColumn="type" type="double" defaultValueNumeric="-1.0">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet id="dropuniqueindexfolderpath_001" author="yetangitu">
+        <dropIndex tableName="media_file" indexName="idx_media_file_folder_path" />
+        <rollback>
+            <createIndex tableName="media_file" unique="true" indexName="idx_media_file_folder_path">
+                <column name="folder_id"></column>
+                <column name="path"></column>
+            </createIndex>
+        </rollback>
+    </changeSet>
+    <changeSet id="adduniqueindexstartposition_001" author="yetangitu">
+        <createIndex tableName="media_file" indexName="idx_media_file_start_position" unique="true">
+            <column name="folder_id"/>
+            <column name="path"/>
+            <column name="start_position"/>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="media_file" indexName="idx_media_file_start_position" />
+        </rollback>
+    </changeSet>
+    <changeSet id="indexpath_001" author="yetangitu">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="media_file" columnName="index_path" />
+            </not>
+        </preConditions>
+        <addColumn tableName="media_file">
+            <column name="index_path" afterColumn="parent_path" type="${varchar_type}" />
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="media_file" columnName="index_path"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="addsplittingtranscoder_001" author="yetangitu">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">select count(*) from transcoding where name='mp3 audio' and step1 like '% %%S %'</sqlCheck>
+        </preConditions>
+        <update tableName="transcoding">
+            <column name="step1" value="ffmpeg %S -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -" />
+            <where>name='mp3 audio'</where>
+        </update>
+        <rollback changeSetId="schema50_003" changeSetAuthor="muff1nman" changeSetPath="classpath:liquibase/legacy/schema50.xml" />
+    </changeSet>
+</databaseChangeLog>

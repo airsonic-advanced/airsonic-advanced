@@ -124,7 +124,7 @@ public class ExternalPlayerController {
                     .filter(f -> Files.exists(f.getFullPath(mediaFolderService.getMusicFolderById(f.getFolderId()).getPath())))
                     .flatMap(f -> {
                         if (f.isDirectory()) {
-                            return mediaFileService.getChildrenOf(f, true, false, true).stream()
+                            return mediaFileService.getVisibleChildrenOf(f, false, true).stream()
                                     .map(fc -> addUrlInfo(request, player, fc, expires));
                         } else {
                             return Stream.of(addUrlInfo(request, player, f, expires));

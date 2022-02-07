@@ -176,7 +176,7 @@ public class FolderBasedContentDirectory extends CustomContentDirectory {
     }
 
     private BrowseResult browseMediaFile(MediaFile mediaFile, long firstResult, long maxResults) throws Exception {
-        List<MediaFile> allChildren = mediaFileService.getChildrenOf(mediaFile, true, true, true);
+        List<MediaFile> allChildren = mediaFileService.getVisibleChildrenOf(mediaFile, true, true);
         List<MediaFile> selectedChildren = Util.subList(allChildren, firstResult, maxResults);
 
         DIDLContent didl = new DIDLContent();
@@ -223,7 +223,7 @@ public class FolderBasedContentDirectory extends CustomContentDirectory {
         Container container = mediaFile.isAlbum() ? createAlbumContainer(mediaFile) : new MusicAlbum();
         container.setId(CONTAINER_ID_FOLDER_PREFIX + mediaFile.getId());
         container.setTitle(mediaFile.getName());
-        List<MediaFile> children = mediaFileService.getChildrenOf(mediaFile, true, true, false);
+        List<MediaFile> children = mediaFileService.getVisibleChildrenOf(mediaFile, true, false);
         container.setChildCount(children.size());
 
         container.setParentID(CONTAINER_ID_ROOT);

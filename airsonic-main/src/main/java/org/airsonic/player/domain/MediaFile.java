@@ -24,6 +24,7 @@ import org.apache.commons.io.FilenameUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -41,6 +42,7 @@ public class MediaFile {
     private String path;
     private Integer folderId;
     private MediaType mediaType;
+    private Double startPosition = NOT_INDEXED; // i.e. not an indexed track
     private String format;
     private String title;
     private String albumName;
@@ -57,6 +59,7 @@ public class MediaFile {
     private Integer width;
     private Integer height;
     private String parentPath;
+    private String indexPath;
     private int playCount;
     private Instant lastPlayed;
     private String comment;
@@ -70,15 +73,16 @@ public class MediaFile {
     private String musicBrainzReleaseId;
     private String musicBrainzRecordingId;
 
-    public MediaFile(Integer id, String path, Integer folderId, MediaType mediaType, String format, String title,
+    public MediaFile(Integer id, String path, Integer folderId, MediaType mediaType, Double startPosition, String format, String title,
                      String albumName, String artist, String albumArtist, Integer discNumber, Integer trackNumber, Integer year, String genre, Integer bitRate,
-            boolean variableBitRate, Double duration, Long fileSize, Integer width, Integer height,
-                     String parentPath, int playCount, Instant lastPlayed, String comment, Instant created, Instant changed, Instant lastScanned,
-                     Instant childrenLastUpdated, boolean present, int version, String musicBrainzReleaseId, String musicBrainzRecordingId) {
+                     boolean variableBitRate, Double duration, Long fileSize, Integer width, Integer height, String parentPath, String indexPath, int playCount,
+                     Instant lastPlayed, String comment, Instant created, Instant changed, Instant lastScanned, Instant childrenLastUpdated, boolean present,
+                     int version, String musicBrainzReleaseId, String musicBrainzRecordingId) {
         this.id = id;
         this.path = path;
         this.folderId = folderId;
         this.mediaType = mediaType;
+        this.startPosition = startPosition;
         this.format = format;
         this.title = title;
         this.albumName = albumName;
@@ -95,6 +99,7 @@ public class MediaFile {
         this.width = width;
         this.height = height;
         this.parentPath = parentPath;
+        this.indexPath = indexPath;
         this.playCount = playCount;
         this.lastPlayed = lastPlayed;
         this.comment = comment;
@@ -143,6 +148,22 @@ public class MediaFile {
         return relativeMediaFolderPath.resolve(path);
     }
 
+    public String getIndexPath() {
+        return indexPath;
+    }
+
+    public void setIndexPath(String path) {
+        this.indexPath = path;
+    }
+
+    public Path getRelativeIndexPath() {
+        return indexPath == null ? null : Paths.get(indexPath);
+    }
+
+    public Path getFullIndexPath(Path folderPath) {
+        return folderPath.resolve(indexPath);
+    }
+
     public MediaType getMediaType() {
         return mediaType;
     }
@@ -151,12 +172,28 @@ public class MediaFile {
         this.mediaType = mediaType;
     }
 
+    public Double getStartPosition() {
+        return startPosition;
+    }
+
+    public void setStartPosition(Double startPosition) {
+        this.startPosition = startPosition;
+    }
+
+    public boolean hasIndex() {
+        return indexPath != null;
+    }
+
     public boolean isVideo() {
         return mediaType == MediaType.VIDEO;
     }
 
     public boolean isAudio() {
-        return mediaType == MediaType.MUSIC || mediaType == MediaType.AUDIOBOOK || mediaType == MediaType.PODCAST;
+        return MediaType.audioTypes().contains(mediaType.toString());
+    }
+
+    public boolean isIndexedTrack() {
+        return startPosition >= 0.0;
     }
 
     public String getFormat() {
@@ -411,26 +448,35 @@ public class MediaFile {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         MediaFile other = (MediaFile) obj;
         if (path == null) {
-            if (other.path != null)
+            if (other.path != null) {
                 return false;
-        } else if (!path.equals(other.path))
+            }
+        } else if (!path.equals(other.path)) {
             return false;
-        if (!folderId.equals(other.folderId))
+        }
+        if (!folderId.equals(other.folderId)) {
             return false;
+        }
+        if (!startPosition.equals(other.startPosition)) {
+            return false;
+        }
         return true;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(path, folderId);
+        return Objects.hash(path, folderId, startPosition);
     }
 
     @Override
@@ -446,12 +492,25 @@ public class MediaFile {
         return from -> from.getId();
     }
 
+    public static final double NOT_INDEXED = -1.0;
+
     public static enum MediaType {
         MUSIC,
         PODCAST,
         AUDIOBOOK,
         VIDEO,
         DIRECTORY,
-        ALBUM
+        ALBUM;
+
+        private static final List<String> AUDIO_TYPES = Arrays.asList(MUSIC.toString(),AUDIOBOOK.toString(),PODCAST.toString());
+        private static final List<String> PLAYABLE_TYPES = Arrays.asList(MUSIC.toString(),AUDIOBOOK.toString(),PODCAST.toString(),VIDEO.toString());
+
+        public static List<String> audioTypes() {
+            return AUDIO_TYPES;
+        }
+
+        public static List<String> playableTypes() {
+            return PLAYABLE_TYPES;
+        }
     }
 }

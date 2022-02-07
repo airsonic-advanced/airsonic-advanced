@@ -115,7 +115,7 @@ public class IndexManager {
         try {
             writers.get(IndexType.ALBUM_ID3).updateDocument(primarykey, document);
         } catch (Exception x) {
-            LOG.error("Failed to create search index for {}", album, x);
+            LOG.error("Failed to create search index for album {}", album, x);
         }
     }
 
@@ -125,7 +125,7 @@ public class IndexManager {
         try {
             writers.get(IndexType.ARTIST_ID3).updateDocument(primarykey, document);
         } catch (Exception x) {
-            LOG.error("Failed to create search index for {}", artist, x);
+            LOG.error("Failed to create search index for artist {}", artist, x);
         }
     }
 
@@ -143,7 +143,7 @@ public class IndexManager {
                 writers.get(IndexType.ARTIST).updateDocument(primarykey, document);
             }
         } catch (Exception x) {
-            LOG.error("Failed to create search index for {}", mediaFile, x);
+            LOG.error("Failed to create search index for mediaFile {}", mediaFile, x);
         }
     }
 
