@@ -107,6 +107,10 @@ public class MediaFileService {
         }
     }
 
+    public MediaFile getMediaFile(String relativePath, Integer folderId) {
+        return getMediaFile(relativePath, mediaFolderService.getMusicFolderById(folderId));
+    }
+
     public MediaFile getMediaFile(String relativePath, MusicFolder folder) {
         return getMediaFile(Paths.get(relativePath), folder);
     }
