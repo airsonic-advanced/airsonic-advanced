@@ -78,7 +78,7 @@ public class MusicFolderDao extends AbstractDao {
         return queryOne(sql, MUSICFOLDER_ROW_MAPPER, path);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createMusicFolder(MusicFolder musicFolder) {
         if (getMusicFolderForPath(musicFolder.getPath().toString()) == null) {
             Integer id = insert("music_folder", musicFolder);
@@ -94,6 +94,16 @@ public class MusicFolderDao extends AbstractDao {
         String sql = "delete from music_folder where id=?";
         update(sql, id);
         LOG.info("Deleted music folder with ID {}", id);
+    }
+
+    public void expungeMusicFolders() {
+        String sql = "delete from music_folder where id < 0";
+        update(sql);
+    }
+
+    public void updateMusicFolderId(Integer oldId, Integer newId) {
+        String sql = "update music_folder set id=? where id=?";
+        update(sql, newId, oldId);
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -167,6 +177,7 @@ public class MusicFolderDao extends AbstractDao {
         return query(sql, MUSICFOLDER_ROW_MAPPER, username);
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void setMusicFoldersForUser(String username, Collection<Integer> musicFolderIds) {
         update("delete from music_folder_user where username = ?", username);
         for (Integer musicFolderId : musicFolderIds) {

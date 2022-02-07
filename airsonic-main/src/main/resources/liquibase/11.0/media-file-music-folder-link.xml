@@ -1,0 +1,51 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="drop-music-folder-user-fk" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <sqlCheck expectedResult="0">
+                    select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='music_folder_user' and lower(tc.constraint_type)='foreign key' and lower(kcu.column_name)='music_folder_id'
+                </sqlCheck>
+            </not>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.DropConstraintWithoutName">
+            <param name="tableName" value="music_folder_user"/>
+            <param name="columns" value="music_folder_id"/>
+            <param name="constraintType" value="foreign key"/>
+        </customChange>
+        <rollback>
+            <addForeignKeyConstraint baseTableName="music_folder_user" baseColumnNames="music_folder_id" constraintName="mfu_fm_fk" referencedTableName="music_folder" referencedColumnNames="id" onDelete="CASCADE" onUpdate="CASCADE" />
+        </rollback>
+    </changeSet>
+    <changeSet id="add-music-folder-user-fk-with-update" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='music_folder_user' and lower(tc.constraint_type)='foreign key' and lower(kcu.column_name)='music_folder_id'
+            </sqlCheck>
+        </preConditions>
+        <addForeignKeyConstraint baseTableName="music_folder_user" baseColumnNames="music_folder_id" constraintName="mfu_fm_fk" referencedTableName="music_folder" referencedColumnNames="id" onDelete="CASCADE" onUpdate="CASCADE" />
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="music_folder_user" constraintName="mfu_fm_fk"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="delete-absent-music-folder-media-file" author="anon">
+        <delete tableName="media_file">
+            <where>folder_id not in (select id from music_folder)</where>
+        </delete>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-music-folder-media-file-fk-with-update" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='media_file' and lower(tc.constraint_type)='foreign key' and lower(kcu.column_name)='folder_id'
+            </sqlCheck>
+        </preConditions>
+        <addForeignKeyConstraint baseTableName="media_file" baseColumnNames="folder_id" constraintName="mfi_mfo_id_fk" referencedTableName="music_folder" referencedColumnNames="id" onDelete="CASCADE" onUpdate="CASCADE" />
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="media_file" constraintName="mfi_mfo_id_fk"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -1,5 +1,6 @@
 package org.airsonic.player.service;
 
+import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.domain.MusicFolder;
 import org.apache.commons.lang3.tuple.Triple;
@@ -23,6 +24,8 @@ import static java.util.stream.Collectors.toList;
 public class MediaFolderService {
     @Autowired
     private MusicFolderDao musicFolderDao;
+    @Autowired
+    private MediaFileDao mediaFileDao;
 
     private List<MusicFolder> cachedMusicFolders;
     private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
@@ -116,15 +119,21 @@ public class MediaFolderService {
         MusicFolder folder = getMusicFolderById(id);
         Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(folder, getAllMusicFolders(true, true));
 
-        // if folder has ancestors, reassign hierarchy to immediate ancestor
+        // if folder has ancestors, reassign hierarchy to immediate ancestor and true delete
         if (!overlaps.getMiddle().isEmpty()) {
             musicFolderDao.reassignChildren(folder, overlaps.getMiddle().get(0));
-            clearMediaFileCache();
+            musicFolderDao.deleteMusicFolder(id);
         }
         // if folder has descendants, ignore. they'll stay under descendant hierarchy
 
-        musicFolderDao.deleteMusicFolder(id);
+        musicFolderDao.updateMusicFolderId(id, -id);
+        mediaFileDao.deleteMediaFiles(-id);
         clearMusicFolderCache();
+        clearMediaFileCache();
+    }
+
+    public void expunge() {
+        musicFolderDao.expungeMusicFolders();
     }
 
     public void updateMusicFolder(MusicFolder musicFolder) {

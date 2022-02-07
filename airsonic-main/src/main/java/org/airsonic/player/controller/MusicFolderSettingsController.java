@@ -135,6 +135,9 @@ public class MusicFolderSettingsController {
         mediaFileDao.expunge();
         LOG.debug("Deleting non-present cover art...");
         coverArtService.expunge();
+        LOG.debug("Deleting non-present media folders...");
+        mediaFolderService.expunge();
+        LOG.debug("Refreshing playlist stats...");
         playlistService.refreshPlaylistsStats();
         LOG.debug("Database cleanup complete.");
     }
