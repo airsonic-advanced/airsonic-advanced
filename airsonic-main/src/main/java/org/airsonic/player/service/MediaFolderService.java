@@ -126,8 +126,8 @@ public class MediaFolderService {
         }
         // if folder has descendants, ignore. they'll stay under descendant hierarchy
 
-        musicFolderDao.updateMusicFolderId(id, -id);
-        mediaFileDao.deleteMediaFiles(-id);
+        musicFolderDao.updateMusicFolderId(id, -id - 1);
+        mediaFileDao.deleteMediaFiles(-id - 1);
         clearMusicFolderCache();
         clearMediaFileCache();
     }

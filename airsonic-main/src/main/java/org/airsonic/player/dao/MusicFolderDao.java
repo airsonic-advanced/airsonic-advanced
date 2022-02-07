@@ -64,7 +64,12 @@ public class MusicFolderDao extends AbstractDao {
      * @return Possibly empty list of all music folders.
      */
     public List<MusicFolder> getAllMusicFolders() {
-        String sql = "select " + QUERY_COLUMNS + " from music_folder";
+        String sql = "select " + QUERY_COLUMNS + " from music_folder where id >= 0";
+        return query(sql, MUSICFOLDER_ROW_MAPPER);
+    }
+
+    public List<MusicFolder> getDeletedMusicFolders() {
+        String sql = "select " + QUERY_COLUMNS + " from music_folder where id < 0";
         return query(sql, MUSICFOLDER_ROW_MAPPER);
     }
 
@@ -173,7 +178,7 @@ public class MusicFolderDao extends AbstractDao {
 
     public List<MusicFolder> getMusicFoldersForUser(String username) {
         String sql = "select " + prefix(QUERY_COLUMNS, "music_folder") + " from music_folder, music_folder_user " +
-                     "where music_folder.id = music_folder_user.music_folder_id and music_folder_user.username = ?";
+                "where music_folder.id = music_folder_user.music_folder_id and music_folder.id >= 0 and music_folder_user.username = ?";
         return query(sql, MUSICFOLDER_ROW_MAPPER, username);
     }
 
