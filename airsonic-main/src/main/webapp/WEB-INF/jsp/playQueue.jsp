@@ -855,7 +855,7 @@
             this.onSkip(this.currentSongIndex - 1);
         },
         onPlay(id) {
-            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/mediafile", JSON.stringify({id: id}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/mediafile", JSON.stringify({id: Array.isArray(id) ? id[0] : id}));
         },
         onPlayShuffle(albumListType, offset, count, genre, decade) {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/play/shuffle", JSON.stringify({albumListType: albumListType, offset: offset, count: count, genre: genre, decade: decade}));
@@ -888,10 +888,10 @@
             top.StompClient.send("/app/playqueues/" + this.player.id + "/play/similar", JSON.stringify({id: id, count: count}));
         },
         onAdd(id) {
-            top.StompClient.send("/app/playqueues/" + this.player.id + "/add", JSON.stringify({ids: [id]}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/add", JSON.stringify({ids: Array.isArray(id) ? id : [id]}));
         },
         onAddNext(id) {
-            top.StompClient.send("/app/playqueues/" + this.player.id + "/add", JSON.stringify({ids: [id], index: this.currentSongIndex + 1}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/add", JSON.stringify({ids: Array.isArray(id) ? id : [id], index: this.currentSongIndex + 1}));
         },
         onAddPlaylist(id) {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/add/playlist", JSON.stringify({id: id}));
