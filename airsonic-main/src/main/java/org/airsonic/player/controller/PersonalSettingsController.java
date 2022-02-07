@@ -93,6 +93,7 @@ public class PersonalSettingsController {
         command.setAutoBookmark(userSettings.getAutoBookmark());
         command.setAudioBookmarkFrequency(userSettings.getAudioBookmarkFrequency());
         command.setVideoBookmarkFrequency(userSettings.getVideoBookmarkFrequency());
+        command.setSearchCount(userSettings.getSearchCount());
 
         Locale currentLocale = userSettings.getLocale();
         Locale[] locales = settingsService.getAvailableLocales();
@@ -175,6 +176,7 @@ public class PersonalSettingsController {
         settings.setAutoBookmark(command.getAutoBookmark());
         settings.setAudioBookmarkFrequency(command.getAudioBookmarkFrequency());
         settings.setVideoBookmarkFrequency(command.getVideoBookmarkFrequency());
+        settings.setSearchCount(command.getSearchCount());
 
         settings.setChanged(Instant.now());
         settingsService.updateUserSettings(settings);
