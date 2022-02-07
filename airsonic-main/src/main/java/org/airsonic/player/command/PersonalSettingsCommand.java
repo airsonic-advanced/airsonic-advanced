@@ -64,6 +64,7 @@ public class PersonalSettingsCommand {
     private boolean autoBookmark;
     private int videoBookmarkFrequency;
     private int audioBookmarkFrequency;
+    private int searchCount;
 
     public User getUser() {
         return user;
@@ -335,5 +336,13 @@ public class PersonalSettingsCommand {
 
     public void setAudioBookmarkFrequency(int audioBookmarkFrequency) {
         this.audioBookmarkFrequency = audioBookmarkFrequency;
+    }
+
+    public int getSearchCount() {
+        return searchCount;
+    }
+
+    public void setSearchCount(int searchCount) {
+        this.searchCount = searchCount;
     }
 }

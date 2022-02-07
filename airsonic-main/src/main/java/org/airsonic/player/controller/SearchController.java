@@ -60,8 +60,6 @@ import static java.util.stream.Collectors.toSet;
 @RequestMapping("/search")
 public class SearchController {
 
-    private static final int MATCH_COUNT = 25;
-
     @Autowired
     private SecurityService securityService;
     @Autowired
@@ -101,7 +99,7 @@ public class SearchController {
         if (query != null) {
 
             SearchCriteria criteria = new SearchCriteria();
-            criteria.setCount(MATCH_COUNT);
+            criteria.setCount(userSettings.getSearchCount());
             criteria.setQuery(query);
 
             SearchResult artists = searchService.search(criteria, musicFolders, IndexType.ARTIST);

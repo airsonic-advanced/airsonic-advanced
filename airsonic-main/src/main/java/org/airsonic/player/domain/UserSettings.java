@@ -64,6 +64,7 @@ public class UserSettings {
     private boolean autoBookmark = true;
     private int videoBookmarkFrequency = 40;
     private int audioBookmarkFrequency = 10;
+    private int searchCount = 25;
 
     public UserSettings() {
     }
@@ -360,6 +361,14 @@ public class UserSettings {
 
     public void setAudioBookmarkFrequency(int audioBookmarkFrequency) {
         this.audioBookmarkFrequency = audioBookmarkFrequency;
+    }
+
+    public int getSearchCount() {
+        return searchCount;
+    }
+
+    public void setSearchCount(int searchCount) {
+        this.searchCount = searchCount;
     }
 
     /**

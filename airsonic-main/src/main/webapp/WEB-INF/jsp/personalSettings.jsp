@@ -258,6 +258,13 @@
 
     <table class="indent">
         <tr>
+            <td colspan="2"><fmt:message key="personalsettings.searchcount"/></td>
+            <td><form:input path="searchCount" size="10"/></td>
+        </tr>
+    </table>
+
+    <table class="indent">
+        <tr>
             <td><form:checkbox path="keyboardShortcutsEnabled" id="keyboardShortcutsEnabled" cssClass="checkbox"/></td>
             <td><label for="keyboardShortcutsEnabled"><fmt:message key="personalsettings.keyboardshortcutsenabled"/></label></td>
         </tr>
