@@ -124,7 +124,19 @@ public class MediaFolderService {
             musicFolderDao.reassignChildren(ancestor, musicFolder);
             clearMediaFileCache();
         }
-        // if new folder has descendants, ignore. they'll stay under descendant hierarchy
+
+        if (!overlaps.getRight().isEmpty()) {
+            // if new folder has deleted descendants, integrate and true delete the descendants
+            overlaps.getRight().stream()
+                // deleted
+                .filter(f -> f.getId() < 0)
+                .forEach(f -> {
+                    musicFolderDao.reassignChildren(f, musicFolder);
+                    musicFolderDao.deleteMusicFolder(f.getId());
+                    clearMediaFileCache();
+                });
+            // other descendants are ignored, they'll stay under descendant hierarchy
+        }
 
         clearMusicFolderCache();
     }
@@ -202,7 +214,7 @@ public class MediaFolderService {
      * <ul>
      * <li>List 1: Exact path overlaps (in no order)
      * <li>List 2: Ancestors of the given folder (closest ancestor first: /a/b/c -> [/a/b, /a])
-     * <li>List 3: Descendants of the given folder (closest descendant first: /a/b/c -> [/a/b/c/d, /a/b/c/d/e])
+     * <li>List 3: Descendants of the given folder (closest descendant first: /a/b/c -> [/a/b/c/d, /a/b/c/e, /a/b/c/d/f])
      * </ul>
      */
     public static Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> getMusicFolderPathOverlaps(MusicFolder folder, List<MusicFolder> allFolders) {
