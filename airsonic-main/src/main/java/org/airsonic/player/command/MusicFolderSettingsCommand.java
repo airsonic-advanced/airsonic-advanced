@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
 
 /**
@@ -44,6 +45,8 @@ public class MusicFolderSettingsCommand {
     private boolean organizeByFolderStructure;
     private List<MusicFolderInfo> musicFolders;
     private MusicFolderInfo newMusicFolder;
+    private List<MusicFolderInfo> deletedMusicFolders;
+    private EnumSet<Type> musicFolderTypes = EnumSet.allOf(MusicFolder.Type.class);
     private String uploadsFolder;
     private String excludePatternString;
     private boolean ignoreSymLinks;
@@ -96,6 +99,22 @@ public class MusicFolderSettingsCommand {
 
     public void setNewMusicFolder(MusicFolderInfo newMusicFolder) {
         this.newMusicFolder = newMusicFolder;
+    }
+
+    public List<MusicFolderInfo> getDeletedMusicFolders() {
+        return deletedMusicFolders;
+    }
+
+    public void setDeletedMusicFolders(List<MusicFolderInfo> deletedMusicFolders) {
+        this.deletedMusicFolders = deletedMusicFolders;
+    }
+
+    public EnumSet<Type> getMusicFolderTypes() {
+        return musicFolderTypes;
+    }
+
+    public void setMusicFolderTypes(EnumSet<Type> musicFolderTypes) {
+        this.musicFolderTypes = musicFolderTypes;
     }
 
     public boolean isOrganizeByFolderStructure() {
@@ -152,7 +171,7 @@ public class MusicFolderSettingsCommand {
         private String path;
         private String name;
         private String type = Type.MEDIA.name();
-        private boolean enabled;
+        private Boolean enabled;
         private boolean delete;
         private boolean existing;
         private boolean overlap;
@@ -205,15 +224,15 @@ public class MusicFolderSettingsCommand {
             this.type = type;
         }
 
-        public boolean isEnabled() {
+        public Boolean getEnabled() {
             return enabled;
         }
 
-        public void setEnabled(boolean enabled) {
+        public void setEnabled(Boolean enabled) {
             this.enabled = enabled;
         }
 
-        public boolean isDelete() {
+        public boolean getDelete() {
             return delete;
         }
 
@@ -229,6 +248,10 @@ public class MusicFolderSettingsCommand {
             return overlapStatus;
         }
 
+        public boolean getExisting() {
+            return existing;
+        }
+
         public MusicFolder toMusicFolder() {
             String path = StringUtils.trimToNull(this.path);
             if (path == null) {
@@ -239,11 +262,7 @@ public class MusicFolderSettingsCommand {
             if (name == null) {
                 name = file.getFileName().toString();
             }
-            return new MusicFolder(id, file, name, MusicFolder.Type.valueOf(type), enabled, Instant.now());
-        }
-
-        public boolean isExisting() {
-            return existing;
+            return new MusicFolder(id, file, name, MusicFolder.Type.valueOf(type), enabled != null && enabled, Instant.now());
         }
     }
 }

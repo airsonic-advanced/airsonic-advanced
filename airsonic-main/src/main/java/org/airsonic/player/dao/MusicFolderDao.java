@@ -92,6 +92,8 @@ public class MusicFolderDao extends AbstractDao {
             musicFolder.setId(id);
 
             LOG.info("Created music folder {} with id {}", musicFolder.getPath(), musicFolder.getId());
+        } else {
+            LOG.info("Did NOT create music folder {}", musicFolder.getPath());
         }
     }
 
