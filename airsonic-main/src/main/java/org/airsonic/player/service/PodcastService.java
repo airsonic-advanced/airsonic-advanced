@@ -301,11 +301,7 @@ public class PodcastService {
      */
     public List<PodcastEpisode> getNewestEpisodes(int count) {
         return podcastDao.getNewestEpisodes(count).stream().filter(episode -> {
-            Integer mediaFileId = episode.getMediaFileId();
-            if (mediaFileId == null) {
-                return false;
-            }
-            MediaFile mediaFile = mediaFileService.getMediaFile(mediaFileId);
+            MediaFile mediaFile = mediaFileService.getMediaFile(episode.getMediaFileId());
             return mediaFile != null && mediaFile.isPresent();
         }).collect(Collectors.toList());
     }
