@@ -655,6 +655,10 @@ public class MediaFileDao extends AbstractDao {
         return namedQuery(query, rowMapper, args);
     }
 
+    public int getMediaFileCount(Integer folderId) {
+        return queryForInt("select count(*) from media_file where folder_id=?", 0, folderId);
+    }
+
     public int getAlbumCount(final List<MusicFolder> musicFolders) {
         if (musicFolders.isEmpty()) {
             return 0;

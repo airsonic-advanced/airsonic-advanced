@@ -1,8 +1,13 @@
 package org.airsonic.player.service;
 
+import com.google.common.collect.Streams;
+import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.dao.MusicFolderDao;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.apache.commons.lang3.tuple.Triple;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
@@ -15,14 +20,19 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 @Service
 public class MediaFolderService {
+    private static final Logger LOG = LoggerFactory.getLogger(MediaFolderService.class);
+
     @Autowired
     private MusicFolderDao musicFolderDao;
+    @Autowired
+    private MediaFileDao mediaFileDao;
 
     private List<MusicFolder> cachedMusicFolders;
     private final ConcurrentMap<String, List<MusicFolder>> cachedMusicFoldersPerUser = new ConcurrentHashMap<>();
@@ -51,6 +61,13 @@ public class MediaFolderService {
         return cachedMusicFolders.parallelStream()
                 .filter(folder -> (includeDisabled || folder.isEnabled()) && (includeNonExisting || Files.exists(folder.getPath())))
                 .collect(Collectors.toList());
+    }
+
+    public List<MusicFolder> getAllMusicFolders(boolean includeDisabled, boolean includeNonExisting, boolean includeDeleted) {
+        return Streams.concat(
+                getAllMusicFolders(includeDisabled, includeNonExisting).stream(),
+                includeDeleted ? getDeletedMusicFolders().stream() : Stream.empty())
+            .collect(toList());
     }
 
     /**
@@ -92,7 +109,7 @@ public class MediaFolderService {
     }
 
     public void createMusicFolder(MusicFolder musicFolder) {
-        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder, getAllMusicFolders(true, true));
+        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder, getAllMusicFolders(true, true, true));
 
         // deny same path music folders
         if (!overlaps.getLeft().isEmpty()) {
@@ -107,33 +124,89 @@ public class MediaFolderService {
             musicFolderDao.reassignChildren(ancestor, musicFolder);
             clearMediaFileCache();
         }
-        // if new folder has descendants, ignore. they'll stay under descendant hierarchy
+
+        if (!overlaps.getRight().isEmpty()) {
+            // if new folder has deleted descendants, integrate and true delete the descendants
+            overlaps.getRight().stream()
+                // deleted
+                .filter(f -> f.getId() < 0)
+                .forEach(f -> {
+                    musicFolderDao.reassignChildren(f, musicFolder);
+                    musicFolderDao.deleteMusicFolder(f.getId());
+                    clearMediaFileCache();
+                });
+            // other descendants are ignored, they'll stay under descendant hierarchy
+        }
 
         clearMusicFolderCache();
     }
 
     public void deleteMusicFolder(Integer id) {
-        MusicFolder folder = getMusicFolderById(id);
-        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(folder, getAllMusicFolders(true, true));
+        // if empty folder, just delete
+        if (mediaFileDao.getMediaFileCount(id) == 0) {
+            musicFolderDao.deleteMusicFolder(id);
+            clearMusicFolderCache();
+            return;
+        }
 
-        // if folder has ancestors, reassign hierarchy to immediate ancestor
+        MusicFolder folder = getMusicFolderById(id, true, true);
+        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(folder, getAllMusicFolders(true, true, true));
+
+        // if folder has ancestors, reassign hierarchy to immediate ancestor and true delete
         if (!overlaps.getMiddle().isEmpty()) {
             musicFolderDao.reassignChildren(folder, overlaps.getMiddle().get(0));
-            clearMediaFileCache();
+            musicFolderDao.deleteMusicFolder(id);
         }
         // if folder has descendants, ignore. they'll stay under descendant hierarchy
 
-        musicFolderDao.deleteMusicFolder(id);
+        musicFolderDao.updateMusicFolderId(id, -id - 1);
+        folder.setId(-id - 1);
+        folder.setEnabled(false);
+        musicFolderDao.updateMusicFolder(folder);
+        mediaFileDao.deleteMediaFiles(-id - 1);
         clearMusicFolderCache();
+        clearMediaFileCache();
+    }
+
+    public boolean enablePodcastFolder(int id) {
+        MusicFolder podcastFolder = getMusicFolderById(id, true, true);
+        if (podcastFolder != null && podcastFolder.getType() == Type.PODCAST) {
+            try {
+                getAllMusicFolders(true, true).stream()
+                        .filter(f -> f.getType() == Type.PODCAST)
+                        .filter(f -> !f.getId().equals(podcastFolder.getId()))
+                        .forEach(f -> {
+                            f.setEnabled(false);
+                            updateMusicFolder(f);
+                        });
+                podcastFolder.setEnabled(true);
+                updateMusicFolder(podcastFolder);
+                return true;
+            } catch (Exception e) {
+                LOG.warn("Could not enable podcast music folder id {} ({})", podcastFolder.getId(), podcastFolder.getName(), e);
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    public void expunge() {
+        musicFolderDao.expungeMusicFolders();
     }
 
     public void updateMusicFolder(MusicFolder musicFolder) {
-        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder, getAllMusicFolders(true, true));
-        if (!overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty()) {
+        Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(musicFolder, getAllMusicFolders(true, true, true).stream().filter(f -> !f.getId().equals(musicFolder.getId())).collect(toList()));
+        MusicFolder existing = getAllMusicFolders(true, true).stream().filter(f -> f.getId().equals(musicFolder.getId())).findAny().orElse(null);
+        if (existing != null && !existing.getPath().equals(musicFolder.getPath()) && (!overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty())) {
             throw new IllegalArgumentException("Music folder with path " + musicFolder.getPath() + " overlaps with existing music folder path(s) (" + logMusicFolderOverlap(overlaps) + ") and can therefore not be updated.");
         }
         musicFolderDao.updateMusicFolder(musicFolder);
         clearMusicFolderCache();
+    }
+
+    public List<MusicFolder> getDeletedMusicFolders() {
+        return musicFolderDao.getDeletedMusicFolders();
     }
 
     /**
@@ -141,7 +214,7 @@ public class MediaFolderService {
      * <ul>
      * <li>List 1: Exact path overlaps (in no order)
      * <li>List 2: Ancestors of the given folder (closest ancestor first: /a/b/c -> [/a/b, /a])
-     * <li>List 3: Descendants of the given folder (closest descendant first: /a/b/c -> [/a/b/c/d, /a/b/c/d/e])
+     * <li>List 3: Descendants of the given folder (closest descendant first: /a/b/c -> [/a/b/c/d, /a/b/c/e, /a/b/c/d/f])
      * </ul>
      */
     public static Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> getMusicFolderPathOverlaps(MusicFolder folder, List<MusicFolder> allFolders) {

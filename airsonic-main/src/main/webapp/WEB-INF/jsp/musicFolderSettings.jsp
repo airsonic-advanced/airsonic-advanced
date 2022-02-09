@@ -28,6 +28,11 @@
                 $("#clearFullScanSettingAfterScan").prop("disabled", false);
             }
         }
+
+        function podcastEnabler(event, el) {
+            $('.podcast-enable-radio[value="false"]').prop("checked", true);
+            $(el).prop("checked", true);
+        }
     </script>
 </head>
 <body class="mainframe bgcolor1" onload="init()">
@@ -54,11 +59,19 @@
 
     <c:forEach items="${command.musicFolders}" var="folder" varStatus="loopStatus">
         <tr>
-            <td><form:input path="musicFolders[${loopStatus.count-1}].name" size="20"/></td>
-            <td><form:input path="musicFolders[${loopStatus.count-1}].path" size="40"/></td>
+            <td><form:input path="musicFolders[${loopStatus.index}].name" size="20"/></td>
+            <td><form:input path="musicFolders[${loopStatus.index}].path" size="40"/></td>
             <td align="center"><span><c:out value="${folder.type}"/></span></td>
-            <td align="center" style="padding-left:1em"><form:checkbox path="musicFolders[${loopStatus.count-1}].enabled" cssClass="checkbox"/></td>
-            <td align="center" style="padding-left:1em"><c:if test="${folder.type != 'PODCAST'}"><form:checkbox path="musicFolders[${loopStatus.count-1}].delete" cssClass="checkbox"/></c:if></td>
+            <td align="center" style="padding-left:1em">
+              <c:if test="${folder.type != 'PODCAST'}">
+                <form:checkbox path="musicFolders[${loopStatus.index}].enabled" cssClass="checkbox"/>
+              </c:if>
+              <c:if test="${folder.type == 'PODCAST'}">
+                <form:radiobutton path="musicFolders[${loopStatus.index}].enabled" value="true" cssClass="podcast-enable-radio" onchange="podcastEnabler(event, this)"/>
+                <form:radiobutton path="musicFolders[${loopStatus.index}].enabled" value="false" cssClass="podcast-enable-radio" cssStyle="display:none;"/>
+              </c:if>
+            </td>
+            <td align="center" style="padding-left:1em"><form:checkbox path="musicFolders[${loopStatus.index}].delete" cssClass="checkbox"/></td>
             <td>
               <c:if test="${not folder.existing}"><span class="warning"><fmt:message key="musicfoldersettings.notfound"/></span></c:if>
               <c:if test="${folder.overlap}"><span><fmt:message key="musicfoldersettings.overlap"><fmt:param value="${folder.overlapStatus}"/></fmt:message></span></c:if>
@@ -66,17 +79,48 @@
         </tr>
     </c:forEach>
 
+    <tr>
+        <td colspan="6" align="left" style="padding-top:1em"><span class="detail"><fmt:message key="musicfoldersettings.podcastfoldernote"/></span></td>
+    </tr>
+
+    <tr>
+        <th colspan="6" align="left" style="padding-top:1em"><fmt:message key="musicfoldersettings.deleted"/></th>
+    </tr>
+
+    <c:forEach items="${command.deletedMusicFolders}" var="folder" varStatus="loopStatus">
+        <tr>
+            <td><span><c:out value="${folder.name}"/></span></td>
+            <td><span><c:out value="${folder.path}"/></span></td>
+            <td align="center"><span><c:out value="${folder.type}"/></span></td>
+            <td></td>
+            <td></td>
+            <td>
+              <c:if test="${not folder.existing}"><span class="warning"><fmt:message key="musicfoldersettings.notfound"/></span></c:if>
+              <c:if test="${folder.overlap}"><span><fmt:message key="musicfoldersettings.overlap"><fmt:param value="${folder.overlapStatus}"/></fmt:message></span></c:if>
+            </td>
+        </tr>
+    </c:forEach>
+
+    <tr>
+        <td colspan="6" align="left" style="padding-top:1em"><span class="detail"><fmt:message key="musicfoldersettings.deletenote"/></span></td>
+    </tr>
+
     <c:if test="${not empty command.musicFolders}">
         <tr>
-            <th colspan="4" align="left" style="padding-top:1em"><fmt:message key="musicfoldersettings.add"/></th>
+            <th colspan="6" align="left" style="padding-top:1em"><fmt:message key="musicfoldersettings.add"/></th>
         </tr>
     </c:if>
 
     <tr>
         <td><form:input id="newMusicFolderName" path="newMusicFolder.name" size="20"/></td>
         <td><form:input id="newMusicFolderPath" path="newMusicFolder.path" size="40"/></td>
-        <td align="center"><span><c:out value="${newMusicFolder.type}"/><span></td>
+        <td align="center">
+          <form:select id="newMusicFolderType" path="newMusicFolder.type" >
+            <form:options items="${command.musicFolderTypes}" />
+          </form:select>
+        </td>
         <td align="center" style="padding-left:1em"><form:checkbox path="newMusicFolder.enabled" cssClass="checkbox"/></td>
+        <td></td>
         <td></td>
     </tr>
 

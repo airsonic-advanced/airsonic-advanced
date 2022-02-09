@@ -20,11 +20,13 @@
 package org.airsonic.player.controller;
 
 import org.airsonic.player.command.MusicFolderSettingsCommand;
+import org.airsonic.player.command.MusicFolderSettingsCommand.MusicFolderInfo;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.ArtistDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.MediaLibraryStatistics;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.service.CoverArtService;
 import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.MediaScannerService;
@@ -44,6 +46,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Comparator;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -104,6 +107,7 @@ public class MusicFolderSettingsController {
         command.setScanning(mediaScannerService.isScanning());
         command.setMusicFolders(wrap(mediaFolderService.getAllMusicFolders(true, true)));
         command.setNewMusicFolder(new MusicFolderSettingsCommand.MusicFolderInfo());
+        command.setDeletedMusicFolders(wrap(mediaFolderService.getDeletedMusicFolders()));
         command.setUploadsFolder(settingsService.getUploadsFolder());
         command.setExcludePatternString(settingsService.getExcludePatternString());
         command.setIgnoreSymLinks(settingsService.getIgnoreSymLinks());
@@ -135,6 +139,9 @@ public class MusicFolderSettingsController {
         mediaFileDao.expunge();
         LOG.debug("Deleting non-present cover art...");
         coverArtService.expunge();
+        LOG.debug("Deleting non-present media folders...");
+        mediaFolderService.expunge();
+        LOG.debug("Refreshing playlist stats...");
         playlistService.refreshPlaylistsStats();
         LOG.debug("Database cleanup complete.");
     }
@@ -143,7 +150,7 @@ public class MusicFolderSettingsController {
         return musicFolders.stream().map(f -> {
             Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = MediaFolderService.getMusicFolderPathOverlaps(f, mediaFolderService.getAllMusicFolders(true, true));
             return new MusicFolderSettingsCommand.MusicFolderInfo(f, !overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty(), MediaFolderService.logMusicFolderOverlap(overlaps));
-        }).collect(toList());
+        }).sorted(Comparator.comparing(MusicFolderInfo::getType).thenComparing(MusicFolderInfo::getId)).collect(toList());
     }
 
     @PostMapping
@@ -151,8 +158,12 @@ public class MusicFolderSettingsController {
 
         boolean success = true;
         for (MusicFolderSettingsCommand.MusicFolderInfo musicFolderInfo : command.getMusicFolders()) {
-            if (musicFolderInfo.isDelete()) {
-                mediaFolderService.deleteMusicFolder(musicFolderInfo.getId());
+            if (musicFolderInfo.getDelete()) {
+                // either not a podcast or there is more than 1 podcast to delete (prevents deleting the last one)
+                if (!musicFolderInfo.getType().equals(Type.PODCAST.name()) ||
+                        mediaFolderService.getAllMusicFolders(true, true).stream().filter(m -> m.getType() == Type.PODCAST).count() > 1) {
+                    mediaFolderService.deleteMusicFolder(musicFolderInfo.getId());
+                }
             } else {
                 MusicFolder musicFolder = musicFolderInfo.toMusicFolder();
                 if (musicFolder != null) {
@@ -165,11 +176,19 @@ public class MusicFolderSettingsController {
                 }
             }
         }
+        List<MusicFolder> podcastFolders = mediaFolderService.getAllMusicFolders(true, true).stream().filter(m -> m.getType() == Type.PODCAST).collect(toList());
+        long enabledPodcasts = podcastFolders.stream().filter(pf -> pf.isEnabled()).count();
+        if (enabledPodcasts != 1) {
+            podcastFolders.stream().findFirst().ifPresent(pf -> mediaFolderService.enablePodcastFolder(pf.getId()));
+        }
 
         MusicFolder newMusicFolder = command.getNewMusicFolder().toMusicFolder();
         if (newMusicFolder != null) {
             try {
                 mediaFolderService.createMusicFolder(newMusicFolder);
+                if (newMusicFolder.getType() == Type.PODCAST && newMusicFolder.isEnabled()) {
+                    mediaFolderService.enablePodcastFolder(newMusicFolder.getId());
+                }
             } catch (Exception e) {
                 LOG.warn("Could not create music folder {}", newMusicFolder.getName(), e);
                 success = false;
