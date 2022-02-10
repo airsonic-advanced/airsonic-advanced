@@ -188,7 +188,7 @@ public class UserCredential {
         AIRSONIC("Airsonic", false, true),
         LASTFM("Last.fm", true, false),
         LISTENBRAINZ("Listenbrainz", false, false),
-        PODCASTINDEX("Podcast Index", false, false);
+        PODCASTINDEX("Podcast Index", true, false);
 
         private final String name;
         private final boolean usernameRequired;

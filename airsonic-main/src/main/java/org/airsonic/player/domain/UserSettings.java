@@ -49,6 +49,8 @@ public class UserSettings {
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
     private String listenBrainzUrl;
+    private boolean podcastIndexEnabled;
+    private String podcastIndexUrl;
     private TranscodeScheme transcodeScheme = TranscodeScheme.OFF;
     private int selectedMusicFolderId = -1;
     private boolean partyModeEnabled;
@@ -183,6 +185,22 @@ public class UserSettings {
 
     public void setListenBrainzUrl(String listenBrainzUrl) {
         this.listenBrainzUrl = listenBrainzUrl;
+    }
+
+    public boolean getPodcastIndexEnabled() {
+        return podcastIndexEnabled;
+    }
+
+    public void setPodcastIndexEnabled(boolean podcastIndexEnabled) {
+        this.podcastIndexEnabled = podcastIndexEnabled;
+    }
+
+    public String getPodcastIndexUrl() {
+        return podcastIndexUrl;
+    }
+
+    public void setPodcastIndexUrl(String podcastIndexUrl) {
+        this.podcastIndexUrl = podcastIndexUrl;
     }
 
     public TranscodeScheme getTranscodeScheme() {
