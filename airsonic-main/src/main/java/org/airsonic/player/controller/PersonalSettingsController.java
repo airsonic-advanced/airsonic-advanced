@@ -85,6 +85,8 @@ public class PersonalSettingsController {
         command.setLastFmEnabled(userSettings.getLastFmEnabled());
         command.setListenBrainzEnabled(userSettings.getListenBrainzEnabled());
         command.setListenBrainzUrl(userSettings.getListenBrainzUrl());
+        command.setPodcastIndexEnabled(userSettings.getPodcastIndexEnabled());
+        command.setPodcastIndexUrl(userSettings.getPodcastIndexUrl());
         command.setPaginationSizeFiles(userSettings.getPaginationSizeFiles());
         command.setPaginationSizeFolders(userSettings.getPaginationSizeFolders());
         command.setPaginationSizePlaylist(userSettings.getPaginationSizePlaylist());
@@ -118,10 +120,11 @@ public class PersonalSettingsController {
 
         model.addAttribute("command", command);
 
-        Map<App, UserCredential> thirdPartyCreds = securityService.getDecodableCredsForApps(user.getUsername(), App.LASTFM, App.LISTENBRAINZ);
+        Map<App, UserCredential> thirdPartyCreds = securityService.getDecodableCredsForApps(user.getUsername(), App.LASTFM, App.LISTENBRAINZ, App.PODCASTINDEX);
 
         model.addAttribute("lastfmCredsAbsent", thirdPartyCreds.get(App.LASTFM) == null);
         model.addAttribute("listenBrainzCredsAbsent", thirdPartyCreds.get(App.LISTENBRAINZ) == null);
+        model.addAttribute("podcastIndexCredsAbsent", thirdPartyCreds.get(App.PODCASTINDEX) == null);
     }
 
     @GetMapping
@@ -163,9 +166,11 @@ public class PersonalSettingsController {
         settings.setSongNotificationEnabled(command.isSongNotificationEnabled());
         settings.setAutoHidePlayQueue(command.isAutoHidePlayQueue());
         settings.setKeyboardShortcutsEnabled(command.isKeyboardShortcutsEnabled());
-        settings.setLastFmEnabled(command.isLastFmEnabled());
-        settings.setListenBrainzEnabled(command.isListenBrainzEnabled());
+        settings.setLastFmEnabled(command.getLastFmEnabled());
+        settings.setListenBrainzEnabled(command.getListenBrainzEnabled());
         settings.setListenBrainzUrl(StringUtils.trimToNull(command.getListenBrainzUrl()));
+        settings.setPodcastIndexEnabled(command.getPodcastIndexEnabled());
+        settings.setPodcastIndexUrl(StringUtils.trimToNull(command.getPodcastIndexUrl()));
         settings.setSystemAvatarId(getSystemAvatarId(command));
         settings.setAvatarScheme(getAvatarScheme(command));
         settings.setPaginationSizeFiles(command.getPaginationSizeFiles());
