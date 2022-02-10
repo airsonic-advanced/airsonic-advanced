@@ -232,6 +232,16 @@ public class SecurityService implements UserDetailsService {
                 .collect(Collectors.toList());
     }
 
+    public static final String decodeCredentials(UserCredential reversibleCred) {
+        PasswordDecoder decoder = (PasswordDecoder) GlobalSecurityConfig.ENCODERS.get(reversibleCred.getEncoder());
+        try {
+            return decoder.decode(reversibleCred.getCredential());
+        } catch (Exception e) {
+            LOG.warn("Could not decode credentials for user {}, app {}", reversibleCred.getUsername(), reversibleCred.getApp(), e);
+            return null;
+        }
+    }
+
     /**
      * Returns the currently logged-in user for the given HTTP request.
      *
