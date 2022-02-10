@@ -296,7 +296,7 @@
                 { data: "seq", className: "detail fit", visible: true },
                 { data: "starred",
                   name: "starred",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(starred, type) {
                       if (type == "display") {
                           return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
@@ -308,14 +308,14 @@
                   searchable: false,
                   name: "play",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='playSong' src=\"<spring:theme code='playImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.play'/>\" title=\"<fmt:message key='common.play'/>\">"
                 },
                 { data: "entryType",
                   searchable: false,
                   name: "addLast",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(entryType, type, row) {
                       if (type == "display" && entryType != "VIDEO" && entryType != "DIRECTORY" && entryType != "ALBUM") {
                           return "<img class='addSongLast' src=\"<spring:theme code='addImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.add'/>\" title=\"<fmt:message key='common.add'/>\">";
@@ -327,7 +327,7 @@
                   searchable: false,
                   name: "addNext",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(entryType, type, row) {
                       if (type == "display" && entryType != "VIDEO" && entryType != "DIRECTORY" && entryType != "ALBUM") {
                           return "<img class='addSongNext' src=\"<spring:theme code='addNextImage'/>\" style='height:18px;' alt=\"<fmt:message key='main.addnext'/>\" title=\"<fmt:message key='main.addnext'/>\">";
@@ -338,7 +338,7 @@
                 { data: null,
                   searchable: false,
                   name: "songcheckbox",
-                  className: "fit not-draggable songIndex",
+                  className: "fit not-draggable songIndex centeralign",
                   defaultContent: "<input type='checkbox'>"
                 },
                 { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
@@ -529,14 +529,14 @@
                   searchable: false,
                   name: "play",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='playSong' src=\"<spring:theme code='playImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.play'/>\" title=\"<fmt:message key='common.play'/>\">"
                 },
                 { data: "entryType",
                   searchable: false,
                   name: "addLast",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(entryType, type, row) {
                       if (type == "display") {
                           return "<img class='addSongLast' src=\"<spring:theme code='addImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.add'/>\" title=\"<fmt:message key='common.add'/>\">";
@@ -548,7 +548,7 @@
                   searchable: false,
                   name: "addNext",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(entryType, type, row) {
                       if (type == "display") {
                           return "<img class='addSongNext' src=\"<spring:theme code='addNextImage'/>\" style='height:18px;' alt=\"<fmt:message key='main.addnext'/>\" title=\"<fmt:message key='main.addnext'/>\">";
@@ -612,7 +612,7 @@
                 { data: "seq", className: "detail fit", visible: true },
                 { data: "starred",
                   name: "starred",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(starred, type) {
                       if (type == "display") {
                           return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
@@ -623,19 +623,19 @@
                 { data: null,
                   searchable: false,
                   name: "play",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='playSong' src=\"<spring:theme code='playImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.play'/>\" title=\"<fmt:message key='common.play'/>\">"
                 },
                 { data: null,
                   searchable: false,
                   name: "addLast",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='addSongLast' src=\"<spring:theme code='addImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.add'/>\" title=\"<fmt:message key='common.add'/>\">"
                 },
                 { data: null,
                   searchable: false,
                   name: "addNext",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='addSongNext' src=\"<spring:theme code='addNextImage'/>\" style='height:18px;' alt=\"<fmt:message key='main.addnext'/>\" title=\"<fmt:message key='main.addnext'/>\">"
                 },
                 { data: "title",

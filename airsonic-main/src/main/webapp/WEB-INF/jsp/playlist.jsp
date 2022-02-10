@@ -62,13 +62,13 @@
                     { data: null,
                       searchable: false,
                       name: "playlistsongcheckbox",
-                      className: "fit not-draggable playlistSongIndex",
+                      className: "fit not-draggable playlistSongIndex centeralign",
                       title: "<input type='checkbox' class='playlistSelectAll'>",
                       defaultContent: "<input type='checkbox'>"
                     },
                     { data: "starred",
                       name: "starred",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(starred, type) {
                           if (type == "display") {
                               return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
@@ -79,7 +79,7 @@
                     { data: "present",
                       searchable: false,
                       name: "play",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(present, type, row) {
                           if (type == "display") {
                               if (present) {
@@ -94,7 +94,7 @@
                     { data: "present",
                       searchable: false,
                       name: "addLast",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(present, type, row) {
                           if (type == "display") {
                               if (present) {
@@ -109,7 +109,7 @@
                     { data: "present",
                       searchable: false,
                       name: "addNext",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(present, type, row) {
                           if (type == "display") {
                               if (present) {
@@ -255,7 +255,7 @@
                       searchable: false,
                       name: "remove",
                       visible: ${model.editAllowed},
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       defaultContent: "<img class='removeSong' src=\"<spring:theme code='removeImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist.remove'/>\" title=\"<fmt:message key='playlist.remove'/>\">"
                     }
                 ]
