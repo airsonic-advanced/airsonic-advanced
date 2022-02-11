@@ -237,6 +237,9 @@ public class PodcastService {
     }
 
     public void createChannel(String url) {
+        if (StringUtils.isBlank(url)) {
+            return;
+        }
         PodcastChannel channel = new PodcastChannel(sanitizeUrl(url, false));
         int channelId = podcastDao.createChannel(channel);
 
@@ -342,6 +345,10 @@ public class PodcastService {
 
     public void refreshAllChannels(boolean downloadEpisodes) {
         refreshChannels(getAllChannels(), downloadEpisodes);
+    }
+
+    public void refreshChannelIds(final List<Integer> channelIds, final boolean downloadEpisodes) {
+        refreshChannels(channelIds.stream().map(this::getChannel).collect(toList()), downloadEpisodes);
     }
 
     private void refreshChannels(final List<PodcastChannel> channels, final boolean downloadEpisodes) {

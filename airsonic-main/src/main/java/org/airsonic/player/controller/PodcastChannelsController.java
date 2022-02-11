@@ -70,6 +70,7 @@ public class PodcastChannelsController {
         map.put("channelMap", channelMap);
         map.put("viewAsList", userSettings.getViewAsList());
         map.put("initialPaginationSize", userSettings.getPaginationSizePlaylist());
+        map.put("podcastIndexEnabled", userSettings.getPodcastIndexEnabled());
         map.put("newestEpisodes", podcastService.getNewestEpisodes(10));
         return result;
     }

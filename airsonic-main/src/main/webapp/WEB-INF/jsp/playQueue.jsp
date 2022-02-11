@@ -875,9 +875,6 @@
         onPlayPodcastEpisode(id) {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/play/podcastepisode", JSON.stringify({id: id}));
         },
-        onPlayNewestPodcastEpisode(index) {
-            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/podcastepisode/newest", JSON.stringify({index: index}));
-        },
         onPlayStarred() {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/play/starred", "");
         },
