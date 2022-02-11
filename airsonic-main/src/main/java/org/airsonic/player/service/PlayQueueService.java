@@ -258,7 +258,7 @@ public class PlayQueueService {
         List<MediaFile> files = new ArrayList<>(allEpisodes.size());
 
         for (PodcastEpisode ep : allEpisodes) {
-            if (ep.getStatus() == PodcastStatus.COMPLETED) {
+            if (ep.getStatus() == PodcastStatus.COMPLETED && ep.getMediaFileId() != null) {
                 MediaFile mediaFile = mediaFileService.getMediaFile(ep.getMediaFileId());
                 if (mediaFile != null && mediaFile.isPresent()
                         && (ep.getId().equals(episode.getId()) || queueFollowingSongs && !files.isEmpty())) {
