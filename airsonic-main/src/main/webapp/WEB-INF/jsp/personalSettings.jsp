@@ -14,21 +14,21 @@
         function enableFields() {
             $("#lastFm").is(":checked") ? $(".lastFmRow").show() : $(".lastFmRow").hide();
             if (lastfmCredsAbsent) {
-                $(".lastFmRow .nocreds").hide();
-            } else {
                 $(".lastFmRow .nocreds").show();
+            } else {
+                $(".lastFmRow .nocreds").hide();
             }
             $("#listenBrainz").is(":checked") ? $(".listenBrainzRow").show() : $(".listenBrainzRow").hide();
             if (listenBrainzCredsAbsent) {
-                $(".listenBrainzRow .nocreds").hide();
-            } else {
                 $(".listenBrainzRow .nocreds").show();
+            } else {
+                $(".listenBrainzRow .nocreds").hide();
             }
             $("#podcastIndex").is(":checked") ? $(".podcastIndexRow").show() : $(".podcastIndexRow").hide();
             if (podcastIndexCredsAbsent) {
-                $(".podcastIndexRow .nocreds").hide();
-            } else {
                 $(".podcastIndexRow .nocreds").show();
+            } else {
+                $(".podcastIndexRow .nocreds").hide();
             }
         }
     </script>

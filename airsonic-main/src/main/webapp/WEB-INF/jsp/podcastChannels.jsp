@@ -218,6 +218,7 @@
                 },
                 { data: "channelId",
                   className: "detail truncate",
+                  name: "channel",
                   title: "<fmt:message key='podcastreceiver.channel'/>",
                   render: function(data, type, row) {
                       if (type == "display" && data != null) {
@@ -443,13 +444,15 @@
             '/app/podcasts/all': function(msg) {
                 populatePodcastCallback(JSON.parse(msg.body));
             },
-            '/app/episodes/newest': function(msg) {
+            '/app/podcasts/episodes/newest': function(msg) {
                 populateNewestPodcastsCallback(JSON.parse(msg.body));
             }
         });
 
         $('#podcastindexsearch').on('change', evt => onSearch(evt.target.value));
         $('#directsubscribeok').on('click', evt => onCreateChannel($('#directsubscribe').val()));
+        $('#refreshAllChannels').on('click', evt => onRefreshAllChannels());
+        $('#podcastSettings').on('click', evt => top.main.location.href = "podcastSettings.view?");
 
         viewSelectorRefresh();
         toggleViewDependentComponents();
@@ -514,6 +517,13 @@
           top.StompClient.send("/app/podcasts/create", url);
       }
 
+      function onRefreshAllChannels() {
+          onRefreshChannels(podcasts.map(p => p.id));
+      }
+      function onRefreshChannels(ids) {
+          top.StompClient.send("/app/podcasts/refresh", JSON.stringify(ids));
+      }
+
       function viewSelectorRefresh() {
         if (viewAsList) {
             $('#viewAsList').addClass('headerSelected').removeClass('headerNotSelected');
@@ -573,6 +583,10 @@
             return;
         } else if (id == "removeSelected") {
             this.onDeleteChannels(podcastsTable.rows({ selected: true }).data().map(m => m.id).toArray());
+        } else if (id == "refreshSelected") {
+            this.onRefreshChannels(podcastsTable.rows({ selected: true }).data().map(m => m.id).toArray());
+        } else if (id == "subscribeSelected") {
+            podcastIndexTable.rows({ selected: true }).data().map(m => m.url).toArray().forEach(url => this.onCreateChannel(url));
         }
       }
 
@@ -611,70 +625,79 @@
 <div style="clear:both"></div>
 
 <div class="tableSpacer"></div>
-
-<table class="music indent hover nowrap stripe compact" id="podcastsTable" style="cursor: pointer; width: 100%; margin-top: 5px;">
-</table>
+<table class="music indent hover nowrap stripe compact" id="podcastsTable" style="cursor: pointer; width: 100%; margin-top: 5px;"></table>
 
 <div class="tableSpacer"></div>
-
 <div id="moreactions" style="white-space:nowrap;">
     <span class="header">
         <select id="moreActions" onchange="actionSelected(options[selectedIndex].id)">
             <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
             <optgroup label="<fmt:message key='podcastreceiver.selectedchannels'/>">
                 <option id="removeSelected"><fmt:message key="playlist.remove"/></option>
+                <option id="refreshSelected"><fmt:message key="podcastreceiver.check"/></option>
             </optgroup>
         </select>
     </span>
 </div>
 
 <div class="tableSpacer"></div>
-
 <div id="thumbs_wrapper">
     <p id="nopodcasts"><em><fmt:message key="podcastreceiver.empty"/></em></p>
     <div id="thumbs"></div>
 </div>
 
 <div class="tableSpacer"></div>
-
-<h3><fmt:message key="podcastreceiver.newestepisodes"/></h3>
-
-<table class="music indent hover nowrap stripe compact" id="newestPodcastTable" style="cursor: pointer; width: 100%; margin-top: 5px;"></table>
-
-<div class="tableSpacer"></div>
-
 <table style="padding-top:1em"><tr>
     <c:if test="${model.user.podcastRole}">
-        <td style="padding-right:2em"><div class="forward"><a href="podcastReceiverAdmin.view?refresh"><fmt:message key="podcastreceiver.check"/></a></div></td>
+        <td style="padding-right:2em"><button id="refreshAllChannels"><fmt:message key="podcastreceiver.check"/></button></td>
     </c:if>
     <c:if test="${model.user.podcastRole}">
         <td style="padding-right:2em"><div class="forward"><a href="rest/exportPodcasts/opml" download><fmt:message key="podcastreceiver.export"/></a></div></td>
     </c:if>
     <c:if test="${model.user.adminRole}">
-        <td style="padding-right:2em"><div class="forward"><a href="podcastSettings.view?"><fmt:message key="podcastreceiver.settings"/></a></div></td>
+        <td style="padding-right:2em"><button id="podcastSettings"><fmt:message key="podcastreceiver.settings"/></button></td>
     </c:if>
 </tr></table>
+
+<div class="tableSpacer"></div>
+<h3><fmt:message key="podcastreceiver.newestepisodes"/></h3>
+
+<table class="music indent hover nowrap stripe compact" id="newestPodcastTable" style="cursor: pointer; width: 100%; margin-top: 5px;"></table>
 
 <c:if test="${model.user.podcastRole}">
     <div class="tableSpacer"></div>
     <h3><fmt:message key="podcastreceiver.subscribe"/></h3>
+
     <div>
       <label for="directsubscribe"><span><fmt:message key="podcastreceiver.directly"/></span></label>
       <input type="text" name="directsubscribe" id="directsubscribe" value="http://" style="width:30em" onclick="select()"/>
       <button for="directsubscribe" id="directsubscribeok"><fmt:message key='common.ok'/></button>
     </div>
 
-  <c:if test="${model.podcastIndexEnabled}">
     <span><fmt:message key="podcastreceiver.or"/></span>
+  <c:if test="${model.podcastIndexEnabled}">
     <div>
         <label for="podcastindexsearch"><span><fmt:message key="podcastreceiver.podcastindexsearch"/></span></label>
         <input type="text" name="podcastindexsearch" id="podcastindexsearch" value="" style="width:30em"/>
     </div>
-    <div class="tableSpacer"></div>
 
+    <div class="tableSpacer"></div>
     <table class="music indent hover nowrap stripe compact" id="podcastIndexTable" style="cursor: pointer; width: 100%; margin-top: 5px;"></table>
 
     <div class="tableSpacer"></div>
+    <div id="moreactionsSearch" style="white-space:nowrap;">
+        <span class="header">
+            <select onchange="actionSelected(options[selectedIndex].id)">
+                <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
+                <optgroup label="<fmt:message key='podcastreceiver.selectedsearches'/>">
+                    <option id="subscribeSelected"><fmt:message key="podcastreceiver.subscribe"/></option>
+                </optgroup>
+            </select>
+        </span>
+    </div>
+  </c:if>
+  <c:if test="${!model.podcastIndexEnabled}">
+    <div><span><fmt:message key="podcastreceiver.enablepodcastindex"/></span></div>
   </c:if>
 </c:if>
 
