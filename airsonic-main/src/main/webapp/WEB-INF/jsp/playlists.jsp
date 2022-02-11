@@ -156,7 +156,7 @@
                 { data: null,
                   searchable: false,
                   name: "export",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='exportFile' src=\"<spring:theme code='exportFileImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist2.export'/>\" title=\"<fmt:message key='playlist2.export'/>\">"
                 },
                 { data: null,
