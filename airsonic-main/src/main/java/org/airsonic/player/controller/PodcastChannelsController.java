@@ -18,10 +18,8 @@
  */
 package org.airsonic.player.controller;
 
-import org.airsonic.player.domain.PodcastChannel;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserSettings;
-import org.airsonic.player.service.PodcastService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,8 +46,6 @@ public class PodcastChannelsController {
     @Autowired
     private SettingsService settingsService;
     @Autowired
-    private PodcastService podcastService;
-    @Autowired
     private SecurityService securityService;
 
     @GetMapping
@@ -61,17 +57,10 @@ public class PodcastChannelsController {
         ModelAndView result = new ModelAndView();
         result.addObject("model", map);
 
-        Map<Integer, PodcastChannel> channelMap = new HashMap<>();
-        for (PodcastChannel channel : podcastService.getAllChannels()) {
-            channelMap.put(channel.getId(), channel);
-        }
-
         map.put("user", user);
-        map.put("channelMap", channelMap);
         map.put("viewAsList", userSettings.getViewAsList());
         map.put("initialPaginationSize", userSettings.getPaginationSizePlaylist());
         map.put("podcastIndexEnabled", userSettings.getPodcastIndexEnabled());
-        map.put("newestEpisodes", podcastService.getNewestEpisodes(10));
         return result;
     }
 }
