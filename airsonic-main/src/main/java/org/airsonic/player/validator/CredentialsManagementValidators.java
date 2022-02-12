@@ -88,7 +88,7 @@ public class CredentialsManagementValidators {
     public static class CredEncoderForAppValidValidator implements ConstraintValidator<CredEncoderForAppValid, CredentialsCommand> {
         @Override
         public boolean isValid(CredentialsCommand creds, ConstraintValidatorContext context) {
-            if (creds == null) {
+            if (creds == null || creds.getApp() == null) {
                 return true;
             }
 
