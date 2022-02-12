@@ -153,8 +153,8 @@
             },
             colReorder: true,
             fixedHeader: true,
-            stateSave: true,
-            stateDuration: 60 * 60 * 24 * 365,
+            stateSave: false,
+            //stateDuration: 60 * 60 * 24 * 365,
             ordering: true,
             order: [],
             //orderFixed: [ 0, 'asc' ],
@@ -452,6 +452,7 @@
         $('#podcastindexsearch').on('change', evt => onSearch(evt.target.value));
         $('#directsubscribeok').on('click', evt => onCreateChannel($('#directsubscribe').val()));
         $('#refreshAllChannels').on('click', evt => onRefreshAllChannels());
+        $('#exportOpml').on('click', evt => onExportOpml());
         $('#podcastSettings').on('click', evt => top.main.location.href = "podcastSettings.view?");
 
         viewSelectorRefresh();
@@ -477,6 +478,8 @@
         podcasts = incoming;
         podcastsTable.ajax.reload().columns.adjust();
         generateThumbs();
+        // reload podcast names
+        newestPodcastTable.ajax.reload().columns.adjust();
       }
       function populateNewestPodcastsCallback(incoming) {
         newestPodcasts = incoming;
@@ -490,6 +493,8 @@
         podcasts.push(podcast);
         podcastsTable.ajax.reload().columns.adjust();
         generateThumb(podcast, 30);
+        // reload podcast names
+        newestPodcastTable.ajax.reload().columns.adjust();
       }
 
       function onPlayEpisode(id) {
@@ -515,6 +520,16 @@
       }
       function onCreateChannel(url) {
           top.StompClient.send("/app/podcasts/create", url);
+      }
+
+      //simulates a tag being clicked for now (button behaving like a link)
+      function onExportOpml() {
+          const a = document.createElement('a');
+          a.href = "rest/exportPodcasts/opml";
+          a.download = true;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
       }
 
       function onRefreshAllChannels() {
@@ -625,9 +640,8 @@
 <div style="clear:both"></div>
 
 <div class="tableSpacer"></div>
-<table class="music indent hover nowrap stripe compact" id="podcastsTable" style="cursor: pointer; width: 100%; margin-top: 5px;"></table>
+<table class="music indent hover nowrap stripe compact" id="podcastsTable" style="width: 100%; margin-top: 5px;"></table>
 
-<div class="tableSpacer"></div>
 <div id="moreactions" style="white-space:nowrap;">
     <span class="header">
         <select id="moreActions" onchange="actionSelected(options[selectedIndex].id)">
@@ -640,29 +654,28 @@
     </span>
 </div>
 
-<div class="tableSpacer"></div>
 <div id="thumbs_wrapper">
     <p id="nopodcasts"><em><fmt:message key="podcastreceiver.empty"/></em></p>
     <div id="thumbs"></div>
 </div>
 
 <div class="tableSpacer"></div>
-<table style="padding-top:1em"><tr>
+<div>
     <c:if test="${model.user.podcastRole}">
-        <td style="padding-right:2em"><button id="refreshAllChannels"><fmt:message key="podcastreceiver.check"/></button></td>
+        <button id="refreshAllChannels"><fmt:message key="podcastreceiver.check"/></button>
     </c:if>
     <c:if test="${model.user.podcastRole}">
-        <td style="padding-right:2em"><div class="forward"><a href="rest/exportPodcasts/opml" download><fmt:message key="podcastreceiver.export"/></a></div></td>
+        <button id="exportOpml"><fmt:message key="podcastreceiver.export"/></button>
     </c:if>
     <c:if test="${model.user.adminRole}">
-        <td style="padding-right:2em"><button id="podcastSettings"><fmt:message key="podcastreceiver.settings"/></button></td>
+        <button id="podcastSettings"><fmt:message key="podcastreceiver.settings"/></button>
     </c:if>
-</tr></table>
+</div>
 
 <div class="tableSpacer"></div>
 <h3><fmt:message key="podcastreceiver.newestepisodes"/></h3>
 
-<table class="music indent hover nowrap stripe compact" id="newestPodcastTable" style="cursor: pointer; width: 100%; margin-top: 5px;"></table>
+<table class="music indent hover nowrap stripe compact" id="newestPodcastTable" style="width: 100%; margin-top: 5px;"></table>
 
 <c:if test="${model.user.podcastRole}">
     <div class="tableSpacer"></div>
@@ -682,7 +695,7 @@
     </div>
 
     <div class="tableSpacer"></div>
-    <table class="music indent hover nowrap stripe compact" id="podcastIndexTable" style="cursor: pointer; width: 100%; margin-top: 5px;"></table>
+    <table class="music indent hover nowrap stripe compact" id="podcastIndexTable" style="width: 100%; margin-top: 5px;"></table>
 
     <div class="tableSpacer"></div>
     <div id="moreactionsSearch" style="white-space:nowrap;">

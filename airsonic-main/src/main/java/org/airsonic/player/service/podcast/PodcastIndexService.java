@@ -1,6 +1,5 @@
 package org.airsonic.player.service.podcast;
 
-import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.domain.UserCredential;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.domain.UserSettings;
@@ -22,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -41,25 +39,6 @@ public class PodcastIndexService {
     private static final String DEFAULT_URL = "https://api.podcastindex.org/api/1.0/search/byterm";
 
     public List<PodcastIndexResponse.PodcastIndexResult> search(String username, String search) throws Exception {
-        if ("admin".equals(username)) {
-            var podcastIndexResult = new org.airsonic.player.service.podcast.PodcastIndexService.PodcastIndexResponse.PodcastIndexResult();
-            podcastIndexResult.id = 5;
-            podcastIndexResult.dead = 0;
-            podcastIndexResult.title = "bl";
-            podcastIndexResult.url = "https://feeds.theincomparable.com/batmanuniversity";
-            podcastIndexResult.categories = ImmutableMap.of(1, "h", 2, "p");
-            podcastIndexResult.description = "can youu whisper";
-
-            var podcastIndexResult2 = new org.airsonic.player.service.podcast.PodcastIndexService.PodcastIndexResponse.PodcastIndexResult();
-            podcastIndexResult2.id = 0;
-            podcastIndexResult2.dead = 1;
-            podcastIndexResult2.title = "hljh";
-            podcastIndexResult2.url = "https://feeds.theincomparable.com/noway";
-            podcastIndexResult2.categories = ImmutableMap.of(1, "h", 2, "p");
-            podcastIndexResult2.description = "can you whisper";
-            return Arrays.asList(podcastIndexResult, podcastIndexResult2);
-        }
-
         UserSettings userSettings = settingsService.getUserSettings(username);
 
         if (!userSettings.getPodcastIndexEnabled() || StringUtils.isBlank(search)) {
