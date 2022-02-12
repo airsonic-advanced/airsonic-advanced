@@ -58,20 +58,20 @@
                 { data: null,
                   searchable: false,
                   name: "playlistcheckbox",
-                  className: "fit not-draggable playlistIndex",
+                  className: "fit not-draggable playlistIndex centeralign",
                   title: "<input type='checkbox' class='playlistsSelectAll'>",
                   defaultContent: "<input type='checkbox'>"
                 },
                 { data: null,
                   searchable: false,
                   name: "play",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='playSong' src=\"<spring:theme code='playImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.play'/>\" title=\"<fmt:message key='common.play'/>\">"
                 },
                 { data: null,
                   searchable: false,
                   name: "addLast",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='addSongLast' src=\"<spring:theme code='addImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.add'/>\" title=\"<fmt:message key='common.add'/>\">"
                 },
                 { data: "name",
@@ -156,13 +156,13 @@
                 { data: null,
                   searchable: false,
                   name: "export",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='exportFile' src=\"<spring:theme code='exportFileImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist2.export'/>\" title=\"<fmt:message key='playlist2.export'/>\">"
                 },
                 { data: null,
                   searchable: false,
                   name: "remove",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(data, type, row) {
                       if (type == "display" && row.username == user) {
                           return "<img class='removePlaylist' src=\"<spring:theme code='removeImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist.remove'/>\" title=\"<fmt:message key='playlist.remove'/>\">";

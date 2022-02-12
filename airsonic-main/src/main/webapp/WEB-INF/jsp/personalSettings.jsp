@@ -8,9 +8,28 @@
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
 
     <script type="text/javascript" language="javascript">
+        var lastfmCredsAbsent = ${lastfmCredsAbsent};
+        var listenBrainzCredsAbsent = ${listenBrainzCredsAbsent};
+        var podcastIndexCredsAbsent = ${podcastIndexCredsAbsent};
         function enableFields() {
-            $("#lastFm").is(":checked") ? $("#lastFmTable").show() : $("#lastFmTable").hide();
-            $("#listenBrainz").is(":checked") ? $("#listenBrainzTable").show() : $("#listenBrainzTable").hide();
+            $("#lastFm").is(":checked") ? $(".lastFmRow").show() : $(".lastFmRow").hide();
+            if (lastfmCredsAbsent) {
+                $(".lastFmRow .nocreds").show();
+            } else {
+                $(".lastFmRow .nocreds").hide();
+            }
+            $("#listenBrainz").is(":checked") ? $(".listenBrainzRow").show() : $(".listenBrainzRow").hide();
+            if (listenBrainzCredsAbsent) {
+                $(".listenBrainzRow .nocreds").show();
+            } else {
+                $(".listenBrainzRow .nocreds").hide();
+            }
+            $("#podcastIndex").is(":checked") ? $(".podcastIndexRow").show() : $(".podcastIndexRow").hide();
+            if (podcastIndexCredsAbsent) {
+                $(".podcastIndexRow .nocreds").show();
+            } else {
+                $(".podcastIndexRow .nocreds").hide();
+            }
         }
     </script>
 </head>
@@ -234,10 +253,48 @@
         <tr>
             <td><form:checkbox path="lastFmEnabled" id="lastFm" cssClass="checkbox" onclick="enableFields()"/></td>
             <td><label for="lastFm"><fmt:message key="personalsettings.lastfmenabled"/></label></td>
+            <td></td>
+        </tr>
+        <tr id="lastFmStatus" class="lastFmRow">
+            <td></td>
+            <td colspan="2">
+              <span><fmt:message key="personalsettings.modifycredsincreds" /></span>
+              <span class="nocreds warning"><fmt:message key="personalsettings.credsnotpresent" /></span>
+            </td>
         </tr>
         <tr>
             <td><form:checkbox path="listenBrainzEnabled" id="listenBrainz" cssClass="checkbox" onclick="enableFields()"/></td>
             <td><label for="listenBrainz"><fmt:message key="personalsettings.listenbrainzenabled"/></label></td>
+            <td></td>
+        </tr>
+        <tr class="listenBrainzRow">
+            <td></td>
+            <td><fmt:message key="personalsettings.listenbrainzurl"/></td>
+            <td><form:input path="listenBrainzUrl" size="36"/></td>
+        </tr>
+        <tr id="listenBrainzStatus" class="listenBrainzRow">
+            <td></td>
+            <td colspan="2">
+              <span><fmt:message key="personalsettings.modifycredsincreds" /></span>
+              <span class="nocreds warning"><fmt:message key="personalsettings.credsnotpresent" /></span>
+            </td>
+        </tr>
+        <tr>
+            <td><form:checkbox path="podcastIndexEnabled" id="podcastIndex" cssClass="checkbox" onclick="enableFields()"/></td>
+            <td><label for="podcastIndex"><fmt:message key="personalsettings.podcastindexenabled"/></label></td>
+            <td></td>
+        </tr>
+        <tr class="podcastIndexRow">
+            <td></td>
+            <td><fmt:message key="personalsettings.podcastindexurl"/></td>
+            <td><form:input path="podcastIndexUrl" size="36"/></td>
+        </tr>
+        <tr id="podcastIndexStatus" class="podcastIndexRow">
+            <td></td>
+            <td colspan="2">
+              <span><fmt:message key="personalsettings.modifycredsincreds" /></span>
+              <span class="nocreds warning"><fmt:message key="personalsettings.credsnotpresent" /></span>
+            </td>
         </tr>
     </table>
 
@@ -287,32 +344,6 @@
             <td style="text-align:center"><form:input path="paginationSizePlayqueue" size="10"/></td>
             <td style="text-align:center"><form:input path="paginationSizeBookmarks" size="10"/></td>
         </tr>
-    </table>
-
-    <table id="lastFmTable" style="padding-left:2em">
-        <c:if test="${lastfmCredsAbsent}" >
-        <tr>
-            <td>
-              <fmt:message key="personalsettings.lastfmcredentials" var="lastfmCreds"/>
-              <fmt:message key="personalsettings.credsnotpresent"><fmt:param>${lastfmCreds}</fmt:param></fmt:message>
-            </td>
-        </tr>
-        </c:if>
-    </table>
-
-    <table id="listenBrainzTable" style="padding-left:2em">
-        <tr>
-            <td><fmt:message key="personalsettings.listenbrainzurl"/></td>
-            <td><form:input path="listenBrainzUrl" size="36"/></td>
-        </tr>
-        <c:if test="${listenBrainzCredsAbsent}" >
-        <tr>
-            <td>
-              <fmt:message key="personalsettings.listenbrainztoken" var="listenbrainzToken"/>
-              <fmt:message key="personalsettings.credsnotpresent"><fmt:param>${listenbrainzToken}</fmt:param></fmt:message>
-            </td>
-        </tr>
-        </c:if>
     </table>
 
     <p style="padding-top:1em;padding-bottom:1em">

@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 
@@ -259,30 +258,12 @@ public class PlayQueueService {
         List<MediaFile> files = new ArrayList<>(allEpisodes.size());
 
         for (PodcastEpisode ep : allEpisodes) {
-            if (ep.getStatus() == PodcastStatus.COMPLETED) {
+            if (ep.getStatus() == PodcastStatus.COMPLETED && ep.getMediaFileId() != null) {
                 MediaFile mediaFile = mediaFileService.getMediaFile(ep.getMediaFileId());
                 if (mediaFile != null && mediaFile.isPresent()
                         && (ep.getId().equals(episode.getId()) || queueFollowingSongs && !files.isEmpty())) {
                     files.add(mediaFile);
                 }
-            }
-        }
-
-        doPlay(player, files, null, sessionId);
-    }
-
-    public void playNewestPodcastEpisode(Player player, Integer index, String sessionId) {
-        boolean queueFollowingSongs = settingsService.getUserSettings(player.getUsername()).getQueueFollowingSongs();
-
-        List<PodcastEpisode> episodes = podcastService.getNewestEpisodes(10);
-        List<MediaFile> files = episodes.stream().map(PodcastEpisode::getId).map(mediaFileService::getMediaFile)
-                .collect(Collectors.toList());
-
-        if (!files.isEmpty() && index != null) {
-            if (queueFollowingSongs) {
-                files = files.subList(index, files.size());
-            } else {
-                files = Arrays.asList(files.get(index));
             }
         }
 

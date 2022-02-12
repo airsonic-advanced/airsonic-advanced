@@ -183,13 +183,13 @@
                     { data: null,
                       searchable: false,
                       name: "songcheckbox",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       title: "<input type='checkbox' class='songSelectAll'>",
                       defaultContent: "<input type='checkbox' class='songIndex'>"
                     },
                     { data: "starred",
                       name: "starred",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render(starred, type) {
                           if (type == "display") {
                               return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
@@ -200,7 +200,7 @@
                     { data: null,
                       searchable: false,
                       name: "remove",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       defaultContent: "<img class='removeSong' src=\"<spring:theme code='removeImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist.remove'/>\" title=\"<fmt:message key='playlist.remove'/>\">"
                     },
                     { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
@@ -874,9 +874,6 @@
         },
         onPlayPodcastEpisode(id) {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/play/podcastepisode", JSON.stringify({id: id}));
-        },
-        onPlayNewestPodcastEpisode(index) {
-            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/podcastepisode/newest", JSON.stringify({index: index}));
         },
         onPlayStarred() {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/play/starred", "");

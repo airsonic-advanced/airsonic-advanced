@@ -3,7 +3,6 @@ package org.airsonic.player.controller;
 import com.google.common.collect.ImmutableMap;
 import org.airsonic.player.command.CredentialsManagementCommand;
 import org.airsonic.player.command.CredentialsManagementCommand.AdminControls;
-import org.airsonic.player.command.CredentialsManagementCommand.AppCredSettings;
 import org.airsonic.player.command.CredentialsManagementCommand.CredentialsCommand;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential;
@@ -14,6 +13,7 @@ import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.Util;
 import org.airsonic.player.validator.CredentialsManagementValidators.CredentialCreateChecks;
 import org.airsonic.player.validator.CredentialsManagementValidators.CredentialUpdateChecks;
+import org.apache.commons.beanutils.BeanMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +35,12 @@ import javax.validation.groups.Default;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toMap;
 
 @Controller
 @RequestMapping("/credentialsSettings")
@@ -49,11 +52,6 @@ public class CredentialsManagementController {
 
     @Autowired
     private SettingsService settingsService;
-
-    public static final Map<App, AppCredSettings> APPS_CREDS_SETTINGS = ImmutableMap.of(
-            App.AIRSONIC, new AppCredSettings(false, true),
-            App.LASTFM, new AppCredSettings(true, false),
-            App.LISTENBRAINZ, new AppCredSettings(false, false));
 
     private static final Map<String, String> ENCODER_ALIASES = ImmutableMap.of("noop", "plaintext", "legacynoop",
             "legacyplaintext (deprecated)", "legacyhex", "legacyhex (deprecated)");
@@ -95,8 +93,8 @@ public class CredentialsManagementController {
         // for new creds
         map.addAttribute("newCreds", new CredentialsCommand());
 
-        map.addAttribute("apps", APPS_CREDS_SETTINGS.keySet());
-        map.addAttribute("appsCredsSettingsJson", Util.toJson(APPS_CREDS_SETTINGS));
+        map.addAttribute("apps", EnumSet.allOf(App.class));
+        map.addAttribute("appsMap", EnumSet.allOf(App.class).stream().collect(toMap(a -> a, a -> new BeanMap(a))));
 
         map.addAttribute("decodableEncoders", GlobalSecurityConfig.NONLEGACY_DECODABLE_ENCODERS);
         map.addAttribute("decodableEncodersJson", Util.toJson(GlobalSecurityConfig.NONLEGACY_DECODABLE_ENCODERS));
@@ -139,7 +137,8 @@ public class CredentialsManagementController {
 
         UserCredential uc = new UserCredential(user.getName(), cc.getUsername(), cc.getCredential(), cc.getEncoder(), cc.getApp(), "Created by user", cc.getExpirationInstant());
 
-        if (!APPS_CREDS_SETTINGS.get(uc.getApp()).getUsernameRequired()) {
+        // set airsonic account username if username not required
+        if (!uc.getApp().getUsernameRequired()) {
             uc.setAppUsername(user.getName());
         }
 
