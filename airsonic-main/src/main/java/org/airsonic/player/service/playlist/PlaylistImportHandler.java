@@ -28,9 +28,9 @@ public abstract class PlaylistImportHandler implements Ordered {
     @Autowired
     SettingsService settingsService;
 
-    abstract boolean canHandle(Class<? extends SpecificPlaylist> playlistClass);
+    abstract public boolean canHandle(Class<? extends SpecificPlaylist> playlistClass);
 
-    abstract Pair<List<MediaFile>, List<String>> handle(SpecificPlaylist inputSpecificPlaylist, Path location);
+    abstract public Pair<List<MediaFile>, List<String>> handle(SpecificPlaylist inputSpecificPlaylist, Path location);
 
     List<MediaFile> getMediaFiles(String pathInPlaylist) {
         if (StringUtils.isNotBlank(pathInPlaylist)) {
