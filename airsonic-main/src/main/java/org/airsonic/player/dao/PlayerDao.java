@@ -104,6 +104,12 @@ public class PlayerDao extends AbstractDao {
      */
     public void createPlayer(Player player) {
         Integer id = insert("player", player);
+        // never Player 0 due to odd bug cataloged in
+        // https://github.com/airsonic-advanced/airsonic-advanced/issues/646
+        if (id.equals(0)) {
+            deletePlayer(0);
+            id = insert("player", player);
+        }
         player.setId(id);
         addPlaylist(player);
 
@@ -175,19 +181,18 @@ public class PlayerDao extends AbstractDao {
         @Override
         public Player mapRow(ResultSet rs, int rowNum) throws SQLException {
             Player player = new Player();
-            int col = 1;
-            player.setId(rs.getInt(col++));
-            player.setName(rs.getString(col++));
-            player.setType(rs.getString(col++));
-            player.setUsername(rs.getString(col++));
-            player.setIpAddress(rs.getString(col++));
-            player.setAutoControlEnabled(rs.getBoolean(col++));
-            player.setM3uBomEnabled(rs.getBoolean(col++));
-            player.setLastSeen(Optional.ofNullable(rs.getTimestamp(col++)).map(x -> x.toInstant()).orElse(null));
-            player.setTranscodeScheme(TranscodeScheme.valueOf(rs.getString(col++)));
-            player.setDynamicIp(rs.getBoolean(col++));
-            player.setTechnology(PlayerTechnology.valueOf(rs.getString(col++)));
-            player.setClientId(rs.getString(col++));
+            player.setId(rs.getInt("id"));
+            player.setName(rs.getString("name"));
+            player.setType(rs.getString("type"));
+            player.setUsername(rs.getString("username"));
+            player.setIpAddress(rs.getString("ip_address"));
+            player.setAutoControlEnabled(rs.getBoolean("auto_control_enabled"));
+            player.setM3uBomEnabled(rs.getBoolean("m3u_bom_enabled"));
+            player.setLastSeen(Optional.ofNullable(rs.getTimestamp("last_seen")).map(x -> x.toInstant()).orElse(null));
+            player.setTranscodeScheme(TranscodeScheme.valueOf(rs.getString("transcode_scheme")));
+            player.setDynamicIp(rs.getBoolean("dynamic_ip"));
+            player.setTechnology(PlayerTechnology.valueOf(rs.getString("technology")));
+            player.setClientId(rs.getString("client_id"));
 
             addPlaylist(player);
             return player;
