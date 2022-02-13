@@ -71,6 +71,10 @@ public class MediaFileDao extends AbstractDao {
         return queryOne("select " + QUERY_COLUMNS + " from media_file where id=?", rowMapper, id);
     }
 
+    public List<MediaFile> getMediaFilesByRelativePath(String path) {
+        return query("select " + QUERY_COLUMNS + " from media_file where path=?", rowMapper, path);
+    }
+
     /**
      * Returns the media file that are direct children of the given path.
      *

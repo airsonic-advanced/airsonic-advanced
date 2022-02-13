@@ -151,6 +151,10 @@ public class MediaFileService {
         return checkLastModified(mediaFile, mediaFolderService.getMusicFolderById(mediaFile.getFolderId()), settingsService.isFastCacheEnabled());
     }
 
+    public List<MediaFile> getMediaFilesByRelativePath(Path relativePath) {
+        return mediaFileDao.getMediaFilesByRelativePath(relativePath.toString());
+    }
+
     public MediaFile getParentOf(MediaFile mediaFile) {
         if (mediaFile.getParentPath() == null) {
             return null;
