@@ -20,15 +20,17 @@
 package org.airsonic.player.controller;
 
 import org.airsonic.player.command.SearchCommand;
+import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SearchService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.search.IndexType;
-import org.airsonic.player.util.LambdaUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -41,8 +43,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Controller for the search page.
@@ -52,8 +59,6 @@ import java.util.stream.Stream;
 @Controller
 @RequestMapping("/search")
 public class SearchController {
-
-    private static final int MATCH_COUNT = 25;
 
     @Autowired
     private SecurityService securityService;
@@ -65,6 +70,10 @@ public class SearchController {
     private SearchService searchService;
     @Autowired
     private MediaFolderService mediaFolderService;
+    @Autowired
+    private MediaFileService mediaFileService;
+    @Autowired
+    private AlbumDao albumDao;
 
     @GetMapping
     protected String displayForm() {
@@ -77,8 +86,7 @@ public class SearchController {
     }
 
     @PostMapping
-    protected String onSubmit(HttpServletRequest request, HttpServletResponse response,@ModelAttribute("command") SearchCommand command, Model model)
-            throws Exception {
+    protected String onSubmit(HttpServletRequest request, HttpServletResponse response,@ModelAttribute("command") SearchCommand command, Model model) throws Exception {
 
         User user = securityService.getCurrentUser(request);
         UserSettings userSettings = settingsService.getUserSettings(user.getUsername());
@@ -91,20 +99,39 @@ public class SearchController {
         if (query != null) {
 
             SearchCriteria criteria = new SearchCriteria();
-            criteria.setCount(MATCH_COUNT);
+            criteria.setCount(userSettings.getSearchCount());
             criteria.setQuery(query);
 
             SearchResult artists = searchService.search(criteria, musicFolders, IndexType.ARTIST);
             SearchResult artistsId3 = searchService.search(criteria, musicFolders, IndexType.ARTIST_ID3);
-            command.setArtists(Stream.concat(artistsId3.getMediaFiles().stream(), artists.getMediaFiles().stream())
-                    .filter(LambdaUtils.distinctByKey(MediaFile::getId))
-                    .collect(Collectors.toList()));
+            artistsId3.getArtists().stream().map(Artist::getName).flatMap(ar -> albumDao.getAlbumsForArtist(ar, musicFolders).stream().map(al -> mediaFileService.getMediaFile(al.getPath(), al.getFolderId())).map(MediaFile::getId).map(m -> Pair.of(ar, m))).collect(groupingBy(p -> p.getKey(), mapping(p -> p.getValue(), toSet())));
+            artists.getMediaFiles().stream().map(m -> Pair.of(Optional.ofNullable(m.getArtist()).or(() -> Optional.ofNullable(m.getAlbumArtist())).orElse("(Unknown)"), m.getId()));
+            command.setArtists(Stream.concat(
+                    artistsId3.getArtists().stream()
+                        .map(Artist::getName)
+                        .flatMap(ar -> albumDao.getAlbumsForArtist(ar, musicFolders).stream()
+                                .map(al -> mediaFileService.getMediaFile(al.getPath(), al.getFolderId()))
+                                    .filter(Objects::nonNull)
+                                .map(MediaFile::getId)
+                                .map(m -> Pair.of(ar, m))),
+                    artists.getMediaFiles().stream()
+                        .map(m -> Pair.of(
+                                Optional.ofNullable(m.getArtist())
+                                    .or(() -> Optional.ofNullable(m.getAlbumArtist()))
+                                    .orElse("(Unknown)"),
+                                m.getId())))
+                .collect(groupingBy(p -> p.getKey(), mapping(p -> p.getValue(), toSet()))));
 
             SearchResult albums = searchService.search(criteria, musicFolders, IndexType.ALBUM);
             SearchResult albumsId3 = searchService.search(criteria, musicFolders, IndexType.ALBUM_ID3);
-            command.setAlbums(Stream.concat(albumsId3.getMediaFiles().stream(), albums.getMediaFiles().stream())
-                    .filter(LambdaUtils.distinctByKey(MediaFile::getId))
-                    .collect(Collectors.toList()));
+            command.setAlbums(Stream
+                    .concat(albumsId3.getAlbums().stream()
+                            .map(a -> Optional.ofNullable(mediaFileService.getMediaFile(a.getPath(), a.getFolderId()))
+                                    .map(m -> Pair.of(Pair.of(a.getName(), a.getArtist()), m.getId())).orElse(null))
+                            .filter(Objects::nonNull),
+                            albums.getMediaFiles().stream()
+                                    .map(m -> Pair.of(Pair.of(m.getAlbumName(), m.getAlbumArtist()), m.getId())))
+                    .collect(groupingBy(p -> p.getKey(), mapping(p -> p.getValue(), toSet()))));
 
             SearchResult songs = searchService.search(criteria, musicFolders, IndexType.SONG);
             command.setSongs(songs.getMediaFiles());
@@ -114,5 +141,4 @@ public class SearchController {
 
         return "search";
     }
-
 }

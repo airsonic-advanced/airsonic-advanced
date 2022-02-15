@@ -43,17 +43,19 @@
         <c:forEach items="${command.artists}" var="match" varStatus="loopStatus">
 
             <sub:url value="/main.view" var="mainUrl">
-                <sub:param name="path" value="${match.path}"/>
+                <c:forEach items="${match.value}" var="mid">
+                    <sub:param name="id" value="${mid}"/>
+                </c:forEach>
             </sub:url>
 
             <tr class="artistRow" ${loopStatus.count > 5 ? "style='display:none'" : ""}>
                 <c:import url="playButtons.jsp">
-                    <c:param name="id" value="${match.id}"/>
+                    <c:param name="id" value="${match.value}"/>
                     <c:param name="playEnabled" value="${command.user.streamRole and not command.partyModeEnabled}"/>
                     <c:param name="addEnabled" value="${command.user.streamRole and (not command.partyModeEnabled or not match.directory)}"/>
                     <c:param name="asTable" value="true"/>
                 </c:import>
-                <td class="truncate"><a href="${mainUrl}">${fn:escapeXml(match.name)}</a></td>
+                <td class="truncate"><a href="${mainUrl}">${fn:escapeXml(match.key)}</a></td>
             </tr>
 
             </c:forEach>
@@ -69,19 +71,21 @@
         <c:forEach items="${command.albums}" var="match" varStatus="loopStatus">
 
             <sub:url value="/main.view" var="mainUrl">
-                <sub:param name="path" value="${match.path}"/>
+                <c:forEach items="${match.value}" var="mid">
+                    <sub:param name="id" value="${mid}"/>
+                </c:forEach>
             </sub:url>
 
             <tr class="albumRow" ${loopStatus.count > 5 ? "style='display:none'" : ""}>
                 <c:import url="playButtons.jsp">
-                    <c:param name="id" value="${match.id}"/>
+                    <c:param name="id" value="${match.value}"/>
                     <c:param name="playEnabled" value="${command.user.streamRole and not command.partyModeEnabled}"/>
                     <c:param name="addEnabled" value="${command.user.streamRole and (not command.partyModeEnabled or not match.directory)}"/>
                     <c:param name="asTable" value="true"/>
                 </c:import>
 
-                <td class="truncate"><a href="${mainUrl}">${fn:escapeXml(match.albumName)}</a></td>
-                <td class="truncate"><span class="detail">${fn:escapeXml(match.artist)}</span></td>
+                <td class="truncate"><a href="${mainUrl}">${fn:escapeXml(match.key.key)}</a></td>
+                <td class="truncate"><span class="detail">${fn:escapeXml(match.key.value)}</span></td>
             </tr>
 
             </c:forEach>
@@ -98,7 +102,7 @@
         <c:forEach items="${command.songs}" var="match" varStatus="loopStatus">
 
             <sub:url value="/main.view" var="mainUrl">
-                <sub:param name="path" value="${match.parentPath}"/>
+                <sub:param name="path" value="${match.folderId}:${match.parentPath}"/>
             </sub:url>
 
             <tr class="songRow" ${loopStatus.count > 15 ? "style='display:none'" : ""}>

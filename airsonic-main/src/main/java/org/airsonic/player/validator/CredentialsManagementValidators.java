@@ -1,8 +1,6 @@
 package org.airsonic.player.validator;
 
-import org.airsonic.player.command.CredentialsManagementCommand.AppCredSettings;
 import org.airsonic.player.command.CredentialsManagementCommand.CredentialsCommand;
-import org.airsonic.player.controller.CredentialsManagementController;
 import org.airsonic.player.security.GlobalSecurityConfig;
 import org.apache.commons.lang3.StringUtils;
 
@@ -90,17 +88,12 @@ public class CredentialsManagementValidators {
     public static class CredEncoderForAppValidValidator implements ConstraintValidator<CredEncoderForAppValid, CredentialsCommand> {
         @Override
         public boolean isValid(CredentialsCommand creds, ConstraintValidatorContext context) {
-            if (creds == null) {
-                return true;
-            }
-
-            AppCredSettings appSettings = CredentialsManagementController.APPS_CREDS_SETTINGS.get(creds.getApp());
-            if (appSettings == null) {
+            if (creds == null || creds.getApp() == null) {
                 return true;
             }
 
             boolean valid = true;
-            if (!appSettings.getNonDecodableEncodersAllowed()) {
+            if (!creds.getApp().getNonDecodableEncodersAllowed()) {
                 valid = !GlobalSecurityConfig.NONLEGACY_NONDECODABLE_ENCODERS.contains(creds.getEncoder());
             }
 

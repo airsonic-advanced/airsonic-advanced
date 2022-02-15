@@ -23,7 +23,7 @@ jobs:
             ${{ runner.os }}-m2-
       - run: mvn versions:set -DremoveSnapshot=true -DgenerateBackupPoms=false
       - name: Build with Maven
-        run: mvn --settings=./.mvn/settings.xml -DskipTests -Dcheckstyle.skip=true package -P docker
+        run: mvn -DskipTests -Dcheckstyle.skip=true package -P docker
       - name: Calculate tags
         if: success()
         id: tagcalc

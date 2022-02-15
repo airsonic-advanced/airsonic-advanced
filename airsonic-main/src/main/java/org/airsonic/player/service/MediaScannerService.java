@@ -204,7 +204,7 @@ public class MediaScannerService {
         try {
             Map<String, Album> albums = new ConcurrentHashMap<>();
             Map<String, Set<Album>> artistAlbums = new ConcurrentHashMap<>();
-            Map<String, Boolean> encountered = new ConcurrentHashMap<>();
+            Map<Integer, Set<String>> encountered = new ConcurrentHashMap<>();
             Genres genres = new Genres();
 
             scanCount.set(0);
@@ -300,7 +300,7 @@ public class MediaScannerService {
 
             LOG.info("Marking present files");
             CompletableFuture<Void> mediaFilePersistence = CompletableFuture
-                    .runAsync(() -> mediaFileDao.markPresent(encountered.keySet(), statistics.getScanDate()), pool)
+                    .runAsync(() -> mediaFileDao.markPresent(encountered, statistics.getScanDate()), pool)
                     .thenRunAsync(() -> {
                         LOG.info("Marking non-present files.");
                         mediaFileDao.markNonPresent(statistics.getScanDate());
@@ -335,7 +335,7 @@ public class MediaScannerService {
     }
 
     private void scanFile(MediaFile file, MusicFolder musicFolder, MediaLibraryStatistics statistics,
-            Map<String, Album> albums, Map<String, Set<Album>> artistAlbums, Genres genres, Map<String, Boolean> encountered) {
+            Map<String, Album> albums, Map<String, Set<Album>> artistAlbums, Genres genres, Map<Integer, Set<String>> encountered) {
         if (scanCount.incrementAndGet() % 250 == 0) {
             broadcastScanStatus();
             LOG.info("Scanned media library with {} entries.", scanCount.get());
@@ -362,7 +362,7 @@ public class MediaScannerService {
             statistics.incrementSongs(1);
         }
 
-        encountered.putIfAbsent(file.getPath(), Boolean.TRUE);
+        encountered.computeIfAbsent(file.getFolderId(), k -> ConcurrentHashMap.newKeySet()).add(file.getPath());
 
         if (file.getDuration() != null) {
             statistics.incrementTotalDurationInSeconds(file.getDuration());

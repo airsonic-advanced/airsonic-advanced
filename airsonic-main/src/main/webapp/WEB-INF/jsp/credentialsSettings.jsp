@@ -25,7 +25,7 @@
         clickedButton.childNodes[1].checked=true;
       }
 
-      var appsSettings = ${appsCredsSettingsJson};
+      var appsSettings = ${sub:toJson(appsMap)};
       var decodableEncoders = ${decodableEncodersJson};
       var defaultEncoderDecodableOnly = "${preferredEncoderDecodableOnly}";
       var nonDecodableEncoders = ${nonDecodableEncodersJson};

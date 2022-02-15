@@ -22,6 +22,7 @@ package org.airsonic.player.controller;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.service.*;
 import org.airsonic.player.util.Util;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.ServletRequestUtils;
@@ -33,6 +34,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.util.*;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Controller for the main page.
@@ -66,7 +72,10 @@ public class MainController {
         map.put("viewAsList", userSettings.getViewAsList());
         map.put("initialPaginationSizeFiles", userSettings.getPaginationSizeFiles());
         map.put("initialPaginationSizeFolders", userSettings.getPaginationSizeFolders());
-        map.put("initialPathsJSON", Util.toJson(ServletRequestUtils.getStringParameters(request, "path")));
+        map.put("initialPathsJSON",
+                Util.toJson(Stream.of(ServletRequestUtils.getStringParameters(request, "path"))
+                        .map(pf -> StringUtils.split(pf, ":", 2))
+                        .collect(groupingBy(pf -> pf[0], mapping(pf -> pf.length == 1 ? "" : pf[1], toSet())))));
         map.put("initialIdsJSON", Util.toJson(ServletRequestUtils.getIntParameters(request, "id")));
 
         return new ModelAndView("mediaMain", "model", map);

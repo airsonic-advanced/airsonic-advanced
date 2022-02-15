@@ -64,7 +64,12 @@ public class MusicFolderDao extends AbstractDao {
      * @return Possibly empty list of all music folders.
      */
     public List<MusicFolder> getAllMusicFolders() {
-        String sql = "select " + QUERY_COLUMNS + " from music_folder";
+        String sql = "select " + QUERY_COLUMNS + " from music_folder where id >= 0";
+        return query(sql, MUSICFOLDER_ROW_MAPPER);
+    }
+
+    public List<MusicFolder> getDeletedMusicFolders() {
+        String sql = "select " + QUERY_COLUMNS + " from music_folder where id < 0";
         return query(sql, MUSICFOLDER_ROW_MAPPER);
     }
 
@@ -78,7 +83,7 @@ public class MusicFolderDao extends AbstractDao {
         return queryOne(sql, MUSICFOLDER_ROW_MAPPER, path);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createMusicFolder(MusicFolder musicFolder) {
         if (getMusicFolderForPath(musicFolder.getPath().toString()) == null) {
             Integer id = insert("music_folder", musicFolder);
@@ -87,6 +92,8 @@ public class MusicFolderDao extends AbstractDao {
             musicFolder.setId(id);
 
             LOG.info("Created music folder {} with id {}", musicFolder.getPath(), musicFolder.getId());
+        } else {
+            LOG.info("Did NOT create music folder {}", musicFolder.getPath());
         }
     }
 
@@ -94,6 +101,16 @@ public class MusicFolderDao extends AbstractDao {
         String sql = "delete from music_folder where id=?";
         update(sql, id);
         LOG.info("Deleted music folder with ID {}", id);
+    }
+
+    public void expungeMusicFolders() {
+        String sql = "delete from music_folder where id < 0";
+        update(sql);
+    }
+
+    public void updateMusicFolderId(Integer oldId, Integer newId) {
+        String sql = "update music_folder set id=? where id=?";
+        update(sql, newId, oldId);
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -163,10 +180,11 @@ public class MusicFolderDao extends AbstractDao {
 
     public List<MusicFolder> getMusicFoldersForUser(String username) {
         String sql = "select " + prefix(QUERY_COLUMNS, "music_folder") + " from music_folder, music_folder_user " +
-                     "where music_folder.id = music_folder_user.music_folder_id and music_folder_user.username = ?";
+                "where music_folder.id = music_folder_user.music_folder_id and music_folder.id >= 0 and music_folder_user.username = ?";
         return query(sql, MUSICFOLDER_ROW_MAPPER, username);
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void setMusicFoldersForUser(String username, Collection<Integer> musicFolderIds) {
         update("delete from music_folder_user where username = ?", username);
         for (Integer musicFolderId : musicFolderIds) {

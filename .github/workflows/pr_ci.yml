@@ -30,7 +30,7 @@ jobs:
       - run: ${{ matrix.cfg.run }}
         if: matrix.cfg.executeManualcommand
       - name: Build with Maven
-        run: mvn --settings=./.mvn/settings.xml -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
+        run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
 
     strategy:
       fail-fast: false

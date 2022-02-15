@@ -7,6 +7,7 @@ import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.RatingService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -17,6 +18,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedSet;
@@ -113,9 +115,12 @@ public class MediaFileWSController {
         return videoFound;
     }
 
-    private List<MediaFile> getMediaFiles(List<Integer> ids, List<String> paths) {
+    private List<MediaFile> getMediaFiles(List<Integer> ids, Map<Integer, List<String>> paths) {
         return Stream
-                .concat(Optional.ofNullable(paths).orElse(Collections.emptyList()).parallelStream().map(mediaFileService::getMediaFile),
+                .concat(Optional.ofNullable(paths).orElse(Collections.emptyMap())
+                        .entrySet().parallelStream()
+                        .flatMap(e -> e.getValue().stream().map(p -> Pair.of(e.getKey(), p)))
+                        .map(pf -> mediaFileService.getMediaFile(pf.getValue(), pf.getKey())),
                         Optional.ofNullable(ids).orElse(Collections.emptyList()).parallelStream().map(mediaFileService::getMediaFile))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -191,7 +196,7 @@ public class MediaFileWSController {
 
     public static class MediaDirectoryRequest {
         List<Integer> ids;
-        List<String> paths;
+        Map<Integer, List<String>> paths;
 
         public List<Integer> getIds() {
             return ids;
@@ -201,11 +206,11 @@ public class MediaFileWSController {
             this.ids = ids;
         }
 
-        public List<String> getPaths() {
+        public Map<Integer, List<String>> getPaths() {
             return paths;
         }
 
-        public void setPaths(List<String> paths) {
+        public void setPaths(Map<Integer, List<String>> paths) {
             this.paths = paths;
         }
 
@@ -224,7 +229,7 @@ public class MediaFileWSController {
         private String musicBrainzReleaseId;
 
         public MediaFileDirectoryEntry(MediaFileEntry mfe) {
-            super(mfe.getId(), mfe.getTrackNumber(), mfe.getTitle(), mfe.getArtist(), mfe.getAlbum(), mfe.getGenre(),
+            super(mfe.getId(), mfe.getTrackNumber(), mfe.getDiscNumber(), mfe.getTitle(), mfe.getArtist(), mfe.getAlbum(), mfe.getGenre(),
                     mfe.getYear(), mfe.getBitRate(), mfe.getDimensions(), mfe.getDuration(),
                     mfe.getFormat(), mfe.getContentType(), mfe.getEntryType(), mfe.getFileSize(), mfe.getPlayCount(),
                     mfe.getLastPlayed(), mfe.getCreated(), mfe.getChanged(), mfe.getLastScanned(), mfe.getStarred(), mfe.getPresent(),
