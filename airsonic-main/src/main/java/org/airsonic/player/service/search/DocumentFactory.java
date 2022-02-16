@@ -23,7 +23,6 @@ package org.airsonic.player.service.search;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.Artist;
 import org.airsonic.player.domain.MediaFile;
-import org.airsonic.player.domain.MusicFolder;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
@@ -99,9 +98,6 @@ public class DocumentFactory {
     private BiConsumer<Document, String> fieldMediatype = (doc, value) ->
         fieldKey.accept(doc, FieldNames.MEDIA_TYPE, value);
 
-    private BiConsumer<Document, String> fieldFolderPath = (doc, value) ->
-        fieldKey.accept(doc, FieldNames.FOLDER, value);
-
     private BiConsumer<Document, String> fieldGenre = (doc, value) -> {
         if (isEmpty(value)) {
             return;
@@ -147,13 +143,12 @@ public class DocumentFactory {
      * @return document
      * @since legacy
      */
-    public Document createAlbumDocument(MediaFile mediaFile, MusicFolder musicFolder) {
+    public Document createAlbumDocument(MediaFile mediaFile) {
         Document doc = new Document();
         fieldId.accept(doc, mediaFile.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
         fieldWords.accept(doc, FieldNames.ALBUM, mediaFile.getAlbumName());
-        fieldFolderPath.accept(doc, musicFolder.getPath().toString());
-        fieldFolderId.accept(doc, musicFolder.getId());
+        fieldFolderId.accept(doc, mediaFile.getFolderId());
         return doc;
     }
 
@@ -164,12 +159,31 @@ public class DocumentFactory {
      * @return document
      * @since legacy
      */
-    public Document createArtistDocument(MediaFile mediaFile, MusicFolder musicFolder) {
+    public Document createArtistDocument(MediaFile mediaFile) {
         Document doc = new Document();
         fieldId.accept(doc, mediaFile.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
-        fieldFolderPath.accept(doc, musicFolder.getPath().toString());
-        fieldFolderId.accept(doc, musicFolder.getId());
+        fieldFolderId.accept(doc, mediaFile.getFolderId());
+        return doc;
+    }
+
+    /**
+     * Create a document.
+     *
+     * @param mediaFile target of document
+     * @return document
+     * @since legacy
+     */
+    public Document createSongDocument(MediaFile mediaFile) {
+        Document doc = new Document();
+        fieldId.accept(doc, mediaFile.getId());
+        fieldMediatype.accept(doc, mediaFile.getMediaType().name());
+        fieldWords.accept(doc, FieldNames.TITLE, mediaFile.getTitle());
+        fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
+        fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getAlbumArtist());
+        fieldGenre.accept(doc, mediaFile.getGenre());
+        fieldYear.accept(doc, FieldNames.YEAR, mediaFile.getYear());
+        fieldFolderId.accept(doc, mediaFile.getFolderId());
         return doc;
     }
 
@@ -213,25 +227,6 @@ public class DocumentFactory {
         fieldId.accept(doc, artist.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, artist.getName());
         folderIds.stream().forEach(fid -> fieldFolderId.accept(doc, fid));
-        return doc;
-    }
-
-    /**
-     * Create a document.
-     *
-     * @param mediaFile target of document
-     * @return document
-     * @since legacy
-     */
-    public Document createSongDocument(MediaFile mediaFile, MusicFolder musicFolder) {
-        Document doc = new Document();
-        fieldId.accept(doc, mediaFile.getId());
-        fieldMediatype.accept(doc, mediaFile.getMediaType().name());
-        fieldWords.accept(doc, FieldNames.TITLE, mediaFile.getTitle());
-        fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
-        fieldGenre.accept(doc, mediaFile.getGenre());
-        fieldYear.accept(doc, FieldNames.YEAR, mediaFile.getYear());
-        fieldFolderPath.accept(doc, musicFolder.getPath().toString());
         return doc;
     }
 

@@ -349,7 +349,7 @@ public class MediaScannerService {
             mediaFileService.updateMediaFile(file);
         }
 
-        indexManager.index(file, musicFolder);
+        indexManager.index(file);
         Set<Genre> fileGenres = updateGenres(file, genres);
 
         if (file.isDirectory()) {
