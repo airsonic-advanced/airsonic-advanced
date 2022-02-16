@@ -20,7 +20,8 @@
 package org.airsonic.player.domain;
 
 import com.google.common.base.MoreObjects;
-import org.airsonic.player.service.SearchService;
+
+import org.airsonic.player.service.search.SearchService;
 
 /**
  * Defines criteria used when searching.

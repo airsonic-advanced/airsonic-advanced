@@ -29,6 +29,7 @@ import org.airsonic.player.io.PlayQueueInputStream;
 import org.airsonic.player.io.ShoutCastOutputStream;
 import org.airsonic.player.security.JWTAuthenticationToken;
 import org.airsonic.player.service.*;
+import org.airsonic.player.service.search.SearchService;
 import org.airsonic.player.service.sonos.SonosHelper;
 import org.airsonic.player.spring.KnownLengthInputStreamResource;
 import org.airsonic.player.util.FileUtil;

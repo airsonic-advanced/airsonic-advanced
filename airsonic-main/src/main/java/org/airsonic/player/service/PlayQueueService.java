@@ -12,6 +12,7 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.PlayQueue;
 import org.airsonic.player.domain.PlayQueue.RepeatStatus;
+import org.airsonic.player.service.search.SearchService;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastStatus;

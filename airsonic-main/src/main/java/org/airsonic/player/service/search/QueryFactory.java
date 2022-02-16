@@ -151,7 +151,7 @@ public class QueryFactory {
 
     /**
      * Query generation expression extracted from
-     * {@link org.airsonic.player.service.SearchService#search(SearchCriteria, List, IndexType)}.
+     * {@link org.airsonic.player.service.search.SearchService#search(SearchCriteria, List, IndexType)}.
      *
      * @param criteria criteria
      * @param musicFolders musicFolders
@@ -174,7 +174,7 @@ public class QueryFactory {
 
     /**
      * Query generation expression extracted from
-     * {@link org.airsonic.player.service.SearchService#getRandomSongs(RandomSearchCriteria)}.
+     * {@link org.airsonic.player.service.search.SearchService#getRandomSongs(RandomSearchCriteria)}.
      */
     public Query getRandomSongs(RandomSearchCriteria criteria) throws IOException {
 
@@ -208,7 +208,7 @@ public class QueryFactory {
 
     /**
      * Query generation expression extracted from
-     * {@link org.airsonic.player.service.SearchService#searchByName( String, String, int, int, List, Class)}.
+     * {@link org.airsonic.player.service.search.SearchService#searchByName( String, String, int, int, List, Class)}.
      *
      * @param fieldName {@link FieldNames}
      * @return Query
@@ -249,7 +249,7 @@ public class QueryFactory {
 
     /**
      * Query generation expression extracted from
-     * {@link org.airsonic.player.service.SearchService#getRandomAlbums(int, List)}.
+     * {@link org.airsonic.player.service.search.SearchService#getRandomAlbums(int, List)}.
      *
      * @param musicFolders musicFolders
      * @return Query
@@ -262,7 +262,7 @@ public class QueryFactory {
 
     /**
      * Query generation expression extracted from
-     * {@link org.airsonic.player.service.SearchService#getRandomAlbumsId3(int, List)}.
+     * {@link org.airsonic.player.service.search.SearchService#getRandomAlbumsId3(int, List)}.
      *
      * @param musicFolders musicFolders
      * @return Query

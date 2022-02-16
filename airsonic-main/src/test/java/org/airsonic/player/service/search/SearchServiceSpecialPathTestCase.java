@@ -4,7 +4,6 @@ package org.airsonic.player.service.search;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.MusicFolder.Type;
-import org.airsonic.player.service.SearchService;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.AfterClass;
 import org.junit.Assert;

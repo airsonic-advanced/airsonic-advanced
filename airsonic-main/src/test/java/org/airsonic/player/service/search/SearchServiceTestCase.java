@@ -15,7 +15,6 @@ import org.airsonic.player.domain.ParamSearchResult;
 import org.airsonic.player.domain.RandomSearchCriteria;
 import org.airsonic.player.domain.SearchCriteria;
 import org.airsonic.player.domain.SearchResult;
-import org.airsonic.player.service.SearchService;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;

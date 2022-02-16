@@ -38,6 +38,7 @@ import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.search.IndexType;
+import org.airsonic.player.service.search.SearchService;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang.StringUtils;
