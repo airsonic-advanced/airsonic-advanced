@@ -106,36 +106,36 @@ public class SearchController {
                     artistsId3.getArtists().stream()
                         .map(Artist::getName)
                         .flatMap(ar -> albumDao.getAlbumsForArtist(ar, musicFolders).stream()
-                                .map(al -> Pair.of(ar, al.getMediaFileIds()))),
+                            .map(al -> Pair.of(ar, al.getMediaFileIds()))),
                     artists.getMediaFiles().stream()
                         .map(m -> Pair.of(
-                                Optional.ofNullable(m.getArtist())
-                                    .or(() -> Optional.ofNullable(m.getAlbumArtist()))
-                                    .orElse("(Unknown)"),
-                                singleton(m.getId()))))
+                            Optional.ofNullable(m.getArtist())
+                                .or(() -> Optional.ofNullable(m.getAlbumArtist()))
+                                .orElse("(Unknown)"),
+                            singleton(m.getId()))))
                 .collect(groupingBy(p -> p.getKey(), mapping(p -> p.getValue(), reducing(
+                    ConcurrentHashMap.newKeySet(),
+                    i -> i,
+                    (a, b) -> {
+                        a.addAll(b);
+                        return a;
+                    })))));
+
+            SearchResult albums = searchService.search(criteria, musicFolders, IndexType.ALBUM);
+            SearchResult albumsId3 = searchService.search(criteria, musicFolders, IndexType.ALBUM_ID3);
+            command.setAlbums(Stream.concat(
+                    albumsId3.getAlbums().stream()
+                        .map(a -> Pair.of(Pair.of(a.getName(), a.getArtist()), a.getMediaFileIds())),
+                    albums.getMediaFiles().stream()
+                        .map(m -> Pair.of(Pair.of(m.getAlbumName(), m.getAlbumArtist()), singleton(m.getId()))))
+                .collect(groupingBy(p -> p.getKey(),
+                    mapping(p -> p.getValue(), reducing(
                         ConcurrentHashMap.newKeySet(),
                         i -> i,
                         (a, b) -> {
                             a.addAll(b);
                             return a;
                         })))));
-
-            SearchResult albums = searchService.search(criteria, musicFolders, IndexType.ALBUM);
-            SearchResult albumsId3 = searchService.search(criteria, musicFolders, IndexType.ALBUM_ID3);
-            command.setAlbums(Stream
-                .concat(albumsId3.getAlbums().stream()
-                            .map(a -> Pair.of(Pair.of(a.getName(), a.getArtist()), a.getMediaFileIds())),
-                        albums.getMediaFiles().stream()
-                            .map(m -> Pair.of(Pair.of(m.getAlbumName(), m.getAlbumArtist()), singleton(m.getId()))))
-                .collect(groupingBy(p -> p.getKey(),
-                        mapping(p -> p.getValue(), reducing(
-                            ConcurrentHashMap.newKeySet(),
-                            i -> i,
-                            (a, b) -> {
-                                a.addAll(b);
-                                return a;
-                            })))));
 
             SearchResult songs = searchService.search(criteria, musicFolders, IndexType.SONG);
             command.setSongs(songs.getMediaFiles());
