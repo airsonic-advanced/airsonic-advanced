@@ -83,6 +83,7 @@ public class SettingsService {
     private static final String KEY_WELCOME_SUBTITLE = "WelcomeSubtitle";
     private static final String KEY_WELCOME_MESSAGE = "WelcomeMessage2";
     private static final String KEY_LOGIN_MESSAGE = "LoginMessage";
+    private static final String KEY_SESSION_DURATION = "server.servlet.session.timeout";
     private static final String KEY_LOCALE_LANGUAGE = "LocaleLanguage";
     private static final String KEY_LOCALE_COUNTRY = "LocaleCountry";
     private static final String KEY_LOCALE_VARIANT = "LocaleVariant";
@@ -185,6 +186,7 @@ public class SettingsService {
             "\\\\ \\\\\n" +
             "To change or remove this message, log in with administrator rights and go to <a href='settings.view'>Settings</a> > <a href='generalSettings.view'>General</a>.";
     private static final String DEFAULT_LOGIN_MESSAGE = null;
+    private static final String DEFAULT_SESSION_TIMEOUT_DURATION = "30m";
     private static final String DEFAULT_LOCALE_LANGUAGE = "en";
     private static final String DEFAULT_LOCALE_COUNTRY = "";
     private static final String DEFAULT_LOCALE_VARIANT = "";
@@ -722,6 +724,14 @@ public class SettingsService {
 
     public void setLoginMessage(String message) {
         setProperty(KEY_LOGIN_MESSAGE, message);
+    }
+
+    public String getSessionDuration() {
+        return getProperty(KEY_SESSION_DURATION, DEFAULT_SESSION_TIMEOUT_DURATION);
+    }
+
+    public void setSessionDuration(String sessionTimeout) {
+        setProperty(KEY_SESSION_DURATION, sessionTimeout);
     }
 
     /**
