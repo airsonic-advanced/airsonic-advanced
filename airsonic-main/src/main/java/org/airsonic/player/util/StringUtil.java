@@ -193,6 +193,11 @@ public final class StringUtil {
         return formatDuration(millis, true);
     }
 
+    public static String formatDurationUpnp(long millis) {
+        String format = "H:mm:ss.S";
+        return DurationFormatUtils.formatDuration(millis, format);
+    }
+
     /**
      * Splits the input string. White space is interpreted as separator token. Double quotes
      * are interpreted as grouping operator. <br/>
