@@ -138,10 +138,6 @@ public class MediaScannerService {
         return indexManager.getStatistics() == null;
     }
 
-    void watchPlaylists() {
-
-    }
-
     /**
      * Returns whether the media library is currently being scanned.
      */
@@ -209,7 +205,7 @@ public class MediaScannerService {
             Map<String, Artist> artists = new ConcurrentHashMap<>();
             Map<String, Album> albums = new ConcurrentHashMap<>();
             Map<Integer, Album> albumsInDb = new ConcurrentHashMap<>();
-            Map<String, Boolean> encountered = new ConcurrentHashMap<>();
+            Map<Integer, Set<String>> encountered = new ConcurrentHashMap<>();
             Genres genres = new Genres();
 
             scanCount.set(0);
@@ -260,7 +256,7 @@ public class MediaScannerService {
 
             LOG.info("Marking present files");
             CompletableFuture<Void> mediaFilePersistence = CompletableFuture
-                    .runAsync(() -> mediaFileDao.markPresent(encountered.keySet(), statistics.getScanDate()), pool)
+                    .runAsync(() -> mediaFileDao.markPresent(encountered, statistics.getScanDate()), pool)
                     .thenRunAsync(() -> {
                         LOG.info("Marking non-present files.");
                         mediaFileDao.markNonPresent(statistics.getScanDate());
@@ -296,7 +292,7 @@ public class MediaScannerService {
 
     private void scanFile(MediaFile file, MusicFolder musicFolder, MediaLibraryStatistics statistics,
             Map<String, AtomicInteger> albumCount, Map<String, Artist> artists, Map<String, Album> albums,
-            Map<Integer, Album> albumsInDb, Genres genres, Map<String, Boolean> encountered) {
+            Map<Integer, Album> albumsInDb, Genres genres, Map<Integer, Set<String>> encountered) {
         if (scanCount.incrementAndGet() % 250 == 0) {
             broadcastScanStatus();
             LOG.info("Scanned media library with {} entries.", scanCount.get());
@@ -322,7 +318,7 @@ public class MediaScannerService {
         }
 
         updateGenres(file, genres);
-        encountered.putIfAbsent(file.getPath(), Boolean.TRUE);
+        encountered.computeIfAbsent(file.getFolderId(), k -> ConcurrentHashMap.newKeySet()).add(file.getPath());
 
         // don't add indexed tracks to the total duration to avoid double-counting
         if ((file.getDuration() != null) && (!file.isIndexedTrack())) {

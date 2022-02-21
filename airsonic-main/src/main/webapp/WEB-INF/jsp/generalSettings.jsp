@@ -193,6 +193,13 @@
                 <c:import url="helpToolTip.jsp"><c:param name="topic" value="loginmessage"/></c:import>
             </td>
         </tr>
+        <tr>
+            <td><fmt:message key="generalsettings.sessionduration"/></td>
+            <td>
+                <form:input path="sessionDuration" size="15em"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="sessionduration"/></c:import>
+            </td>
+        </tr>
 
         <tr>
             <td colspan="2" style="padding-top:1.5em">

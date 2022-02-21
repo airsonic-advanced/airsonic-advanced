@@ -47,6 +47,7 @@ public class GeneralSettingsCommand {
     private String welcomeSubtitle;
     private String welcomeMessage;
     private String loginMessage;
+    private String sessionDuration;
     private String localeIndex;
     private String[] locales;
     private String themeIndex;
@@ -170,6 +171,14 @@ public class GeneralSettingsCommand {
 
     public void setLoginMessage(String loginMessage) {
         this.loginMessage = loginMessage;
+    }
+
+    public String getSessionDuration() {
+        return sessionDuration;
+    }
+
+    public void setSessionDuration(String sessionDuration) {
+        this.sessionDuration = sessionDuration;
     }
 
     public String getLocaleIndex() {

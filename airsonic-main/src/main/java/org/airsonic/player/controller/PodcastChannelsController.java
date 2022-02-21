@@ -18,10 +18,10 @@
  */
 package org.airsonic.player.controller;
 
-import org.airsonic.player.domain.PodcastChannel;
-import org.airsonic.player.domain.PodcastEpisode;
-import org.airsonic.player.service.PodcastService;
+import org.airsonic.player.domain.User;
+import org.airsonic.player.domain.UserSettings;
 import org.airsonic.player.service.SecurityService;
+import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,8 +32,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,31 +44,23 @@ import java.util.Map;
 public class PodcastChannelsController {
 
     @Autowired
-    private PodcastService podcastService;
+    private SettingsService settingsService;
     @Autowired
     private SecurityService securityService;
 
     @GetMapping
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) {
+        User user = securityService.getCurrentUser(request);
+        UserSettings userSettings = settingsService.getUserSettings(user.getUsername());
 
         Map<String, Object> map = new HashMap<>();
         ModelAndView result = new ModelAndView();
         result.addObject("model", map);
 
-        Map<PodcastChannel, List<PodcastEpisode>> channels = new LinkedHashMap<>();
-        Map<Integer, PodcastChannel> channelMap = new HashMap<>();
-        for (PodcastChannel channel : podcastService.getAllChannels()) {
-            channels.put(channel, podcastService.getEpisodes(channel.getId()));
-            channelMap.put(channel.getId(), channel);
-        }
-
-        map.put("user", securityService.getCurrentUser(request));
-        map.put("channels", channels);
-        map.put("channelMap", channelMap);
-        map.put("newestEpisodes", podcastService.getNewestEpisodes(10));
+        map.put("user", user);
+        map.put("viewAsList", userSettings.getViewAsList());
+        map.put("initialPaginationSize", userSettings.getPaginationSizePlaylist());
+        map.put("podcastIndexEnabled", userSettings.getPodcastIndexEnabled());
         return result;
     }
-
-
-
 }

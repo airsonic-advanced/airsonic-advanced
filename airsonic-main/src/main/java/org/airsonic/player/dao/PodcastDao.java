@@ -170,7 +170,7 @@ public class PodcastDao extends AbstractDao {
      */
     public List<PodcastEpisode> getNewestEpisodes(int count) {
         String sql = "select " + EPISODE_QUERY_COLUMNS +
-                     " from podcast_episode where status = ? and publish_date is not null" +
+                     " from podcast_episode where status = ? and publish_date is not null and media_file_id is not null" +
                      " order by publish_date desc, id limit ?";
         return query(sql, episodeRowMapper, PodcastStatus.COMPLETED.name(), count);
     }

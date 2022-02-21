@@ -60,12 +60,12 @@ Enter the following values into the form and submit.
 
 - SID – Any legal value except 244, ie. 242
 - Service Name – *Airsonic*
-- Endpoint URL – http://[AIRSONIC-OR-DOCKER-HOST-IP]:8080/ws/Sonos  (Ensure the 'Root host address' config item on the Sonos settings page in Airsonic matches the root of this URL)
-- Secure Endpoint URL – http://[AIRSONIC-OR-DOCKER-HOST-IP]:8080/ws/Sonos
+- Endpoint URL – http://[AIRSONIC-OR-DOCKER-HOST-IP]:[AIRSONIC-OR-DOCKER-HOST-PORT]/ws/Sonos  (Ensure the 'Root host address' config item on the Sonos settings page in Airsonic matches the root of this URL. The port may be 8080 for the default airsonic war or 4040 for the default docker container)
+- Secure Endpoint URL – http://[AIRSONIC-OR-DOCKER-HOST-IP]:[AIRSONIC-OR-DOCKER-HOST-PORT]/ws/Sonos
 - Polling Interval – 1200
 - Authentication - *Anonymous* or *Application Link*.  If you chose **Multi User** in Airsonic, then use *Application Link*.  If you chose **One User** in Airsonic, then use *Anonymous*.
-- Strings Table – Version: 11, URI: http://[AIRSONIC-OR-DOCKER-HOST-IP]:8080/sonos/strings.xml
-- Presentation Map – Version: 1, URI: http://[AIRSONIC-OR-DOCKER-HOST-IP]:8080/sonos/presentationMap.xml
+- Strings Table – Version: 11, URI: http://[AIRSONIC-OR-DOCKER-HOST-IP]:[AIRSONIC-OR-DOCKER-HOST-PORT]/sonos/strings.xml
+- Presentation Map – Version: 1, URI: http://[AIRSONIC-OR-DOCKER-HOST-IP]:[AIRSONIC-OR-DOCKER-HOST-PORT]/sonos/presentationMap.xml
 - Container Type – Music Service
 - Capabilities
   - Search

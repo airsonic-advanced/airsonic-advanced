@@ -139,10 +139,12 @@
 </table>
 <div class="tableSpacer"></div>
 <div>
-    <td><fmt:message key="podcastsettings.folder" /></td>
-    <td>
-      <form:select path="folderId" items="${command.folders}" cssStyle="width:20em"></form:select>
-    </td>
+    <fmt:message key="podcastsettings.folder" />
+    <form:select path="folderId" items="${command.folders}" cssStyle="width:20em"></form:select>
+</div>
+<div class="tableSpacer"></div>
+<div>
+    <span><fmt:message key="podcastsettings.podcastindexintegration" /></span>
 </div>
 <div class="tableSpacer"></div>
 <div>

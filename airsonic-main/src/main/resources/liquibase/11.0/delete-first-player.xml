@@ -1,0 +1,17 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="delete-first-player" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                select count(*) from player where id = 0
+            </sqlCheck>
+        </preConditions>
+        <delete tableName="player">
+            <where>id=0</where>
+        </delete>
+        <rollback>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -1,6 +1,7 @@
 package org.airsonic.player.domain;
 
 import java.time.Instant;
+import java.util.Objects;
 
 public class UserCredential {
     private String username;
@@ -123,18 +124,7 @@ public class UserCredential {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((comment == null) ? 0 : comment.hashCode());
-        result = prime * result + ((created == null) ? 0 : created.hashCode());
-        result = prime * result + ((credential == null) ? 0 : credential.hashCode());
-        result = prime * result + ((expiration == null) ? 0 : expiration.hashCode());
-        result = prime * result + ((app == null) ? 0 : app.hashCode());
-        result = prime * result + ((appUsername == null) ? 0 : appUsername.hashCode());
-        result = prime * result + ((encoder == null) ? 0 : encoder.hashCode());
-        result = prime * result + ((updated == null) ? 0 : updated.hashCode());
-        result = prime * result + ((username == null) ? 0 : username.hashCode());
-        return result;
+        return Objects.hash(comment, created, credential, expiration, app, appUsername, encoder, updated, username);
     }
 
     @Override
@@ -195,16 +185,32 @@ public class UserCredential {
     }
 
     public enum App {
-        AIRSONIC("Airsonic"), LASTFM("Last.fm"), LISTENBRAINZ("Listenbrainz");
+        AIRSONIC("Airsonic", false, true),
+        LASTFM("Last.fm", true, false),
+        LISTENBRAINZ("Listenbrainz", false, false),
+        PODCASTINDEX("Podcast Index", true, false);
 
-        private String name;
+        private final String name;
+        private final boolean usernameRequired;
+        private final boolean nonDecodableEncodersAllowed;
 
-        App(String name) {
+        private App(String name, boolean usernameRequired, boolean nonDecodableEncodersAllowed) {
             this.name = name;
+            this.usernameRequired = usernameRequired;
+            this.nonDecodableEncodersAllowed = nonDecodableEncodersAllowed;
         }
 
         public String getName() {
             return name;
         }
+
+        public boolean getUsernameRequired() {
+            return usernameRequired;
+        }
+
+        public boolean getNonDecodableEncodersAllowed() {
+            return nonDecodableEncodersAllowed;
+        }
+
     }
 }

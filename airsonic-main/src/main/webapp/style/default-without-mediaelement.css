@@ -354,8 +354,12 @@ th.truncate, td.truncate {
 }
 
 th.rightalign, td.rightalign {
-    text-align:right;
+    text-align: right;
     padding-right: 20px;
+}
+
+th.centeralign, td.centeralign {
+    text-align: center;
 }
 
 a {

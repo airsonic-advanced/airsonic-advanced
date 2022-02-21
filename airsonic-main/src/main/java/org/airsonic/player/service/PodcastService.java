@@ -55,6 +55,7 @@ import org.jdom2.Namespace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -80,6 +81,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.airsonic.player.util.XMLUtil.createSAXBuilder;
@@ -119,6 +121,8 @@ public class PodcastService {
     private VersionService versionService;
     @Autowired
     private TaskSchedulingService taskService;
+    @Autowired
+    private SimpMessagingTemplate brokerTemplate;
 
     public PodcastService() {
         refreshExecutor = Executors.newFixedThreadPool(5, Util.getDaemonThreadfactory("podcast-refresh"));
@@ -145,7 +149,7 @@ public class PodcastService {
                 .filter(c -> c.getStatus() == PodcastStatus.DOWNLOADING)
                 .forEach(c -> {
                     c.setStatus(PodcastStatus.COMPLETED);
-                    podcastDao.updateChannel(c);
+                    updateChannel(c);
                     LOG.info("Reset channel status '{}' since refresh was interrupted.", c.getTitle());
                 });
             schedule();
@@ -233,6 +237,9 @@ public class PodcastService {
     }
 
     public void createChannel(String url) {
+        if (StringUtils.isBlank(url)) {
+            return;
+        }
         PodcastChannel channel = new PodcastChannel(sanitizeUrl(url, false));
         int channelId = podcastDao.createChannel(channel);
 
@@ -301,11 +308,7 @@ public class PodcastService {
      */
     public List<PodcastEpisode> getNewestEpisodes(int count) {
         return podcastDao.getNewestEpisodes(count).stream().filter(episode -> {
-            Integer mediaFileId = episode.getMediaFileId();
-            if (mediaFileId == null) {
-                return false;
-            }
-            MediaFile mediaFile = mediaFileService.getMediaFile(mediaFileId);
+            MediaFile mediaFile = mediaFileService.getMediaFile(episode.getMediaFileId());
             return mediaFile != null && mediaFile.isPresent();
         }).collect(Collectors.toList());
     }
@@ -344,6 +347,10 @@ public class PodcastService {
         refreshChannels(getAllChannels(), downloadEpisodes);
     }
 
+    public void refreshChannelIds(final List<Integer> channelIds, final boolean downloadEpisodes) {
+        refreshChannels(channelIds.stream().map(this::getChannel).collect(toList()), downloadEpisodes);
+    }
+
     private void refreshChannels(final List<PodcastChannel> channels, final boolean downloadEpisodes) {
         for (final PodcastChannel channel : channels) {
             Runnable task = () -> doRefreshChannel(channel, downloadEpisodes);
@@ -358,7 +365,7 @@ public class PodcastService {
         }
         channel.setStatus(PodcastStatus.DOWNLOADING);
         channel.setErrorMessage(null);
-        podcastDao.updateChannel(channel);
+        updateChannel(channel);
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(2 * 60 * 1000) // 2 minutes
                 .setSocketTimeout(10 * 60 * 1000) // 10 minutes
@@ -379,7 +386,7 @@ public class PodcastService {
             channel.setErrorMessage(null);
             MediaFile mediaFile = createChannelDirectory(channel);
             channel.setMediaFileId(mediaFile.getId());
-            podcastDao.updateChannel(channel);
+            updateChannel(channel);
 
             downloadImage(channel);
             refreshEpisodes(channel, channelElement.getChildren("item"));
@@ -387,7 +394,7 @@ public class PodcastService {
             LOG.warn("Failed to get/parse RSS file for Podcast channel {}", channel.getUrl(), x);
             channel.setStatus(PodcastStatus.ERROR);
             channel.setErrorMessage(getErrorMessage(x));
-            podcastDao.updateChannel(channel);
+            updateChannel(channel);
             return;
         }
 
@@ -399,7 +406,12 @@ public class PodcastService {
         }
 
         channel.setStatus(PodcastStatus.COMPLETED);
+        updateChannel(channel);
+    }
+
+    private void updateChannel(PodcastChannel channel) {
         podcastDao.updateChannel(channel);
+        runAsync(() -> brokerTemplate.convertAndSend("/topic/podcasts/updated", channel.getId()));
     }
 
     private void downloadImage(PodcastChannel channel) {
@@ -809,6 +821,7 @@ public class PodcastService {
         }
 
         podcastDao.deleteChannel(channelId);
+        runAsync(() -> brokerTemplate.convertAndSend("/topic/podcasts/deleted", channelId));
     }
 
     /**

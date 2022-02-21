@@ -196,24 +196,6 @@ public class CredentialsManagementCommand {
         }
     }
 
-    public static class AppCredSettings {
-        private final boolean usernameRequired;
-        private final boolean nonDecodableEncodersAllowed;
-
-        public AppCredSettings(boolean usernameRequired, boolean nonDecodableEncodersAllowed) {
-            this.usernameRequired = usernameRequired;
-            this.nonDecodableEncodersAllowed = nonDecodableEncodersAllowed;
-        }
-
-        public boolean getUsernameRequired() {
-            return usernameRequired;
-        }
-
-        public boolean getNonDecodableEncodersAllowed() {
-            return nonDecodableEncodersAllowed;
-        }
-    }
-
     public static class AdminControls {
         private boolean legacyCredsPresent;
         private boolean openCredsPresent;

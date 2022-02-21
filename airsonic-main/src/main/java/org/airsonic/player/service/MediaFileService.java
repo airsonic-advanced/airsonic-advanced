@@ -117,6 +117,10 @@ public class MediaFileService {
         }
     }
 
+    public MediaFile getMediaFile(String relativePath, Integer folderId) {
+        return getMediaFile(relativePath, mediaFolderService.getMusicFolderById(folderId));
+    }
+
     public MediaFile getMediaFile(String relativePath, MusicFolder folder) {
         return getMediaFile(Paths.get(relativePath), folder);
     }
@@ -155,6 +159,10 @@ public class MediaFileService {
         }
 
         return checkLastModified(mediaFile, mediaFolderService.getMusicFolderById(mediaFile.getFolderId()), settingsService.isFastCacheEnabled());
+    }
+
+    public List<MediaFile> getMediaFilesByRelativePath(Path relativePath) {
+        return mediaFileDao.getMediaFilesByRelativePath(relativePath.toString());
     }
 
     public MediaFile getParentOf(MediaFile mediaFile) {
