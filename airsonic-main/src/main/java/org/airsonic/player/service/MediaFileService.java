@@ -36,6 +36,7 @@ import org.airsonic.player.service.metadata.MetaDataParserFactory;
 import org.airsonic.player.util.FileUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.digitalmediaserver.cuelib.CueParser;
 import org.digitalmediaserver.cuelib.CueSheet;
 import org.digitalmediaserver.cuelib.Position;
@@ -163,10 +164,15 @@ public class MediaFileService {
         return getMediaFile(mediaFile.getParentPath(), mediaFolderService.getMusicFolderById(mediaFile.getFolderId()));
     }
 
-    private MediaFile checkLastModified(MediaFile mediaFile, MusicFolder folder, boolean minimizeDiskAccess) {
-        if (minimizeDiskAccess || (mediaFile.getVersion() >= MediaFileDao.VERSION
+    private boolean needsUpdate(MediaFile mediaFile, MusicFolder folder, boolean minimizeDiskAccess) {
+        return !(minimizeDiskAccess || (mediaFile.getVersion() >= MediaFileDao.VERSION
                 && !settingsService.getFullScan()
-                && mediaFile.getChanged().compareTo(FileUtil.lastModified(mediaFile.getFullPath(folder.getPath()))) > -1)) {
+                && mediaFile.getChanged().compareTo(FileUtil.lastModified(mediaFile.getFullPath(folder.getPath()))) > -1
+                && (mediaFile.hasIndex() ? mediaFile.getChanged().compareTo(FileUtil.lastModified(mediaFile.getFullIndexPath(folder.getPath()))) > -1 : true)));
+    }
+
+    private MediaFile checkLastModified(MediaFile mediaFile, MusicFolder folder, boolean minimizeDiskAccess) {
+        if (!needsUpdate(mediaFile, folder, minimizeDiskAccess)) {
             LOG.debug("Detected unmodified file (id {}, path {} in folder {} ({}))", mediaFile.getId(), mediaFile.getPath(), folder.getId(), folder.getName());
             return mediaFile;
         }
@@ -185,7 +191,7 @@ public class MediaFileService {
      * @return All children media files which pass this::showMediaFile
      */
     public List<MediaFile> getVisibleChildrenOf(MediaFile parent, boolean includeDirectories, boolean sort) {
-        return getChildrenOf(parent, true, includeDirectories, sort, settingsService.isFastCacheEnabled()).stream()
+        return getChildrenOf(parent, true, includeDirectories, sort).stream()
                 .filter(this::showMediaFile)
                 .collect(Collectors.toList());
     }
@@ -405,8 +411,8 @@ public class MediaFileService {
             return null;
         }
 
-        // do not get (non-existing) children for indexed tracks to avoid map key clashes
-        Map<String, MediaFile> storedChildrenMap = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), false, true).parallelStream().collect(Collectors.toConcurrentMap(i -> i.getPath(), i -> i));
+        Map<Pair<String, Double>, MediaFile> storedChildrenMap = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), false).parallelStream()
+            .collect(Collectors.toConcurrentMap(i -> Pair.of(i.getPath(), i.getStartPosition()), i -> i));
         MusicFolder folder = mediaFolderService.getMusicFolderById(parent.getFolderId());
 
         try (Stream<Path> children = Files.list(parent.getFullPath(folder.getPath()))) {
@@ -415,8 +421,7 @@ public class MediaFileService {
                     .filter(x -> securityService.getMusicFolderForFile(x, true, true).getId().equals(parent.getFolderId()))
                     .map(x -> folder.getPath().relativize(x))
                     .map(x -> {
-                        List<MediaFile> tracks = new ArrayList<>();
-                        MediaFile media = storedChildrenMap.remove(x.toString());
+                        MediaFile media = storedChildrenMap.remove(Pair.of(x.toString(), MediaFile.NOT_INDEXED));
                         if (media == null) {
                             media = createMediaFile(x, folder, null);
                             // Add children that are not already stored.
@@ -425,22 +430,23 @@ public class MediaFileService {
                             media = checkLastModified(media, folder, false); // has to be false, only time it's called
                         }
 
-                        tracks.add(media);
-
+                        return media;
+                    })
+                    .map(media -> {
                         if (media.hasIndex()) {
-                            List<MediaFile> cueTracks = createIndexedTracks(media, folder);
-                            cueTracks.forEach(cueTrack -> {
-                                updateMediaFile(cueTrack);
-                                tracks.add(cueTrack);
-                            });
+                            boolean update = needsUpdate(media, folder, settingsService.isFastCacheEnabled());
+                            List<MediaFile> tracks = createIndexedTracks(media, folder, storedChildrenMap, update);
+                            tracks.add(media);
+                            return tracks;
+                        } else {
+                            return Collections.singletonList(media);
                         }
-                        return tracks;
                     })
                     .flatMap(List::stream)
                     .collect(Collectors.toList());
 
             // Delete children that no longer exist on disk.
-            mediaFileDao.deleteMediaFiles(storedChildrenMap.keySet(), parent.getFolderId());
+            mediaFileDao.deleteMediaFiles(storedChildrenMap.keySet().stream().map(Pair::getKey).collect(Collectors.toList()), parent.getFolderId());
 
             // Update timestamp in parent.
             parent.setChildrenLastUpdated(parent.getChanged());
@@ -590,7 +596,8 @@ public class MediaFileService {
                         }
 
                         // Look for cover art.
-                        Path coverArt = findCoverArt(children);
+                        // Path coverArt = findCoverArt(children);
+                        Path coverArt = null;
                         if (coverArt != null) {
                             // placeholder to be persisted later
                             mediaFile.setArt(new CoverArt(-1, EntityType.MEDIA_FILE, folder.getPath().relativize(coverArt).toString(), folder.getId(), false));
@@ -613,10 +620,10 @@ public class MediaFileService {
         return mediaFile;
     }
 
-    private List<MediaFile> createIndexedTracks(MediaFile media, MusicFolder folder) {
+    private List<MediaFile> createIndexedTracks(MediaFile base, MusicFolder folder, Map<Pair<String, Double>, MediaFile> storedChildrenMap, boolean update) {
         try {
             List<MediaFile> children = new ArrayList<>();
-            Path audioFile = media.getFullPath(folder.getPath());
+            Path audioFile = base.getFullPath(folder.getPath());
             MetaDataParser parser = metaDataParserFactory.getParser(audioFile);
             MetaData metaData = null;
             if (parser != null) {
@@ -628,44 +635,23 @@ public class MediaFileService {
                 wholeFileLength = (metaData.getDuration() != null) ? metaData.getDuration() : 0.0;
             }
 
-            CueSheet cueSheet = getCueSheet(media, folder);
+            CueSheet cueSheet = getCueSheet(base, folder);
             if (cueSheet != null) {
+                String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(audioFile.toString())));
+                String basePath = base.getPath();
+                String parentPath = base.getParentPath();
+                String performer = cueSheet.getPerformer();
+                String albumName = cueSheet.getTitle();
+                MediaFile.MediaType mediaType = getMediaType(base, folder);
+                Instant lastModified = FileUtil.lastModified(audioFile);
+                Instant childrenLastUpdated = Instant.now().plusSeconds(100 * 365 * 24 * 60 * 60); // now + 100 years, tracks do not have children
+                Integer folderId = base.getFolderId();
+
                 for (int i = 0; i < cueSheet.getAllTrackData().size(); i++) {
                     TrackData trackData = cueSheet.getAllTrackData().get(i);
-                    MediaFile mediaFile = new MediaFile();
-                    mediaFile.setPath(media.getPath().toString());
-                    mediaFile.setAlbumArtist(cueSheet.getPerformer());
-                    mediaFile.setAlbumName(cueSheet.getTitle());
-                    mediaFile.setTitle(trackData.getTitle());
-                    mediaFile.setArtist(trackData.getPerformer());
-                    mediaFile.setParentPath(media.getParentPath());
-                    Instant lastModified = FileUtil.lastModified(audioFile);
-                    mediaFile.setFolderId(media.getFolderId());
-                    mediaFile.setChanged(lastModified);
-                    mediaFile.setLastScanned(Instant.now());
-                    mediaFile.setChildrenLastUpdated(Instant.ofEpochMilli(1)); //distant past
-                    mediaFile.setCreated(lastModified);
-                    mediaFile.setPresent(true);
-                    mediaFile.setTrackNumber(trackData.getNumber());
-
-                    if (metaData != null) {
-                        mediaFile.setDiscNumber(metaData.getDiscNumber());
-                        mediaFile.setGenre(metaData.getGenre());
-                        mediaFile.setYear(metaData.getYear());
-                        mediaFile.setBitRate(metaData.getBitRate());
-                        mediaFile.setVariableBitRate(metaData.getVariableBitRate());
-                        mediaFile.setHeight(metaData.getHeight());
-                        mediaFile.setWidth(metaData.getWidth());
-                    }
-
-                    String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(audioFile.toString())));
-                    mediaFile.setFormat(format);
-
                     Position currentPosition = trackData.getIndices().get(0).getPosition();
                     // convert CUE timestamp (minutes:seconds:frames, 75 frames/second) to fractional seconds
                     double currentStart = currentPosition.getMinutes() * 60 + currentPosition.getSeconds() + (currentPosition.getFrames() / 75);
-                    mediaFile.setStartPosition(currentStart);
-
                     double nextStart = 0.0;
                     if (cueSheet.getAllTrackData().size() - 1 != i) {
                         Position nextPosition = cueSheet.getAllTrackData().get(i + 1).getIndices().get(0).getPosition();
@@ -674,15 +660,54 @@ public class MediaFileService {
                         nextStart = wholeFileLength;
                     }
 
-                    mediaFile.setDuration(nextStart - currentStart);
-                    mediaFile.setFileSize((long) (mediaFile.getDuration() / wholeFileLength * wholeFileSize)); //approximate
-                    MediaFile existingFile = mediaFileDao.getMediaFile(mediaFile.getPath(), folder.getId(), currentStart);
-                    mediaFile.setPlayCount(existingFile == null ? 0 : existingFile.getPlayCount());
-                    mediaFile.setLastPlayed(existingFile == null ? null : existingFile.getLastPlayed());
-                    mediaFile.setComment(existingFile == null ? null : existingFile.getComment());
-                    mediaFile.setMediaType(getMediaType(mediaFile, folder));
+                    double duration = nextStart - currentStart;
 
-                    children.add(mediaFile);
+                    MediaFile existingFile = storedChildrenMap.remove(Pair.of(basePath, currentStart));
+                    // check whether track has same duration, cue file may have been edited to split tracks
+                    if ((existingFile != null) && (existingFile.getDuration() != duration)) {
+                        storedChildrenMap.put(Pair.of(basePath, currentStart), existingFile);
+                        existingFile = null;
+                    }
+                    MediaFile track = existingFile;
+                    if (update || (existingFile == null)) {
+                        track = (existingFile != null) ? existingFile : new MediaFile();
+                        track.setPath(basePath);
+                        track.setAlbumArtist(performer);
+                        track.setAlbumName(albumName);
+                        track.setTitle(trackData.getTitle());
+                        track.setArtist(trackData.getPerformer());
+                        track.setParentPath(parentPath);
+                        track.setFolderId(folderId);
+                        track.setChanged(lastModified);
+                        track.setLastScanned(Instant.now());
+                        track.setChildrenLastUpdated(childrenLastUpdated);
+                        track.setCreated(lastModified);
+                        track.setPresent(true);
+                        track.setTrackNumber(trackData.getNumber());
+
+                        if (metaData != null) {
+                            track.setDiscNumber(metaData.getDiscNumber());
+                            track.setGenre(metaData.getGenre());
+                            track.setYear(metaData.getYear());
+                            track.setBitRate(metaData.getBitRate());
+                            track.setVariableBitRate(metaData.getVariableBitRate());
+                            track.setHeight(metaData.getHeight());
+                            track.setWidth(metaData.getWidth());
+                        }
+
+                        track.setFormat(format);
+                        track.setStartPosition(currentStart);
+                        track.setDuration(duration);
+                        track.setFileSize((long) (duration / wholeFileLength * wholeFileSize)); //approximate
+                        track.setPlayCount((existingFile == null) ? 0 : existingFile.getPlayCount());
+                        track.setLastPlayed((existingFile == null) ? null : existingFile.getLastPlayed());
+                        track.setComment((existingFile == null) ? null : existingFile.getComment());
+                        track.setMediaType(mediaType);
+
+                        updateMediaFile(track);
+                    }
+
+                    children.add(track);
                 }
             }
             return children;

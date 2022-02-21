@@ -68,13 +68,19 @@ public final class FileUtil {
     }
 
     public static boolean delete(Path fileOrFolder) {
+        return delete(fileOrFolder, true);
+    }
+
+    public static boolean delete(Path fileOrFolder, boolean log) {
         try (Stream<Path> walk = Files.walk(fileOrFolder)) {
             walk.sorted(Comparator.reverseOrder())
                 .forEach(uncheckConsumer(Files::deleteIfExists));
 
             return true;
         } catch (NoSuchFileException e) {
-            LOG.debug("Could not delete file/folder {}", fileOrFolder, e);
+            if (log) {
+                LOG.debug("Could not delete file/folder {}", fileOrFolder, e);
+            }
             return false;
         } catch (Exception e) {
             LOG.warn("Could not delete file/folder {}", fileOrFolder, e);

@@ -266,8 +266,7 @@ public class MediaFileDao extends AbstractDao {
 
         if (file.getId() == null) {
             try {
-                Integer id;
-                id = queryForInt("select id from media_file where path=? and folder_id=? and start_position=?",
+                Integer id = queryForInt("select id from media_file where path=? and folder_id=? and start_position=?",
                                     null, file.getPath(), file.getFolderId(), file.getStartPosition());
                 file.setId(id);
             } catch (Exception e) {
@@ -487,7 +486,7 @@ public class MediaFileDao extends AbstractDao {
         args.put("count", count);
         args.put("offset", offset);
         return namedQuery("select " + QUERY_COLUMNS + " from media_file where type in (:types) and artist = :artist " +
-                          "and present limit :count offset :offset",
+                          "and present order by id limit :count offset :offset",
                           rowMapper, args);
     }
 
