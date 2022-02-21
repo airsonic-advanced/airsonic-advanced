@@ -26,6 +26,7 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.RandomSearchCriteria;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -63,8 +65,13 @@ public class MediaFileDao extends AbstractDao {
     private final MusicFileInfoMapper musicFileInfoRowMapper = new MusicFileInfoMapper();
     private final GenreMapper genreRowMapper = new GenreMapper();
 
-    public MediaFile getMediaFile(String path, int folderId, Double startPosition) {
-        return queryOne("select " + QUERY_COLUMNS + " from media_file where path=? and folder_id=? and start_position=?", rowMapper, path, folderId, startPosition);
+    public List<MediaFile> getMediaFiles(String path, int folderId, BigDecimal startPosition) {
+        return query("select " + QUERY_COLUMNS + " from media_file where path=? and folder_id=?" + (startPosition != null ? " and start_position=?" : ""), rowMapper, path, folderId, startPosition);
+    }
+
+    public MediaFile getMediaFile(String path, int folderId, BigDecimal startPosition) {
+        var mfs = getMediaFiles(path, folderId, startPosition);
+        return mfs.size() == 0 ? null : mfs.get(0);
     }
 
     public MediaFile getMediaFile(String path, int folderId) {
@@ -75,6 +82,10 @@ public class MediaFileDao extends AbstractDao {
         return queryOne("select " + QUERY_COLUMNS + " from media_file where id=?", rowMapper, id);
     }
 
+    public List<MediaFile> getPartialMatchesByPath(String relativePartialPath, int folderId) {
+        return query("select " + QUERY_COLUMNS + " from media_file where path like ? and folder_id=?", rowMapper, relativePartialPath + "%", folderId);
+    }
+
     /**
      * Returns the media file that are direct children of the given path.
      *
@@ -82,21 +93,24 @@ public class MediaFileDao extends AbstractDao {
      * @return The list of children.
      */
     public List<MediaFile> getChildrenOf(String path, int folderId, boolean onlyPresent) {
-        return getChildrenOf(path, folderId, onlyPresent, false);
+        return getChildrenOf(path, folderId, onlyPresent, null);
     }
 
     /**
      * Returns the media file that are direct children of the given path.
      *
-     * @param path The path.
-     * @param folderId root folder
-     * @param onlyPresent only return files which are marked as being present
-     * @param noIndexedTracks do not return indexed tracks
+     * @param path          The path.
+     * @param folderId      root folder
+     * @param onlyPresent   only return files which are marked as being present
+     * @param indexedTracks If true: only indexed tracks, if false: only nonindexed
+     *                      tracks, if null: all tracks
      * @return The list of children.
      */
-    public List<MediaFile> getChildrenOf(String path, int folderId, boolean onlyPresent, boolean noIndexedTracks) {
+    public List<MediaFile> getChildrenOf(String path, int folderId, boolean onlyPresent, Boolean indexedTracks) {
         return query("select " + QUERY_COLUMNS + " from media_file where parent_path=? and folder_id=?" +
-                        (onlyPresent ? " and present" : "") + (noIndexedTracks ? " and start_position < 0" : ""), rowMapper, path, folderId);
+                (onlyPresent ? " and present" : "") +
+                (indexedTracks == null ? "" : (" and start_position " + (indexedTracks ? " >= 0" : " < 0"))),
+                rowMapper, path, folderId);
     }
 
     public List<MediaFile> getFilesInPlaylist(int playlistId) {
@@ -144,8 +158,6 @@ public class MediaFileDao extends AbstractDao {
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createOrUpdateMediaFile(MediaFile file, Consumer<MediaFile> preInsertionCallback) {
-        LOG.trace("Creating/Updating new media file (id {}, path {}, fid {}, spos {}, dur {}, ip {}, type {})",
-                    file.getId(), file.getPath(), file.getFolderId(), file.getStartPosition(), file.getDuration(), file.getIndexPath(), file.getMediaType().name());
         String sql = null;
         if (file.getId() != null) {
             sql = "" +
@@ -266,8 +278,7 @@ public class MediaFileDao extends AbstractDao {
 
         if (file.getId() == null) {
             try {
-                Integer id;
-                id = queryForInt("select id from media_file where path=? and folder_id=? and start_position=?",
+                Integer id = queryForInt("select id from media_file where path=? and folder_id=? and start_position=?",
                                     null, file.getPath(), file.getFolderId(), file.getStartPosition());
                 file.setId(id);
             } catch (Exception e) {
@@ -293,6 +304,13 @@ public class MediaFileDao extends AbstractDao {
 
     public void deleteMediaFiles(Integer folderId) {
         update("update media_file set present=false, children_last_updated=? where folder_id=?", Instant.ofEpochMilli(1), folderId);
+    }
+
+    public void deleteMediaFilesWithIndexedTracks(Collection<Pair<String, BigDecimal>> paths, Integer folderId) {
+        if (!paths.isEmpty()) {
+            batchedUpdate("update media_file set present=false, children_last_updated=? where path=? and start_position=? and folder_id=?",
+                    paths.parallelStream().map(p -> new Object[] { Instant.ofEpochMilli(1), p.getKey(), p.getValue(), folderId }).collect(Collectors.toList()));
+        }
     }
 
     public List<Genre> getGenres(boolean sortByAlbum) {
@@ -487,7 +505,7 @@ public class MediaFileDao extends AbstractDao {
         args.put("count", count);
         args.put("offset", offset);
         return namedQuery("select " + QUERY_COLUMNS + " from media_file where type in (:types) and artist = :artist " +
-                          "and present limit :count offset :offset",
+                          "and present order by id limit :count offset :offset",
                           rowMapper, args);
     }
 
@@ -797,8 +815,9 @@ public class MediaFileDao extends AbstractDao {
     }
 
     public List<Integer> getSongExpungeCandidates() {
-        return queryForInts("select id from media_file where media_file.type in (?) and not present",
-                String.join(",", MediaFile.MediaType.playableTypes()));
+        Map<String, Object> args = new HashMap<>();
+        args.put("types", MediaFile.MediaType.playableTypes());
+        return namedQueryForIntegers("select id from media_file where media_file.type in (:types) and not present", args);
     }
 
     public void expunge() {

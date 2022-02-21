@@ -9,7 +9,7 @@
             </not>
         </preConditions>
         <addColumn tableName="media_file">
-            <column name="start_position" afterColumn="type" type="double" defaultValueNumeric="-1.0">
+            <column name="start_position" type="decimal" defaultValueNumeric="-1">
                 <constraints nullable="false" />
             </column>
         </addColumn>
@@ -24,13 +24,13 @@
         </rollback>
     </changeSet>
     <changeSet id="adduniqueindexstartposition_001" author="yetangitu">
-        <createIndex tableName="media_file" indexName="idx_media_file_start_position" unique="true">
+        <createIndex tableName="media_file" indexName="idx_media_file_folder_path_start" unique="true">
             <column name="folder_id"/>
             <column name="path"/>
             <column name="start_position"/>
         </createIndex>
         <rollback>
-            <dropIndex tableName="media_file" indexName="idx_media_file_start_position" />
+            <dropIndex tableName="media_file" indexName="idx_media_file_folder_path_start" />
         </rollback>
     </changeSet>
     <changeSet id="indexpath_001" author="yetangitu">
@@ -40,7 +40,7 @@
             </not>
         </preConditions>
         <addColumn tableName="media_file">
-            <column name="index_path" afterColumn="parent_path" type="${varchar_type}" />
+            <column name="index_path" type="${varchar_type}" />
         </addColumn>
         <rollback>
             <dropColumn tableName="media_file" columnName="index_path"></dropColumn>

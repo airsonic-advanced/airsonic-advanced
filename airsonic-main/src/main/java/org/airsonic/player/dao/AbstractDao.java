@@ -202,6 +202,10 @@ public class AbstractDao {
         return namedQueryForTypes(sql, String.class, args);
     }
 
+    protected List<Integer> namedQueryForIntegers(String sql, Map<String, Object> args) {
+        return namedQueryForTypes(sql, Integer.class, args);
+    }
+
     public Integer queryForInt(String sql, Integer defaultValue, Object... args) {
         return queryForTypes(sql, Integer.class, args).stream().filter(Objects::nonNull).findFirst().orElse(defaultValue);
     }

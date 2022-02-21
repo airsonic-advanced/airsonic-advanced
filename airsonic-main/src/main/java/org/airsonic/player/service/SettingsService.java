@@ -75,6 +75,7 @@ public class SettingsService {
     private static final String KEY_PLAYLIST_FOLDER = "PlaylistFolder";
     private static final String KEY_MUSIC_FILE_TYPES = "MusicFileTypes";
     private static final String KEY_VIDEO_FILE_TYPES = "VideoFileTypes";
+    private static final String KEY_INDEX_FILE_TYPES = "IndexFileTypes";
     private static final String KEY_COVER_ART_FILE_TYPES = "CoverArtFileTypes2";
     private static final String KEY_COVER_ART_SOURCE = "CoverArtSource";
     private static final String KEY_COVER_ART_CONCURRENCY = "CoverArtConcurrency";
@@ -173,6 +174,7 @@ public class SettingsService {
     private static final String DEFAULT_PLAYLIST_FOLDER = Util.getDefaultPlaylistFolder();
     private static final String DEFAULT_MUSIC_FILE_TYPES = "mp3 ogg oga aac m4a m4b flac wav wma aif aiff ape mpc shn mka opus alm 669 mdl far xm mod fnk imf it liq wow mtm ptm rtm stm s3m ult dmf dbm med okt emod sfx m15 mtn amf gdm stx gmc psm j2b umx amd rad hsc flx gtk mgt mtp wv";
     private static final String DEFAULT_VIDEO_FILE_TYPES = "flv avi mpg mpeg mp4 m4v mkv mov wmv ogv divx m2ts webm";
+    private static final String DEFAULT_INDEX_FILE_TYPES = "flac cue";
     private static final String DEFAULT_COVER_ART_FILE_TYPES = "cover.jpg cover.png cover.gif folder.jpg jpg jpeg gif png";
     private static final String DEFAULT_COVER_ART_SOURCE = CoverArtSource.FILETAG.name();
     private static final int DEFAULT_COVER_ART_CONCURRENCY = 4;
@@ -276,6 +278,7 @@ public class SettingsService {
     private Set<String> cachedCoverArtFileTypes;
     private Set<String> cachedMusicFileTypes;
     private Set<String> cachedVideoFileTypes;
+    private Set<String> cachedIndexFileTypes;
     private Set<String> cachedPlayableFileTypes;
     private RateLimiter downloadRateLimiter;
     private RateLimiter uploadRateLimiter;
@@ -631,6 +634,7 @@ public class SettingsService {
     }
 
     public void setMusicFileTypes(String fileTypes) {
+        cachedMusicFileTypes = null;
         setProperty(KEY_MUSIC_FILE_TYPES, fileTypes);
     }
 
@@ -646,6 +650,7 @@ public class SettingsService {
     }
 
     public void setVideoFileTypes(String fileTypes) {
+        cachedVideoFileTypes = null;
         setProperty(KEY_VIDEO_FILE_TYPES, fileTypes);
     }
 
@@ -656,13 +661,29 @@ public class SettingsService {
         return cachedVideoFileTypes;
     }
 
+    public String getIndexFileTypes() {
+        return getProperty(KEY_INDEX_FILE_TYPES, DEFAULT_INDEX_FILE_TYPES);
+    }
+
+    public void setIndexFileTypes(String fileTypes) {
+        cachedIndexFileTypes = null;
+        setProperty(KEY_INDEX_FILE_TYPES, fileTypes);
+    }
+
+    public Set<String> getIndexFileTypesSet() {
+        if (cachedIndexFileTypes == null) {
+            cachedIndexFileTypes = splitLowerString(getIndexFileTypes(), " ");
+        }
+        return cachedIndexFileTypes;
+    }
+
     public Set<String> getPlayableFileTypesSet() {
         // make sure to regenerate cached result if either KEY_VIDEO_FILE_TYPES or KEY_MUSIC_FILE_TYPES
         // has been changed
         if (cachedPlayableFileTypes == null
             || cachedMusicFileTypes == null
             || cachedVideoFileTypes == null) {
-            cachedPlayableFileTypes = splitLowerString(getMusicFileTypes().join(" ", getVideoFileTypes()), " ");
+            cachedPlayableFileTypes = splitLowerString(StringUtils.join(getMusicFileTypes(), " ", getVideoFileTypes()), " ");
         }
         return cachedPlayableFileTypes;
     }
@@ -672,6 +693,7 @@ public class SettingsService {
     }
 
     public void setCoverArtFileTypes(String fileTypes) {
+        cachedCoverArtFileTypes = null;
         setProperty(KEY_COVER_ART_FILE_TYPES, fileTypes);
     }
 

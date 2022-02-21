@@ -21,6 +21,7 @@ package org.airsonic.player.domain;
 
 import org.apache.commons.io.FilenameUtils;
 
+import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -42,7 +43,7 @@ public class MediaFile {
     private String path;
     private Integer folderId;
     private MediaType mediaType;
-    private Double startPosition = NOT_INDEXED; // i.e. not an indexed track
+    private BigDecimal startPosition = NOT_INDEXED; // i.e. not an indexed track
     private String format;
     private String title;
     private String albumName;
@@ -73,7 +74,8 @@ public class MediaFile {
     private String musicBrainzReleaseId;
     private String musicBrainzRecordingId;
 
-    public MediaFile(Integer id, String path, Integer folderId, MediaType mediaType, Double startPosition, String format, String title,
+    public MediaFile(Integer id, String path, Integer folderId, MediaType mediaType, BigDecimal startPosition,
+            String format, String title,
                      String albumName, String artist, String albumArtist, Integer discNumber, Integer trackNumber, Integer year, String genre, Integer bitRate,
                      boolean variableBitRate, Double duration, Long fileSize, Integer width, Integer height, String parentPath, String indexPath, int playCount,
                      Instant lastPlayed, String comment, Instant created, Instant changed, Instant lastScanned, Instant childrenLastUpdated, boolean present,
@@ -172,11 +174,11 @@ public class MediaFile {
         this.mediaType = mediaType;
     }
 
-    public Double getStartPosition() {
+    public BigDecimal getStartPosition() {
         return startPosition;
     }
 
-    public void setStartPosition(Double startPosition) {
+    public void setStartPosition(BigDecimal startPosition) {
         this.startPosition = startPosition;
     }
 
@@ -193,7 +195,7 @@ public class MediaFile {
     }
 
     public boolean isIndexedTrack() {
-        return startPosition >= 0.0;
+        return startPosition.compareTo(BigDecimal.ZERO) >= 0;
     }
 
     public String getFormat() {
@@ -492,7 +494,7 @@ public class MediaFile {
         return from -> from.getId();
     }
 
-    public static final double NOT_INDEXED = -1.0;
+    public static final BigDecimal NOT_INDEXED = BigDecimal.valueOf(-1);
 
     public static enum MediaType {
         MUSIC,
@@ -502,8 +504,8 @@ public class MediaFile {
         DIRECTORY,
         ALBUM;
 
-        private static final List<String> AUDIO_TYPES = Arrays.asList(MUSIC.toString(),AUDIOBOOK.toString(),PODCAST.toString());
-        private static final List<String> PLAYABLE_TYPES = Arrays.asList(MUSIC.toString(),AUDIOBOOK.toString(),PODCAST.toString(),VIDEO.toString());
+        private static final List<String> AUDIO_TYPES = Arrays.asList(MUSIC.toString(), AUDIOBOOK.toString(), PODCAST.toString());
+        private static final List<String> PLAYABLE_TYPES = Arrays.asList(MUSIC.toString(), AUDIOBOOK.toString(), PODCAST.toString(), VIDEO.toString());
 
         public static List<String> audioTypes() {
             return AUDIO_TYPES;
