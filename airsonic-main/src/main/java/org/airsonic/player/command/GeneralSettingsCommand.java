@@ -33,6 +33,7 @@ public class GeneralSettingsCommand {
     private String playlistFolder;
     private String musicFileTypes;
     private String videoFileTypes;
+    private String indexFileTypes;
     private String coverArtFileTypes;
     private CoverArtSource coverArtSource;
     private Integer coverArtQuality;
@@ -75,6 +76,14 @@ public class GeneralSettingsCommand {
 
     public void setVideoFileTypes(String videoFileTypes) {
         this.videoFileTypes = videoFileTypes;
+    }
+
+    public String getIndexFileTypes() {
+        return indexFileTypes;
+    }
+
+    public void setIndexFileTypes(String indexFileTypes) {
+        this.indexFileTypes = indexFileTypes;
     }
 
     public String getCoverArtFileTypes() {

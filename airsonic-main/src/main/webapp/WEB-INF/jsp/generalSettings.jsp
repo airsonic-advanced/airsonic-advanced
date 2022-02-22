@@ -39,6 +39,14 @@
         </tr>
 
         <tr>
+            <td><fmt:message key="generalsettings.indexmask"/></td>
+            <td>
+                <form:input path="indexFileTypes" size="70"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="indexmask"/></c:import>
+            </td>
+        </tr>
+
+        <tr>
             <td><fmt:message key="generalsettings.coverartmask"/></td>
             <td>
                 <form:input path="coverArtFileTypes" size="70"/>
