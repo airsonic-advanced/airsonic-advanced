@@ -66,7 +66,11 @@ public class MediaFileDao extends AbstractDao {
     private final GenreMapper genreRowMapper = new GenreMapper();
 
     public List<MediaFile> getMediaFiles(String path, int folderId, BigDecimal startPosition) {
-        return query("select " + QUERY_COLUMNS + " from media_file where path=? and folder_id=?" + (startPosition != null ? " and start_position=?" : ""), rowMapper, path, folderId, startPosition);
+        Map<String, Object> args = new HashMap<>();
+        args.put("path", path);
+        args.put("folderId", folderId);
+        args.put("startPosition", startPosition);
+        return namedQuery("select " + QUERY_COLUMNS + " from media_file where path=:path and folder_id=:folderId" + (startPosition != null ? " and start_position=:startPosition" : ""), rowMapper, args);
     }
 
     public MediaFile getMediaFile(String path, int folderId, BigDecimal startPosition) {
@@ -832,7 +836,7 @@ public class MediaFileDao extends AbstractDao {
                     rs.getString("path"),
                     rs.getInt("folder_id"),
                     MediaFile.MediaType.valueOf(rs.getString("type")),
-                    rs.getDouble("start_position"),
+                    rs.getBigDecimal("start_position"),
                     rs.getString("format"),
                     rs.getString("title"),
                     rs.getString("album"),
