@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.primitives.Ints;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
@@ -170,6 +171,14 @@ public final class Util {
     public static String toJson(Object object) {
         try {
             return objectMapper.writeValueAsString(object);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static String toJson(Object object, SerializationFeature feature) {
+        try {
+            return objectMapper.writer(feature).writeValueAsString(object);
         } catch (Exception e) {
             return null;
         }

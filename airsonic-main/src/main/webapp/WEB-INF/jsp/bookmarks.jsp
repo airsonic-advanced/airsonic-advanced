@@ -19,7 +19,14 @@
 
             bookmarksTable = $("#bookmarksTable").DataTable( {
                 deferRender: true,
+                createdRow(row, data, dataIndex, cells) {
+                    var rowNode = $(row);
+                    if (rowNode.hasClass("selected")) {
+                        rowNode.find(".bookmarksIndex input").prop("checked", true);
+                    }
+                },
                 colReorder: true,
+                fixedHeader: true,
                 stateSave: true,
                 stateDuration: 60 * 60 * 24 * 365,
                 ordering: true,
@@ -31,6 +38,10 @@
                 processing: true,
                 autoWidth: true,
                 scrollCollapse: true,
+                select: {
+                    style: "multi",
+                    selector: ".bookmarksIndex"
+                },
                 language: {
                     emptyTable: "<fmt:message key='bookmarks.empty'/>"
                 },
@@ -41,9 +52,16 @@
                 columnDefs: [{ targets: "_all", orderable: true }],
                 columns: [
                     { data: "id", className: "detail fit", visible: true },
+                    { data: null,
+                      searchable: false,
+                      name: "bookmarkscheckbox",
+                      className: "fit not-draggable bookmarksIndex centeralign",
+                      title: "<input type='checkbox' class='bookmarksSelectAll'>",
+                      defaultContent: "<input type='checkbox'>"
+                    },
                     { data: "mediaFileEntry.starred",
                       name: "starred",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(starred, type) {
                           if (type == "display") {
                               return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
@@ -54,7 +72,7 @@
                     { data: "mediaFileEntry.present",
                       searchable: false,
                       name: "play",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(present, type, row) {
                           if (type == "display") {
                               if (present) {
@@ -69,7 +87,7 @@
                     { data: "mediaFileEntry.present",
                       searchable: false,
                       name: "addLast",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(present, type, row) {
                           if (type == "display") {
                               if (present) {
@@ -84,7 +102,7 @@
                     { data: "mediaFileEntry.present",
                       searchable: false,
                       name: "addNext",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(present, type, row) {
                           if (type == "display") {
                               if (present) {
@@ -175,12 +193,20 @@
                     { data: null,
                       searchable: false,
                       name: "remove",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       defaultContent: "<img class='removeBookmark' src=\"<spring:theme code='removeImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist.remove'/>\" title=\"<fmt:message key='playlist.remove'/>\">"
                     }
                 ]
             } );
 
+            bookmarksTable.on( 'select', function ( e, dt, type, indexes ) {
+                bookmarksTable.cells( indexes, "bookmarkscheckbox:name" ).nodes().to$().find("input").prop("checked", true);
+                updateSelectAllCheckboxStatus();
+            } );
+            bookmarksTable.on( 'deselect', function ( e, dt, type, indexes ) {
+                bookmarksTable.cells( indexes, "bookmarkscheckbox:name" ).nodes().to$().find("input").prop("checked", false);
+                updateSelectAllCheckboxStatus();
+            } );
             $("#bookmarksTable tbody").on( "click", ".starSong", function () {
                 onStar(bookmarksTable.row( $(this).parents('tr') ).index());
             } );
@@ -195,6 +221,9 @@
             } );
             $("#bookmarksTable tbody").on( "click", ".removeBookmark", function () {
                 onRemoveBookmark(bookmarksTable.row( $(this).parents('tr') ).index());
+            } );
+            $(".bookmarksSelectAll").on( "change", function (e) {
+                selectAll(e.target.checked);
             } );
 
             top.StompClient.subscribe("bookmarks.jsp", {
@@ -233,6 +262,12 @@
             }
             bookmarksTable.cell(index, "starred:name").invalidate();
         }
+        function onRemoveSelectedBookmarks() {
+            var indices = bookmarksTable.rows({ selected: true }).indexes().toArray();
+            for (let i of indices) {
+              onRemoveBookmark(i);
+            }
+        }
         function onRemoveBookmark(index) {
             top.StompClient.send("/app/bookmarks/delete", bookmarksTable.row(index).data().mediaFileEntry.id);
         }
@@ -252,6 +287,35 @@
             this.bookmarks = bookmarks;
             bookmarksTable.ajax.reload().columns.adjust();
         }
+
+        <!-- actionSelected() is invoked when the users selects from the "More actions..." combo box. -->
+        function actionSelected(id) {
+          if (id == "top") {
+              return;
+          } else if (id == "removeSelected") {
+              this.onRemoveSelectedBookmarks();
+          }
+        }
+
+        function selectAll(b) {
+            if (b) {
+                bookmarksTable.rows().select();
+            } else {
+                bookmarksTable.rows().deselect();
+            }
+        }
+
+        function updateSelectAllCheckboxStatus() {
+            if (bookmarksTable.rows({selected: true}).indexes().length == 0) {
+                $('.bookmarksSelectAll').prop('checked', false);
+                $('.bookmarksSelectAll').prop('indeterminate', false);
+            } else if (bookmarksTable.rows({selected: true}).indexes().length == bookmarksTable.rows().indexes().length) {
+                $('.bookmarksSelectAll').prop('checked', true);
+                $('.bookmarksSelectAll').prop('indeterminate', false);
+            } else {
+                $('.bookmarksSelectAll').prop('indeterminate', true);
+            }
+        }
     </script>
 </head>
 
@@ -264,6 +328,17 @@
 
 <table class="music indent hover nowrap stripe compact" id="bookmarksTable" style="cursor: pointer; width: 100%; margin-top: 5px;">
 </table>
+
+<div id="moreactions" style="white-space:nowrap;">
+    <span class="header">
+        <select id="moreActions" onchange="actionSelected(options[selectedIndex].id)">
+            <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
+            <optgroup label="<fmt:message key='bookmarks.more.selection'/>">
+                <option id="removeSelected"><fmt:message key="playlist.remove"/></option>
+            </optgroup>
+        </select>
+    </span>
+</div>
 
 <p style="width:60%">
     <fmt:message key="bookmarks.info"/>

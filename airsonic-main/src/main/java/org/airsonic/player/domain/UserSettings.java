@@ -49,6 +49,8 @@ public class UserSettings {
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
     private String listenBrainzUrl;
+    private boolean podcastIndexEnabled;
+    private String podcastIndexUrl;
     private TranscodeScheme transcodeScheme = TranscodeScheme.OFF;
     private int selectedMusicFolderId = -1;
     private boolean partyModeEnabled;
@@ -64,6 +66,7 @@ public class UserSettings {
     private boolean autoBookmark = true;
     private int videoBookmarkFrequency = 40;
     private int audioBookmarkFrequency = 10;
+    private int searchCount = 25;
 
     public UserSettings() {
     }
@@ -182,6 +185,22 @@ public class UserSettings {
 
     public void setListenBrainzUrl(String listenBrainzUrl) {
         this.listenBrainzUrl = listenBrainzUrl;
+    }
+
+    public boolean getPodcastIndexEnabled() {
+        return podcastIndexEnabled;
+    }
+
+    public void setPodcastIndexEnabled(boolean podcastIndexEnabled) {
+        this.podcastIndexEnabled = podcastIndexEnabled;
+    }
+
+    public String getPodcastIndexUrl() {
+        return podcastIndexUrl;
+    }
+
+    public void setPodcastIndexUrl(String podcastIndexUrl) {
+        this.podcastIndexUrl = podcastIndexUrl;
     }
 
     public TranscodeScheme getTranscodeScheme() {
@@ -362,11 +381,20 @@ public class UserSettings {
         this.audioBookmarkFrequency = audioBookmarkFrequency;
     }
 
+    public int getSearchCount() {
+        return searchCount;
+    }
+
+    public void setSearchCount(int searchCount) {
+        this.searchCount = searchCount;
+    }
+
     /**
      * Configuration of what information to display about a song.
      */
     public static class Visibility {
         private boolean trackNumberVisible;
+        private boolean discNumberVisible;
         private boolean artistVisible = true;
         private boolean albumVisible = true;
         private boolean genreVisible;
@@ -391,6 +419,14 @@ public class UserSettings {
 
         public void setTrackNumberVisible(boolean trackNumberVisible) {
             this.trackNumberVisible = trackNumberVisible;
+        }
+
+        public boolean getDiscNumberVisible() {
+            return discNumberVisible;
+        }
+
+        public void setDiscNumberVisible(boolean discNumberVisible) {
+            this.discNumberVisible = discNumberVisible;
         }
 
         public boolean getArtistVisible() {

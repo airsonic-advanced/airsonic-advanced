@@ -85,6 +85,7 @@ public class SettingsService {
     private static final String KEY_WELCOME_SUBTITLE = "WelcomeSubtitle";
     private static final String KEY_WELCOME_MESSAGE = "WelcomeMessage2";
     private static final String KEY_LOGIN_MESSAGE = "LoginMessage";
+    private static final String KEY_SESSION_DURATION = "server.servlet.session.timeout";
     private static final String KEY_LOCALE_LANGUAGE = "LocaleLanguage";
     private static final String KEY_LOCALE_COUNTRY = "LocaleCountry";
     private static final String KEY_LOCALE_VARIANT = "LocaleVariant";
@@ -191,6 +192,7 @@ public class SettingsService {
             "\\\\ \\\\\n" +
             "To change or remove this message, log in with administrator rights and go to <a href='settings.view'>Settings</a> > <a href='generalSettings.view'>General</a>.";
     private static final String DEFAULT_LOGIN_MESSAGE = null;
+    private static final String DEFAULT_SESSION_TIMEOUT_DURATION = "30m";
     private static final String DEFAULT_LOCALE_LANGUAGE = "en";
     private static final String DEFAULT_LOCALE_COUNTRY = "";
     private static final String DEFAULT_LOCALE_VARIANT = "";
@@ -650,7 +652,7 @@ public class SettingsService {
     @SuppressWarnings("unchecked")
     public Set<String> getMusicFileTypesSet() {
         return (Set<String>) derivativeSettingsCache.computeIfAbsent(KEY_MUSIC_FILE_TYPES,
-                k -> splitLowerString(getMusicFileTypes(), " "));
+            k -> splitLowerString(getMusicFileTypes(), " "));
     }
 
     public String getVideoFileTypes() {
@@ -665,7 +667,7 @@ public class SettingsService {
     @SuppressWarnings("unchecked")
     public Set<String> getVideoFileTypesSet() {
         return (Set<String>) derivativeSettingsCache.computeIfAbsent(KEY_VIDEO_FILE_TYPES,
-                k -> splitLowerString(getVideoFileTypes(), " "));
+            k -> splitLowerString(getVideoFileTypes(), " "));
     }
 
     public String getIndexFileTypes() {
@@ -680,7 +682,7 @@ public class SettingsService {
     @SuppressWarnings("unchecked")
     public Set<String> getIndexFileTypesSet() {
         return (Set<String>) derivativeSettingsCache.computeIfAbsent(KEY_INDEX_FILE_TYPES,
-                k -> splitLowerString(getIndexFileTypes(), " "));
+            k -> splitLowerString(getIndexFileTypes(), " "));
     }
 
     public String getCoverArtFileTypes() {
@@ -695,7 +697,7 @@ public class SettingsService {
     @SuppressWarnings("unchecked")
     Set<String> getCoverArtFileTypesSet() {
         return (Set<String>) derivativeSettingsCache.computeIfAbsent(KEY_COVER_ART_FILE_TYPES,
-                k -> splitLowerString(getCoverArtFileTypes(), " "));
+            k -> splitLowerString(getCoverArtFileTypes(), " "));
     }
 
     public CoverArtSource getCoverArtSource() {
@@ -756,6 +758,14 @@ public class SettingsService {
 
     public void setLoginMessage(String message) {
         setProperty(KEY_LOGIN_MESSAGE, message);
+    }
+
+    public String getSessionDuration() {
+        return getProperty(KEY_SESSION_DURATION, DEFAULT_SESSION_TIMEOUT_DURATION);
+    }
+
+    public void setSessionDuration(String sessionTimeout) {
+        setProperty(KEY_SESSION_DURATION, sessionTimeout);
     }
 
     /**
@@ -897,7 +907,7 @@ public class SettingsService {
 
     public RateLimiter getDownloadBitrateLimiter() {
         return (RateLimiter) derivativeSettingsCache.computeIfAbsent(KEY_DOWNLOAD_BITRATE_LIMIT,
-                k -> RateLimiter.create(adjustBitrateLimit(getDownloadBitrateLimit())));
+            k -> RateLimiter.create(adjustBitrateLimit(getDownloadBitrateLimit())));
     }
 
     /**
@@ -929,7 +939,7 @@ public class SettingsService {
 
     public RateLimiter getUploadBitrateLimiter() {
         return (RateLimiter) derivativeSettingsCache.computeIfAbsent(KEY_UPLOAD_BITRATE_LIMIT,
-                k -> RateLimiter.create(adjustBitrateLimit(getUploadBitrateLimit())));
+            k -> RateLimiter.create(adjustBitrateLimit(getUploadBitrateLimit())));
     }
 
     /**
@@ -1111,8 +1121,7 @@ public class SettingsService {
     @SuppressWarnings("unchecked")
     public Pattern getExcludePattern() {
         return ((Optional<Pattern>) derivativeSettingsCache.computeIfAbsent(KEY_EXCLUDE_PATTERN_STRING,
-                k -> Optional.ofNullable(getExcludePatternString()).map(StringUtils::trimToNull).map(Pattern::compile)))
-                        .orElse(null);
+            k -> Optional.ofNullable(getExcludePatternString()).map(StringUtils::trimToNull).map(Pattern::compile))).orElse(null);
     }
 
     /**

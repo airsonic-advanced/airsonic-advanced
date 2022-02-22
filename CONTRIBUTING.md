@@ -9,14 +9,14 @@ If you want to run the testsuite and get a `.war` is everything went fine,
 you this command:
 
 ```
- mvn --settings=./.mvn/settings.xml clean package
+ mvn clean package
 ```
 
 If you don't care about the result of the testsuite, but only
 want a `.war` as quick as possible, you can use this instead:
 
 ```
-mvn --settings=./.mvn/settings.xml -DskipTests -Dcheckstyle.skip=true clean package
+mvn -DskipTests -Dcheckstyle.skip=true clean package
 ```
 
 

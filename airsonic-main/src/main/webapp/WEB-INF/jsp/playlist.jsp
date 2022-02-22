@@ -16,7 +16,14 @@
 
             playlistMusicTable = $("#playlistMusic").DataTable( {
                 deferRender: true,
+                createdRow(row, data, dataIndex, cells) {
+                    var rowNode = $(row);
+                    if (rowNode.hasClass("selected")) {
+                        rowNode.find(".playlistSongIndex input").prop("checked", true);
+                    }
+                },
                 colReorder: true,
+                fixedHeader: true,
                 stateSave: true,
                 stateDuration: 60 * 60 * 24 * 365,
                 ordering: true,
@@ -29,6 +36,10 @@
                 processing: true,
                 autoWidth: true,
                 scrollCollapse: true,
+                select: {
+                style: "multi",
+                    selector: ".playlistSongIndex"
+                },
               <c:if test="${model.editAllowed}">
                 rowReorder: {
                     dataSrc: "seq",
@@ -48,9 +59,16 @@
                 columnDefs: [{ targets: "_all", orderable: false }],
                 columns: [
                     { data: "seq", className: "detail fit", visible: true },
+                    { data: null,
+                      searchable: false,
+                      name: "playlistsongcheckbox",
+                      className: "fit not-draggable playlistSongIndex centeralign",
+                      title: "<input type='checkbox' class='playlistSelectAll'>",
+                      defaultContent: "<input type='checkbox'>"
+                    },
                     { data: "starred",
                       name: "starred",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(starred, type) {
                           if (type == "display") {
                               return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
@@ -61,7 +79,7 @@
                     { data: "present",
                       searchable: false,
                       name: "play",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(present, type, row) {
                           if (type == "display") {
                               if (present) {
@@ -76,7 +94,7 @@
                     { data: "present",
                       searchable: false,
                       name: "addLast",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(present, type, row) {
                           if (type == "display") {
                               if (present) {
@@ -91,7 +109,7 @@
                     { data: "present",
                       searchable: false,
                       name: "addNext",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render: function(present, type, row) {
                           if (type == "display") {
                               if (present) {
@@ -117,6 +135,7 @@
                       }
                     },
                     { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
+                    { data: "discNumber", className: "detail fit", visible: ${model.visibility.discNumberVisible}, title: "<fmt:message key='personalsettings.discnumber'/>" },
                     { data: "title",
                       className: "detail songTitle truncate",
                       title: "<fmt:message key='edittags.songtitle'/>",
@@ -236,12 +255,20 @@
                       searchable: false,
                       name: "remove",
                       visible: ${model.editAllowed},
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       defaultContent: "<img class='removeSong' src=\"<spring:theme code='removeImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist.remove'/>\" title=\"<fmt:message key='playlist.remove'/>\">"
                     }
                 ]
             } );
 
+            playlistMusicTable.on( 'select', function ( e, dt, type, indexes ) {
+                playlistMusicTable.cells( indexes, "playlistsongcheckbox:name" ).nodes().to$().find("input").prop("checked", true);
+                updateSelectAllCheckboxStatus();
+            } );
+            playlistMusicTable.on( 'deselect', function ( e, dt, type, indexes ) {
+                playlistMusicTable.cells( indexes, "playlistsongcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
+                updateSelectAllCheckboxStatus();
+            } );
             $("#playlistMusic tbody").on( "click", ".starSong", function () {
                 onStar(playlistMusicTable.row( $(this).parents('tr') ).index());
             } );
@@ -253,6 +280,9 @@
             } );
             $("#playlistMusic tbody").on( "click", ".addSongNext", function () {
                 onAddNext(playlistMusicTable.row( $(this).parents('tr') ).index());
+            } );
+            $(".playlistSelectAll").on( "change", function (e) {
+                selectAll(e.target.checked);
             } );
 
             top.StompClient.subscribe("playlist.jsp", {
@@ -277,9 +307,9 @@
                 }
             });
 
-            <c:if test="${model.editAllowed}">
+          <c:if test="${model.editAllowed}">
             $("#playlistMusic tbody").on( "click", ".removeSong", function () {
-                onRemove(playlistMusicTable.row( $(this).parents('tr') ).index());
+                onRemove([playlistMusicTable.row( $(this).parents('tr') ).index()]);
             } );
             playlistMusicTable.on( "row-reordered", function (e, diff, edit) {
                 if (diff.length > 0) {
@@ -313,7 +343,7 @@
                         $(this).dialog("close");
                     } 
                 }});
-            </c:if>
+          </c:if>
         }
 
         function updatePlaylistEntries() {
@@ -383,9 +413,9 @@
             }
             playlistMusicTable.cell(index, "starred:name").invalidate();
         }
-        <c:if test="${model.editAllowed}">
-        function onRemove(index) {
-            top.StompClient.send("/app/playlists/files/remove", JSON.stringify({id: playlistId, modifierIds: [index]}));
+      <c:if test="${model.editAllowed}">
+        function onRemove(indexes) {
+            top.StompClient.send("/app/playlists/files/remove", JSON.stringify({id: playlistId, modifierIds: indexes}));
         }
         function onRearrange(indexes) {
             top.StompClient.send("/app/playlists/files/rearrange", JSON.stringify({id: playlistId, modifierIds: indexes}));
@@ -396,8 +426,35 @@
         function onDeletePlaylist() {
             $("#dialog-delete").dialog("open");
         }
-        </c:if>
+        <!-- actionSelected() is invoked when the users selects from the "More actions..." combo box. -->
+        function actionSelected(id) {
+          if (id == "top") {
+              return;
+          } else if (id == "removeSelected") {
+              this.onRemove(playlistMusicTable.rows({ selected: true }).indexes().toArray());
+          }
+        }
+      </c:if>
 
+        function selectAll(b) {
+            if (b) {
+                playlistMusicTable.rows().select();
+            } else {
+                playlistMusicTable.rows().deselect();
+            }
+        }
+
+        function updateSelectAllCheckboxStatus() {
+            if (playlistMusicTable.rows({selected: true}).indexes().length == 0) {
+                $('.playlistSelectAll').prop('checked', false);
+                $('.playlistSelectAll').prop('indeterminate', false);
+            } else if (playlistMusicTable.rows({selected: true}).indexes().length == playlistMusicTable.rows().indexes().length) {
+                $('.playlistSelectAll').prop('checked', true);
+                $('.playlistSelectAll').prop('indeterminate', false);
+            } else {
+                $('.playlistSelectAll').prop('indeterminate', true);
+            }
+        }
     </script>
 
     <style type="text/css">
@@ -466,6 +523,17 @@
 </table>
 
 <c:if test="${model.editAllowed}">
+<div id="moreactions" style="white-space:nowrap;">
+    <span class="header">
+        <select id="moreActions" onchange="actionSelected(options[selectedIndex].id)">
+            <option id="top" selected="selected"><fmt:message key="playlist.more"/></option>
+            <optgroup label="<fmt:message key='playlist.more.selection'/>">
+                <option id="removeSelected"><fmt:message key="playlist.remove"/></option>
+            </optgroup>
+        </select>
+    </span>
+</div>
+
 <div id="dialog-delete" title="<fmt:message key='common.confirm'/>" style="display: none;">
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>
         <fmt:message key="playlist2.confirmdelete"/></p>

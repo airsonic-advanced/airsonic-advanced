@@ -89,6 +89,10 @@ public class MediaFileDao extends AbstractDao {
         return query("select " + QUERY_COLUMNS + " from media_file where path like ? and folder_id=?", rowMapper, relativePartialPath + "%", folderId);
     }
 
+    public List<MediaFile> getMediaFilesByRelativePath(String path) {
+        return query("select " + QUERY_COLUMNS + " from media_file where path=?", rowMapper, path);
+    }
+
     /**
      * Returns the media file that are direct children of the given path.
      *
@@ -714,6 +718,10 @@ public class MediaFileDao extends AbstractDao {
         return namedQuery(query, rowMapper, args);
     }
 
+    public int getMediaFileCount(Integer folderId) {
+        return queryForInt("select count(*) from media_file where folder_id=?", 0, folderId);
+    }
+
     public int getAlbumCount(final List<MusicFolder> musicFolders) {
         if (musicFolders.isEmpty()) {
             return 0;
@@ -780,20 +788,19 @@ public class MediaFileDao extends AbstractDao {
         return queryForInstant("select created from starred_media_file where media_file_id=? and username=?", null, id, username);
     }
 
-    public boolean markPresent(String path, Instant lastScanned) {
-        return markPresent(Collections.singletonList(path), lastScanned);
-    }
-
-    public boolean markPresent(Collection<String> paths, Instant lastScanned) {
+    public boolean markPresent(Map<Integer, Set<String>> paths, Instant lastScanned) {
         if (!paths.isEmpty()) {
-            int batches = (paths.size() - 1) / 30000;
-            List<String> pList = new ArrayList<>(paths);
-            return IntStream.rangeClosed(0, batches).parallel().map(b -> {
-                List<String> batch = pList.subList(b * 30000, Math.min(paths.size(), b * 30000 + 30000));
-                return namedUpdate(
-                        "update media_file set present=true, last_scanned = :lastScanned where path in (:paths)",
-                        ImmutableMap.of("lastScanned", lastScanned, "paths", batch));
-            }).sum() == paths.size();
+            return paths.entrySet().parallelStream().map(e -> {
+                int batches = (e.getValue().size() - 1) / 30000;
+                List<String> pList = new ArrayList<>(e.getValue());
+
+                return IntStream.rangeClosed(0, batches).parallel().map(b -> {
+                    List<String> batch = pList.subList(b * 30000, Math.min(e.getValue().size(), b * 30000 + 30000));
+                    return namedUpdate(
+                            "update media_file set present=true, last_scanned = :lastScanned where path in (:paths) and folder_id=:folderId",
+                            ImmutableMap.of("lastScanned", lastScanned, "paths", batch, "folderId", e.getKey()));
+                }).sum() == e.getValue().size();
+            }).reduce(true, (a, b) -> a && b);
         }
 
         return true;

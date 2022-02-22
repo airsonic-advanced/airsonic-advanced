@@ -56,6 +56,8 @@ public class PersonalSettingsCommand {
     private boolean lastFmEnabled;
     private boolean listenBrainzEnabled;
     private String listenBrainzUrl;
+    private boolean podcastIndexEnabled;
+    private String podcastIndexUrl;
     private int paginationSizeFiles;
     private int paginationSizeFolders;
     private int paginationSizePlayqueue;
@@ -64,6 +66,7 @@ public class PersonalSettingsCommand {
     private boolean autoBookmark;
     private int videoBookmarkFrequency;
     private int audioBookmarkFrequency;
+    private int searchCount;
 
     public User getUser() {
         return user;
@@ -241,7 +244,7 @@ public class PersonalSettingsCommand {
         this.keyboardShortcutsEnabled = keyboardShortcutsEnabled;
     }
 
-    public boolean isLastFmEnabled() {
+    public boolean getLastFmEnabled() {
         return lastFmEnabled;
     }
 
@@ -249,7 +252,7 @@ public class PersonalSettingsCommand {
         this.lastFmEnabled = lastFmEnabled;
     }
 
-    public boolean isListenBrainzEnabled() {
+    public boolean getListenBrainzEnabled() {
         return listenBrainzEnabled;
     }
 
@@ -263,6 +266,22 @@ public class PersonalSettingsCommand {
 
     public void setListenBrainzUrl(String listenBrainzUrl) {
         this.listenBrainzUrl = listenBrainzUrl;
+    }
+
+    public boolean getPodcastIndexEnabled() {
+        return podcastIndexEnabled;
+    }
+
+    public void setPodcastIndexEnabled(boolean podcastIndexEnabled) {
+        this.podcastIndexEnabled = podcastIndexEnabled;
+    }
+
+    public String getPodcastIndexUrl() {
+        return podcastIndexUrl;
+    }
+
+    public void setPodcastIndexUrl(String podcastIndexUrl) {
+        this.podcastIndexUrl = podcastIndexUrl;
     }
 
     public boolean isQueueFollowingSongs() {
@@ -335,5 +354,13 @@ public class PersonalSettingsCommand {
 
     public void setAudioBookmarkFrequency(int audioBookmarkFrequency) {
         this.audioBookmarkFrequency = audioBookmarkFrequency;
+    }
+
+    public int getSearchCount() {
+        return searchCount;
+    }
+
+    public void setSearchCount(int searchCount) {
+        this.searchCount = searchCount;
     }
 }

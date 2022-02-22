@@ -382,7 +382,7 @@ public class PlaylistService {
         }
 
         try (InputStream in = Files.newInputStream(file)) {
-            importPlaylist(User.USERNAME_ADMIN, FilenameUtils.getBaseName(fileName), fileName, file, in, existingPlaylist);
+            importPlaylist(User.USERNAME_ADMIN, FilenameUtils.getBaseName(fileName), fileName, null, in, existingPlaylist);
             LOG.info("Auto-imported playlist {}", file);
         }
     }
