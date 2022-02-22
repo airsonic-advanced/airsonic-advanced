@@ -548,9 +548,17 @@ public class MediaFileService {
 
     /**
      * hide specific file types in player and API
+     *
+     * <pre>
+     * |                | hideIndexed=true | hideIndexed=false |
+     * |----------------|------------------|-------------------|
+     * | reg nonindexed |     true         |      true         |
+     * | index parent   |     false        |      true         |
+     * | indexed        |     true         |      true         |
+     * </pre>
      */
     public boolean showMediaFile(MediaFile media) {
-        return !settingsService.getHideIndexedFiles() || media.isIndexedTrack();
+        return !media.hasIndex() || media.isIndexedTrack() || !settingsService.getHideIndexedFiles();
     }
 
     public boolean includeMediaFile(MediaFile candidate, MusicFolder folder) {

@@ -321,10 +321,10 @@ public class MediaScannerService {
         encountered.computeIfAbsent(file.getFolderId(), k -> ConcurrentHashMap.newKeySet()).add(file.getPath());
 
         // don't add indexed tracks to the total duration to avoid double-counting
-        if ((file.getDuration() != null) && (!file.isIndexedTrack())) {
+        if (file.getDuration() != null && !file.isIndexedTrack()) {
             statistics.incrementTotalDurationInSeconds(file.getDuration());
         }
-        if (file.getFileSize() != null) {
+        if (file.getFileSize() != null && !file.isIndexedTrack()) {
             statistics.incrementTotalLengthInBytes(file.getFileSize());
         }
     }

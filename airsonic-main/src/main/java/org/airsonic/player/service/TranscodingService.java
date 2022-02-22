@@ -37,6 +37,7 @@ import java.awt.Dimension;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -366,8 +367,20 @@ public class TranscodingService {
                 Optional.ofNullable(mediaFile.getAlbumName()).orElse("Unknown Album"),
                 Optional.ofNullable(maxBitRate).map(String::valueOf).orElse(null),
                 Optional.ofNullable(mediaFile.getFormat()).orElse(null),
-                Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getTimeOffset).map(String::valueOf).orElse(String.valueOf(mediaFile.getStartPosition())),
-                Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getDuration).map(String::valueOf).orElse(String.valueOf(mediaFile.getDuration())),
+                Optional.ofNullable(videoTranscodingSettings)
+                    .map(VideoTranscodingSettings::getTimeOffset)
+                    .map(String::valueOf)
+                    .or(() -> Optional.ofNullable(mediaFile.getStartPosition())
+                            .filter(x -> mediaFile.isIndexedTrack())
+                            .map(BigDecimal::doubleValue)
+                            .map(String::valueOf))
+                    .orElse("0"),
+                Optional.ofNullable(videoTranscodingSettings)
+                    .map(VideoTranscodingSettings::getDuration)
+                    .map(String::valueOf)
+                    .or(() -> Optional.ofNullable(mediaFile.getDuration())
+                            .map(String::valueOf))
+                    .orElse("0"),
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getWidth).map(String::valueOf).orElse(null),
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getHeight).map(String::valueOf).orElse(null),
                 Optional.ofNullable(maxBitRate).map(TranscodingService::getAverageVideoBitRate).map(String::valueOf).orElse(null),
@@ -540,6 +553,12 @@ public class TranscodingService {
         if (!parameters.isTranscode()) {
             return file.getFileSize();
         }
+
+        if (StringUtils.equalsIgnoreCase("split", parameters.getTranscoding().getName())) {
+            long timePadding = Optional.ofNullable(file.getBitRate()).map(x -> settingsService.getTranscodeEstimateTimePadding() * x / 8).orElse(0L);
+            return file.getFileSize() + timePadding + settingsService.getTranscodeEstimateBytePadding();
+        }
+
         Double duration = file.getDuration();
         Integer maxBitRate = parameters.getMaxBitRate();
 
@@ -572,10 +591,10 @@ public class TranscodingService {
             return false;
         }
 
-        // Check if last configured step uses the bitrate, if so, range should be pretty safe
+        // Check if last configured step uses the bitrate or if its just copied over, if so, range should be pretty safe
         for (String step : steps) {
             if (step != null) {
-                return step.contains("%b");
+                return step.contains("%b") || step.contains(" copy ");
             }
         }
         return false;
