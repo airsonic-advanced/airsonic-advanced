@@ -506,6 +506,9 @@ public class MediaFileService {
                 // add index path to parent file
                 if (StringUtils.isBlank(indexParent.getIndexPath())) {
                     indexParent.setIndexPath(relativeIndexPath.toString());
+                    Instant modified = FileUtil.lastModified(indexParent.getFullIndexPath(folder.getPath()));
+                    modified = modified.isAfter(indexParent.getChanged()) ? modified : indexParent.getChanged();
+                    indexParent.setChanged(modified);
                     updateMediaFile(indexParent);
                     added = true;
                 }
@@ -567,7 +570,7 @@ public class MediaFileService {
 
     private boolean isPossibleIndexFile(Path candidate) {
         String suffix = FilenameUtils.getExtension(candidate.toString()).toLowerCase();
-        return Files.isRegularFile(candidate) && settingsService.getIndexFileTypesSet().contains(suffix);
+        return settingsService.getIndexFileTypesSet().contains(suffix) && Files.isRegularFile(candidate);
     }
 
     private String getIndexFile(MediaFile candidate, MusicFolder folder) {
@@ -793,6 +796,12 @@ public class MediaFileService {
             mediaFile.setIndexPath(getIndexFile(mediaFile, folder));
         }
 
+        if (mediaFile.hasIndex()) {
+            Instant modified = FileUtil.lastModified(mediaFile.getFullIndexPath(folder.getPath()));
+            modified = modified.isAfter(mediaFile.getChanged()) ? modified : mediaFile.getChanged();
+            mediaFile.setChanged(modified);
+        }
+
         updateMediaFile(mediaFile);
 
         if (createIndexed && mediaFile.hasIndex()) {
@@ -812,6 +821,7 @@ public class MediaFileService {
         List<MediaFile> res = emptyList();
         if (cue == null) {
             parentIndexedFile.setIndexPath(null);
+            parentIndexedFile.setChanged(FileUtil.lastModified(parentIndexedFile.getFullPath(folder.getPath())));
             updateMediaFile(parentIndexedFile);
         } else {
             res = updateIndexedTracks(cue, parentIndexedFile, folder, storedChildrenMap);
