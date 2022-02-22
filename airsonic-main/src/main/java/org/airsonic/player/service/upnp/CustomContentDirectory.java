@@ -90,7 +90,7 @@ public abstract class CustomContentDirectory extends AbstractContentDirectorySer
         if (seconds == null) {
             return null;
         }
-        return StringUtil.formatDuration((long) (seconds * 1000));
+        return StringUtil.formatDurationUpnp((long) (seconds * 1000));
     }
 
     protected String getBaseUrl() {
