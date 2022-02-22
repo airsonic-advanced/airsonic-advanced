@@ -182,8 +182,8 @@ public class MediaFileService {
         }
         if (minimizeDiskAccess || (mediaFile.getVersion() >= MediaFileDao.VERSION
                 && !settingsService.getFullScan()
-                && mediaFile.getChanged().isAfter(FileUtil.lastModified(mediaFile.getFullPath(folder.getPath())))
-                && (!mediaFile.hasIndex() || mediaFile.getChanged().isAfter(FileUtil.lastModified(mediaFile.getFullIndexPath(folder.getPath())))))) {
+                && !mediaFile.getChanged().isBefore(FileUtil.lastModified(mediaFile.getFullPath(folder.getPath())))
+                && (!mediaFile.hasIndex() || !mediaFile.getChanged().isBefore(FileUtil.lastModified(mediaFile.getFullIndexPath(folder.getPath())))))) {
             LOG.debug("Detected unmodified file (id {}, path {} in folder {} ({}))", mediaFile.getId(), mediaFile.getPath(), folder.getId(), folder.getName());
             return mediaFile;
         }

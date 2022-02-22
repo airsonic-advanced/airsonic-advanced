@@ -834,7 +834,7 @@ public class MediaFileDao extends AbstractDao {
                     rs.getString("path"),
                     rs.getInt("folder_id"),
                     MediaFile.MediaType.valueOf(rs.getString("type")),
-                    rs.getBigDecimal("start_position"),
+                    rs.getBigDecimal("start_position").setScale(9),
                     rs.getString("format"),
                     rs.getString("title"),
                     rs.getString("album"),
