@@ -254,7 +254,9 @@ public class MediaFileService {
                     .map(x -> checkLastModified(x, folder, minimizeDiskAccess));
 
             // invoke after nonIndexed go through checkLastModified so that any changes in indexed are reflected in the DB prior to retrieval
-            Stream<MediaFile> indexed = StreamSupport.stream(() -> mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), true, false).spliterator(), Spliterator.SIZED, true);
+            Stream<MediaFile> indexed = StreamSupport.stream(
+                    () -> mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), true, true).spliterator(),
+                    Spliterator.SIZED, true);
 
             resultStream = Stream.concat(nonIndexed, indexed).filter(x -> includeMediaFile(x, folder));
         }
