@@ -255,8 +255,8 @@ public class MediaFileService {
 
             // invoke after nonIndexed go through checkLastModified so that any changes in indexed are reflected in the DB prior to retrieval
             Stream<MediaFile> indexed = StreamSupport.stream(
-                    () -> mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), true, true).spliterator(),
-                    Spliterator.SIZED, true);
+                () -> mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), true, true).spliterator(),
+                Spliterator.SIZED, true);
 
             resultStream = Stream.concat(nonIndexed, indexed).filter(x -> includeMediaFile(x, folder));
         }
@@ -523,26 +523,6 @@ public class MediaFileService {
                             .filter(MediaFile::isIndexedTrack).collect(toList());
                 }
             });
-
-//            if (indexParents.size() > 0) {
-//                CueSheet cue = getCueSheet(indexPath);
-//                if (cue != null) {
-//                    return indexParents.stream().map(indexParent -> {
-//                        // add index path to parent file
-//                        if (StringUtils.isBlank(indexParent.getIndexPath())) {
-//                            indexParent.setIndexPath(relativeIndexPath.toString());
-//                            updateMediaFile(indexParent);
-//                        }
-//                        if (!StringUtils.equals(indexParent.getIndexPath(), relativeIndexPath.toString())) {
-//                            LOG.warn("Index path for {} in folder {} is different from expected index path (is: {}, should be: {})", indexParent.getPath(), indexParent.getFolderId(), indexParent.getIndexPath(), relativeIndexPath);
-//                        }
-//                        return indexParent;
-//                    }).map(fullFile -> {
-//                        return updateIndexedTracks(cue, fullFile, folder, storedChildrenMap);
-//                    });
-//                }
-//            }
-//            return Stream.<List<MediaFile>>empty();
         }).flatMap(i -> i).flatMap(List::stream).collect(toList());
     }
 
