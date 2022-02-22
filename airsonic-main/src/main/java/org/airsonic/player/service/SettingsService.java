@@ -49,6 +49,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -268,13 +269,6 @@ public class SettingsService {
     private AvatarDao avatarDao;
     @Autowired
     private Environment env;
-
-    private Set<String> cachedCoverArtFileTypes;
-    private Set<String> cachedMusicFileTypes;
-    private Set<String> cachedVideoFileTypes;
-    private RateLimiter downloadRateLimiter;
-    private RateLimiter uploadRateLimiter;
-    private Pattern excludePattern;
 
     // Array of obsolete properties. Used to clean property file.
     private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
@@ -504,8 +498,24 @@ public class SettingsService {
         return getAirsonicHome().resolve(getFileSystemAppName() + ".properties");
     }
 
+    private Map<String, Object> settingsCache = new ConcurrentHashMap<>();
+    // exists for secondary derived objects based on objects in properties.
+    // Can't be stored with settingsCache because ConcurrentHashMaps cannot recursively update values.
+    // Example: Retrieving KEY_DERIVATIVE: If absent, retrieve KEY to derive object from. If KEY in turn is also absent: look up in env.
+    // Then store KEY first, then KEY_DERIVATIVE. So one lookup ends up modifying another part of ConcurrentHashMap which is illegal by contract.
+    private Map<String, Object> derivativeSettingsCache = new ConcurrentHashMap<>();
+
+    private void setProperty(String key, Object value) {
+        if (value == null) {
+            ConfigurationPropertiesService.getInstance().clearProperty(key);
+        } else {
+            ConfigurationPropertiesService.getInstance().setProperty(key, value);
+        }
+        settingsCache.remove(key);
+    }
+
     private int getInt(String key, int defaultValue) {
-        return env.getProperty(key, int.class, defaultValue);
+        return (int) settingsCache.computeIfAbsent(key, k -> env.getProperty(k, int.class, defaultValue));
     }
 
     private void setInt(String key, Integer value) {
@@ -513,7 +523,7 @@ public class SettingsService {
     }
 
     private long getLong(String key, long defaultValue) {
-        return env.getProperty(key, long.class, defaultValue);
+        return (long) settingsCache.computeIfAbsent(key, k -> env.getProperty(k, long.class, defaultValue));
     }
 
     private void setLong(String key, Long value) {
@@ -521,7 +531,7 @@ public class SettingsService {
     }
 
     private boolean getBoolean(String key, boolean defaultValue) {
-        return env.getProperty(key, boolean.class, defaultValue);
+        return (boolean) settingsCache.computeIfAbsent(key, k -> env.getProperty(k, boolean.class, defaultValue));
     }
 
     private void setBoolean(String key, Boolean value) {
@@ -536,12 +546,12 @@ public class SettingsService {
         setProperty(key, value);
     }
 
-    public String getIndexString() {
-        return getProperty(KEY_INDEX_STRING, DEFAULT_INDEX_STRING);
+    private String getProperty(String key, String defaultValue) {
+        return (String) settingsCache.computeIfAbsent(key, k -> env.getProperty(k, defaultValue));
     }
 
-    private String getProperty(String key, String defaultValue) {
-        return env.getProperty(key, defaultValue);
+    public String getIndexString() {
+        return getProperty(KEY_INDEX_STRING, DEFAULT_INDEX_STRING);
     }
 
     public void setIndexString(String indexString) {
@@ -553,11 +563,12 @@ public class SettingsService {
     }
 
     String[] getIgnoredArticlesAsArray() {
-        return getIgnoredArticles().split("\\s+");
+        return (String[]) derivativeSettingsCache.computeIfAbsent(KEY_IGNORED_ARTICLES, k -> getIgnoredArticles().split("\\s+"));
     }
 
     public void setIgnoredArticles(String ignoredArticles) {
         setProperty(KEY_IGNORED_ARTICLES, ignoredArticles);
+        derivativeSettingsCache.remove(KEY_IGNORED_ARTICLES);
     }
 
     public String getUploadsFolder() {
@@ -627,13 +638,13 @@ public class SettingsService {
 
     public void setMusicFileTypes(String fileTypes) {
         setProperty(KEY_MUSIC_FILE_TYPES, fileTypes);
+        derivativeSettingsCache.remove(KEY_MUSIC_FILE_TYPES);
     }
 
+    @SuppressWarnings("unchecked")
     public Set<String> getMusicFileTypesSet() {
-        if (cachedMusicFileTypes == null) {
-            cachedMusicFileTypes = splitLowerString(getMusicFileTypes(), " ");
-        }
-        return cachedMusicFileTypes;
+        return (Set<String>) derivativeSettingsCache.computeIfAbsent(KEY_MUSIC_FILE_TYPES,
+            k -> splitLowerString(getMusicFileTypes(), " "));
     }
 
     public String getVideoFileTypes() {
@@ -642,13 +653,13 @@ public class SettingsService {
 
     public void setVideoFileTypes(String fileTypes) {
         setProperty(KEY_VIDEO_FILE_TYPES, fileTypes);
+        derivativeSettingsCache.remove(KEY_VIDEO_FILE_TYPES);
     }
 
+    @SuppressWarnings("unchecked")
     public Set<String> getVideoFileTypesSet() {
-        if (cachedVideoFileTypes == null) {
-            cachedVideoFileTypes = splitLowerString(getVideoFileTypes(), " ");
-        }
-        return cachedVideoFileTypes;
+        return (Set<String>) derivativeSettingsCache.computeIfAbsent(KEY_VIDEO_FILE_TYPES,
+            k -> splitLowerString(getVideoFileTypes(), " "));
     }
 
     public String getCoverArtFileTypes() {
@@ -657,13 +668,13 @@ public class SettingsService {
 
     public void setCoverArtFileTypes(String fileTypes) {
         setProperty(KEY_COVER_ART_FILE_TYPES, fileTypes);
+        derivativeSettingsCache.remove(KEY_COVER_ART_FILE_TYPES);
     }
 
+    @SuppressWarnings("unchecked")
     Set<String> getCoverArtFileTypesSet() {
-        if (cachedCoverArtFileTypes == null) {
-            cachedCoverArtFileTypes = splitLowerString(getCoverArtFileTypes(), " ");
-        }
-        return cachedCoverArtFileTypes;
+        return (Set<String>) derivativeSettingsCache.computeIfAbsent(KEY_COVER_ART_FILE_TYPES,
+            k -> splitLowerString(getCoverArtFileTypes(), " "));
     }
 
     public CoverArtSource getCoverArtSource() {
@@ -872,10 +883,8 @@ public class SettingsService {
     }
 
     public RateLimiter getDownloadBitrateLimiter() {
-        if (downloadRateLimiter == null) {
-            downloadRateLimiter = RateLimiter.create(adjustBitrateLimit(getDownloadBitrateLimit()));
-        }
-        return downloadRateLimiter;
+        return (RateLimiter) derivativeSettingsCache.computeIfAbsent(KEY_DOWNLOAD_BITRATE_LIMIT,
+            k -> RateLimiter.create(adjustBitrateLimit(getDownloadBitrateLimit())));
     }
 
     /**
@@ -906,10 +915,8 @@ public class SettingsService {
     }
 
     public RateLimiter getUploadBitrateLimiter() {
-        if (uploadRateLimiter == null) {
-            uploadRateLimiter = RateLimiter.create(adjustBitrateLimit(getUploadBitrateLimit()));
-        }
-        return uploadRateLimiter;
+        return (RateLimiter) derivativeSettingsCache.computeIfAbsent(KEY_UPLOAD_BITRATE_LIMIT,
+            k -> RateLimiter.create(adjustBitrateLimit(getUploadBitrateLimit())));
     }
 
     /**
@@ -1061,22 +1068,13 @@ public class SettingsService {
 
     public void setExcludePatternString(String s) {
         setString(KEY_EXCLUDE_PATTERN_STRING, s);
-        compileExcludePattern();
+        derivativeSettingsCache.remove(KEY_EXCLUDE_PATTERN_STRING);
     }
 
-    private void compileExcludePattern() {
-        if (getExcludePatternString() != null && !getExcludePatternString().trim().isEmpty()) {
-            excludePattern = Pattern.compile(getExcludePatternString());
-        } else {
-            excludePattern = null;
-        }
-    }
-
+    @SuppressWarnings("unchecked")
     public Pattern getExcludePattern() {
-        if (excludePattern == null && getExcludePatternString() != null) {
-            compileExcludePattern();
-        }
-        return excludePattern;
+        return ((Optional<Pattern>) derivativeSettingsCache.computeIfAbsent(KEY_EXCLUDE_PATTERN_STRING,
+            k -> Optional.ofNullable(getExcludePatternString()).map(StringUtils::trimToNull).map(Pattern::compile))).orElse(null);
     }
 
     /**
@@ -1413,14 +1411,6 @@ public class SettingsService {
 
     public void setSonosCallbackHostAddress(String hostAddress) {
         setString(KEY_SONOS_CALLBACK_HOST_ADDRESS, hostAddress);
-    }
-
-    private void setProperty(String key, Object value) {
-        if (value == null) {
-            ConfigurationPropertiesService.getInstance().clearProperty(key);
-        } else {
-            ConfigurationPropertiesService.getInstance().setProperty(key, value);
-        }
     }
 
     private static Set<String> splitLowerString(String s, String splitter) {

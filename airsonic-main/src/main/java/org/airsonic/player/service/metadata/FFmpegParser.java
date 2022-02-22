@@ -20,12 +20,12 @@
 package org.airsonic.player.service.metadata;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
+import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +33,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedInputStream;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -52,7 +54,6 @@ import java.util.Optional;
 public class FFmpegParser extends MetaDataParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(FFmpegParser.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String[] FFPROBE_OPTIONS = {
         "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams"
     };
@@ -84,7 +85,10 @@ public class FFmpegParser extends MetaDataParser {
             command.add(file.toAbsolutePath().toString());
 
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]));
-            final JsonNode result = objectMapper.readTree(process.getInputStream());
+            JsonNode result = null;
+            try (InputStream in = process.getInputStream(); BufferedInputStream bin = new BufferedInputStream(in);) {
+                result = Util.getObjectMapper().readTree(bin);
+            }
 
             metaData.setDuration(result.at("/format/duration").asDouble());
             // Bitrate is in Kb/s
