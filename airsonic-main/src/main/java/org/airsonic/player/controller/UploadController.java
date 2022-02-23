@@ -397,7 +397,7 @@ public class UploadController {
 
         @Override
         public void start(String fileName) {
-            status.setFile(Paths.get(fileName));
+            status.setExternalFile(Paths.get(fileName));
         }
 
         @Override

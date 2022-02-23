@@ -113,7 +113,7 @@ public class DatabaseSettingsController {
             statusService.removeDownloadStatus(status);
             securityService.updateUserByteCounts(user, 0L, status.getBytesTransferred(), 0L);
             LOG.info("Transferred {} bytes to user: {}, player: {}", status.getBytesTransferred(), user.getUsername(), transferPlayer);
-            databaseService.cleanup(status.getFile());
+            databaseService.cleanup(status.getExternalFile());
         };
         Resource res = new FileSystemResource(exportFile);
         Resource monitoredRes = new PipeStreams.MonitoredResource(
@@ -122,7 +122,7 @@ public class DatabaseSettingsController {
                 statusSupplier,
                 statusCloser,
             (input, status) -> {
-                status.setFile(exportFile);
+                status.setExternalFile(exportFile);
                 status.setBytesTotal(FileUtil.size(exportFile));
             });
 
