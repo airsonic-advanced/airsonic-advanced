@@ -422,9 +422,23 @@ public class MediaFileService {
         Map<Pair<String, Double>, MediaFile> storedChildrenMap = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), false).parallelStream()
             .collect(Collectors.toConcurrentMap(i -> Pair.of(i.getPath(), i.getStartPosition()), i -> i));
         MusicFolder folder = mediaFolderService.getMusicFolderById(parent.getFolderId());
+        List<String> cueFiles = new ArrayList<>();
 
+        // collect files and cuesheets, if any
         try (Stream<Path> children = Files.list(parent.getFullPath(folder.getPath()))) {
-            List<MediaFile> result = children.parallel()
+            Map<String, MediaFile> bareFiles = children.parallel()
+                    .map(x -> { // collect cuesheets
+                        try {
+                            if (("cue".equalsIgnoreCase(FilenameUtils.getExtension(x.toString())))
+                                || ("flac".equalsIgnoreCase(FilenameUtils.getExtension(x.toString())) && (FLACReader.getCueSheet(folder.getPath().resolve(x)) != null))) {
+                                cueFiles.add(x.toString());
+                            }
+                        } catch (IOException e) {
+                            LOG.warn("Error reading FLAC {} embedded cue sheet (ignored)", x.toString());
+                            // ignore
+                        }
+                        return x;
+                    })
                     .filter(this::includeMediaFile)
                     .filter(x -> securityService.getMusicFolderForFile(x, true, true).getId().equals(parent.getFolderId()))
                     .map(x -> folder.getPath().relativize(x))
@@ -440,18 +454,37 @@ public class MediaFileService {
 
                         return media;
                     })
-                    .map(media -> {
-                        if (media.hasIndex()) {
-                            boolean update = needsUpdate(media, folder, settingsService.isFastCacheEnabled());
-                            List<MediaFile> tracks = createIndexedTracks(media, folder, storedChildrenMap, update);
-                            tracks.add(media);
-                            return tracks;
-                        } else {
-                            return Collections.singletonList(media);
+                    .collect(Collectors.toConcurrentMap(m -> FilenameUtils.getBaseName(m.getPath()), m -> m));
+
+            // collect indexed tracks, if any
+            List<MediaFile> indexedTracks = cueFiles.stream().parallel()
+                .flatMap(c -> {
+                    MediaFile base = bareFiles.remove(FilenameUtils.getBaseName(c));
+                    if (base != null) {
+                        if (!c.equals(base.getIndexPath())) {
+                            base.setIndexPath(c); // update indexPath in mediaFile
+                            updateMediaFile(base);
                         }
-                    })
-                    .flatMap(List::stream)
-                    .collect(Collectors.toList());
+                        List<MediaFile> tracks = createIndexedTracks(base, folder, storedChildrenMap);
+                        tracks.add(base);
+                        return tracks.stream();
+                    }
+                    return Stream.empty();
+                })
+                .collect(Collectors.toList());
+
+            // remove indexPath for deleted cuesheets, if any
+            List<MediaFile> result = bareFiles.values().stream().parallel()
+                .map(m -> {
+                    if (m.hasIndex()) {
+                        m.setIndexPath(null);
+                        updateMediaFile(m);
+                    }
+                    return m;
+                })
+                .collect(Collectors.toList());
+
+            result.addAll(indexedTracks);
 
             // Delete children that no longer exist on disk.
             mediaFileDao.deleteMediaFiles(storedChildrenMap.keySet().stream().map(Pair::getKey).collect(Collectors.toList()), parent.getFolderId());
@@ -462,6 +495,7 @@ public class MediaFileService {
             updateMediaFile(parent);
 
             return result;
+
         } catch (IOException e) {
             LOG.warn("Could not retrieve and update all the children for {} in folder {}. Will skip", parent.getPath(), folder.getId());
 
@@ -574,9 +608,6 @@ public class MediaFileService {
             String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(mediaFile.getPath())));
             mediaFile.setFormat(format);
             mediaFile.setFileSize(FileUtil.size(file));
-            getCuePath(relativePath, folder).ifPresent(cuePath -> {
-                mediaFile.setIndexPath(folder.getPath().relativize(cuePath).toString());
-            });
             mediaFile.setMediaType(getMediaType(mediaFile, folder));
 
         } else {
@@ -604,8 +635,7 @@ public class MediaFileService {
                         }
 
                         // Look for cover art.
-                        // Path coverArt = findCoverArt(children);
-                        Path coverArt = null;
+                        Path coverArt = findCoverArt(children);
                         if (coverArt != null) {
                             // placeholder to be persisted later
                             mediaFile.setArt(new CoverArt(-1, EntityType.MEDIA_FILE, folder.getPath().relativize(coverArt).toString(), folder.getId(), false));
@@ -628,12 +658,12 @@ public class MediaFileService {
         return mediaFile;
     }
 
-    private List<MediaFile> createIndexedTracks(MediaFile base, MusicFolder folder, Map<Pair<String, Double>, MediaFile> storedChildrenMap, boolean update) {
+    private List<MediaFile> createIndexedTracks(MediaFile base, MusicFolder folder, Map<Pair<String, Double>, MediaFile> storedChildrenMap) {
         try {
             List<MediaFile> children = new ArrayList<>();
             Path audioFile = base.getFullPath(folder.getPath());
-            MetaDataParser parser = metaDataParserFactory.getParser(audioFile);
             MetaData metaData = null;
+            MetaDataParser parser = metaDataParserFactory.getParser(audioFile);
             if (parser != null) {
                 metaData = parser.getMetaData(audioFile);
             }
@@ -654,6 +684,8 @@ public class MediaFileService {
                 Instant lastModified = FileUtil.lastModified(audioFile);
                 Instant childrenLastUpdated = Instant.now().plusSeconds(100 * 365 * 24 * 60 * 60); // now + 100 years, tracks do not have children
                 Integer folderId = base.getFolderId();
+
+                boolean update = needsUpdate(base, folder, settingsService.isFastCacheEnabled());
 
                 for (int i = 0; i < cueSheet.getAllTrackData().size(); i++) {
                     TrackData trackData = cueSheet.getAllTrackData().get(i);
@@ -757,34 +789,6 @@ public class MediaFileService {
 
     public boolean getMemoryCacheEnabled() {
         return memoryCacheEnabled;
-    }
-
-    /**
-     * Returns an Optional Path to a CUE file for the given media file
-     * matches on file name minus extension
-     * if no separate CUE file is found it looks for an embedded cuesheet (currently only supports FLAC) and
-     * returns the resolvedPath for the mediaFile if one is found
-     */
-    private Optional<Path> getCuePath(Path path, MusicFolder folder) {
-        Path resolvedPath = folder.getPath().resolve(path);
-        Optional<Path> result = Optional.empty();
-
-        try (Stream<Path> list = Files.list(resolvedPath.getParent())) {
-            result = list
-                .filter(p -> !Files.isDirectory(p))
-                .filter(f -> "cue".equalsIgnoreCase(FilenameUtils.getExtension(f.toString()))
-                             && FilenameUtils.getBaseName(f.toString()).equals(FilenameUtils.getBaseName(resolvedPath.toString())))
-                .findFirst();
-
-            // look for embedded cuesheet in FLAC
-            if (result.isEmpty() && ("flac".equalsIgnoreCase(FilenameUtils.getExtension(resolvedPath.toString())) && (FLACReader.getCueSheet(resolvedPath) != null))) {
-                result = Optional.of(resolvedPath);
-            }
-        } catch (IOException e) {
-            LOG.warn("getCuePath {} {}", path, folder, e);
-        }
-
-        return result;
     }
 
     /**
