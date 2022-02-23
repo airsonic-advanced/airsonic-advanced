@@ -19,7 +19,9 @@
  */
 package org.airsonic.player.service;
 
-import com.google.common.io.MoreFiles;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.RateLimiter;
 import org.airsonic.player.dao.AvatarDao;
 import org.airsonic.player.dao.InternetRadioDao;
@@ -50,6 +52,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -418,16 +421,41 @@ public class SettingsService {
         return dir;
     }
 
-    public static boolean isTranscodeExecutableInstalled(String executable) {
-        try (Stream<Path> files = Files.list(getTranscodeDirectory())) {
-            return files.anyMatch(p -> MoreFiles.getNameWithoutExtension(p).equals(executable));
+    private static boolean isExecutableInstalled(String executable) {
+        Process process = null;
+        try {
+            process = new ProcessBuilder(executable).start();
+            LOG.debug("{} exists and can be executed. Last executed {}", executable, process.info().startInstant());
+            return true;
         } catch (IOException e) {
+            LOG.debug("{} cannot be executed", executable, e);
             return false;
+        } finally {
+            if (process != null) {
+                process.destroy();
+            }
         }
     }
 
-    public static String resolveTranscodeExecutable(String executable) {
-        return isTranscodeExecutableInstalled(executable) ? getTranscodeDirectory().resolve(executable).toString() : executable;
+    private static LoadingCache<String, String> transcodeExecutableCache = CacheBuilder.newBuilder()
+        .expireAfterAccess(8, TimeUnit.HOURS)
+        .build(new CacheLoader<String, String>() {
+            @Override
+            public String load(String executable) throws Exception {
+                    return Arrays.asList(getTranscodeDirectory().resolve(executable).toString(), executable)
+                        .stream()
+                        .filter(SettingsService::isExecutableInstalled)
+                        .findFirst()
+                        .orElseThrow();
+            }
+        });
+
+    public static String resolveTranscodeExecutable(String executable, String defaultValue) {
+        try {
+            return transcodeExecutableCache.get(executable);
+        } catch (Exception e) {
+            return defaultValue;
+        }
     }
 
     private static String getFileSystemAppName() {
