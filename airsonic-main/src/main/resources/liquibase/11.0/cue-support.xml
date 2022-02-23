@@ -14,15 +14,6 @@
             </column>
         </addColumn>
     </changeSet>
-    <changeSet id="dropuniqueindexfolderpath_001" author="yetangitu">
-        <dropIndex tableName="media_file" indexName="idx_media_file_folder_path" />
-        <rollback>
-            <createIndex tableName="media_file" unique="true" indexName="idx_media_file_folder_path">
-                <column name="folder_id"></column>
-                <column name="path"></column>
-            </createIndex>
-        </rollback>
-    </changeSet>
     <changeSet id="adduniqueindexstartposition_001" author="yetangitu">
         <createIndex tableName="media_file" indexName="idx_media_file_folder_path_start" unique="true">
             <column name="folder_id"/>
@@ -31,6 +22,15 @@
         </createIndex>
         <rollback>
             <dropIndex tableName="media_file" indexName="idx_media_file_folder_path_start" />
+        </rollback>
+    </changeSet>
+    <changeSet id="dropuniqueindexfolderpath_001" author="yetangitu">
+        <dropIndex tableName="media_file" indexName="idx_media_file_folder_path" />
+        <rollback>
+            <createIndex tableName="media_file" unique="true" indexName="idx_media_file_folder_path">
+                <column name="folder_id"></column>
+                <column name="path"></column>
+            </createIndex>
         </rollback>
     </changeSet>
     <changeSet id="indexpath_001" author="yetangitu">
