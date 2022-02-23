@@ -123,7 +123,7 @@ public class MediaFileWSController {
                         .map(pf -> mediaFileService.getMediaFile(pf.getValue(), pf.getKey())),
                         Optional.ofNullable(ids).orElse(Collections.emptyList()).parallelStream().map(mediaFileService::getMediaFile))
                 .filter(Objects::nonNull)
-                .filter(x -> mediaFileService.showMediaFile(x))
+                .filter(mediaFileService::showMediaFile)
                 .collect(Collectors.toList());
     }
 

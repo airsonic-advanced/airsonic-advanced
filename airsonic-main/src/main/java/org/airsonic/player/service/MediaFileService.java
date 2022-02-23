@@ -434,7 +434,7 @@ public class MediaFileService {
 
         // only get nonindexed files (indexed files are marked in their own method)
         Map<Pair<String, BigDecimal>, MediaFile> storedChildrenMap = mediaFileDao
-                .getChildrenOf(parent.getPath(), parent.getFolderId(), false, true).parallelStream()
+                .getChildrenOf(parent.getPath(), parent.getFolderId(), false, false).parallelStream()
                 .collect(toConcurrentMap(i -> Pair.of(i.getPath(), i.getStartPosition()), i -> i));
         MusicFolder folder = mediaFolderService.getMusicFolderById(parent.getFolderId());
 
@@ -525,7 +525,7 @@ public class MediaFileService {
     }
 
     /**
-     * hide specific file types in player and API
+     * show specific file types in player and API
      *
      * <pre>
      * |                | hideIndexed=true | hideIndexed=false |
