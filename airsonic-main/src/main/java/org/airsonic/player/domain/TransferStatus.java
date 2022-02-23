@@ -283,7 +283,8 @@ public class TransferStatus {
     @Override
     public String toString() {
         return "TransferStatus-" + hashCode() + " [player: " + player.getId() + ", file: " +
-                 externalFile + ", mediaFile: " + mediaFile == null ? "" : mediaFile.getId() + ", terminated: " + terminated + ", active: " + active + "]";
+                 externalFile + ", mediaFile: " + (mediaFile == null ? "" : mediaFile.getId()) +
+                 ", terminated: " + terminated + ", active: " + active + "]";
     }
 
     /**
