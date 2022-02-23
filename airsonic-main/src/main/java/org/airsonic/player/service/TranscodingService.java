@@ -388,7 +388,7 @@ public class TranscodingService {
 
     public static String substituteTranscodingVariable(int index, String commandSegment, String[] keys, String[] values) {
         if (index == 0) {
-            return SettingsService.resolveTranscodeExecutable(commandSegment);
+            return SettingsService.resolveTranscodeExecutable(commandSegment, commandSegment);
         }
 
         return StringUtils.replaceEach(commandSegment, keys, values);
@@ -526,7 +526,7 @@ public class TranscodingService {
             return true;
         }
         String executable = StringUtil.split(step)[0];
-        return SettingsService.isTranscodeExecutableInstalled(executable);
+        return SettingsService.resolveTranscodeExecutable(executable, null) != null;
     }
 
     /**
