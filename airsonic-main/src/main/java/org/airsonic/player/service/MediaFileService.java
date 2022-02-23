@@ -149,9 +149,7 @@ public class MediaFileService {
         }
 
         // Not found in database, must read and persist from disk.
-        createAndUpdateMediaFile(relativePath, folder, null, true, true);
-
-        return result;
+        return createAndUpdateMediaFile(relativePath, folder, null, true, true);
     }
 
     @Cacheable(cacheNames = "mediaFileIdCache", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
@@ -782,7 +780,7 @@ public class MediaFileService {
 
     private MediaFile createAndUpdateMediaFile(Path relativePath, MusicFolder folder, MediaFile existingFile, boolean searchForIndex, boolean createIndexed) {
         MediaFile mediaFile = createMediaFile(relativePath, folder, existingFile);
-        if (searchForIndex && !mediaFile.hasIndex()) {
+        if (searchForIndex && mediaFile.isFile() && !mediaFile.hasIndex()) {
             mediaFile.setIndexPath(getIndexFile(mediaFile, folder));
         }
 
