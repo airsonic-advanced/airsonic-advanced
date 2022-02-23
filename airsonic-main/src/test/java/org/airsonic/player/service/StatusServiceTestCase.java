@@ -87,7 +87,7 @@ public class StatusServiceTestCase {
     @Test
     public void testSimpleAddRemoveTransferStatus() {
         TransferStatus status = service.createStreamStatus(player1);
-        status.setFile(Paths.get("bla"));
+        status.setExternalFile(Paths.get("bla"));
         assertThat(status.isActive()).isTrue();
         assertThat(service.getAllStreamStatuses()).containsExactly(status);
         assertThat(service.getStreamStatusesForPlayer(player1)).containsExactly(status);
@@ -152,7 +152,7 @@ public class StatusServiceTestCase {
         service.addRemotePlay(pStatus);
 
         tStatus = service.createStreamStatus(player1);
-        tStatus.setFile(Paths.get("bla"));
+        tStatus.setExternalFile(Paths.get("bla"));
         service.removeStreamStatus(tStatus);
 
         // Verify

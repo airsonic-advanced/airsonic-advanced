@@ -60,8 +60,13 @@ public class NowPlayingController {
                 .orElseGet(() -> statusService.getInactiveStreamStatusForPlayer(player));
 
         String url = Optional.ofNullable(status)
-                .map(s -> mediaFileService.getMediaFile(s.getFile()))
-                .map(current -> mediaFileService.getParentOf(current))
+                .map(s -> {
+                    if (s.getMediaFile() != null) {
+                        return s.getMediaFile();
+                    }
+                    return mediaFileService.getMediaFile(s.getExternalFile());
+                })
+                .map(mediaFileService::getParentOf)
                 .filter(dir -> !mediaFileService.isRoot(dir))
                 .map(dir -> "main.view?id=" + dir.getId())
                 .orElse("home.view");

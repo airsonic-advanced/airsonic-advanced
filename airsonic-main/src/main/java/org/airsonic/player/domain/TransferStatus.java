@@ -37,8 +37,8 @@ public class TransferStatus {
 
     private final UUID id = UUID.randomUUID();
     private final Player player;
-    private Path file;
-    private Integer folderId;
+    private Path externalFile;
+    private MediaFile mediaFile;
     private final AtomicLong bytesTransferred = new AtomicLong();
     private final AtomicLong bytesSkipped = new AtomicLong();
     private final AtomicLong bytesTotal = new AtomicLong();
@@ -146,7 +146,6 @@ public class TransferStatus {
         this.bytesSkipped.set(bytesSkipped);
     }
 
-
     /**
      * Adds the given byte count to the total number of bytes skipped.
      *
@@ -156,30 +155,20 @@ public class TransferStatus {
         bytesSkipped.addAndGet(byteCount);
     }
 
-    /**
-     * Returns the file that is currently being transferred.
-     *
-     * @return The file that is currently being transferred.
-     */
-    public Path getFile() {
-        return file;
+    public Path getExternalFile() {
+        return externalFile;
     }
 
-    /**
-     * Sets the file that is currently being transferred.
-     *
-     * @param file The file that is currently being transferred.
-     */
-    public void setFile(Path file) {
-        this.file = file;
+    public void setExternalFile(Path externalFile) {
+        this.externalFile = externalFile;
     }
 
-    public Integer getFolderId() {
-        return folderId;
+    public MediaFile getMediaFile() {
+        return mediaFile;
     }
 
-    public void setFolderId(Integer folderId) {
-        this.folderId = folderId;
+    public void setMediaFile(MediaFile mediaFile) {
+        this.mediaFile = mediaFile;
     }
 
     /**
@@ -294,7 +283,8 @@ public class TransferStatus {
     @Override
     public String toString() {
         return "TransferStatus-" + hashCode() + " [player: " + player.getId() + ", file: " +
-                file + ", terminated: " + terminated + ", active: " + active + "]";
+                 externalFile + ", mediaFile: " + (mediaFile == null ? "" : mediaFile.getId()) +
+                 ", terminated: " + terminated + ", active: " + active + "]";
     }
 
     /**

@@ -19,7 +19,6 @@
  */
 package org.airsonic.player.controller;
 
-import com.google.common.collect.Streams;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.CoverArt.EntityType;
 import org.airsonic.player.io.PipeStreams.MonitoredResource;
@@ -32,7 +31,6 @@ import org.airsonic.player.util.LambdaUtils;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -222,7 +220,7 @@ public class DownloadController {
                     changed);
         } else {
             // get a list of all paths under the tree, plus their zip names and sizes
-            Collection<Triple<Path, Pair<Path, Integer>, Pair<String, Long>>> pathsToZip = Streams
+            Collection<Pair<Path, Pair<String, Long>>> pathsToZip = Stream
                     .concat(
                             indices.stream().map(files::get).filter(Objects::nonNull).map(x -> Pair.of(x.getRelativePath(), x.getFolderId())),
                             additionalFiles.stream().filter(Objects::nonNull))
@@ -241,7 +239,7 @@ public class DownloadController {
                                         } else {
                                             zipName = zipName + '/';
                                         }
-                                        return Triple.of(f, Pair.of(mf.getPath().relativize(f), pf.getRight()), Pair.of(zipName, size));
+                                        return Pair.of(f, Pair.of(zipName, size));
                                     })
                                     // need to create a new stream, because try-with-resources will close the paths stream before it exits
                                     .collect(Collectors.toList()).stream();
@@ -250,6 +248,7 @@ public class DownloadController {
                             return Stream.empty();
                         }
                     }).filter(f -> Objects.nonNull(f))
+                    // need to preserve order because zip file creation needs to create folders first then files
                     .collect(Collectors.toCollection(LinkedHashSet::new));
 
             // zip to out
@@ -262,8 +261,7 @@ public class DownloadController {
                             ZipOutputStream zout = new ZipOutputStream(pout)) {
                         zout.setMethod(ZipOutputStream.STORED); // No compression.
                         pathsToZip.stream().forEach(LambdaUtils.uncheckConsumer(f -> {
-                            status.setFile(f.getMiddle().getLeft());
-                            status.setFolderId(f.getMiddle().getRight());
+                            status.setExternalFile(f.getLeft());
                             ZipEntry zipEntry = new ZipEntry(f.getRight().getKey());
                             zipEntry.setSize(f.getRight().getValue());
                             zipEntry.setCompressedSize(f.getRight().getValue());

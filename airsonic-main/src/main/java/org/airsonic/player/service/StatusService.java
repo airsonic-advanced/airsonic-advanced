@@ -168,14 +168,9 @@ public class StatusService {
     }
 
     public PlayStatus getPlayStatus(TransferStatus status) {
-        MediaFile file = null;
-        if (status.getFile() != null) {
-            if (status.getFolderId() != null) {
-                file = mediaFileService.getMediaFile(status.getFile(),
-                        mediaFolderService.getMusicFolderById(status.getFolderId()));
-            } else {
-                file = mediaFileService.getMediaFile(status.getFile());
-            }
+        MediaFile file = status.getMediaFile();
+        if (file == null) {
+            file = mediaFileService.getMediaFile(status.getExternalFile());
         }
         return new PlayStatus(status.getId(),
                 file,

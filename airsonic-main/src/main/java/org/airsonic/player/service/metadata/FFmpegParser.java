@@ -77,7 +77,7 @@ public class FFmpegParser extends MetaDataParser {
 
         try {
             // Use `ffprobe` in the transcode directory if it exists, otherwise let the system sort it out.
-            String ffprobe = SettingsService.resolveTranscodeExecutable("ffprobe");
+            String ffprobe = SettingsService.resolveTranscodeExecutable("ffprobe", "ffprobe");
 
             List<String> command = new ArrayList<>();
             command.add(ffprobe);
