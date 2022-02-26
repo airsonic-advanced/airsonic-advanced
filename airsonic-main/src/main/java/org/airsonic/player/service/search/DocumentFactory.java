@@ -27,7 +27,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
@@ -117,7 +117,7 @@ public class DocumentFactory {
             return;
         }
         doc.add(new TextField(fieldName, value, Store.NO));
-        doc.add(new SortedDocValuesField(fieldName, new BytesRef(value)));
+        doc.add(new SortedSetDocValuesField(fieldName, new BytesRef(value)));
     };
 
     public final Term createPrimarykey(Integer id) {
