@@ -380,7 +380,7 @@ public class CoverArtController implements LastModified {
         }
 
         private CoverArtRequest(CoverArt coverArt, Supplier<String> keyGenerator, Supplier<Instant> lastModifiedGenerator) {
-            this.coverArt = coverArt;
+            this.coverArt = coverArt == CoverArtService.NULL_ART ? null : coverArt;
             this.keyGenerator = keyGenerator;
             this.lastModifiedGenerator = lastModifiedGenerator;
         }

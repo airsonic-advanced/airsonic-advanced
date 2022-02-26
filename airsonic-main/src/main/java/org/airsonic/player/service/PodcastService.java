@@ -421,7 +421,8 @@ public class PodcastService {
         }
 
         CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, channel.getMediaFileId());
-        if (art != null) {
+        // if its already there, no need to download it again
+        if (art != CoverArtService.NULL_ART) {
             return;
         }
         MediaFile channelMediaFile = mediaFileService.getMediaFile(channel.getMediaFileId());

@@ -401,7 +401,7 @@ public class MediaScannerService {
             MediaFile parent = mediaFileService.getParentOf(file, true); // true because the parent has recently already been scanned
             if (parent != null) {
                 CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, parent.getId());
-                if (art != null) {
+                if (art != CoverArtService.NULL_ART) {
                     album.setArt(new CoverArt(-1, EntityType.ALBUM, art.getPath(), art.getFolderId(), false));
                 }
             }
@@ -454,7 +454,7 @@ public class MediaScannerService {
             MediaFile parent = mediaFileService.getParentOf(file, true); // true because the parent has recently already been scanned
             if (parent != null) {
                 CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, parent.getId());
-                if (art != null) {
+                if (art != CoverArtService.NULL_ART) {
                     artist.setArt(new CoverArt(-1, EntityType.ARTIST, art.getPath(), art.getFolderId(), false));
                 }
             }

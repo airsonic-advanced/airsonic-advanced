@@ -14,7 +14,7 @@ public class CoverArt {
     private Instant updated = created;
 
     public enum EntityType {
-        MEDIA_FILE, ALBUM, ARTIST
+        MEDIA_FILE, ALBUM, ARTIST, NONE
     }
 
     public CoverArt(int entityId, EntityType entityType, String path, Integer folderId, boolean overridden) {

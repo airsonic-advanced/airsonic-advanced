@@ -138,7 +138,7 @@ public class DownloadController {
             } else {
                 if (indices == null) {
                     CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, mediaFile.getId());
-                    if (art != null) {
+                    if (art != CoverArtService.NULL_ART) {
                         additionalFiles = Collections.singletonList(Pair.of(art.getRelativePath(), art.getFolderId()));
                     }
                 }
