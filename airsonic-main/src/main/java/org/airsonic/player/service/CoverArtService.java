@@ -24,8 +24,6 @@ public class CoverArtService {
     @Autowired
     MediaFolderService mediaFolderService;
 
-    public final static CoverArt NULL_ART = new CoverArt(-2, EntityType.NONE, null, null, false);
-
     public void upsert(EntityType type, int id, String path, Integer folderId, boolean overridden) {
         CoverArt art = new CoverArt(id, type, path, folderId, overridden);
         upsert(art);
@@ -37,9 +35,9 @@ public class CoverArtService {
     }
 
     public void persistIfNeeded(MediaFile mediaFile) {
-        if (mediaFile.getArt() != null && mediaFile.getArt() != NULL_ART) {
+        if (mediaFile.getArt() != null && !CoverArt.NULL_ART.equals(mediaFile.getArt())) {
             CoverArt art = get(EntityType.MEDIA_FILE, mediaFile.getId());
-            if (art == NULL_ART || !art.getOverridden()) {
+            if (CoverArt.NULL_ART.equals(art) || !art.getOverridden()) {
                 mediaFile.getArt().setEntityId(mediaFile.getId());
                 upsert(mediaFile.getArt());
             }
@@ -48,9 +46,9 @@ public class CoverArtService {
     }
 
     public void persistIfNeeded(Album album) {
-        if (album.getArt() != null && album.getArt() != NULL_ART) {
+        if (album.getArt() != null && !CoverArt.NULL_ART.equals(album.getArt())) {
             CoverArt art = get(EntityType.ALBUM, album.getId());
-            if (art == NULL_ART || !art.getOverridden()) {
+            if (CoverArt.NULL_ART.equals(art) || !art.getOverridden()) {
                 album.getArt().setEntityId(album.getId());
                 upsert(album.getArt());
             }
@@ -59,9 +57,9 @@ public class CoverArtService {
     }
 
     public void persistIfNeeded(Artist artist) {
-        if (artist.getArt() != null && artist.getArt() != NULL_ART) {
+        if (artist.getArt() != null && !CoverArt.NULL_ART.equals(artist.getArt())) {
             CoverArt art = get(EntityType.ARTIST, artist.getId());
-            if (art == NULL_ART || !art.getOverridden()) {
+            if (CoverArt.NULL_ART.equals(art) || !art.getOverridden()) {
                 artist.getArt().setEntityId(artist.getId());
                 upsert(artist.getArt());
             }
@@ -71,7 +69,7 @@ public class CoverArtService {
 
     @Cacheable(key = "#type.toString().concat('-').concat(#id)", unless = "#result == null") // 'unless' condition should never happen, because of null-object pattern
     public CoverArt get(EntityType type, int id) {
-        return Optional.ofNullable(coverArtDao.get(type, id)).orElse(NULL_ART);
+        return Optional.ofNullable(coverArtDao.get(type, id)).orElse(CoverArt.NULL_ART);
     }
 
     public Path getFullPath(EntityType type, int id) {
@@ -80,7 +78,7 @@ public class CoverArtService {
     }
 
     public Path getFullPath(CoverArt art) {
-        if (art != null && art != NULL_ART) {
+        if (art != null && !CoverArt.NULL_ART.equals(art)) {
             if (art.getFolderId() == null) {
                 // null folder ids mean absolute paths
                 return art.getRelativePath();
