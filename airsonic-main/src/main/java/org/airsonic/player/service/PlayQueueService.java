@@ -64,8 +64,6 @@ public class PlayQueueService {
     @Autowired
     private InternetRadioService internetRadioService;
     @Autowired
-    private BookmarkService bookmarkService;
-    @Autowired
     private SimpMessagingTemplate brokerTemplate;
 
     public void start(Player player) {
@@ -554,6 +552,7 @@ public class PlayQueueService {
                     streamDiscNumber, // Disc number
                     streamUrl, // Track title (use radio stream URL for now)
                     "", // Track artist
+                    "", // Album Artist
                     radioName, // Album name (use radio name)
                     "Internet Radio", // Genre
                     0, // Year
