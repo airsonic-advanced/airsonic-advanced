@@ -119,6 +119,10 @@ public class MediaFileService {
         return getMediaFile(relativePath, folder, settingsService.isFastCacheEnabled());
     }
 
+    public MediaFile getMediaFile(String relativePath, Integer folderId, boolean minimizeDiskAccess) {
+        return getMediaFile(Paths.get(relativePath), mediaFolderService.getMusicFolderById(folderId), minimizeDiskAccess);
+    }
+
     @Cacheable(cacheNames = "mediaFilePathCache", key = "#relativePath.toString().concat('-').concat(#folder.id)", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
     public MediaFile getMediaFile(Path relativePath, MusicFolder folder, boolean minimizeDiskAccess) {
         // Look in database.
@@ -156,10 +160,14 @@ public class MediaFileService {
     }
 
     public MediaFile getParentOf(MediaFile mediaFile) {
+        return getParentOf(mediaFile, settingsService.isFastCacheEnabled());
+    }
+
+    public MediaFile getParentOf(MediaFile mediaFile, boolean minimizeDiskAccess) {
         if (mediaFile.getParentPath() == null) {
             return null;
         }
-        return getMediaFile(mediaFile.getParentPath(), mediaFolderService.getMusicFolderById(mediaFile.getFolderId()));
+        return getMediaFile(mediaFile.getParentPath(), mediaFile.getFolderId(), minimizeDiskAccess);
     }
 
     private MediaFile checkLastModified(MediaFile mediaFile, MusicFolder folder, boolean minimizeDiskAccess) {

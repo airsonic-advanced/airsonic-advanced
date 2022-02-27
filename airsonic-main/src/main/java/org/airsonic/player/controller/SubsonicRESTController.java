@@ -504,7 +504,7 @@ public class SubsonicRESTController {
         jaxbArtist.setName(artist.getName());
         jaxbArtist.setStarred(jaxbWriter.convertDate(artistDao.getArtistStarredDate(artist.getId(), username)));
         jaxbArtist.setAlbumCount(artist.getAlbumCount());
-        if (coverArtService.get(EntityType.ARTIST, artist.getId()) != null) {
+        if (!CoverArt.NULL_ART.equals(coverArtService.get(EntityType.ARTIST, artist.getId()))) {
             jaxbArtist.setCoverArt(CoverArtController.ARTIST_COVERART_PREFIX + artist.getId());
         }
         return jaxbArtist;
@@ -552,7 +552,7 @@ public class SubsonicRESTController {
                 jaxbAlbum.setArtistId(String.valueOf(artist.getId()));
             }
         }
-        if (coverArtService.get(EntityType.ALBUM, album.getId()) != null) {
+        if (!CoverArt.NULL_ART.equals(coverArtService.get(EntityType.ALBUM, album.getId()))) {
             jaxbAlbum.setCoverArt(CoverArtController.ALBUM_COVERART_PREFIX + album.getId());
         }
         jaxbAlbum.setSongCount(album.getSongCount());
@@ -1322,7 +1322,7 @@ public class SubsonicRESTController {
 
     private String findCoverArt(MediaFile mediaFile, MediaFile parent) {
         MediaFile dir = mediaFile.isDirectory() ? mediaFile : parent;
-        if (dir != null && coverArtService.get(EntityType.MEDIA_FILE, dir.getId()) != null) {
+        if (dir != null && !CoverArt.NULL_ART.equals(coverArtService.get(EntityType.MEDIA_FILE, dir.getId()))) {
             return String.valueOf(dir.getId());
         }
         return null;

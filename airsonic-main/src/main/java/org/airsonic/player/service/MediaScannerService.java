@@ -398,10 +398,10 @@ public class MediaScannerService {
         }
 
         if (album.getArt() == null) {
-            MediaFile parent = mediaFileService.getParentOf(file);
+            MediaFile parent = mediaFileService.getParentOf(file, true); // true because the parent has recently already been scanned
             if (parent != null) {
                 CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, parent.getId());
-                if (art != null) {
+                if (!CoverArt.NULL_ART.equals(art)) {
                     album.setArt(new CoverArt(-1, EntityType.ALBUM, art.getPath(), art.getFolderId(), false));
                 }
             }
@@ -451,10 +451,10 @@ public class MediaScannerService {
         });
 
         if (artist.getArt() == null) {
-            MediaFile parent = mediaFileService.getParentOf(file);
+            MediaFile parent = mediaFileService.getParentOf(file, true); // true because the parent has recently already been scanned
             if (parent != null) {
                 CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, parent.getId());
-                if (art != null) {
+                if (!CoverArt.NULL_ART.equals(art)) {
                     artist.setArt(new CoverArt(-1, EntityType.ARTIST, art.getPath(), art.getFolderId(), false));
                 }
             }
