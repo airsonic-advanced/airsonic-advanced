@@ -12,6 +12,7 @@ public class MediaFileEntry {
     private final Integer discNumber;
     private final String title;
     private String artist;
+    private String albumArtist;
     private String album;
     private final String genre;
     private final Integer year;
@@ -41,6 +42,7 @@ public class MediaFileEntry {
             Integer discNumber,
             String title,
             String artist,
+            String albumArtist,
             String album,
             String genre,
             Integer year,
@@ -68,6 +70,7 @@ public class MediaFileEntry {
         this.discNumber = discNumber;
         this.title = title;
         this.artist = artist;
+        this.albumArtist = albumArtist;
         this.album = album;
         this.genre = genre;
         this.year = year;
@@ -110,6 +113,14 @@ public class MediaFileEntry {
 
     public String getArtist() {
         return artist;
+    }
+
+    public String getAlbumArtist() {
+        return albumArtist;
+    }
+
+    public void setAlbumArtist(String albumArtist) {
+        this.albumArtist = albumArtist;
     }
 
     public String getAlbum() {
@@ -213,8 +224,8 @@ public class MediaFileEntry {
     }
 
     public static MediaFileEntry fromMediaFile(MediaFile file, Locale locale, boolean starred, boolean folderAccess, String streamUrl, String remoteStreamUrl, String remoteCoverArtUrl) {
-        return new MediaFileEntry(file.getId(), file.getTrackNumber(), file.getDiscNumber(), file.getName(), file.getArtist(),
-                file.getAlbumName(), file.getGenre(), file.getYear(), formatBitRate(file),
+        return new MediaFileEntry(file.getId(), file.getTrackNumber(), file.getDiscNumber(), file.getName(),
+                file.getArtist(), file.getAlbumArtist(), file.getAlbumName(), file.getGenre(), file.getYear(), formatBitRate(file),
                 (file.getWidth() != null && file.getHeight() != null) ? file.getWidth() + "x" + file.getHeight() : null,
                 file.getDuration(), file.getFormat(), StringUtil.getMimeType(file.getFormat()), file.getMediaType().toString(),
                 StringUtil.formatBytes(file.getFileSize(), locale == null ? Locale.ENGLISH : locale),

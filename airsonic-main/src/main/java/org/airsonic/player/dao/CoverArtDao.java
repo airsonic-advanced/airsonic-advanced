@@ -51,9 +51,9 @@ public class CoverArtDao extends AbstractDao {
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void expunge() {
-        update("delete from cover_art c where c.entity_type='MEDIA_FILE' and c.entity_id in (select ca.entity_id from cover_art ca left join media_file m on ca.entity_id=m.id where m.id is null and ca.entity_type='MEDIA_FILE')");
-        update("delete from cover_art c where c.entity_type='ALBUM' and c.entity_id in (select ca.entity_id from cover_art ca left join album a on ca.entity_id=a.id where a.id is null and ca.entity_type='ALBUM')");
-        update("delete from cover_art c where c.entity_type='ARTTIST' and c.entity_id in (select ca.entity_id from cover_art ca left join artist a on ca.entity_id=a.id where a.id is null and ca.entity_type='ARTIST')");
+        update("delete from cover_art where entity_type='MEDIA_FILE' and entity_id in (select ca.entity_id from cover_art ca left join media_file m on ca.entity_id=m.id where m.id is null and ca.entity_type='MEDIA_FILE')");
+        update("delete from cover_art where entity_type='ALBUM' and entity_id in (select ca.entity_id from cover_art ca left join album a on ca.entity_id=a.id where a.id is null and ca.entity_type='ALBUM')");
+        update("delete from cover_art where entity_type='ARTTIST' and entity_id in (select ca.entity_id from cover_art ca left join artist a on ca.entity_id=a.id where a.id is null and ca.entity_type='ARTIST')");
     }
 
     private static class CoverArtRowMapper implements RowMapper<CoverArt> {

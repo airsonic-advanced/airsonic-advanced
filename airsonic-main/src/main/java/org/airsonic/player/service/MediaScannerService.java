@@ -436,13 +436,13 @@ public class MediaScannerService {
         }
         album.getGenres().addAll(fileGenres);
 
-        MediaFile parent = mediaFileService.getParentOf(file);
+        MediaFile parent = mediaFileService.getParentOf(file, true); // true because the parent has recently already been scanned
         if (parent != null) {
             album.getMediaFileIds().add(parent.getId());
 
             if (album.getArt() == null) {
                 CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, parent.getId());
-                if (art != null) {
+                if (!CoverArt.NULL_ART.equals(art)) {
                     album.setArt(new CoverArt(-1, EntityType.ALBUM, art.getPath(), art.getFolderId(), false));
                 }
             }

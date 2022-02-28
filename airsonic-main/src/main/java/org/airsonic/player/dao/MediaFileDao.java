@@ -24,7 +24,6 @@ import org.airsonic.player.domain.Genre;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.RandomSearchCriteria;
-import org.airsonic.player.util.Util;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -193,7 +192,6 @@ public class MediaFileDao extends AbstractDao {
                     "where path=:path and folder_id=:fid";
         }
 
-        LOG.trace("Updating media file {}", Util.debugObject(file));
         Map<String, Object> args = new HashMap<>();
         args.put("id", file.getId());
         args.put("path", file.getPath());

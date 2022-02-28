@@ -3,6 +3,7 @@ package org.airsonic.player.domain;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Objects;
 
 public class CoverArt {
     private int entityId;
@@ -14,8 +15,10 @@ public class CoverArt {
     private Instant updated = created;
 
     public enum EntityType {
-        MEDIA_FILE, ALBUM, ARTIST
+        MEDIA_FILE, ALBUM, ARTIST, NONE
     }
+
+    public final static CoverArt NULL_ART = new CoverArt(-2, EntityType.NONE, null, null, false);
 
     public CoverArt(int entityId, EntityType entityType, String path, Integer folderId, boolean overridden) {
         super();
@@ -96,4 +99,24 @@ public class CoverArt {
         this.updated = updated;
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(entityId, entityType);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        CoverArt other = (CoverArt) obj;
+        if (entityId != other.entityId)
+            return false;
+        if (entityType != other.entityType)
+            return false;
+        return true;
+    }
 }

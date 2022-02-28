@@ -59,7 +59,6 @@ import java.awt.*;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -210,8 +209,7 @@ public class StreamController {
             LOG.info("{}: {} listening to {} in folder {}", player.getIpAddress(), player.getUsername(), FileUtil.getShortPath(mediaFile.getRelativePath()), mediaFile.getFolderId());
             mediaFileService.incrementPlayCount(mediaFile);
             scrobble(mediaFile, player, false);
-            status.setFile(mediaFile.getRelativePath());
-            status.setFolderId(mediaFile.getFolderId());
+            status.setMediaFile(mediaFile);
             statusService.addActiveLocalPlay(
                     new PlayStatus(status.getId(), mediaFile, player, status.getMillisSinceLastUpdate()));
         };
@@ -300,8 +298,10 @@ public class StreamController {
                 try (InputStream in = input;
                         PipedOutputStream pout = new PipedOutputStream(pin);
                         ShoutCastOutputStream shout = new ShoutCastOutputStream(pout,
-                            () -> Optional.ofNullable(s).map(TransferStatus::getFile).map(Path::toString)
-                                    .orElseGet(settingsService::getWelcomeTitle))) {
+                            () -> Optional.ofNullable(s)
+                                    .map(TransferStatus::getMediaFile)
+                                    .map(MediaFile::getTitle)
+                                .orElseGet(settingsService::getWelcomeTitle))) {
                     // IOUtils.copy(playStream, shout);
                     ByteStreams.copy(in, shout);
                     // StreamUtils.copy(playStream, shout);
@@ -322,8 +322,7 @@ public class StreamController {
         private final BiConsumer<InputStream, TransferStatus> streamInit;
         private final HttpHeaders headers;
 
-        public ShoutcastDetails(InputStream stream, BiConsumer<InputStream, TransferStatus> streamInit,
-                HttpHeaders headers) {
+        public ShoutcastDetails(InputStream stream, BiConsumer<InputStream, TransferStatus> streamInit, HttpHeaders headers) {
             this.stream = stream;
             this.streamInit = streamInit;
             this.headers = headers;

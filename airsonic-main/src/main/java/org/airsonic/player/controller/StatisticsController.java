@@ -1,5 +1,6 @@
 package org.airsonic.player.controller;
 
+import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.TransferStatus;
 import org.airsonic.player.domain.TransferStatus.SampleHistory;
@@ -100,7 +101,11 @@ public class StatisticsController {
             this.playerDescription = Optional.ofNullable(transferStatus.getPlayer()).map(Player::toString).orElse(null);
             this.playerType = Optional.ofNullable(transferStatus.getPlayer()).map(Player::getType).orElse(null);
             this.username = Optional.ofNullable(transferStatus.getPlayer()).map(Player::getUsername).orElse(null);
-            this.path = FileUtil.getShortPath(transferStatus.getFile());
+            this.path = Optional.ofNullable(transferStatus.getMediaFile())
+                    .map(MediaFile::getRelativePath)
+                    .or(() -> Optional.ofNullable(transferStatus.getExternalFile()))
+                    .map(FileUtil::getShortPath)
+                    .orElse(null);
             this.bytesTransferred = StringUtil.formatBytes(transferStatus.getBytesTransferred(), locale);
             this.history = transferStatus.getHistory();
         }

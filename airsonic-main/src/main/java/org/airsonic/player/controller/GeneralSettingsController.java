@@ -74,6 +74,7 @@ public class GeneralSettingsController {
         command.setWelcomeSubtitle(settingsService.getWelcomeSubtitle());
         command.setWelcomeMessage(settingsService.getWelcomeMessage());
         command.setLoginMessage(settingsService.getLoginMessage());
+        command.setSessionDuration(settingsService.getSessionDuration());
 
         Theme[] themes = settingsService.getAvailableThemes();
         command.setThemes(themes);
@@ -136,6 +137,7 @@ public class GeneralSettingsController {
         settingsService.setWelcomeSubtitle(command.getWelcomeSubtitle());
         settingsService.setWelcomeMessage(command.getWelcomeMessage());
         settingsService.setLoginMessage(command.getLoginMessage());
+        settingsService.setSessionDuration(command.getSessionDuration());
         settingsService.setThemeId(theme.getId());
         settingsService.setLocale(locale);
         settingsService.save();
