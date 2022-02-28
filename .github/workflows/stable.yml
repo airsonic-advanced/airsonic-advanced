@@ -58,7 +58,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ steps.tagcalc.outputs.tag }}
+          tag_name: ${{ steps.tagcalc.outputs.tag }}
           name: Stable Release ${{ steps.tagcalc.outputs.tag }}
           draft: false
           prerelease: false
