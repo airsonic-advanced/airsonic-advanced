@@ -58,6 +58,7 @@ jobs:
           name: Edge Release ${{ steps.tagcalc.outputs.tag }}
           draft: false
           prerelease: true
+          generate_release_notes: true
           files: |
             airsonic-main/target/airsonic.war
             airsonic-main/target/artifacts-checksums.sha
