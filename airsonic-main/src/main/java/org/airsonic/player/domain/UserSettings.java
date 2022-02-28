@@ -396,6 +396,7 @@ public class UserSettings {
         private boolean trackNumberVisible;
         private boolean discNumberVisible;
         private boolean artistVisible = true;
+        private boolean albumArtistVisible;
         private boolean albumVisible = true;
         private boolean genreVisible;
         private boolean yearVisible;
@@ -435,6 +436,14 @@ public class UserSettings {
 
         public void setArtistVisible(boolean artistVisible) {
             this.artistVisible = artistVisible;
+        }
+
+        public boolean getAlbumArtistVisible() {
+            return albumArtistVisible;
+        }
+
+        public void setAlbumArtistVisible(boolean albumArtistVisible) {
+            this.albumArtistVisible = albumArtistVisible;
         }
 
         public boolean getAlbumVisible() {

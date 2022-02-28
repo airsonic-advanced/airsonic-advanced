@@ -244,7 +244,7 @@
                     },
                     { data: "albumArtist",
                       className: "detail truncate",
-                      visible: ${model.visibility.artistVisible},
+                      visible: ${model.visibility.albumArtistVisible},
                       title: "<fmt:message key='personalsettings.albumartist'/>",
                       render(artist, type) {
                           if (type == "display" && artist != null) {
