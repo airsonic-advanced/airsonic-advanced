@@ -103,15 +103,6 @@ public final class Util {
         return objectMapper;
     }
 
-    public static String debugObject(Object object) {
-        try {
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
-        } catch (JsonProcessingException e) {
-            LOG.warn("Cant output debug object", e);
-            return "";
-        }
-    }
-
     /**
      * Return a complete URL for the given HTTP request,
      * including the query string.
