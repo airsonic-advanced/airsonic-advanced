@@ -175,10 +175,11 @@ public final class StringUtil {
 
     /**
      * Formats a duration to M:SS or H:MM:SS or M:SS.mmm
+     * convertToHours: If false: will not convert, if true: will convert, if null: will convert if needed
      */
-    public static String formatDuration(long millis, boolean convertToHours) {
+    public static String formatDuration(long millis, Boolean convertToHours) {
         String format = "m:ss";
-        if (millis >= 3600000 && convertToHours) {
+        if ((millis >= 3600000 && convertToHours == null) || (convertToHours != null && convertToHours)) {
             format = "H:m" + format;
         }
 
@@ -190,12 +191,7 @@ public final class StringUtil {
     }
 
     public static String formatDuration(long millis) {
-        return formatDuration(millis, true);
-    }
-
-    public static String formatDurationUpnp(long millis) {
-        String format = "H:mm:ss.S";
-        return DurationFormatUtils.formatDuration(millis, format);
+        return formatDuration(millis, null);
     }
 
     /**
