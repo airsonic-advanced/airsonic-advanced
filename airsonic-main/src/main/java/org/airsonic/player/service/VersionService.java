@@ -150,7 +150,7 @@ public class VersionService {
             try {
                 localBuildNumber = build.getProperty("revision");
             } catch (Exception x) {
-                LOG.warn("Failed to resolve local Airsonic build number.", x);
+                LOG.warn("Failed to resolve local Airsonic build commit.", x);
             }
         }
         return localBuildNumber;
@@ -239,6 +239,8 @@ public class VersionService {
                 .build();
         HttpGet method = new HttpGet(VERSION_URL);
         method.setConfig(requestConfig);
+        method.setHeader("accept", "application/vnd.github.v3+json");
+        method.setHeader("User-Agent", "Airsonic/" + getLocalVersion());
         List<Map<String, Object>> content;
         try (CloseableHttpClient client = HttpClients.createDefault()) {
             content = client.execute(method, respHandler);
@@ -254,7 +256,9 @@ public class VersionService {
 
         Optional<Map<String, Object>> betaR = releases.stream().findFirst();
         Optional<Map<String, Object>> finalR = releases.stream().filter(x -> !((Boolean)x.get("draft")) && !((Boolean)x.get("prerelease"))).findFirst();
-        Optional<Map<String,Object>> currentR = releases.stream().filter(x -> StringUtils.equals(build.getProperty("version") + "." + build.getProperty("timestamp"), (String) x.get("tag_name"))).findAny();
+        Optional<Map<String,Object>> currentR = releases.stream().filter(x ->
+            StringUtils.equals(build.getProperty("version") + "." + build.getProperty("timestamp"), (String) x.get("tag_name")) ||
+            StringUtils.equals(build.getProperty("version"), (String) x.get("tag_name"))).findAny();
 
         LOG.debug("Got {} for beta version", betaR.map(x -> x.get("tag_name")).orElse(null));
         LOG.debug("Got {} for final version", finalR.map(x -> x.get("tag_name")).orElse(null));
