@@ -168,6 +168,17 @@
                           return artist;
                       }
                     },
+                    { data: "albumArtist",
+                      className: "detail truncate",
+                      visible: ${model.visibility.artistVisible},
+                      title: "<fmt:message key='personalsettings.albumartist'/>",
+                      render: function(artist, type, row) {
+                          if (type == "display" && artist != null) {
+                              return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
+                          }
+                          return artist;
+                      }
+                    },
                     { data: "genre",
                       className: "detail truncate",
                       visible: ${model.visibility.genreVisible},
