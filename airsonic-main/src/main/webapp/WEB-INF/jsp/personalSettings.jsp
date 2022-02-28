@@ -128,6 +128,12 @@
             <td style="text-align:center"><form:checkbox path="playqueueVisibility.artistVisible" cssClass="checkbox"/></td>
         </tr>
         <tr>
+            <td><fmt:message key="personalsettings.albumartist"/></td>
+            <td style="text-align:center"><form:checkbox path="mainVisibility.albumArtistVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playlistVisibility.albumArtistVisible" cssClass="checkbox"/></td>
+            <td style="text-align:center"><form:checkbox path="playqueueVisibility.albumArtistVisible" cssClass="checkbox"/></td>
+        </tr>
+        <tr>
             <td><fmt:message key="personalsettings.album"/></td>
             <td style="text-align:center"><form:checkbox path="mainVisibility.albumVisible" cssClass="checkbox"/></td>
             <td style="text-align:center"><form:checkbox path="playlistVisibility.albumVisible" cssClass="checkbox"/></td>
