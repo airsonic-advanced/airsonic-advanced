@@ -49,10 +49,29 @@ public class VersionTestCase extends TestCase {
         doTestVersion("1.5.beta2", "1.5.beta11");
 
         doTestVersion("6.2-SNAPSHOT", "6.11-SNAPSHOT");
+
+        // internal stable comparisons
+        doTestVersion("10.6.0.20200424173747", "10.6.0.20200424173748");
+        doTestVersion("10.6.0.20200424173747", "11.0.0.20200424173747");
+        // internal stable vs external stable
+        doTestVersion("10.6.0", "10.6.0.20200424173747"); // should be the same
+        doTestVersion("10.6.0.20200424173747", "11.0.0");
+        // internal stable vs external snapshots
+        doTestVersion("10.6.0-SNAPSHOT.20200424173747", "10.6.0.20200424173747");
+        doTestVersion("10.6.0.20200424173747", "11.0.0-SNAPSHOT.20200424173747");
+        // compare internal snapshot with external stable
+        doTestVersion("10.6.0-SNAPSHOT.20200424173747", "10.6.0");
+        doTestVersion("10.6.0-SNAPSHOT.20200424173747", "11.0.0");
+        // compare internal snapshot with external snapshot
+        doTestVersion("10.6.0-SNAPSHOT.20200424173747", "10.6.0-SNAPSHOT.20200424173748");
+        doTestVersion("10.6.0-SNAPSHOT.20200424173747", "11.0.0-SNAPSHOT.20200424173747");
     }
 
     public void testIsPreview() {
         Version version = new Version("1.6.0-SNAPSHOT");
+        assertTrue("Version should be snapshot", version.isPreview());
+
+        version = new Version("1.6.0-SNAPSHOT.20200424173747");
         assertTrue("Version should be snapshot", version.isPreview());
 
         version = new Version("1.6.0-beta2");
