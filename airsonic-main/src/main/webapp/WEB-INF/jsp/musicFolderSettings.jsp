@@ -52,17 +52,17 @@
         <th><fmt:message key="musicfoldersettings.name"/></th>
         <th><fmt:message key="musicfoldersettings.path"/></th>
         <th><fmt:message key="status.type"/></th>
-        <th style="padding-left:1em"><fmt:message key="musicfoldersettings.enabled"/></th>
-        <th style="padding-left:1em"><fmt:message key="common.delete"/></th>
+        <th><fmt:message key="musicfoldersettings.enabled"/></th>
+        <th><fmt:message key="common.delete"/></th>
         <th></th>
     </tr>
 
     <c:forEach items="${command.musicFolders}" var="folder" varStatus="loopStatus">
         <tr>
-            <td><form:input path="musicFolders[${loopStatus.index}].name" size="20"/></td>
-            <td><form:input path="musicFolders[${loopStatus.index}].path" size="40"/></td>
+            <td><form:input path="musicFolders[${loopStatus.index}].name" style="width:90%"/></td>
+            <td><form:input path="musicFolders[${loopStatus.index}].path" style="width:90%"/></td>
             <td align="center"><span><c:out value="${folder.type}"/></span></td>
-            <td align="center" style="padding-left:1em">
+            <td align="center">
               <c:if test="${folder.type != 'PODCAST'}">
                 <form:checkbox path="musicFolders[${loopStatus.index}].enabled" cssClass="checkbox"/>
               </c:if>
@@ -71,7 +71,7 @@
                 <form:radiobutton path="musicFolders[${loopStatus.index}].enabled" value="false" cssClass="podcast-enable-radio" cssStyle="display:none;"/>
               </c:if>
             </td>
-            <td align="center" style="padding-left:1em"><form:checkbox path="musicFolders[${loopStatus.index}].delete" cssClass="checkbox"/></td>
+            <td align="center"><form:checkbox path="musicFolders[${loopStatus.index}].delete" cssClass="checkbox"/></td>
             <td>
               <c:if test="${not folder.existing}"><span class="warning"><fmt:message key="musicfoldersettings.notfound"/></span></c:if>
               <c:if test="${folder.overlap}"><span><fmt:message key="musicfoldersettings.overlap"><fmt:param value="${folder.overlapStatus}"/></fmt:message></span></c:if>
@@ -112,14 +112,14 @@
     </c:if>
 
     <tr>
-        <td><form:input id="newMusicFolderName" path="newMusicFolder.name" size="20"/></td>
-        <td><form:input id="newMusicFolderPath" path="newMusicFolder.path" size="40"/></td>
+        <td><form:input id="newMusicFolderName" path="newMusicFolder.name" style="width:90%"/></td>
+        <td><form:input id="newMusicFolderPath" path="newMusicFolder.path" style="width:90%"/></td>
         <td align="center">
           <form:select id="newMusicFolderType" path="newMusicFolder.type" >
             <form:options items="${command.musicFolderTypes}" />
           </form:select>
         </td>
-        <td align="center" style="padding-left:1em"><form:checkbox path="newMusicFolder.enabled" cssClass="checkbox"/></td>
+        <td align="center"><form:checkbox path="newMusicFolder.enabled" cssClass="checkbox"/></td>
         <td></td>
         <td></td>
     </tr>
