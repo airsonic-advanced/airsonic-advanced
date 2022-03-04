@@ -425,6 +425,9 @@
             var dialogSize = getJQueryUiDialogPlaylistSize("playQueue");
             $("#dialog-select-playlist").dialog({resizable: true, height: dialogSize.height, width: dialogSize.width, autoOpen: false,
                 buttons: {
+                    "<fmt:message key="common.add"/>": function() {
+                        pq.appendPlaylists();
+                    },
                     "<fmt:message key="common.cancel"/>"() {
                         $(this).dialog("close");
                     }
@@ -980,17 +983,23 @@
             for (var i = 0; i < playlists.length; i++) {
                 var playlist = playlists[i];
                 $("<p>").addClass("dense").append(
-                    $("<b>").append(
-                        $("<a>").attr("href","#").attr("onclick", "playQueue.appendPlaylist(" + playlist.id + ")").text(playlist.name)))
+                  [
+                    $("<input>").attr("type", "checkbox").attr("id", "plsel" + playlist.id).attr("name", "playlistid").attr("value", playlist.id),
+                    $("<label>").attr("for", "plsel" + playlist.id).text(playlist.name).css("font-weight", "bold").css("margin-left", "1em")
+                  ])
                 .appendTo("#dialog-select-playlist-list");
             }
             $("#dialog-select-playlist").dialog("open");
         },
-        appendPlaylist(playlistId) {
+        appendPlaylists() {
+            var pq = this;
             $("#dialog-select-playlist").dialog("close");
 
-            var mediaFileIds = this.musicTable.rows({selected:true}).data().map(function(d) { return d.id; }).toArray();
+            var mediaFileIds = this.musicTable.rows({selected:true}).data().map(d => d.id).toArray();
 
+            $("#dialog-select-playlist-list input:checked").each((i, e) => pq.appendPlaylist(e.value, mediaFileIds));
+        },
+        appendPlaylist(playlistId, mediaFileIds) {
             top.StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
         },
 
@@ -1347,7 +1356,7 @@
 
 </div>
 
-<div id="dialog-select-playlist" title="<fmt:message key='main.addtoplaylist.title'/>" style="display: none;">
+<div id="dialog-select-playlist" title="<fmt:message key='playlist.append'/>" style="display: none;">
     <p><fmt:message key="main.addtoplaylist.text"/></p>
     <div id="dialog-select-playlist-list"></div>
 </div>

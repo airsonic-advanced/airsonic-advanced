@@ -247,6 +247,9 @@
         var dialogSize = getJQueryUiDialogPlaylistSize("mediaMain");
         $("#dialog-select-playlist").dialog({resizable: true, height: dialogSize.height, width: dialogSize.width, autoOpen: false,
             buttons: {
+                "<fmt:message key="common.add"/>": function() {
+                    appendPlaylists();
+                },
                 "<fmt:message key="common.cancel"/>": function() {
                     $(this).dialog("close");
                 }
@@ -924,16 +927,24 @@
         $("#dialog-select-playlist-list").empty();
         for (var i = 0; i < playlists.length; i++) {
             var playlist = playlists[i];
-            $("<p class='dense'><b><a href='#' onclick='appendPlaylist(" + playlist.id + ")'>" + escapeHtml(playlist.name)
-                    + "</a></b></p>").appendTo("#dialog-select-playlist-list");
+            $("<p>").addClass("dense").append(
+                  [
+                    $("<input>").attr("type", "checkbox").attr("id", "plsel" + playlist.id).attr("name", "playlistid").attr("value", playlist.id),
+                    $("<label>").attr("for", "plsel" + playlist.id).text(playlist.name).css("font-weight", "bold").css("margin-left", "1em")
+                  ])
+                .appendTo("#dialog-select-playlist-list");
         }
         $("#dialog-select-playlist").dialog("open");
     }
-    function appendPlaylist(playlistId) {
+    function appendPlaylists() {
+        var pl = this;
         $("#dialog-select-playlist").dialog("close");
 
-        var mediaFileIds = filesTable.rows({selected:true}).data().map(function(d) { return d.id; }).toArray();
+        var mediaFileIds = filesTable.rows({selected:true}).data().map(d => d.id).toArray();
 
+        $("#dialog-select-playlist-list input:checked").each((i, e) => pl.appendPlaylist(e.value, mediaFileIds));
+    }
+    function appendPlaylist(playlistId, mediaFileIds) {
         top.StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
     }
 
@@ -1187,7 +1198,7 @@
 <table id="artistTopSongsTable" class="music indent hover nowrap stripe compact hide-table-header" style="width: 100%;">
 </table>
 
-<div id="dialog-select-playlist" title="<fmt:message key='main.addtoplaylist.title'/>" style="display: none;">
+<div id="dialog-select-playlist" title="<fmt:message key='playlist.append'/>" style="display: none;">
     <p><fmt:message key="main.addtoplaylist.text"/></p>
     <div id="dialog-select-playlist-list"></div>
 </div>
