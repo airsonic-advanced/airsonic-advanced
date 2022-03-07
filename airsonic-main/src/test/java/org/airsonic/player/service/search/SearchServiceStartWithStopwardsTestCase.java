@@ -5,7 +5,6 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.SearchCriteria;
 import org.airsonic.player.domain.SearchResult;
-import org.airsonic.player.service.SearchService;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.AfterClass;
 import org.junit.Assert;

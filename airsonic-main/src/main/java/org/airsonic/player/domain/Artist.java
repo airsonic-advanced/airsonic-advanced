@@ -20,7 +20,8 @@
 package org.airsonic.player.domain;
 
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Sindre Mehus
@@ -30,21 +31,18 @@ public class Artist {
 
     private int id;
     private String name;
-    private final AtomicInteger albumCount = new AtomicInteger();
     private Instant lastScanned;
     private boolean present;
-    private Integer folderId;
+    private Set<Integer> albumIds = ConcurrentHashMap.newKeySet();
 
     public Artist() {
     }
 
-    public Artist(int id, String name, int albumCount, Instant lastScanned, boolean present, Integer folderId) {
+    public Artist(int id, String name, Instant lastScanned, boolean present) {
         this.id = id;
         this.name = name;
-        this.albumCount.set(albumCount);
         this.lastScanned = lastScanned;
         this.present = present;
-        this.folderId = folderId;
     }
 
     public int getId() {
@@ -63,14 +61,6 @@ public class Artist {
         this.name = name;
     }
 
-    public int getAlbumCount() {
-        return albumCount.get();
-    }
-
-    public void setAlbumCount(int albumCount) {
-        this.albumCount.set(albumCount);
-    }
-
     public Instant getLastScanned() {
         return lastScanned;
     }
@@ -87,13 +77,14 @@ public class Artist {
         this.present = present;
     }
 
-    public void setFolderId(Integer folderId) {
-        this.folderId = folderId;
+    public Set<Integer> getAlbumIds() {
+        return albumIds;
     }
 
-    public Integer getFolderId() {
-        return folderId;
+    public void setAlbumIds(Set<Integer> albumIds) {
+        this.albumIds = albumIds;
     }
+
 
     // placeholder for persistence later
     private CoverArt art;

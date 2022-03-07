@@ -52,6 +52,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.joining;
+
 /**
  * Abstract superclass for all DAO's.
  *
@@ -80,9 +82,7 @@ public class AbstractDao {
     }
 
     protected static String prefix(String columns, String prefix) {
-        List<String> l = Arrays.asList(columns.split(", "));
-        l.replaceAll(s -> prefix + "." + s);
-        return String.join(", ", l);
+        return Stream.of(columns.split(", ")).map(s -> prefix + "." + s).collect(joining(", "));
     }
 
     protected static Object[] convertToDBTypes(Object[] args) {

@@ -19,7 +19,7 @@
 */
 package org.airsonic.player.domain;
 
-import org.airsonic.player.service.SearchService;
+import org.airsonic.player.service.search.SearchService;
 
 import java.util.ArrayList;
 import java.util.List;

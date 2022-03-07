@@ -22,10 +22,14 @@ package org.airsonic.player.domain;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Represents a list of genres.
@@ -38,31 +42,26 @@ public class Genres {
     private final Map<String, Genre> genres = new ConcurrentHashMap<>();
 
     // genre names can be ([genre] --> [split to])
-    // - abc --> ['abc']
-    // - abc; --> ['abc', '']
-    // - abc;xyz --> ['abc', 'xyz']
-    // - abc; xyz --> ['abc', ' xyz']
+    // - [abc] --> ['abc']
+    // - [abc;] --> ['abc']
+    // - [abc; ] --> ['abc', ' ']
+    // - [abc;xyz] --> ['abc', 'xyz']
+    // - [abc; xyz] --> ['abc', ' xyz']
 
-    public void incrementAlbumCount(String genreName, String separators) {
-        String[] splitGenres = StringUtils.split(genreName, separators);
-        if (splitGenres.length > 1) { // otherwise it's the same genre as the original
-            Stream.of(splitGenres)
-                    .map(StringUtils::trim)
-                    .filter(StringUtils::isNotBlank)
-                    .forEach(s -> genres.computeIfAbsent(s, k -> new Genre(k)).incrementAlbumCount());
+    public static Set<Genre> parseGenres(String genreString, String separators) {
+        if (StringUtils.isBlank(genreString)) {
+            return Collections.emptySet();
         }
-        genres.computeIfAbsent(genreName, k -> new Genre(k)).incrementAlbumCount();
+        String[] splitGenres = StringUtils.split(genreString, separators);
+        return Stream.of(splitGenres)
+                .map(StringUtils::trim)
+                .filter(StringUtils::isNotBlank)
+                .map(Genre::new)
+                .collect(toSet());
     }
 
-    public void incrementSongCount(String genreName, String separators) {
-        String[] splitGenres = StringUtils.split(genreName, separators);
-        if (splitGenres.length > 1) { // otherwise it's the same genre as the original
-            Stream.of(splitGenres)
-                    .map(StringUtils::trim)
-                    .filter(StringUtils::isNotBlank)
-                    .forEach(s -> genres.computeIfAbsent(s, k -> new Genre(k)).incrementSongCount());
-        }
-        genres.computeIfAbsent(genreName, k -> new Genre(k)).incrementSongCount();
+    public Set<Genre> addGenres(Set<Genre> incoming) {
+        return incoming.stream().map(g -> genres.computeIfAbsent(g.getName(), k -> g)).collect(toSet());
     }
 
     public List<Genre> getGenres() {

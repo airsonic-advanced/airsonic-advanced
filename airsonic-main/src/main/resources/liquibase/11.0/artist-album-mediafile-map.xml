@@ -1,0 +1,135 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="album-file-table" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="album_file"/>
+            </not>
+        </preConditions>
+        <createTable tableName="album_file">
+            <column name="album_id" type="int">
+                <constraints nullable="false" referencedTableName="album" referencedColumnNames="id" foreignKeyName="alf_al_id_fk" deleteCascade="true"/>
+            </column>
+            <column name="media_file_id" type="int">
+                <constraints nullable="false" referencedTableName="media_file" referencedColumnNames="id" foreignKeyName="alf_mf_id_fk" deleteCascade="true"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="album_file" columnNames="album_id,media_file_id"/>
+    </changeSet>
+    <changeSet id="populate-album-file-table" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="album_file"/>
+        </preConditions>
+        <sql>
+            INSERT INTO album_file (album_id, media_file_id)
+            SELECT a.id, m.id FROM album a JOIN media_file m ON a.path=m.path AND a.folder_id=m.folder_id
+        </sql>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="drop-path-from-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="path"/>
+        </preConditions>
+        <dropColumn tableName="album" columnName="path"/>
+        <rollback>
+            <addColumn tableName="album" >
+                <column name="path" type="${varchar_type}" >
+                    <constraints nullable="false" />
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-folder-id-from-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="folder_id"/>
+        </preConditions>
+        <dropColumn tableName="album" columnName="folder_id"/>
+        <rollback>
+            <addColumn tableName="album" >
+                <column name="folder_id" type="int" >
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="album-genre-table" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="album_genre"/>
+            </not>
+        </preConditions>
+        <createTable tableName="album_genre">
+            <column name="album_id" type="int">
+                <constraints nullable="false" referencedTableName="album" referencedColumnNames="id" foreignKeyName="alg_al_id_fk" deleteCascade="true"/>
+            </column>
+            <column name="genre" type="${varchar_type}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="album_genre" columnNames="album_id,genre"/>
+    </changeSet>
+    <changeSet id="populate-album-genre-table" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="album_genre"/>
+        </preConditions>
+        <sql>
+            INSERT INTO album_genre (album_id, genre)
+            SELECT id, genre FROM album WHERE genre IS NOT NULL
+        </sql>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="drop-genre-from-album" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="genre"/>
+        </preConditions>
+        <dropColumn tableName="album" columnName="genre"/>
+        <rollback>
+            <addColumn tableName="album" >
+                <column name="genre" type="${varchar_type}" >
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="artist-album-table" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="artist_album"/>
+            </not>
+        </preConditions>
+        <createTable tableName="artist_album">
+            <column name="artist_id" type="int">
+                <constraints nullable="false" referencedTableName="artist" referencedColumnNames="id" foreignKeyName="aral_ar_id_fk" deleteCascade="true"/>
+            </column>
+            <column name="album_id" type="int">
+                <constraints nullable="false" referencedTableName="album" referencedColumnNames="id" foreignKeyName="aral_al_id_fk" deleteCascade="true"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="artist_album" columnNames="artist_id,album_id"/>
+    </changeSet>
+    <changeSet id="drop-album-count-from-artist" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="artist" columnName="album_count"/>
+        </preConditions>
+        <dropColumn tableName="artist" columnName="album_count"/>
+        <rollback>
+            <addColumn tableName="artist" >
+                <column name="album_count" type="int" defaultValueNumeric="0">
+                    <constraints nullable="false"/>
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-folder-id-from-artist" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="artist" columnName="folder_id"/>
+        </preConditions>
+        <dropColumn tableName="artist" columnName="folder_id"/>
+        <rollback>
+            <addColumn tableName="artist" >
+                <column name="folder_id" type="int">
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

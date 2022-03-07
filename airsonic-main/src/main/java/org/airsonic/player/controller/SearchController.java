@@ -22,13 +22,12 @@ package org.airsonic.player.controller;
 import org.airsonic.player.command.SearchCommand;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.domain.*;
-import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.PlayerService;
-import org.airsonic.player.service.SearchService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.search.IndexType;
+import org.airsonic.player.service.search.SearchService;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,13 +42,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
+import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.reducing;
 
 /**
  * Controller for the search page.
@@ -70,8 +70,6 @@ public class SearchController {
     private SearchService searchService;
     @Autowired
     private MediaFolderService mediaFolderService;
-    @Autowired
-    private MediaFileService mediaFileService;
     @Autowired
     private AlbumDao albumDao;
 
@@ -104,34 +102,40 @@ public class SearchController {
 
             SearchResult artists = searchService.search(criteria, musicFolders, IndexType.ARTIST);
             SearchResult artistsId3 = searchService.search(criteria, musicFolders, IndexType.ARTIST_ID3);
-            artistsId3.getArtists().stream().map(Artist::getName).flatMap(ar -> albumDao.getAlbumsForArtist(ar, musicFolders).stream().map(al -> mediaFileService.getMediaFile(al.getPath(), al.getFolderId())).map(MediaFile::getId).map(m -> Pair.of(ar, m))).collect(groupingBy(p -> p.getKey(), mapping(p -> p.getValue(), toSet())));
-            artists.getMediaFiles().stream().map(m -> Pair.of(Optional.ofNullable(m.getArtist()).or(() -> Optional.ofNullable(m.getAlbumArtist())).orElse("(Unknown)"), m.getId()));
             command.setArtists(Stream.concat(
                     artistsId3.getArtists().stream()
                         .map(Artist::getName)
                         .flatMap(ar -> albumDao.getAlbumsForArtist(ar, musicFolders).stream()
-                                .map(al -> mediaFileService.getMediaFile(al.getPath(), al.getFolderId()))
-                                    .filter(Objects::nonNull)
-                                .map(MediaFile::getId)
-                                .map(m -> Pair.of(ar, m))),
+                            .map(al -> Pair.of(ar, al.getMediaFileIds()))),
                     artists.getMediaFiles().stream()
                         .map(m -> Pair.of(
-                                Optional.ofNullable(m.getArtist())
-                                    .or(() -> Optional.ofNullable(m.getAlbumArtist()))
-                                    .orElse("(Unknown)"),
-                                m.getId())))
-                .collect(groupingBy(p -> p.getKey(), mapping(p -> p.getValue(), toSet()))));
+                            Optional.ofNullable(m.getArtist())
+                                .or(() -> Optional.ofNullable(m.getAlbumArtist()))
+                                .orElse("(Unknown)"),
+                            singleton(m.getId()))))
+                .collect(groupingBy(p -> p.getKey(), mapping(p -> p.getValue(), reducing(
+                    ConcurrentHashMap.newKeySet(),
+                    i -> i,
+                    (a, b) -> {
+                        a.addAll(b);
+                        return a;
+                    })))));
 
             SearchResult albums = searchService.search(criteria, musicFolders, IndexType.ALBUM);
             SearchResult albumsId3 = searchService.search(criteria, musicFolders, IndexType.ALBUM_ID3);
-            command.setAlbums(Stream
-                    .concat(albumsId3.getAlbums().stream()
-                            .map(a -> Optional.ofNullable(mediaFileService.getMediaFile(a.getPath(), a.getFolderId()))
-                                    .map(m -> Pair.of(Pair.of(a.getName(), a.getArtist()), m.getId())).orElse(null))
-                            .filter(Objects::nonNull),
-                            albums.getMediaFiles().stream()
-                                    .map(m -> Pair.of(Pair.of(m.getAlbumName(), m.getAlbumArtist()), m.getId())))
-                    .collect(groupingBy(p -> p.getKey(), mapping(p -> p.getValue(), toSet()))));
+            command.setAlbums(Stream.concat(
+                    albumsId3.getAlbums().stream()
+                        .map(a -> Pair.of(Pair.of(a.getName(), a.getArtist()), a.getMediaFileIds())),
+                    albums.getMediaFiles().stream()
+                        .map(m -> Pair.of(Pair.of(m.getAlbumName(), m.getAlbumArtist()), singleton(m.getId()))))
+                .collect(groupingBy(p -> p.getKey(),
+                    mapping(p -> p.getValue(), reducing(
+                        ConcurrentHashMap.newKeySet(),
+                        i -> i,
+                        (a, b) -> {
+                            a.addAll(b);
+                            return a;
+                        })))));
 
             SearchResult songs = searchService.search(criteria, musicFolders, IndexType.SONG);
             command.setSongs(songs.getMediaFiles());

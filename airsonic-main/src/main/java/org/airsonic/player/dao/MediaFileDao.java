@@ -266,7 +266,7 @@ public class MediaFileDao extends AbstractDao {
 
     public List<Genre> getGenres(boolean sortByAlbum) {
         String orderBy = sortByAlbum ? "album_count" : "song_count";
-        return query("select " + GENRE_COLUMNS + " from genre order by " + orderBy + ", name desc", genreRowMapper);
+        return query("select " + GENRE_COLUMNS + " from genre order by " + orderBy + " desc, name desc", genreRowMapper);
     }
 
     public boolean updateGenres(List<Genre> genres) {

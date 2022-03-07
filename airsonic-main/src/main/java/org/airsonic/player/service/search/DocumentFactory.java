@@ -23,12 +23,11 @@ package org.airsonic.player.service.search;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.Artist;
 import org.airsonic.player.domain.MediaFile;
-import org.airsonic.player.domain.MusicFolder;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
@@ -36,6 +35,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.function.BiConsumer;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
@@ -98,9 +98,6 @@ public class DocumentFactory {
     private BiConsumer<Document, String> fieldMediatype = (doc, value) ->
         fieldKey.accept(doc, FieldNames.MEDIA_TYPE, value);
 
-    private BiConsumer<Document, String> fieldFolderPath = (doc, value) ->
-        fieldKey.accept(doc, FieldNames.FOLDER, value);
-
     private BiConsumer<Document, String> fieldGenre = (doc, value) -> {
         if (isEmpty(value)) {
             return;
@@ -120,7 +117,7 @@ public class DocumentFactory {
             return;
         }
         doc.add(new TextField(fieldName, value, Store.NO));
-        doc.add(new SortedDocValuesField(fieldName, new BytesRef(value)));
+        doc.add(new SortedSetDocValuesField(fieldName, new BytesRef(value)));
     };
 
     public final Term createPrimarykey(Integer id) {
@@ -146,12 +143,12 @@ public class DocumentFactory {
      * @return document
      * @since legacy
      */
-    public Document createAlbumDocument(MediaFile mediaFile, MusicFolder musicFolder) {
+    public Document createAlbumDocument(MediaFile mediaFile) {
         Document doc = new Document();
         fieldId.accept(doc, mediaFile.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
         fieldWords.accept(doc, FieldNames.ALBUM, mediaFile.getAlbumName());
-        fieldFolderPath.accept(doc, musicFolder.getPath().toString());
+        fieldFolderId.accept(doc, mediaFile.getFolderId());
         return doc;
     }
 
@@ -162,11 +159,31 @@ public class DocumentFactory {
      * @return document
      * @since legacy
      */
-    public Document createArtistDocument(MediaFile mediaFile, MusicFolder musicFolder) {
+    public Document createArtistDocument(MediaFile mediaFile) {
         Document doc = new Document();
         fieldId.accept(doc, mediaFile.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
-        fieldFolderPath.accept(doc, musicFolder.getPath().toString());
+        fieldFolderId.accept(doc, mediaFile.getFolderId());
+        return doc;
+    }
+
+    /**
+     * Create a document.
+     *
+     * @param mediaFile target of document
+     * @return document
+     * @since legacy
+     */
+    public Document createSongDocument(MediaFile mediaFile) {
+        Document doc = new Document();
+        fieldId.accept(doc, mediaFile.getId());
+        fieldMediatype.accept(doc, mediaFile.getMediaType().name());
+        fieldWords.accept(doc, FieldNames.TITLE, mediaFile.getTitle());
+        fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
+        fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getAlbumArtist());
+        fieldGenre.accept(doc, mediaFile.getGenre());
+        fieldYear.accept(doc, FieldNames.YEAR, mediaFile.getYear());
+        fieldFolderId.accept(doc, mediaFile.getFolderId());
         return doc;
     }
 
@@ -177,20 +194,20 @@ public class DocumentFactory {
      * @return document
      * @since legacy
      */
-    public Document createAlbumId3Document(Album album) {
+    public Document createAlbumId3Document(Album album, Collection<Integer> folderIds) {
         Document doc = new Document();
         fieldId.accept(doc, album.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, album.getArtist());
         fieldWords.accept(doc, FieldNames.ALBUM, album.getName());
-        fieldFolderId.accept(doc, album.getFolderId());
+        folderIds.stream().forEach(fid -> fieldFolderId.accept(doc, fid));
         return doc;
     }
 
     /**
      * Create a document.
      *
-     * @param artist target of document
-     * @param musicFolder target folder exists
+     * @param artist    target of document
+     * @param folderIds target folders for artists
      * @return document
      * @since legacy
      */
@@ -205,30 +222,11 @@ public class DocumentFactory {
      *  In implementation ARTIST and ALBUM became nullable,
      *  but null is not input at this point in data flow.
      */
-    public Document createArtistId3Document(Artist artist, MusicFolder musicFolder) {
+    public Document createArtistId3Document(Artist artist, Collection<Integer> folderIds) {
         Document doc = new Document();
         fieldId.accept(doc, artist.getId());
         fieldWords.accept(doc, FieldNames.ARTIST, artist.getName());
-        fieldFolderId.accept(doc, musicFolder.getId());
-        return doc;
-    }
-
-    /**
-     * Create a document.
-     *
-     * @param mediaFile target of document
-     * @return document
-     * @since legacy
-     */
-    public Document createSongDocument(MediaFile mediaFile, MusicFolder musicFolder) {
-        Document doc = new Document();
-        fieldId.accept(doc, mediaFile.getId());
-        fieldMediatype.accept(doc, mediaFile.getMediaType().name());
-        fieldWords.accept(doc, FieldNames.TITLE, mediaFile.getTitle());
-        fieldWords.accept(doc, FieldNames.ARTIST, mediaFile.getArtist());
-        fieldGenre.accept(doc, mediaFile.getGenre());
-        fieldYear.accept(doc, FieldNames.YEAR, mediaFile.getYear());
-        fieldFolderPath.accept(doc, musicFolder.getPath().toString());
+        folderIds.stream().forEach(fid -> fieldFolderId.accept(doc, fid));
         return doc;
     }
 

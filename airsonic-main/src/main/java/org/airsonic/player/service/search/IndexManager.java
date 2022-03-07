@@ -73,7 +73,7 @@ public class IndexManager {
      *    DocumentFactory or the class that they use.
      *
      */
-    private static final int INDEX_VERSION = 19;
+    private static final int INDEX_VERSION = 20;
 
     /**
      * Literal name of index top directory.
@@ -111,7 +111,7 @@ public class IndexManager {
 
     public void index(Album album) {
         Term primarykey = documentFactory.createPrimarykey(album);
-        Document document = documentFactory.createAlbumId3Document(album);
+        Document document = documentFactory.createAlbumId3Document(album, albumDao.getFolderIds(album));
         try {
             writers.get(IndexType.ALBUM_ID3).updateDocument(primarykey, document);
         } catch (Exception x) {
@@ -119,9 +119,9 @@ public class IndexManager {
         }
     }
 
-    public void index(Artist artist, MusicFolder musicFolder) {
+    public void index(Artist artist) {
         Term primarykey = documentFactory.createPrimarykey(artist);
-        Document document = documentFactory.createArtistId3Document(artist, musicFolder);
+        Document document = documentFactory.createArtistId3Document(artist, artistDao.getFolderIds(artist));
         try {
             writers.get(IndexType.ARTIST_ID3).updateDocument(primarykey, document);
         } catch (Exception x) {
@@ -129,17 +129,17 @@ public class IndexManager {
         }
     }
 
-    public void index(MediaFile mediaFile, MusicFolder musicFolder) {
+    public void index(MediaFile mediaFile) {
         Term primarykey = documentFactory.createPrimarykey(mediaFile);
         try {
             if (mediaFile.isFile()) {
-                Document document = documentFactory.createSongDocument(mediaFile, musicFolder);
+                Document document = documentFactory.createSongDocument(mediaFile);
                 writers.get(IndexType.SONG).updateDocument(primarykey, document);
             } else if (mediaFile.isAlbum()) {
-                Document document = documentFactory.createAlbumDocument(mediaFile, musicFolder);
+                Document document = documentFactory.createAlbumDocument(mediaFile);
                 writers.get(IndexType.ALBUM).updateDocument(primarykey, document);
             } else {
-                Document document = documentFactory.createArtistDocument(mediaFile, musicFolder);
+                Document document = documentFactory.createArtistDocument(mediaFile);
                 writers.get(IndexType.ARTIST).updateDocument(primarykey, document);
             }
         } catch (Exception x) {
@@ -165,8 +165,8 @@ public class IndexManager {
 
     public void expunge() {
         Term[] primarykeys = mediaFileDao.getArtistExpungeCandidates().stream()
-                .map(m -> documentFactory.createPrimarykey(m))
-                .toArray(i -> new Term[i]);
+                .map(documentFactory::createPrimarykey)
+                .toArray(Term[]::new);
         try {
             writers.get(IndexType.ARTIST).deleteDocuments(primarykeys);
         } catch (IOException e) {
@@ -174,8 +174,8 @@ public class IndexManager {
         }
 
         primarykeys = mediaFileDao.getAlbumExpungeCandidates().stream()
-                .map(m -> documentFactory.createPrimarykey(m))
-                .toArray(i -> new Term[i]);
+                .map(documentFactory::createPrimarykey)
+                .toArray(Term[]::new);
         try {
             writers.get(IndexType.ALBUM).deleteDocuments(primarykeys);
         } catch (IOException e) {
@@ -183,8 +183,8 @@ public class IndexManager {
         }
 
         primarykeys = mediaFileDao.getSongExpungeCandidates().stream()
-                .map(m -> documentFactory.createPrimarykey(m))
-                .toArray(i -> new Term[i]);
+                .map(documentFactory::createPrimarykey)
+                .toArray(Term[]::new);
         try {
             writers.get(IndexType.SONG).deleteDocuments(primarykeys);
         } catch (IOException e) {
@@ -192,8 +192,8 @@ public class IndexManager {
         }
 
         primarykeys = artistDao.getExpungeCandidates().stream()
-                .map(m -> documentFactory.createPrimarykey(m))
-                .toArray(i -> new Term[i]);
+                .map(documentFactory::createPrimarykey)
+                .toArray(Term[]::new);
         try {
             writers.get(IndexType.ARTIST_ID3).deleteDocuments(primarykeys);
         } catch (IOException e) {
@@ -201,8 +201,8 @@ public class IndexManager {
         }
 
         primarykeys = albumDao.getExpungeCandidates().stream()
-                .map(m -> documentFactory.createPrimarykey(m))
-                .toArray(i -> new Term[i]);
+                .map(documentFactory::createPrimarykey)
+                .toArray(Term[]::new);
         try {
             writers.get(IndexType.ALBUM_ID3).deleteDocuments(primarykeys);
         } catch (IOException e) {

@@ -30,12 +30,15 @@ import org.airsonic.player.dao.PlayQueueDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.Bookmark;
 import org.airsonic.player.domain.CoverArt.EntityType;
+import org.airsonic.player.domain.Genre;
+import org.airsonic.player.domain.Genres;
 import org.airsonic.player.domain.PlayQueue;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.search.IndexType;
+import org.airsonic.player.service.search.SearchService;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang.StringUtils;
@@ -72,6 +75,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.airsonic.player.security.RESTRequestParameterProcessingFilter.decrypt;
 import static org.springframework.web.bind.ServletRequestUtils.*;
@@ -333,7 +337,7 @@ public class SubsonicRESTController {
         result.setIgnoredArticles(settingsService.getIgnoredArticles());
         List<org.airsonic.player.domain.MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username);
 
-        List<org.airsonic.player.domain.Artist> artists = artistDao.getAlphabetialArtists(0, Integer.MAX_VALUE, musicFolders);
+        List<org.airsonic.player.domain.Artist> artists = artistDao.getAlphabeticalArtists(0, Integer.MAX_VALUE, musicFolders);
         SortedMap<MusicIndex, List<MusicIndex.SortableArtistWithArtist>> indexedArtists = musicIndexService.getIndexedArtists(artists);
         for (Map.Entry<MusicIndex, List<MusicIndex.SortableArtistWithArtist>> entry : indexedArtists.entrySet()) {
             IndexID3 index = new IndexID3();
@@ -503,7 +507,7 @@ public class SubsonicRESTController {
         jaxbArtist.setId(String.valueOf(artist.getId()));
         jaxbArtist.setName(artist.getName());
         jaxbArtist.setStarred(jaxbWriter.convertDate(artistDao.getArtistStarredDate(artist.getId(), username)));
-        jaxbArtist.setAlbumCount(artist.getAlbumCount());
+        jaxbArtist.setAlbumCount(artist.getAlbumIds().size());
         if (!CoverArt.NULL_ART.equals(coverArtService.get(EntityType.ARTIST, artist.getId()))) {
             jaxbArtist.setCoverArt(CoverArtController.ARTIST_COVERART_PREFIX + artist.getId());
         }
@@ -560,7 +564,7 @@ public class SubsonicRESTController {
         jaxbAlbum.setCreated(jaxbWriter.convertDate(album.getCreated()));
         jaxbAlbum.setStarred(jaxbWriter.convertDate(albumDao.getAlbumStarredDate(album.getId(), username)));
         jaxbAlbum.setYear(album.getYear());
-        jaxbAlbum.setGenre(album.getGenre());
+        jaxbAlbum.setGenre(album.getGenres().stream().map(Genre::getName).collect(joining("; ")));
         return jaxbAlbum;
     }
 
@@ -1156,7 +1160,7 @@ public class SubsonicRESTController {
         } else if ("alphabeticalByName".equals(type)) {
             albums = albumDao.getAlphabeticalAlbums(offset, size, false, false, musicFolders);
         } else if ("byGenre".equals(type)) {
-            albums = albumDao.getAlbumsByGenre(offset, size, getRequiredStringParameter(request, "genre"), musicFolders);
+            albums = albumDao.getAlbumsByGenre(offset, size, Genres.parseGenres(getRequiredStringParameter(request, "genre"), settingsService.getGenreSeparators()), musicFolders);
         } else if ("byYear".equals(type)) {
             albums = albumDao.getAlbumsByYear(offset, size, getRequiredIntParameter(request, "fromYear"),
                                               getRequiredIntParameter(request, "toYear"), musicFolders);

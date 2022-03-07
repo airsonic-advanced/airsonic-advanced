@@ -22,6 +22,8 @@ package org.airsonic.player.domain;
 import com.google.common.util.concurrent.AtomicDouble;
 
 import java.time.Instant;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -31,42 +33,37 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Album {
 
     private int id;
-    private String path;
     private String name;
     private String artist;
     private final AtomicInteger songCount = new AtomicInteger(0);
     private final AtomicDouble duration = new AtomicDouble(0);
     private Integer year;
-    private String genre;
     private final AtomicInteger playCount = new AtomicInteger(0);
     private Instant lastPlayed;
     private String comment;
     private Instant created;
     private Instant lastScanned;
     private boolean present;
-    private Integer folderId;
     private String musicBrainzReleaseId;
+    private Set<Integer> mediaFileIds = ConcurrentHashMap.newKeySet();
+    private Set<Genre> genres = ConcurrentHashMap.newKeySet();
 
     public Album() {
     }
 
-    public Album(int id, String path, String name, String artist, int songCount, double duration,
-            Integer year, String genre, int playCount, Instant lastPlayed, String comment, Instant created, Instant lastScanned,
-            boolean present, Integer folderId, String musicBrainzReleaseId) {
+    public Album(int id, String name, String artist, int songCount, double duration, Integer year, int playCount,
+            Instant lastPlayed, String comment, Instant created, Instant lastScanned, boolean present, String musicBrainzReleaseId) {
         this.id = id;
-        this.path = path;
         this.name = name;
         this.artist = artist;
         this.songCount.set(songCount);
         this.duration.set(duration);
         this.year = year;
-        this.genre = genre;
         this.playCount.set(playCount);
         this.lastPlayed = lastPlayed;
         this.comment = comment;
         this.created = created;
         this.lastScanned = lastScanned;
-        this.folderId = folderId;
         this.present = present;
         this.musicBrainzReleaseId = musicBrainzReleaseId;
     }
@@ -77,14 +74,6 @@ public class Album {
 
     public void setId(int id) {
         this.id = id;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
     }
 
     public String getName() {
@@ -133,14 +122,6 @@ public class Album {
 
     public void setYear(Integer year) {
         this.year = year;
-    }
-
-    public String getGenre() {
-        return genre;
-    }
-
-    public void setGenre(String genre) {
-        this.genre = genre;
     }
 
     public int getPlayCount() {
@@ -195,20 +176,28 @@ public class Album {
         this.present = present;
     }
 
-    public void setFolderId(Integer folderId) {
-        this.folderId = folderId;
-    }
-
-    public Integer getFolderId() {
-        return folderId;
-    }
-
     public String getMusicBrainzReleaseId() {
         return musicBrainzReleaseId;
     }
 
     public void setMusicBrainzReleaseId(String musicBrainzReleaseId) {
         this.musicBrainzReleaseId = musicBrainzReleaseId;
+    }
+
+    public Set<Integer> getMediaFileIds() {
+        return mediaFileIds;
+    }
+
+    public void setMediaFileIds(Set<Integer> mediaFileIds) {
+        this.mediaFileIds = mediaFileIds;
+    }
+
+    public Set<Genre> getGenres() {
+        return genres;
+    }
+
+    public void setGenres(Set<Genre> genres) {
+        this.genres = genres;
     }
 
     // placeholder for persistence later

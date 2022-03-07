@@ -23,7 +23,7 @@ import org.airsonic.player.dao.ArtistDao;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.Artist;
 import org.airsonic.player.domain.MusicFolder;
-import org.airsonic.player.service.SearchService;
+import org.airsonic.player.service.search.SearchService;
 import org.fourthline.cling.support.model.DIDLContent;
 import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.container.MusicArtist;
@@ -56,7 +56,7 @@ public class ArtistUpnpProcessor extends UpnpContentProcessor <Artist, Album> {
         container.setId(getRootId() + DispatchingContentDirectory.SEPARATOR + artist.getId());
         container.setParentID(getRootId());
         container.setTitle(artist.getName());
-        container.setChildCount(artist.getAlbumCount());
+        container.setChildCount(artist.getAlbumIds().size());
 
         return container;
     }
@@ -64,7 +64,7 @@ public class ArtistUpnpProcessor extends UpnpContentProcessor <Artist, Album> {
     @Override
     public List<Artist> getAllItems() {
         List<MusicFolder> allFolders = getDispatcher().getMediaFolderService().getAllMusicFolders();
-        List<Artist> allArtists = getArtistDao().getAlphabetialArtists(0, Integer.MAX_VALUE, allFolders);
+        List<Artist> allArtists = getArtistDao().getAlphabeticalArtists(0, Integer.MAX_VALUE, allFolders);
         // alpha artists doesn't quite work :P
         allArtists.sort((Artist o1, Artist o2) -> o1.getName().replaceAll("\\W", "").compareToIgnoreCase(o2.getName().replaceAll("\\W", "")));
 

@@ -28,6 +28,7 @@ import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.search.IndexType;
+import org.airsonic.player.service.search.SearchService;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.tuple.Pair;

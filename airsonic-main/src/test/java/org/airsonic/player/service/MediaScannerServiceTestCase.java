@@ -122,8 +122,8 @@ public class MediaScannerServiceTestCase {
 
         System.out.println("--- List of all artists ---");
         System.out.println("artistName#albumCount");
-        List<Artist> allArtists = artistDao.getAlphabetialArtists(0, Integer.MAX_VALUE, musicFolderDao.getAllMusicFolders());
-        allArtists.forEach(artist -> System.out.println(artist.getName() + "#" + artist.getAlbumCount()));
+        List<Artist> allArtists = artistDao.getAlphabeticalArtists(0, Integer.MAX_VALUE, musicFolderDao.getAllMusicFolders());
+        allArtists.forEach(artist -> System.out.println(artist.getName() + "#" + artist.getAlbumIds().size()));
         System.out.println("--- *********************** ---");
 
         System.out.println("--- List of all albums ---");
@@ -184,24 +184,25 @@ public class MediaScannerServiceTestCase {
         folders.add(musicFolder);
 
         // Test that the artist is correctly imported
-        List<Artist> allArtists = artistDao.getAlphabetialArtists(0, Integer.MAX_VALUE, folders);
+        List<Artist> allArtists = artistDao.getAlphabeticalArtists(0, Integer.MAX_VALUE, folders);
         Assert.assertEquals(1, allArtists.size());
         Artist artist = allArtists.get(0);
         Assert.assertEquals("TestArtist", artist.getName());
-        Assert.assertEquals(1, artist.getAlbumCount());
+        Assert.assertEquals(1, artist.getAlbumIds().size());
 
         // Test that the album is correctly imported, along with its MusicBrainz release ID
         List<Album> allAlbums = albumDao.getAlphabeticalAlbums(0, Integer.MAX_VALUE, true, true, folders);
         Assert.assertEquals(1, allAlbums.size());
+        MediaFile mediaFile = mediaFileDao.getMediaFile("TestAlbum", musicFolder.getId());
         Album album = allAlbums.get(0);
         Assert.assertEquals("TestAlbum", album.getName());
         Assert.assertEquals("TestArtist", album.getArtist());
         Assert.assertEquals(1, album.getSongCount());
         Assert.assertEquals("0820752d-1043-4572-ab36-2df3b5cc15fa", album.getMusicBrainzReleaseId());
-        Assert.assertEquals("TestAlbum", album.getPath());
+        assertThat(album.getMediaFileIds()).containsExactlyInAnyOrder(mediaFile.getId());
 
         // Test that the music file is correctly imported, along with its MusicBrainz release ID and recording ID
-        List<MediaFile> albumFiles = mediaFileDao.getChildrenOf(allAlbums.get(0).getPath(), allAlbums.get(0).getFolderId(), false);
+        List<MediaFile> albumFiles = mediaFileDao.getChildrenOf(mediaFile.getPath(), mediaFile.getFolderId(), false);
         Assert.assertEquals(1, albumFiles.size());
         MediaFile file = albumFiles.get(0);
         Assert.assertEquals("Aria", file.getTitle());
@@ -211,8 +212,8 @@ public class MediaScannerServiceTestCase {
         Assert.assertEquals("TestArtist", file.getAlbumArtist());
         Assert.assertEquals(1, (long)file.getTrackNumber());
         Assert.assertEquals(2001, (long)file.getYear());
-        Assert.assertEquals(album.getPath(), file.getParentPath());
-        Assert.assertEquals(Paths.get(album.getPath()).resolve("01 - Aria.flac").toString(), file.getPath());
+        Assert.assertEquals(mediaFile.getPath(), file.getParentPath());
+        Assert.assertEquals(Paths.get(mediaFile.getPath()).resolve("01 - Aria.flac").toString(), file.getPath());
         Assert.assertEquals("0820752d-1043-4572-ab36-2df3b5cc15fa", file.getMusicBrainzReleaseId());
         Assert.assertEquals("831586f4-56f9-4785-ac91-447ae20af633", file.getMusicBrainzRecordingId());
     }

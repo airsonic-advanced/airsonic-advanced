@@ -21,7 +21,6 @@
 package org.airsonic.player.service.search;
 
 import org.airsonic.player.domain.*;
-import org.airsonic.player.service.SearchService;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.*;
 import org.slf4j.Logger;
@@ -38,9 +37,9 @@ import static org.airsonic.player.service.search.IndexType.*;
 import static org.springframework.util.ObjectUtils.isEmpty;
 
 @Service
-public class SearchServiceImpl implements SearchService {
+public class SearchService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SearchServiceImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SearchService.class);
 
     @Autowired
     private QueryFactory queryFactory;
@@ -52,10 +51,7 @@ public class SearchServiceImpl implements SearchService {
     // TODO Should be changed to SecureRandom?
     private final Random random = new Random(System.currentTimeMillis());
 
-    @Override
-    public SearchResult search(SearchCriteria criteria, List<MusicFolder> musicFolders,
-            IndexType indexType) {
-
+    public SearchResult search(SearchCriteria criteria, List<MusicFolder> musicFolders, IndexType indexType) {
         SearchResult result = new SearchResult();
         int offset = criteria.getOffset();
         int count = criteria.getCount();
@@ -116,9 +112,8 @@ public class SearchServiceImpl implements SearchService {
         return result;
     }
 
-    @Override
-    public List<MediaFile> getRandomSongs(RandomSearchCriteria criteria) {
 
+    public List<MediaFile> getRandomSongs(RandomSearchCriteria criteria) {
         IndexSearcher searcher = indexManager.getSearcher(SONG);
         if (isEmpty(searcher)) {
             // At first start
@@ -139,7 +134,6 @@ public class SearchServiceImpl implements SearchService {
         return Collections.emptyList();
     }
 
-    @Override
     public List<MediaFile> getRandomAlbums(int count, List<MusicFolder> musicFolders) {
 
         IndexSearcher searcher = indexManager.getSearcher(IndexType.ALBUM);
@@ -162,7 +156,6 @@ public class SearchServiceImpl implements SearchService {
         return Collections.emptyList();
     }
 
-    @Override
     public List<Album> getRandomAlbumsId3(int count, List<MusicFolder> musicFolders) {
 
         IndexSearcher searcher = indexManager.getSearcher(IndexType.ALBUM_ID3);
@@ -185,7 +178,6 @@ public class SearchServiceImpl implements SearchService {
         return Collections.emptyList();
     }
 
-    @Override
     public <T> ParamSearchResult<T> searchByName(String name, int offset, int count,
             List<MusicFolder> folderList, Class<T> assignableClass) {
 

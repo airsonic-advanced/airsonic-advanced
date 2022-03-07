@@ -19,7 +19,6 @@
  */
 package org.airsonic.player.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -101,15 +100,6 @@ public final class Util {
 
     public static ObjectMapper getObjectMapper() {
         return objectMapper;
-    }
-
-    public static String debugObject(Object object) {
-        try {
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(object);
-        } catch (JsonProcessingException e) {
-            LOG.warn("Cant output debug object", e);
-            return "";
-        }
     }
 
     /**
