@@ -305,6 +305,39 @@
         <rollback>
         </rollback>
     </changeSet>
+    <!-- equivalent migration for mysql,mariadb not necessary because update happens on joins so no nulls possible -->
+    <changeSet id="delete-case-sensitive-paths-in-media-file-for-not-mysql-mariadb" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <dbms type="mariadb,mysql"/>
+            </not>
+            <columnExists tableName="media_file" columnName="folder_id"/>
+            <columnExists tableName="media_file" columnName="folder"/>
+            <not>
+                <sqlCheck expectedResult="0">
+                    SELECT count(*)
+                    FROM (
+                      SELECT id, (SELECT (array_agg(muf.id ORDER BY LENGTH(muf.path) DESC))[1] AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') WHERE mef.id=media_file.id) fid
+                      FROM MEDIA_FILE
+                    ) tf
+                    WHERE fid IS NULL
+                </sqlCheck>
+            </not>
+        </preConditions>
+        <sql>
+            DELETE FROM media_file
+            WHERE id IN (
+              SELECT id
+              FROM (
+                SELECT id, (SELECT (array_agg(muf.id ORDER BY LENGTH(muf.path) DESC))[1] AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') WHERE mef.id=media_file.id) fid
+                FROM MEDIA_FILE
+              ) tf
+              WHERE fid IS NULL
+            )
+        </sql>
+        <rollback>
+        </rollback>
+    </changeSet>
     <changeSet id="populate-folder-id-in-media-file-for-not-mysql-mariadb" author="anon">
         <preConditions onFail="MARK_RAN">
             <columnExists tableName="media_file" columnName="folder_id"/>
@@ -315,6 +348,17 @@
         <sql>
             UPDATE media_file SET folder_id = (SELECT (array_agg(muf.id ORDER BY LENGTH(muf.path) DESC))[1] AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') WHERE mef.id=media_file.id);
         </sql>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="remove-media-files-with-non-existent-folders" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="folder_id"/>
+            <columnExists tableName="media_file" columnName="folder"/>
+        </preConditions>
+        <delete tableName="media_file">
+            <where>folder_id NOT IN (SELECT id FROM music_folder)</where>
+        </delete>
         <rollback>
         </rollback>
     </changeSet>
