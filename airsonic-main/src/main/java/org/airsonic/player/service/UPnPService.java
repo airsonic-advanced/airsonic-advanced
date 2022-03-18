@@ -55,6 +55,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -153,7 +154,12 @@ public class UPnPService {
     private LocalDevice createMediaServerDevice() throws Exception {
 
         String serverName = settingsService.getDlnaServerName();
-        DeviceIdentity identity = new DeviceIdentity(UDN.uniqueSystemIdentifier(serverName));
+        String serverId = settingsService.getDlnaServerId();
+        if (serverId == null) {
+            serverId = UUID.randomUUID().toString();
+            settingsService.setDlnaServerId(serverId);
+        }
+        DeviceIdentity identity = new DeviceIdentity(UDN.valueOf(serverId));
         DeviceType type = new UDADeviceType("MediaServer", 1);
 
         // TODO: DLNACaps
