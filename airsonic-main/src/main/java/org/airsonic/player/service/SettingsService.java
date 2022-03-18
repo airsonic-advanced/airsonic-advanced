@@ -124,6 +124,7 @@ public class SettingsService {
     private static final String KEY_SORT_ALBUMS_BY_YEAR = "SortAlbumsByYear";
     private static final String KEY_DLNA_ENABLED = "DlnaEnabled";
     private static final String KEY_DLNA_SERVER_NAME = "DlnaServerName";
+    private static final String KEY_DLNA_SERVER_ID = "DlnaServerId";
     private static final String KEY_DLNA_BASE_LAN_URL = "DlnaBaseLANURL";
     private static final String KEY_UPNP_PORT = "UPnpPort";
     private static final String KEY_SONOS_ENABLED = "SonosEnabled";
@@ -226,6 +227,7 @@ public class SettingsService {
     private static final boolean DEFAULT_SORT_ALBUMS_BY_YEAR = true;
     private static final boolean DEFAULT_DLNA_ENABLED = false;
     private static final String DEFAULT_DLNA_SERVER_NAME = "Airsonic";
+    private static final String DEFAULT_DLNA_SERVER_ID = null;
     private static final String DEFAULT_DLNA_BASE_LAN_URL = null;
     private static final int DEFAULT_UPNP_PORT = 4041;
     private static final boolean DEFAULT_SONOS_ENABLED = false;
@@ -1391,6 +1393,14 @@ public class SettingsService {
 
     public void setDlnaServerName(String dlnaServerName) {
         setString(KEY_DLNA_SERVER_NAME, dlnaServerName);
+    }
+
+    public String getDlnaServerId() {
+        return getString(KEY_DLNA_SERVER_ID, DEFAULT_DLNA_SERVER_ID); // default is null
+    }
+
+    public void setDlnaServerId(String dlnaServerId) {
+        setString(KEY_DLNA_SERVER_ID, dlnaServerId);
     }
 
     public String getDlnaBaseLANURL() {
