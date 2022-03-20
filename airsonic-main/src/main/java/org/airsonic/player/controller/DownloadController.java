@@ -247,7 +247,7 @@ public class DownloadController {
                             LOG.warn("Error retrieving file to zip", e);
                             return Stream.empty();
                         }
-                    }).filter(f -> Objects.nonNull(f))
+                    }).filter(Objects::nonNull)
                     // need to preserve order because zip file creation needs to create folders first then files
                     .collect(Collectors.toCollection(LinkedHashSet::new));
 
