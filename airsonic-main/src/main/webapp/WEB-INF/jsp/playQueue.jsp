@@ -1182,7 +1182,7 @@
             } else if (id == "unstar" && selectedIndexes.length > 0) {
                 this.onStar(selectedIndexes, false);
             } else if (id == "download" && selectedIndexes.length > 0) {
-                location.href = "download.view?player=" + this.player.id + "&" + querize(selectedIndexes, "i");
+                location.href = "download.view?player=" + this.player.id + "&" + this.querize(selectedIndexes, "i");
             } else if (id == "appendPlaylist" && selectedIndexes.length > 0) {
                 this.onAppendPlaylist();
             }
