@@ -21,11 +21,11 @@ package org.airsonic.player.domain;
 
 import org.apache.commons.io.FilenameUtils;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -37,9 +37,9 @@ import java.util.stream.Collectors;
  */
 public class MediaFile {
 
-    private int id;
+    private Integer id;
     private String path;
-    private String folder;
+    private Integer folderId;
     private MediaType mediaType;
     private String format;
     private String title;
@@ -56,7 +56,6 @@ public class MediaFile {
     private Long fileSize;
     private Integer width;
     private Integer height;
-    private String coverArtPath;
     private String parentPath;
     private int playCount;
     private Instant lastPlayed;
@@ -71,14 +70,14 @@ public class MediaFile {
     private String musicBrainzReleaseId;
     private String musicBrainzRecordingId;
 
-    public MediaFile(int id, String path, String folder, MediaType mediaType, String format, String title,
+    public MediaFile(Integer id, String path, Integer folderId, MediaType mediaType, String format, String title,
                      String albumName, String artist, String albumArtist, Integer discNumber, Integer trackNumber, Integer year, String genre, Integer bitRate,
-                     boolean variableBitRate, Double duration, Long fileSize, Integer width, Integer height, String coverArtPath,
+            boolean variableBitRate, Double duration, Long fileSize, Integer width, Integer height,
                      String parentPath, int playCount, Instant lastPlayed, String comment, Instant created, Instant changed, Instant lastScanned,
                      Instant childrenLastUpdated, boolean present, int version, String musicBrainzReleaseId, String musicBrainzRecordingId) {
         this.id = id;
         this.path = path;
-        this.folder = folder;
+        this.folderId = folderId;
         this.mediaType = mediaType;
         this.format = format;
         this.title = title;
@@ -95,7 +94,6 @@ public class MediaFile {
         this.fileSize = fileSize;
         this.width = width;
         this.height = height;
-        this.coverArtPath = coverArtPath;
         this.parentPath = parentPath;
         this.playCount = playCount;
         this.lastPlayed = lastPlayed;
@@ -113,11 +111,11 @@ public class MediaFile {
     public MediaFile() {
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -129,20 +127,20 @@ public class MediaFile {
         this.path = path;
     }
 
-    public String getFolder() {
-        return folder;
+    public Integer getFolderId() {
+        return folderId;
     }
 
-    public void setFolder(String folder) {
-        this.folder = folder;
+    public void setFolderId(Integer folderId) {
+        this.folderId = folderId;
     }
 
-    public Path getFile() {
+    public Path getRelativePath() {
         return Paths.get(path);
     }
 
-    public boolean exists() {
-        return Files.exists(getFile());
+    public Path getFullPath(Path relativeMediaFolderPath) {
+        return relativeMediaFolderPath.resolve(path);
     }
 
     public MediaType getMediaType() {
@@ -214,11 +212,7 @@ public class MediaFile {
     }
 
     public String getName() {
-        if (isFile()) {
-            return title != null ? title : FilenameUtils.getBaseName(path);
-        }
-
-        return FilenameUtils.getName(path);
+        return title != null ? title : isDirectory() ? FilenameUtils.getName(path) : FilenameUtils.getBaseName(path);
     }
 
     public Integer getDiscNumber() {
@@ -301,25 +295,12 @@ public class MediaFile {
         this.height = height;
     }
 
-    public String getCoverArtPath() {
-        return coverArtPath;
-    }
-
-    public void setCoverArtPath(String coverArtPath) {
-        this.coverArtPath = coverArtPath;
-    }
-
-
     public String getParentPath() {
         return parentPath;
     }
 
     public void setParentPath(String parentPath) {
         this.parentPath = parentPath;
-    }
-
-    public Path getParentFile() {
-        return getFile().getParent();
     }
 
     public int getPlayCount() {
@@ -417,6 +398,17 @@ public class MediaFile {
         return version;
     }
 
+    // placeholder to use prior to persistence
+    private CoverArt art;
+
+    public CoverArt getArt() {
+        return art;
+    }
+
+    public void setArt(CoverArt art) {
+        this.art = art;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -431,20 +423,14 @@ public class MediaFile {
                 return false;
         } else if (!path.equals(other.path))
             return false;
+        if (!folderId.equals(other.folderId))
+            return false;
         return true;
     }
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((path == null) ? 0 : path.hashCode());
-        return result;
-    }
-
-    public Path getCoverArtFile() {
-        // TODO: Optimize
-        return coverArtPath == null ? null : Paths.get(coverArtPath);
+        return Objects.hash(path, folderId);
     }
 
     @Override

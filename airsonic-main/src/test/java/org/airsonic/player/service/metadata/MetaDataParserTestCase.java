@@ -20,7 +20,7 @@
 package org.airsonic.player.service.metadata;
 
 import org.airsonic.player.domain.MediaFile;
-import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.MediaFolderService;
 import org.junit.Test;
 
 import java.nio.file.Path;
@@ -53,7 +53,7 @@ public class MetaDataParserTestCase {
             }
 
             @Override
-            SettingsService getSettingsService() {
+            MediaFolderService getMediaFolderService() {
                 return null;
             }
 

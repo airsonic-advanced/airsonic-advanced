@@ -42,7 +42,7 @@ public class NetworkService {
     private static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
     private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
     private static final String X_FORWARDED_FOR = "X-Forwarded-For";
-    private static final String X_FORWARDED_SCHEMA = "X-Forwarded-Schema";
+    private static final String X_FORWARDED_SCHEME = "X-Forwarded-Scheme";
 
     private final static Logger LOG = LoggerFactory.getLogger(NetworkService.class);
 
@@ -105,7 +105,7 @@ public class NetworkService {
         int port = proxyHost.getPort();
         String scheme = request.getHeader(X_FORWARDED_PROTO);
         if (StringUtils.isBlank(scheme)) {
-            scheme = request.getHeader(X_FORWARDED_SCHEMA);
+            scheme = request.getHeader(X_FORWARDED_SCHEME);
             if (StringUtils.isBlank(scheme)) {
                 throw new RuntimeException("Scheme not provided");
             }

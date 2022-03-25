@@ -30,7 +30,7 @@ jobs:
       - run: ${{ matrix.cfg.run }}
         if: matrix.cfg.executeManualcommand
       - name: Build with Maven
-        run: mvn --settings=./.mvn/settings.xml -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
+        run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
 
     strategy:
       fail-fast: false
@@ -39,13 +39,13 @@ jobs:
           - jdk: 11
             services: {}
             env: {}
-          - jdk: 13
-            services: {}
-            env: {}
           - jdk: 14
             services: {}
             env: {}
           - jdk: 16
+            services: {}
+            env: {}
+          - jdk: 17
             services: {}
             env: {}
           # external dbs
@@ -61,7 +61,6 @@ jobs:
               spring_datasource_url: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified&raiseExceptionOnSilentRollback=false'
               spring_datasource_username: postgres
               spring_datasource_password: pass
-              spring_liquibase_parameters_userTableQuote: '"'
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           - jdk: 11
             services:
@@ -75,7 +74,6 @@ jobs:
               spring_datasource_url: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified&raiseExceptionOnSilentRollback=false'
               spring_datasource_username: postgres
               spring_datasource_password: pass
-              spring_liquibase_parameters_userTableQuote: '"'
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           - jdk: 11
             services:
@@ -89,7 +87,6 @@ jobs:
               spring_datasource_url: 'jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified&raiseExceptionOnSilentRollback=false'
               spring_datasource_username: postgres
               spring_datasource_password: pass
-              spring_liquibase_parameters_userTableQuote: '"'
               EXCLUDED_TEST_GROUPS: org.airsonic.player.util.EmbeddedTestCategory
           #TODO for mysql,mariadb: add collation: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin when supported by github actions on services and remove the manual run commands
           - jdk: 11

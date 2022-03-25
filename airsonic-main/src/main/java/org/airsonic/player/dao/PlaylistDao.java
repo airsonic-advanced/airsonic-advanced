@@ -22,6 +22,7 @@ package org.airsonic.player.dao;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Playlist;
 import org.airsonic.player.util.LambdaUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,6 +99,10 @@ public class PlaylistDao extends AbstractDao {
         update("delete from playlist_file where playlist_id=?", id);
         batchedUpdate("insert into playlist_file (playlist_id, media_file_id) values (?, ?)",
                 files.stream().map(x -> new Object[] { id, x.getId() }).collect(Collectors.toList()));
+    }
+
+    public Pair<Integer, Double> getPlaylistFileStats(int id) {
+        return queryOne("select count(*), sum(duration) from media_file m, playlist_file p where p.media_file_id = m.id and p.playlist_id=?", (rs, i) -> Pair.of(rs.getInt(1), rs.getDouble(2)), id);
     }
 
     public List<String> getPlaylistUsers(int playlistId) {

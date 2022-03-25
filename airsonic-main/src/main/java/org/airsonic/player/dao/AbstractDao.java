@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -290,8 +291,14 @@ public class AbstractDao {
                 })
                 //can't use Collectors.toMap or Collectors.toConcurrentMap due to possible null value mappings
                 .collect(HashMap::new, (m, v) -> m.put(v.getKey(), v.getValue()), HashMap::putAll);
-        var keyHolder = insertTemplates.get(table).executeAndReturnKeyHolder(args);
-        return keyHolder.getKey().intValue();
+        var template = insertTemplates.get(table);
+        if (template.getGeneratedKeyNames() == null || template.getGeneratedKeyNames().length == 0) {
+            template.execute(args);
+            return null;
+        } else {
+            var keyHolder = insertTemplates.get(table).executeAndReturnKeyHolder(args);
+            return Optional.ofNullable(keyHolder).map(k -> k.getKey()).map(Number::intValue).orElse(null);
+        }
     }
 
     @Retention(RetentionPolicy.RUNTIME)

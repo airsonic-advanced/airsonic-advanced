@@ -23,20 +23,24 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.google.common.primitives.Ints;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Miscellaneous general utility methods.
@@ -73,36 +77,11 @@ public final class Util {
         return SystemUtils.IS_OS_WINDOWS;
     }
 
-    /**
-     * Similar to {@link ServletResponse#setContentLength(int)}, but this
-     * method supports lengths bigger than 2GB.
-     * <p/>
-     * See http://blogger.ziesemer.com/2008/03/suns-version-of-640k-2gb.html
-     *
-     * @param response The HTTP response.
-     * @param length   The content length.
-     */
-    public static void setContentLength(HttpServletResponse response, long length) {
-        if (length <= Integer.MAX_VALUE) {
-            response.setContentLength((int) length);
-        } else {
-            response.setHeader("Content-Length", String.valueOf(length));
-        }
-    }
-
     public static <T> List<T> subList(List<T> list, long offset, long max) {
-        return list.subList((int) offset, Math.min(list.size(), (int) (offset + max)));
-    }
-
-    public static List<Integer> toIntegerList(int[] values) {
-        if (values == null) {
-            return Collections.emptyList();
+        if (list.size() == Integer.MAX_VALUE) {
+            return list.stream().skip(offset).limit(max).collect(toList());
         }
-        List<Integer> result = new ArrayList<Integer>(values.length);
-        for (int value : values) {
-            result.add(value);
-        }
-        return result;
+        return list.subList(Math.min(list.size(), Ints.saturatedCast(offset)), Math.min(list.size(), Ints.saturatedCast(offset + max)));
     }
 
     public static int[] toIntArray(List<Integer> values) {
@@ -188,6 +167,14 @@ public final class Util {
         }
     }
 
+    public static String toJson(Object object, SerializationFeature feature) {
+        try {
+            return objectMapper.writer(feature).writeValueAsString(object);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public static <T> T fromJson(String json, TypeReference<T> type) {
         try {
             return objectMapper.readValue(json, type);
@@ -222,5 +209,14 @@ public final class Util {
         } else {
             throw new IllegalArgumentException("Created object was not valid");
         }
+    }
+
+    public static ThreadFactory getDaemonThreadfactory(String prefixName) {
+        return r -> {
+            Thread t = Executors.defaultThreadFactory().newThread(r);
+            t.setDaemon(true);
+            t.setName(prefixName + "-" + t.getName());
+            return t;
+        };
     }
 }

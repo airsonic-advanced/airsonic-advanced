@@ -23,8 +23,11 @@ import org.airsonic.player.controller.SearchController;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.User;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Command used in {@link SearchController}.
@@ -34,8 +37,8 @@ import java.util.List;
 public class SearchCommand {
 
     private String query;
-    private List<MediaFile> artists;
-    private List<MediaFile> albums;
+    private Map<String, Set<Integer>> artists;
+    private Map<Pair<String, String>, Set<Integer>> albums;
     private List<MediaFile> songs;
     private boolean isIndexBeingCreated;
     private User user;
@@ -58,19 +61,19 @@ public class SearchCommand {
         isIndexBeingCreated = indexBeingCreated;
     }
 
-    public List<MediaFile> getArtists() {
+    public Map<String, Set<Integer>> getArtists() {
         return artists;
     }
 
-    public void setArtists(List<MediaFile> artists) {
+    public void setArtists(Map<String, Set<Integer>> artists) {
         this.artists = artists;
     }
 
-    public List<MediaFile> getAlbums() {
+    public Map<Pair<String, String>, Set<Integer>> getAlbums() {
         return albums;
     }
 
-    public void setAlbums(List<MediaFile> albums) {
+    public void setAlbums(Map<Pair<String, String>, Set<Integer>> albums) {
         this.albums = albums;
     }
 

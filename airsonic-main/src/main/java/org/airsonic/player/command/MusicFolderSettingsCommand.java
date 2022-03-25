@@ -21,12 +21,14 @@ package org.airsonic.player.command;
 
 import org.airsonic.player.controller.MusicFolderSettingsController;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.apache.commons.lang.StringUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
 
 /**
@@ -43,6 +45,8 @@ public class MusicFolderSettingsCommand {
     private boolean organizeByFolderStructure;
     private List<MusicFolderInfo> musicFolders;
     private MusicFolderInfo newMusicFolder;
+    private List<MusicFolderInfo> deletedMusicFolders;
+    private EnumSet<Type> musicFolderTypes = EnumSet.allOf(MusicFolder.Type.class);
     private String uploadsFolder;
     private String excludePatternString;
     private boolean ignoreSymLinks;
@@ -95,6 +99,22 @@ public class MusicFolderSettingsCommand {
 
     public void setNewMusicFolder(MusicFolderInfo newMusicFolder) {
         this.newMusicFolder = newMusicFolder;
+    }
+
+    public List<MusicFolderInfo> getDeletedMusicFolders() {
+        return deletedMusicFolders;
+    }
+
+    public void setDeletedMusicFolders(List<MusicFolderInfo> deletedMusicFolders) {
+        this.deletedMusicFolders = deletedMusicFolders;
+    }
+
+    public EnumSet<Type> getMusicFolderTypes() {
+        return musicFolderTypes;
+    }
+
+    public void setMusicFolderTypes(EnumSet<Type> musicFolderTypes) {
+        this.musicFolderTypes = musicFolderTypes;
     }
 
     public boolean isOrganizeByFolderStructure() {
@@ -150,16 +170,22 @@ public class MusicFolderSettingsCommand {
         private Integer id;
         private String path;
         private String name;
-        private boolean enabled;
+        private String type = Type.MEDIA.name();
+        private Boolean enabled;
         private boolean delete;
         private boolean existing;
+        private boolean overlap;
+        private String overlapStatus;
 
-        public MusicFolderInfo(MusicFolder musicFolder) {
+        public MusicFolderInfo(MusicFolder musicFolder, boolean overlap, String overlapStatus) {
             id = musicFolder.getId();
             path = musicFolder.getPath().toString();
             name = musicFolder.getName();
+            type = musicFolder.getType().name();
             enabled = musicFolder.isEnabled();
             existing = Files.exists(musicFolder.getPath()) && Files.isDirectory(musicFolder.getPath());
+            this.overlap = overlap;
+            this.overlapStatus = overlapStatus;
         }
 
         public MusicFolderInfo() {
@@ -190,20 +216,40 @@ public class MusicFolderSettingsCommand {
             this.name = name;
         }
 
-        public boolean isEnabled() {
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public Boolean getEnabled() {
             return enabled;
         }
 
-        public void setEnabled(boolean enabled) {
+        public void setEnabled(Boolean enabled) {
             this.enabled = enabled;
         }
 
-        public boolean isDelete() {
+        public boolean getDelete() {
             return delete;
         }
 
         public void setDelete(boolean delete) {
             this.delete = delete;
+        }
+
+        public boolean getOverlap() {
+            return overlap;
+        }
+
+        public String getOverlapStatus() {
+            return overlapStatus;
+        }
+
+        public boolean getExisting() {
+            return existing;
         }
 
         public MusicFolder toMusicFolder() {
@@ -216,11 +262,7 @@ public class MusicFolderSettingsCommand {
             if (name == null) {
                 name = file.getFileName().toString();
             }
-            return new MusicFolder(id, file, name, enabled, Instant.now());
-        }
-
-        public boolean isExisting() {
-            return existing;
+            return new MusicFolder(id, file, name, MusicFolder.Type.valueOf(type), enabled != null && enabled, Instant.now());
         }
     }
 }

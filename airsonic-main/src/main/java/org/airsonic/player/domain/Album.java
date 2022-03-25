@@ -36,7 +36,6 @@ public class Album {
     private String artist;
     private final AtomicInteger songCount = new AtomicInteger(0);
     private final AtomicDouble duration = new AtomicDouble(0);
-    private String coverArtPath;
     private Integer year;
     private String genre;
     private final AtomicInteger playCount = new AtomicInteger(0);
@@ -51,7 +50,7 @@ public class Album {
     public Album() {
     }
 
-    public Album(int id, String path, String name, String artist, int songCount, double duration, String coverArtPath,
+    public Album(int id, String path, String name, String artist, int songCount, double duration,
             Integer year, String genre, int playCount, Instant lastPlayed, String comment, Instant created, Instant lastScanned,
             boolean present, Integer folderId, String musicBrainzReleaseId) {
         this.id = id;
@@ -60,7 +59,6 @@ public class Album {
         this.artist = artist;
         this.songCount.set(songCount);
         this.duration.set(duration);
-        this.coverArtPath = coverArtPath;
         this.year = year;
         this.genre = genre;
         this.playCount.set(playCount);
@@ -127,14 +125,6 @@ public class Album {
 
     public void incrementDuration(double duration) {
         this.duration.addAndGet(duration);
-    }
-
-    public String getCoverArtPath() {
-        return coverArtPath;
-    }
-
-    public void setCoverArtPath(String coverArtPath) {
-        this.coverArtPath = coverArtPath;
     }
 
     public Integer getYear() {
@@ -220,4 +210,16 @@ public class Album {
     public void setMusicBrainzReleaseId(String musicBrainzReleaseId) {
         this.musicBrainzReleaseId = musicBrainzReleaseId;
     }
+
+    // placeholder for persistence later
+    private CoverArt art;
+
+    public CoverArt getArt() {
+        return art;
+    }
+
+    public void setArt(CoverArt art) {
+        this.art = art;
+    }
+
 }

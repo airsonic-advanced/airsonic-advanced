@@ -20,6 +20,7 @@
 package org.airsonic.player.service;
 
 import org.airsonic.player.ajax.NowPlayingInfo;
+import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.PlayStatus;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.TransferStatus;
@@ -27,17 +28,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,13 +58,18 @@ public class StatusService {
     @Autowired
     private MediaFileService mediaFileService;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private SettingsService settingsService;
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    private TaskSchedulingService taskService;
 
-    // cleanup task to remove stale remote plays (every 3 hours)
-    private Object cleanup = Executors.newSingleThreadScheduledExecutor()
-            .scheduleWithFixedDelay(() -> cleanupRemotePlays(), 3, 3, TimeUnit.HOURS);
+    @PostConstruct
+    public void cleanup() {
+        taskService.scheduleFixedDelayTask("remote-playstatus-cleanup", () -> cleanupRemotePlays(), Instant.now().plus(3, ChronoUnit.HOURS), Duration.ofHours(3), true);
+    }
 
     private final List<TransferStatus> streamStatuses = Collections.synchronizedList(new ArrayList<>());
     private final List<TransferStatus> downloadStatuses = Collections.synchronizedList(new ArrayList<>());
@@ -160,8 +168,12 @@ public class StatusService {
     }
 
     public PlayStatus getPlayStatus(TransferStatus status) {
+        MediaFile file = status.getMediaFile();
+        if (file == null) {
+            file = mediaFileService.getMediaFile(status.getExternalFile());
+        }
         return new PlayStatus(status.getId(),
-                Optional.ofNullable(status.getFile()).map(f -> mediaFileService.getMediaFile(f)).orElse(null),
+                file,
                 status.getPlayer(),
                 status.getMillisSinceLastUpdate());
     }

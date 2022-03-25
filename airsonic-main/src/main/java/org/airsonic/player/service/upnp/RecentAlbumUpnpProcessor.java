@@ -44,6 +44,7 @@ public class RecentAlbumUpnpProcessor extends AlbumUpnpProcessor {
     /**
      * Browses the top-level content.
      */
+    @Override
     public BrowseResult browseRoot(String filter, long firstResult, long maxResults, SortCriterion[] orderBy) throws Exception {
         // AlbumUpnpProcessor overrides browseRoot() with an optimization;
         // this restores the default behavior for the subclass.
@@ -60,12 +61,12 @@ public class RecentAlbumUpnpProcessor extends AlbumUpnpProcessor {
             addItem(didl, item);
         }
 
-        return createBrowseResult(didl, (int) didl.getCount(), allItems.size());
+        return createBrowseResult(didl, didl.getCount(), allItems.size());
     }
 
     @Override
     public List<Album> getAllItems() {
-        List<MusicFolder> allFolders = getDispatchingContentDirectory().getSettingsService().getAllMusicFolders();
+        List<MusicFolder> allFolders = getDispatchingContentDirectory().getMediaFolderService().getAllMusicFolders();
         List<Album> recentAlbums = getAlbumDao().getNewestAlbums(0, RECENT_COUNT, allFolders);
         if (recentAlbums.size() > 1) {
             // if there is more than one recent album, add in an option to
@@ -81,7 +82,7 @@ public class RecentAlbumUpnpProcessor extends AlbumUpnpProcessor {
 
     @Override
     public int getAllItemsSize() {
-        List<MusicFolder> allFolders = getDispatchingContentDirectory().getSettingsService().getAllMusicFolders();
+        List<MusicFolder> allFolders = getDispatchingContentDirectory().getMediaFolderService().getAllMusicFolders();
         int allAlbumCount = getAlbumDao().getAlbumCount(allFolders);
         return Math.min(allAlbumCount, RECENT_COUNT);
     }

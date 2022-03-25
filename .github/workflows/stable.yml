@@ -21,9 +21,19 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-m2-
-      - run: mvn versions:set -DremoveSnapshot=true -DgenerateBackupPoms=false
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          install: true
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+      - name: Remove snapshots
+        run: mvn versions:set -DremoveSnapshot=true -DgenerateBackupPoms=false
       - name: Build with Maven
-        run: mvn --settings=./.mvn/settings.xml -DskipTests -Dcheckstyle.skip=true package -P docker
+        run: mvn -DskipTests -Dcheckstyle.skip=true package
       - name: Calculate tags
         if: success()
         id: tagcalc
@@ -48,34 +58,46 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ steps.tagcalc.outputs.tag }}
+          tag_name: ${{ steps.tagcalc.outputs.tag }}
           name: Stable Release ${{ steps.tagcalc.outputs.tag }}
           draft: false
           prerelease: false
+          generate_release_notes: true
           body: |
             List of issues addressed: https://github.com/airsonic-advanced/airsonic-advanced/issues?q=milestone%3A${{ steps.tagcalc.outputs.tag }}
           files: |
             airsonic-main/target/airsonic.war
             airsonic-main/target/artifacts-checksums.sha.asc
-      - name: Tag Docker Images
-        run: |
-          # Tag the docker image
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:stable;
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.tag }};
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.minor }};
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.major }};
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:stable-${{ steps.tagcalc.outputs.tag }};
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitcommit-${{ github.sha }};
-          docker tag airsonicadvanced/airsonic-advanced:latest airsonicadvanced/airsonic-advanced:gitrun-${{ github.run_id }};
-      - name: Login to Docker Hub
-        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-      - name: Deploy to DockerHub
-        run: |
-          docker push airsonicadvanced/airsonic-advanced:latest;
-          docker push airsonicadvanced/airsonic-advanced:stable;
-          docker push airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.tag }};
-          docker push airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.minor }};
-          docker push airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.major }};
-          docker push airsonicadvanced/airsonic-advanced:stable-${{ steps.tagcalc.outputs.tag }};
-          docker push airsonicadvanced/airsonic-advanced:gitcommit-${{ github.sha }};
-          docker push airsonicadvanced/airsonic-advanced:gitrun-${{ github.run_id }};
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: mkdir install/docker/target
+      - run: copy airsonic-main/target/airsonic.war install/docker/target/airsonic-main.war
+      - name: Build and push multiplatform images to Dockerhub
+        uses: docker/build-push-action@v2
+        with:
+          file: install/docker/Dockerfile
+          context: install/docker
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: |
+            airsonicadvanced/airsonic-advanced:stable
+            airsonicadvanced/airsonic-advanced:stable-latest
+            airsonicadvanced/airsonic-advanced:stable-${{ steps.tagcalc.outputs.tag }}
+            airsonicadvanced/airsonic-advanced:${{ steps.tagcalc.outputs.tag }}
+            airsonicadvanced/airsonic-advanced:gitcommit-${{ github.sha }}
+            airsonicadvanced/airsonic-advanced:gitrun-${{ github.run_id }}
+            ghcr.io/airsonic-advanced/airsonic-advanced:stable
+            ghcr.io/airsonic-advanced/airsonic-advanced:stable-latest
+            ghcr.io/airsonic-advanced/airsonic-advanced:stable-${{ steps.tagcalc.outputs.tag }}
+            ghcr.io/airsonic-advanced/airsonic-advanced:${{ steps.tagcalc.outputs.tag }}
+            ghcr.io/airsonic-advanced/airsonic-advanced:gitcommit-${{ github.sha }}
+            ghcr.io/airsonic-advanced/airsonic-advanced:gitrun-${{ github.run_id }}

@@ -20,10 +20,10 @@
 package org.airsonic.player.controller;
 
 import org.airsonic.player.domain.*;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.PlayQueueService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SecurityService;
-import org.airsonic.player.service.SettingsService;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -55,9 +55,9 @@ public class RandomPlayQueueController {
     @Autowired
     private SecurityService securityService;
     @Autowired
-    private SettingsService settingsService;
-    @Autowired
     private PlayQueueService playQueueService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
 
     @PostMapping
     protected String handleRandomPlayQueue(
@@ -243,9 +243,6 @@ public class RandomPlayQueueController {
     private List<MusicFolder> getMusicFolders(HttpServletRequest request) throws ServletRequestBindingException {
         String username = securityService.getCurrentUsername(request);
         Integer selectedMusicFolderId = ServletRequestUtils.getRequiredIntParameter(request, "musicFolderId");
-        if (selectedMusicFolderId == -1) {
-            selectedMusicFolderId = null;
-        }
-        return settingsService.getMusicFoldersForUser(username, selectedMusicFolderId);
+        return mediaFolderService.getMusicFoldersForUser(username, selectedMusicFolderId);
     }
 }

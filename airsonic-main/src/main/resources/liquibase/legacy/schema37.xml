@@ -48,7 +48,7 @@
             </not>
         </preConditions>
         <addColumn tableName="music_folder">
-            <column name="changed" type="datetime" defaultValueComputed="${curr_date_expr}">
+            <column name="changed" type="datetime" defaultValueComputed="current_timestamp">
                 <constraints nullable="false" />
             </column>
         </addColumn>
@@ -60,7 +60,7 @@
             </not>
         </preConditions>
         <addColumn tableName="internet_radio">
-            <column name="changed" type="datetime" defaultValueComputed="${curr_date_expr}">
+            <column name="changed" type="datetime" defaultValueComputed="current_timestamp">
                 <constraints nullable="false" />
             </column>
         </addColumn>
@@ -72,7 +72,7 @@
             </not>
         </preConditions>
         <addColumn tableName="user_settings">
-            <column name="changed" type="datetime" defaultValueComputed="${curr_date_expr}">
+            <column name="changed" type="datetime" defaultValueComputed="current_timestamp">
                 <constraints nullable="false" />
             </column>
         </addColumn>

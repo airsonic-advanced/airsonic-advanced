@@ -12,7 +12,11 @@ public class DatabaseSettingsCommand {
     private String username;
     private String JNDIName;
     private int mysqlVarcharMaxlength;
-    private String usertableQuote;
+    private String importFolder;
+    private String callback;
+    private boolean backuppable;
+    private int dbBackupInterval;
+    private int dbBackupRetentionCount;
 
     public DataSourceConfigType getConfigType() {
         return configType;
@@ -70,12 +74,44 @@ public class DatabaseSettingsCommand {
         this.mysqlVarcharMaxlength = mysqlVarcharMaxlength;
     }
 
-    public String getUsertableQuote() {
-        return usertableQuote;
+    public String getImportFolder() {
+        return importFolder;
     }
 
-    public void setUsertableQuote(String usertableQuote) {
-        this.usertableQuote = usertableQuote;
+    public void setImportFolder(String importFolder) {
+        this.importFolder = importFolder;
+    }
+
+    public String getCallback() {
+        return callback;
+    }
+
+    public void setCallback(String callback) {
+        this.callback = callback;
+    }
+
+    public boolean getBackuppable() {
+        return backuppable;
+    }
+
+    public void setBackuppable(boolean backuppable) {
+        this.backuppable = backuppable;
+    }
+
+    public int getDbBackupInterval() {
+        return dbBackupInterval;
+    }
+
+    public void setDbBackupInterval(int dbBackupInterval) {
+        this.dbBackupInterval = dbBackupInterval;
+    }
+
+    public int getDbBackupRetentionCount() {
+        return dbBackupRetentionCount;
+    }
+
+    public void setDbBackupRetentionCount(int dbBackupRetentionCount) {
+        this.dbBackupRetentionCount = dbBackupRetentionCount;
     }
 
     public enum DataSourceConfigType {

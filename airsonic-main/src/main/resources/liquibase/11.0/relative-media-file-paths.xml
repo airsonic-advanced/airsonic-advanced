@@ -1,0 +1,555 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="add-type-to-media-folder" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="music_folder" columnName="type"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="music_folder">
+            <column name="type" type="${varchar_type}" defaultValue="MEDIA">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="music_folder" columnName="type"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-podcast-media-folder" author="anon">
+        <validCheckSum>ANY</validCheckSum>
+        <insert tableName="music_folder">
+            <column name="path" value="${defaultPodcastFolder}"/>
+            <column name="name" value="Podcasts"/>
+            <column name="type" value="PODCAST"/>
+            <column name="enabled" valueBoolean="true" />
+        </insert>
+        <customChange class="org.airsonic.player.spring.migrations.AddPodcastMediaFolderUsers"></customChange>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-unknown-media-folders" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="path"/>
+            <columnExists tableName="media_file" columnName="folder"/>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.AddUnknownMediaFolders"></customChange>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="unique-media-folders" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="music_folder"/>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.UniqueMediaFolders"></customChange>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-uniqueness-constraint-to-media-folders-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="path"/>
+        </preConditions>
+        <createIndex tableName="music_folder" unique="true" indexName="idx_music_folder_path">
+            <column name="path"></column>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="music_folder" indexName="idx_music_folder_path"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-media-file-id-to-podcast-channel" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="podcast_channel" columnName="media_file_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="podcast_channel">
+            <column name="media_file_id" type="int">
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint constraintName="pc_m_fk" baseTableName="podcast_channel" baseColumnNames="media_file_id" referencedTableName="media_file" referencedColumnNames="id" onDelete="CASCADE"/>
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="podcast_channel" constraintName="pc_m_fk" />
+            <dropColumn tableName="podcast_channel" columnName="media_file_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="populate-podcast-channel-media-file-id" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="path"/>
+            <columnExists tableName="podcast_channel" columnName="media_file_id"/>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.AddMediaFileIdToPodcastChannels"></customChange>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-media-file-id-to-podcast-episode" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="podcast_episode" columnName="media_file_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="podcast_episode">
+            <column name="media_file_id" type="int" valueComputed="(SELECT media_file.id FROM media_file WHERE media_file.path=podcast_episode.path)">
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint constraintName="pe_m_fk" baseTableName="podcast_episode" baseColumnNames="media_file_id" referencedTableName="media_file" referencedColumnNames="id" onDelete="CASCADE" />
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="podcast_episode" constraintName="pe_m_fk" />
+            <dropColumn tableName="podcast_episode" columnName="media_file_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-path-from-podcast-episode" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="podcast_episode" columnName="path"/>
+        </preConditions>
+        <dropColumn tableName="podcast_episode" columnName="path"></dropColumn>
+        <rollback>
+            <addColumn tableName="podcast_episode">
+                <column name="path" type="${varchar_type}">
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="clean-user-rating-for-absent-paths" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="path"/>
+        </preConditions>
+        <delete tableName="user_rating">
+            <where>path IN (SELECT * FROM (SELECT ur.path FROM user_rating ur LEFT JOIN media_file m ON ur.path=m.path WHERE m.path IS NULL) tbl_tmp)</where>
+        </delete>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="add-media-file-id-to-user-rating" author="anon">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="user_rating" columnName="media_file_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="user_rating">
+            <column name="media_file_id" type="int" defaultValue="-1" valueComputed="(SELECT media_file.id FROM media_file WHERE media_file.path=user_rating.path)">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="user_rating" columnName="media_file_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="populate-user-rating-media-file-id" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <sqlCheck expectedResult="0">select count(*) from user_rating where media_file_id = '-1'</sqlCheck>
+            </not>
+        </preConditions>
+        <update tableName="user_rating">
+            <column name="media_file_id" valueComputed="(SELECT media_file.id FROM media_file WHERE media_file.path=user_rating.path)"></column>
+            <where>media_file_id='-1'</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-user-rating-media-file-id-fk" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyTableName="user_rating" foreignKeyName="ura_m_fk"/>
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint constraintName="ura_m_fk" baseTableName="user_rating" baseColumnNames="media_file_id" referencedTableName="media_file" referencedColumnNames="id" onDelete="CASCADE"/>
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="user_rating" constraintName="ura_m_fk"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-user-rating-user-fk" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <sqlCheck expectedResult="0">
+                    select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='user_rating' and lower(tc.constraint_type)='foreign key' and lower(kcu.column_name)='username'
+                </sqlCheck>
+            </not>
+        </preConditions>
+        <!-- for mysql -->
+        <customChange class="org.airsonic.player.spring.migrations.DropConstraintWithoutName">
+            <param name="tableName" value="user_rating"/>
+            <param name="columns" value="username"/>
+            <param name="constraintType" value="foreign key"/>
+        </customChange>
+        <rollback>
+            <addForeignKeyConstraint baseTableName="user_rating" baseColumnNames="username" constraintName="ura_u_fk" referencedTableName="users" referencedColumnNames="username" onDelete="CASCADE" />
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-user-rating-path-pk" author="anon">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="path"/>
+            <primaryKeyExists tableName="user_rating"/>
+        </preConditions>
+        <dropPrimaryKey tableName="user_rating"/>
+        <rollback>
+            <addPrimaryKey tableName="user_rating" columnNames="username,path" />
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-path-from-user-rating" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="path"/>
+        </preConditions>
+        <dropColumn tableName="user_rating" columnName="path"></dropColumn>
+        <rollback>
+            <addColumn tableName="user_rating">
+                <column name="path" type="${varchar_type}">
+                    <constraints nullable="false" />
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="clean-user-rating-for-uniqueness" author="anon">
+        <preConditions onFail="WARN">
+            <columnExists tableName="user_rating" columnName="media_file_id"/>
+        </preConditions>
+        <delete tableName="user_rating">
+            <where>media_file_id = '-1'</where>
+        </delete>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="add-user-rating-user-fk" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='user_rating' and lower(tc.constraint_type)='foreign key' and lower(kcu.column_name)='username'
+            </sqlCheck>
+        </preConditions>
+        <!-- for mysql -->
+        <addForeignKeyConstraint baseTableName="user_rating" baseColumnNames="username" constraintName="ura_u_fk" referencedTableName="users" referencedColumnNames="username" onDelete="CASCADE" />
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="user_rating" constraintName="ura_u_fk"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-user-rating-pk" author="anon">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="user_rating" columnName="media_file_id"/>
+            <not>
+                <primaryKeyExists tableName="user_rating"/>
+            </not>
+        </preConditions>
+        <addPrimaryKey tableName="user_rating" columnNames="username,media_file_id" constraintName="ur_u_mfid_pk"/>
+        <rollback>
+            <dropPrimaryKey tableName="user_rating" constraintName="ur_u_mfid_pk"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="clean-share-file-for-absent-paths" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="share_file" columnName="path"/>
+        </preConditions>
+        <delete tableName="share_file">
+            <where>path IN (SELECT * FROM (SELECT sf.path FROM share_file sf LEFT JOIN media_file m ON sf.path=m.path WHERE m.path IS NULL) tbl_tmp)</where>
+        </delete>
+        <rollback></rollback>
+    </changeSet>
+    <changeSet id="add-media-file-id-to-share-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="share_file" columnName="media_file_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="share_file">
+            <column name="media_file_id" type="int" defaultValue="-1" valueComputed="(SELECT media_file.id FROM media_file WHERE media_file.path=share_file.path)">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addForeignKeyConstraint constraintName="sf_m_fk" baseTableName="share_file" baseColumnNames="media_file_id" referencedTableName="media_file" referencedColumnNames="id" onDelete="CASCADE"/>
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="share_file" constraintName="sf_m_fk"/>
+            <dropColumn tableName="share_file" columnName="media_file_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-path-from-share-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="share_file" columnName="path"/>
+        </preConditions>
+        <dropColumn tableName="share_file" columnName="path"></dropColumn>
+        <rollback>
+            <addColumn tableName="share_file">
+                <column name="path" type="${varchar_type}">
+                    <constraints nullable="false" />
+                </column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-folder-id-to-media-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="media_file" columnName="folder_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="media_file">
+            <column name="folder_id" type="int" defaultValue="-1">
+                <!-- No fk to music_folder.id because want to allow modification/deletion of music folder without affecting/deleting media file -->
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="media_file" columnName="folder_id"></dropColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="populate-folder-id-in-media-file-for-mysql-mariadb" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="folder_id"/>
+            <dbms type="mariadb,mysql"/>
+        </preConditions>
+        <sql>
+            UPDATE media_file AS mef1 
+            INNER JOIN 
+            (SELECT mef.id, SUBSTRING_INDEX( GROUP_CONCAT(muf.id ORDER BY LENGTH(muf.path) DESC), ',', 1) AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') GROUP BY mef.id) AS mef2
+            ON mef1.id=mef2.id
+            SET mef1.folder_id = mef2.mufid;
+        </sql>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <!-- equivalent migration for mysql,mariadb not necessary because update happens on joins so no nulls possible -->
+    <changeSet id="delete-case-sensitive-paths-in-media-file-for-not-mysql-mariadb" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <dbms type="mariadb,mysql"/>
+            </not>
+            <columnExists tableName="media_file" columnName="folder_id"/>
+            <columnExists tableName="media_file" columnName="folder"/>
+            <not>
+                <sqlCheck expectedResult="0">
+                    SELECT count(*)
+                    FROM (
+                      SELECT id, (SELECT (array_agg(muf.id ORDER BY LENGTH(muf.path) DESC))[1] AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') WHERE mef.id=media_file.id) fid
+                      FROM MEDIA_FILE
+                    ) tf
+                    WHERE fid IS NULL
+                </sqlCheck>
+            </not>
+        </preConditions>
+        <sql>
+            DELETE FROM media_file
+            WHERE id IN (
+              SELECT id
+              FROM (
+                SELECT id, (SELECT (array_agg(muf.id ORDER BY LENGTH(muf.path) DESC))[1] AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') WHERE mef.id=media_file.id) fid
+                FROM MEDIA_FILE
+              ) tf
+              WHERE fid IS NULL
+            )
+        </sql>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="populate-folder-id-in-media-file-for-not-mysql-mariadb" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="folder_id"/>
+            <not>
+                <dbms type="mariadb,mysql"/>
+            </not>
+        </preConditions>
+        <sql>
+            UPDATE media_file SET folder_id = (SELECT (array_agg(muf.id ORDER BY LENGTH(muf.path) DESC))[1] AS mufid FROM media_file mef JOIN music_folder muf ON mef.path LIKE concat(muf.path, '%') WHERE mef.id=media_file.id);
+        </sql>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="remove-media-files-with-non-existent-folders" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="folder_id"/>
+            <columnExists tableName="media_file" columnName="folder"/>
+        </preConditions>
+        <delete tableName="media_file">
+            <where>folder_id NOT IN (SELECT id FROM music_folder)</where>
+        </delete>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-uniqueness-constraint-to-media-file-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <indexExists tableName="media_file" indexName="idx_media_file_path"/>
+        </preConditions>
+        <dropIndex tableName="media_file" indexName="idx_media_file_path"></dropIndex>
+        <rollback>
+            <createIndex tableName="media_file" indexName="idx_media_file_path" unique="true">
+                <column name="path"></column>
+            </createIndex>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-uniqueness-constraint-to-media-file-path-2" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <sqlCheck expectedResult="0">
+                    select count(*) from information_schema.table_constraints tc, information_schema.key_column_usage kcu WHERE kcu.constraint_name=tc.constraint_name AND lower(tc.table_name)='media_file' and lower(tc.constraint_type)='unique' and lower(kcu.column_name) = 'path'
+                </sqlCheck>
+            </not>
+        </preConditions>
+        <customChange class="org.airsonic.player.spring.migrations.DropConstraintWithoutName">
+            <param name="tableName" value="media_file"/>
+            <param name="columns" value="path"/>
+            <param name="constraintType" value="unique"/>
+        </customChange>
+        <rollback>
+            <createIndex tableName="media_file" indexName="idx_media_file_path" unique="true">
+                <column name="path"></column>
+            </createIndex>
+        </rollback>
+    </changeSet>
+    <changeSet id="relativize-media-file-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="path"/>
+            <columnExists tableName="media_file" columnName="folder_id"/>
+            <columnExists tableName="music_folder" columnName="id"/>
+            <columnExists tableName="music_folder" columnName="path"/>
+        </preConditions>
+        <update tableName="media_file">
+            <column name="path" valueComputed="(SELECT SUBSTR(media_file.path, LENGTH(music_folder.path) + 1) FROM music_folder WHERE media_file.folder_id=music_folder.id)"></column>
+        </update>
+        <update tableName="media_file">
+            <column name="path" valueComputed="SUBSTR(path, 2)"></column>
+            <where>LENGTH(path) != 0</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="relativize-media-file-cover-art-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="cover_art_path"/>
+            <columnExists tableName="media_file" columnName="folder"/>
+        </preConditions>
+        <update tableName="media_file">
+            <column name="cover_art_path" valueComputed="(SELECT SUBSTR(media_file.cover_art_path, LENGTH(music_folder.path) + 1) FROM music_folder WHERE media_file.folder_id=music_folder.id)"></column>
+        </update>
+        <update tableName="media_file">
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, 2)"></column>
+            <where>LENGTH(cover_art_path) != 0</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="relativize-media-file-parent-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="parent_path"/>
+            <columnExists tableName="media_file" columnName="folder"/>
+        </preConditions>
+        <update tableName="media_file">
+            <column name="parent_path" valueComputed="NULL"></column>
+            <where>LENGTH(parent_path) &lt; (SELECT LENGTH(music_folder.path) FROM music_folder WHERE media_file.folder_id=music_folder.id)</where>
+        </update>
+        <update tableName="media_file">
+            <column name="parent_path" valueComputed="(SELECT SUBSTR(media_file.parent_path, LENGTH(music_folder.path) + 1) FROM music_folder WHERE media_file.folder_id=music_folder.id)"></column>
+            <where>LENGTH(parent_path) &gt;= (SELECT LENGTH(music_folder.path) FROM music_folder WHERE media_file.folder_id=music_folder.id)</where>
+        </update>
+        <update tableName="media_file">
+            <column name="parent_path" valueComputed="SUBSTR(parent_path, 2)"></column>
+            <where>LENGTH(parent_path) != 0</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-uniqueness-constraint-to-relative-media-file-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="media_file" indexName="idx_media_file_folder_path"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="media_file" unique="true" indexName="idx_media_file_folder_path">
+            <column name="folder_id"></column>
+            <column name="path"></column>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="media_file" indexName="idx_media_file_folder_path"></dropIndex>
+        </rollback>
+    </changeSet>
+    <changeSet id="drop-folder-from-media-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="media_file" columnName="folder"/>
+        </preConditions>
+        <dropColumn tableName="media_file" columnName="folder"></dropColumn>
+        <rollback>
+            <addColumn tableName="media_file">
+                <column name="folder" type="${varchar_type}"></column>
+            </addColumn>
+        </rollback>
+    </changeSet>
+    <changeSet id="remove-albums-with-non-existent-folders" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="id"/>
+            <columnExists tableName="album" columnName="folder_id"/>
+        </preConditions>
+        <delete tableName="album">
+            <where>folder_id NOT IN (SELECT id FROM music_folder)</where>
+        </delete>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="relativize-album-cover-art-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="cover_art_path"/>
+            <columnExists tableName="album" columnName="folder_id"/>
+        </preConditions>
+        <update tableName="album">
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = album.folder_id) + 1)"></column>
+            <where>cover_art_path IS NOT NULL</where>
+        </update>
+        <update tableName="album">
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, 2)"></column>
+            <where>LENGTH(cover_art_path) != 0</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="relativize-album-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="album" columnName="path"/>
+            <columnExists tableName="album" columnName="folder_id"/>
+        </preConditions>
+        <update tableName="album">
+            <column name="path" valueComputed="SUBSTR(path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = album.folder_id) + 1)"></column>
+            <where>path IS NOT NULL</where>
+        </update>
+        <update tableName="album">
+            <column name="path" valueComputed="SUBSTR(path, 2)"></column>
+            <where>LENGTH(path) != 0</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="remove-artists-with-non-existent-folders" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="id"/>
+            <columnExists tableName="artist" columnName="folder_id"/>
+        </preConditions>
+        <delete tableName="artist">
+            <where>folder_id NOT IN (SELECT id FROM music_folder)</where>
+        </delete>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="relativize-artist-cover-art-path" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="artist" columnName="cover_art_path"/>
+            <columnExists tableName="artist" columnName="folder_id"/>
+        </preConditions>
+        <update tableName="artist">
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, (SELECT LENGTH(music_folder.path) FROM music_folder WHERE music_folder.id = artist.folder_id) + 1)"></column>
+            <where>cover_art_path IS NOT NULL</where>
+        </update>
+        <update tableName="artist">
+            <column name="cover_art_path" valueComputed="SUBSTR(cover_art_path, 2)"></column>
+            <where>LENGTH(cover_art_path) != 0</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+    <changeSet id="add-music-folder-names-to-media-file" author="anon">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="music_folder" columnName="name"/>
+            <columnExists tableName="media_file" columnName="title"/>
+            <columnExists tableName="media_file" columnName="folder_id"/>
+        </preConditions>
+        <update tableName="media_file">
+            <column name="title" valueComputed="(SELECT name FROM music_folder WHERE media_file.folder_id = music_folder.id)"></column>
+            <where>path = ''</where>
+        </update>
+        <rollback>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

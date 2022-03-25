@@ -1,0 +1,15 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="podcast-episode-guid" author="anon">
+        <preConditions onFail="MARK_RAN">
+          <not>
+            <columnExists tableName="podcast_episode" columnName="episode_guid"/>
+          </not>
+        </preConditions>
+        <addColumn tableName="podcast_episode">
+          <column name="episode_guid" type="${varchar_type}"></column>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

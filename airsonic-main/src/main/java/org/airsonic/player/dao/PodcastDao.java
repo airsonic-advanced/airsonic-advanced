@@ -20,15 +20,19 @@
 package org.airsonic.player.dao;
 
 import org.airsonic.player.domain.PodcastChannel;
+import org.airsonic.player.domain.PodcastChannelRule;
 import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastStatus;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -42,18 +46,21 @@ import java.util.Optional;
 @Repository
 public class PodcastDao extends AbstractDao {
 
-    private static final String CHANNEL_INSERT_COLUMNS = "url, title, description, image_url, status, error_message";
+    private static final String CHANNEL_INSERT_COLUMNS = "url, title, description, image_url, status, error_message, media_file_id";
     private static final String CHANNEL_QUERY_COLUMNS = "id, " + CHANNEL_INSERT_COLUMNS;
-    private static final String EPISODE_INSERT_COLUMNS = "channel_id, url, path, title, description, publish_date, " +
+    private static final String CHANNEL_RULES_COLUMNS = "id, check_interval, retention_count, download_count";
+    private static final String EPISODE_INSERT_COLUMNS = "channel_id, episode_guid, url, media_file_id, title, description, publish_date, " +
                                                         "duration, bytes_total, bytes_downloaded, status, error_message";
     private static final String EPISODE_QUERY_COLUMNS = "id, " + EPISODE_INSERT_COLUMNS;
 
     private PodcastChannelRowMapper channelRowMapper = new PodcastChannelRowMapper();
+    private PodcastChannelRuleRowMapper channelRuleRowMapper = new PodcastChannelRuleRowMapper();
     private PodcastEpisodeRowMapper episodeRowMapper = new PodcastEpisodeRowMapper();
 
     @PostConstruct
     public void register() throws Exception {
         registerInserts("podcast_channel", "id", Arrays.asList(CHANNEL_INSERT_COLUMNS.split(", ")), PodcastChannel.class);
+        registerInserts("podcast_channel_rules", null, Arrays.asList(CHANNEL_RULES_COLUMNS.split(", ")), PodcastChannelRule.class);
         registerInserts("podcast_episode", "id", Arrays.asList(EPISODE_INSERT_COLUMNS.split(", ")), PodcastEpisode.class);
     }
 
@@ -91,19 +98,46 @@ public class PodcastDao extends AbstractDao {
      * @param channel The Podcast channel to update.
      */
     public void updateChannel(PodcastChannel channel) {
-        String sql = "update podcast_channel set url=?, title=?, description=?, image_url=?, status=?, error_message=? where id=?";
+        String sql = "update podcast_channel set url=?, title=?, description=?, image_url=?, status=?, error_message=?, media_file_id=? where id=?";
         update(sql, channel.getUrl(), channel.getTitle(), channel.getDescription(), channel.getImageUrl(),
-                channel.getStatus().name(), channel.getErrorMessage(), channel.getId());
+                channel.getStatus().name(), channel.getErrorMessage(), channel.getMediaFileId(), channel.getId());
     }
 
-    /**
-     * Deletes the Podcast channel with the given ID.
-     *
-     * @param id The Podcast channel ID.
-     */
     public void deleteChannel(int id) {
         String sql = "delete from podcast_channel where id=?";
         update(sql, id);
+    }
+
+    public int createChannelRule(PodcastChannelRule rule) {
+        return update("insert into podcast_channel_rules(" + CHANNEL_RULES_COLUMNS + ") values (" + questionMarks(CHANNEL_RULES_COLUMNS) + ")", rule.getId(), rule.getCheckInterval(), rule.getRetentionCount(), rule.getDownloadCount());
+    }
+
+    public int updateChannelRule(PodcastChannelRule rule) {
+        String sql = "update podcast_channel_rules set check_interval=?, retention_count=?, download_count=? where id=?";
+        return update(sql, rule.getCheckInterval(), rule.getRetentionCount(), rule.getDownloadCount(), rule.getId());
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void createOrUpdateChannelRule(PodcastChannelRule rule) {
+        int updated = updateChannelRule(rule);
+        if (updated == 0) {
+            createChannelRule(rule);
+        }
+    }
+
+    public void deleteChannelRule(int id) {
+        String sql = "delete from podcast_channel_rules where id=?";
+        update(sql, id);
+    }
+
+    public PodcastChannelRule getChannelRule(int id) {
+        String sql = "select " + CHANNEL_RULES_COLUMNS + " from podcast_channel_rules where id=?";
+        return queryOne(sql, channelRuleRowMapper, id);
+    }
+
+    public List<PodcastChannelRule> getAllChannelRules() {
+        String sql = "select " + CHANNEL_RULES_COLUMNS + " from podcast_channel_rules";
+        return query(sql, channelRuleRowMapper);
     }
 
     /**
@@ -136,7 +170,7 @@ public class PodcastDao extends AbstractDao {
      */
     public List<PodcastEpisode> getNewestEpisodes(int count) {
         String sql = "select " + EPISODE_QUERY_COLUMNS +
-                     " from podcast_episode where status = ? and publish_date is not null" +
+                     " from podcast_episode where status = ? and publish_date is not null and media_file_id is not null" +
                      " order by publish_date desc, id limit ?";
         return query(sql, episodeRowMapper, PodcastStatus.COMPLETED.name(), count);
     }
@@ -152,9 +186,19 @@ public class PodcastDao extends AbstractDao {
         return queryOne(sql, episodeRowMapper, episodeId);
     }
 
-    public PodcastEpisode getEpisodeByUrl(String url) {
-        String sql = "select " + EPISODE_QUERY_COLUMNS + " from podcast_episode where url=?";
-        return queryOne(sql, episodeRowMapper, url);
+    public PodcastEpisode getEpisodeByUrl(Integer channelId, String url) {
+        String sql = "select " + EPISODE_QUERY_COLUMNS + " from podcast_episode where channel_id=? and url=?";
+        return queryOne(sql, episodeRowMapper, channelId, url);
+    }
+
+    public PodcastEpisode getEpisodeByGuid(Integer channelId, String guid) {
+        String sql = "select " + EPISODE_QUERY_COLUMNS + " from podcast_episode where channel_id=? and episode_guid=?";
+        return queryOne(sql, episodeRowMapper, channelId, guid);
+    }
+
+    public PodcastEpisode getEpisodeByTitleAndDate(Integer channelId, String title, Instant pubDate) {
+        String sql = "select " + EPISODE_QUERY_COLUMNS + " from podcast_episode where channel_id=? and title=? and publish_date=?";
+        return queryOne(sql, episodeRowMapper, channelId, title, pubDate);
     }
 
     /**
@@ -164,9 +208,9 @@ public class PodcastDao extends AbstractDao {
      * @return The number of episodes updated (zero or one).
      */
     public int updateEpisode(PodcastEpisode episode) {
-        String sql = "update podcast_episode set url=?, path=?, title=?, description=?, publish_date=?, duration=?, " +
+        String sql = "update podcast_episode set episode_guid=?, url=?, media_file_id=?, title=?, description=?, publish_date=?, duration=?, " +
                 "bytes_total=?, bytes_downloaded=?, status=?, error_message=? where id=?";
-        return update(sql, episode.getUrl(), episode.getPath(), episode.getTitle(),
+        return update(sql, episode.getEpisodeGuid(), episode.getUrl(), episode.getMediaFileId(), episode.getTitle(),
                 episode.getDescription(), episode.getPublishDate(), episode.getDuration(),
                 episode.getBytesTotal(), episode.getBytesDownloaded(), episode.getStatus().name(),
                 episode.getErrorMessage(), episode.getId());
@@ -186,16 +230,23 @@ public class PodcastDao extends AbstractDao {
         @Override
         public PodcastChannel mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new PodcastChannel(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5),
-                                      PodcastStatus.valueOf(rs.getString(6)), rs.getString(7));
+                    PodcastStatus.valueOf(rs.getString(6)), rs.getString(7), (Integer) rs.getObject(8));
+        }
+    }
+
+    private static class PodcastChannelRuleRowMapper implements RowMapper<PodcastChannelRule> {
+        @Override
+        public PodcastChannelRule mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new PodcastChannelRule(rs.getInt("id"), rs.getInt("check_interval"), rs.getInt("retention_count"), rs.getInt("download_count"));
         }
     }
 
     private static class PodcastEpisodeRowMapper implements RowMapper<PodcastEpisode> {
         @Override
         public PodcastEpisode mapRow(ResultSet rs, int rowNum) throws SQLException {
-            return new PodcastEpisode(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), rs.getString(5),
-                    rs.getString(6), Optional.ofNullable(rs.getTimestamp(7)).map(x -> x.toInstant()).orElse(null), rs.getString(8), (Long) rs.getObject(9),
-                    (Long) rs.getObject(10), PodcastStatus.valueOf(rs.getString(11)), rs.getString(12));
+            return new PodcastEpisode(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), (Integer) rs.getObject(5),
+                    rs.getString(6), rs.getString(7), Optional.ofNullable(rs.getTimestamp(8)).map(x -> x.toInstant()).orElse(null), rs.getString(9), (Long) rs.getObject(10),
+                    (Long) rs.getObject(11), PodcastStatus.valueOf(rs.getString(12)), rs.getString(13));
         }
     }
 }

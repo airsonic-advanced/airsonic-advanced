@@ -15,6 +15,8 @@
     <properties>
         <chameleon.version>2.0.0-RELEASE</chameleon.version>
         <tomcat.server.scope>provided</tomcat.server.scope>
+        <!-- For fixing import/export due to https://github.com/liquibase/liquibase/issues/1598 -->
+        <liquibase.version>4.6.2</liquibase.version>
     </properties>
 
     <dependencies>
@@ -130,6 +132,12 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-taglibs</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.70</version>
+            <scope>runtime</scope>
+        </dependency>
         <!-- END Spring -->
 
         <!-- taglibs -->
@@ -208,7 +216,7 @@
         <dependency>
             <groupId>com.github.junrar</groupId>
             <artifactId>junrar</artifactId>
-            <version>4.0.0</version>
+            <version>7.4.1</version>
         </dependency>
 
         <dependency>
@@ -248,7 +256,7 @@
         <dependency>
             <groupId>net.jthink</groupId>
             <artifactId>jaudiotagger</artifactId>
-            <version>2.2.6.20210504</version>
+            <version>3.0.1</version>
         </dependency>
 
         <dependency>
@@ -409,8 +417,6 @@
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
             <version>1.9.4</version>
-            <!-- commons-configuration2 requires during runtime -->
-            <scope>runtime</scope>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -450,6 +456,10 @@
                 <exclusion>
                     <groupId>org.springframework</groupId>
                     <artifactId>spring-context</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-collections</groupId>
+                    <artifactId>commons-collections</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -627,6 +637,7 @@
                 </execution>
               </executions>
               <configuration>
+                <revisionOnScmFailure>UNKNOWN</revisionOnScmFailure>
                 <timezone>UTC</timezone>
                 <timestampFormat>yyyyMMddHHmmss</timestampFormat>
                 <attach>true</attach>

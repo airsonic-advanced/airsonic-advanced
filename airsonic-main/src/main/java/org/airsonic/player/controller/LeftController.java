@@ -63,6 +63,8 @@ public class LeftController {
     private MusicIndexService musicIndexService;
     @Autowired
     private PlayerService playerService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
 
     /**
      * Note: This class intentionally does not implement org.springframework.web.servlet.mvc.LastModified
@@ -77,13 +79,17 @@ public class LeftController {
 
         long lastModified = LAST_COMPATIBILITY_TIME.toEpochMilli();
         String username = securityService.getCurrentUsername(request);
+        UserSettings userSettings = settingsService.getUserSettings(username);
 
         // When was settings last changed?
         lastModified = Math.max(lastModified, settingsService.getSettingsChanged());
 
         // When was music folder(s) on disk last changed?
-        List<MusicFolder> allMusicFolders = settingsService.getMusicFoldersForUser(username);
-        MusicFolder selectedMusicFolder = settingsService.getSelectedMusicFolder(username);
+
+        List<MusicFolder> allMusicFolders = mediaFolderService.getMusicFoldersForUser(username);
+        MusicFolder selectedMusicFolder = allMusicFolders.stream()
+                .filter(f -> f.getId().equals(userSettings.getSelectedMusicFolderId()))
+                .findAny().orElse(null);
         if (selectedMusicFolder != null) {
             Path file = selectedMusicFolder.getPath();
             lastModified = Math.max(lastModified, FileUtil.lastModified(file).toEpochMilli());
@@ -105,7 +111,6 @@ public class LeftController {
         }
 
         // When was user settings last changed?
-        UserSettings userSettings = settingsService.getUserSettings(username);
         lastModified = Math.max(lastModified, userSettings.getChanged().toEpochMilli());
 
         return lastModified;
@@ -121,14 +126,16 @@ public class LeftController {
 
         boolean refresh = ServletRequestUtils.getBooleanParameter(request, "refresh", false);
         if (refresh) {
-            settingsService.clearMusicFolderCache();
+            mediaFolderService.clearMusicFolderCache();
         }
 
         String username = securityService.getCurrentUsername(request);
-        List<MusicFolder> allMusicFolders = settingsService.getMusicFoldersForUser(username);
-        MusicFolder selectedMusicFolder = settingsService.getSelectedMusicFolder(username);
-        List<MusicFolder> musicFoldersToUse = selectedMusicFolder == null ? allMusicFolders : Collections.singletonList(selectedMusicFolder);
         UserSettings userSettings = settingsService.getUserSettings(username);
+        List<MusicFolder> allMusicFolders = mediaFolderService.getMusicFoldersForUser(username);
+        List<MusicFolder> musicFoldersToUse = mediaFolderService.getMusicFoldersForUser(username, userSettings.getSelectedMusicFolderId());
+        MusicFolder selectedMusicFolder = musicFoldersToUse.stream()
+                .filter(f -> f.getId().equals(userSettings.getSelectedMusicFolderId()))
+                .findAny().orElse(null);
         MusicFolderContent musicFolderContent = musicIndexService.getMusicFolderContent(musicFoldersToUse, refresh);
 
         map.put("player", playerService.getPlayer(request, response));

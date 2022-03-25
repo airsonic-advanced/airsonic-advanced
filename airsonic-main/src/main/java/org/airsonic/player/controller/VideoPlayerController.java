@@ -119,7 +119,8 @@ public class VideoPlayerController {
         map.put("castable", castable);
         map.put("captions", captions);
         map.put("streamUrls", streamUrls.getRight());
-        map.put("contentType", !streamable ? "application/x-mpegurl" : StringUtil.getMimeType(MoreFiles.getFileExtension(file.getFile())));
+        map.put("contentType", !streamable ? "application/x-mpegurl"
+                : StringUtil.getMimeType(MoreFiles.getFileExtension(file.getRelativePath())));
         map.put("remoteStreamUrl", streamUrls.getRight().get("remoteStreamUrl"));
         map.put("remoteCoverArtUrl", url + jwtSecurityService.addJWTToken(user.getUsername(), "ext/coverArt.view?id=" + file.getId()));
         map.put("remoteCaptionsUrl", url + jwtSecurityService.addJWTToken(user.getUsername(), "ext/captions/list?id=" + file.getId()));

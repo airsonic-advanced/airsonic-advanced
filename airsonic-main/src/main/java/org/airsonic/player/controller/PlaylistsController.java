@@ -18,10 +18,10 @@
  */
 package org.airsonic.player.controller;
 
-import org.airsonic.player.domain.Playlist;
 import org.airsonic.player.domain.User;
-import org.airsonic.player.service.PlaylistService;
+import org.airsonic.player.domain.UserSettings;
 import org.airsonic.player.service.SecurityService;
+import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -31,7 +31,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import javax.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,18 +46,19 @@ public class PlaylistsController {
     private SecurityService securityService;
 
     @Autowired
-    private PlaylistService playlistService;
+    private SettingsService settingsService;
 
     @GetMapping
     public String doGet(HttpServletRequest request, Model model) {
         Map<String, Object> map = new HashMap<>();
 
         User user = securityService.getCurrentUser(request);
-        List<Playlist> playlists = playlistService.getReadablePlaylistsForUser(user.getUsername());
+        UserSettings userSettings = settingsService.getUserSettings(user.getUsername());
 
-        map.put("playlists", playlists);
+        map.put("username", user.getUsername());
+        map.put("viewAsList", userSettings.getViewAsList());
+        map.put("initialPaginationSize", userSettings.getPaginationSizePlaylist());
         model.addAttribute("model", map);
         return "playlists";
     }
-
 }

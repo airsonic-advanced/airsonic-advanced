@@ -23,6 +23,7 @@ import com.google.common.io.MoreFiles;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.ArtistDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.CoverArt.EntityType;
 import org.airsonic.player.service.*;
 import org.airsonic.player.service.metadata.JaudiotaggerParser;
 import org.airsonic.player.util.FileUtil;
@@ -54,10 +55,11 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -78,6 +80,8 @@ public class CoverArtController implements LastModified {
 
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private CoverArtService coverArtService;
     @Autowired
     private TranscodingService transcodingService;
     @Autowired
@@ -112,7 +116,7 @@ public class CoverArtController implements LastModified {
     public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
         CoverArtRequest coverArtRequest = createCoverArtRequest(request);
-        LOG.trace("handleRequest - " + coverArtRequest);
+        LOG.trace("handleRequest - {}", coverArtRequest);
         Integer size = ServletRequestUtils.getIntParameter(request, "size");
 
         // Send fallback image if no ID is given. (No need to cache it, since it will be cached in browser.)
@@ -123,8 +127,8 @@ public class CoverArtController implements LastModified {
 
         try {
             // Optimize if no scaling is required.
-            if (size == null && coverArtRequest.getCoverArt() != null) {
-                LOG.trace("sendUnscaled - " + coverArtRequest);
+            if (size == null && coverArtRequest.coverArt != null) {
+                LOG.trace("sendUnscaled - {}", coverArtRequest);
                 sendUnscaled(coverArtRequest, response);
                 return;
             }
@@ -198,7 +202,10 @@ public class CoverArtController implements LastModified {
             int offset = ServletRequestUtils.getIntParameter(request, "offset", 60);
             return new VideoCoverArtRequest(mediaFile, offset);
         }
-        return new MediaFileCoverArtRequest(mediaFile);
+
+        var dir = mediaFile.isDirectory() ? mediaFile : mediaFileService.getParentOf(mediaFile);
+
+        return new MediaFileCoverArtRequest(dir, mediaFile.isDirectory() ? null : mediaFile.getId());
     }
 
     private void sendImage(Path file, HttpServletResponse response) throws IOException {
@@ -220,8 +227,8 @@ public class CoverArtController implements LastModified {
     }
 
     private void sendUnscaled(CoverArtRequest coverArtRequest, HttpServletResponse response) throws IOException {
-        Path file = coverArtRequest.getCoverArt();
-        Pair<InputStream, String> imageInputStreamWithType = getImageInputStreamWithType(file);
+        Pair<InputStream, String> imageInputStreamWithType = getImageInputStreamWithType(
+                coverArtService.getFullPath(coverArtRequest.coverArt));
 
         try (InputStream in = imageInputStreamWithType.getLeft()) {
             response.setContentType(imageInputStreamWithType.getRight());
@@ -231,7 +238,7 @@ public class CoverArtController implements LastModified {
 
     private Path getCachedImage(CoverArtRequest request, int size) throws IOException {
         String hash = DigestUtils.md5Hex(request.getKey());
-        String encoding = request.getCoverArt() != null ? "jpeg" : "png";
+        String encoding = request.coverArt != null ? "jpeg" : "png";
         Path cachedImage = getImageCacheDirectory(size).resolve(hash + "." + encoding);
 
         // Synchronize to avoid concurrent writing to the same file.
@@ -283,8 +290,8 @@ public class CoverArtController implements LastModified {
      * Returns an input stream to the image in the given file.  If the file is an audio file,
      * the embedded album art is returned.
      */
-    private InputStream getImageInputStream(Path file) throws IOException {
-        return getImageInputStreamWithType(file).getLeft();
+    private InputStream getImageInputStream(CoverArt art) throws IOException {
+        return getImageInputStreamWithType(coverArtService.getFullPath(art)).getLeft();
     }
 
     /**
@@ -296,14 +303,13 @@ public class CoverArtController implements LastModified {
         String mimeType;
         if (jaudiotaggerParser.isApplicable(file)) {
             LOG.trace("Using Jaudio Tagger for reading artwork from {}", file);
-            MediaFile mediaFile = mediaFileService.getMediaFile(file);
             try {
-                LOG.trace("Reading artwork from file {}", mediaFile);
-                Artwork artwork = jaudiotaggerParser.getArtwork(mediaFile);
+                LOG.trace("Reading artwork from file {}", file);
+                Artwork artwork = JaudiotaggerParser.getArtwork(file);
                 is = new ByteArrayInputStream(artwork.getBinaryData());
                 mimeType = artwork.getMimeType();
             } catch (Exception e) {
-                LOG.debug("Could not read artwork from file {}", mediaFile);
+                LOG.debug("Could not read artwork from file {}", file);
                 throw new RuntimeException(e);
             }
         } else {
@@ -366,23 +372,28 @@ public class CoverArtController implements LastModified {
 
 
     private abstract class CoverArtRequest {
-
-        protected Path coverArt;
+        protected CoverArt coverArt;
+        protected Supplier<String> keyGenerator;
+        protected Supplier<Instant> lastModifiedGenerator;
 
         private CoverArtRequest() {
         }
 
-        private CoverArtRequest(String coverArtPath) {
-            this.coverArt = coverArtPath == null ? null : Paths.get(coverArtPath);
+        private CoverArtRequest(CoverArt coverArt, Supplier<String> keyGenerator, Supplier<Instant> lastModifiedGenerator) {
+            this.coverArt = CoverArt.NULL_ART.equals(coverArt) ? null : coverArt;
+            this.keyGenerator = keyGenerator;
+            this.lastModifiedGenerator = lastModifiedGenerator;
         }
 
-        private Path getCoverArt() {
-            return coverArt;
+        public String getKey() {
+            return Optional.ofNullable(coverArt).map(c -> coverArt.getFolderId() + "/" + coverArt.getPath())
+                    .orElseGet(keyGenerator);
         }
 
-        public abstract String getKey();
-
-        public abstract Instant lastModified();
+        public Instant lastModified() {
+            return Optional.ofNullable(coverArt).map(c -> FileUtil.lastModified(coverArtService.getFullPath(c)))
+                    .orElseGet(lastModifiedGenerator);
+        }
 
         public BufferedImage createImage(int size) {
             if (coverArt != null) {
@@ -398,9 +409,9 @@ public class CoverArtController implements LastModified {
                             return scale(bimg, size, size);
                         }
                     }
-                    LOG.warn("Failed to process cover art " + coverArt + ": " + reason + " failed");
+                    LOG.warn("Failed to process cover art {}: {} failed", coverArt, reason);
                 } catch (Throwable x) {
-                    LOG.warn("Failed to process cover art " + coverArt + ": " + x, x);
+                    LOG.warn("Failed to process cover art {}", coverArt, x);
                 }
             }
             return createAutoCover(size, size);
@@ -425,18 +436,10 @@ public class CoverArtController implements LastModified {
         private final Artist artist;
 
         private ArtistCoverArtRequest(Artist artist) {
-            super(artist.getCoverArtPath());
+            super(coverArtService.get(EntityType.ARTIST, artist.getId()),
+                () -> ARTIST_COVERART_PREFIX + artist.getId(),
+                () -> artist.getLastScanned());
             this.artist = artist;
-        }
-
-        @Override
-        public String getKey() {
-            return artist.getCoverArtPath() != null ? artist.getCoverArtPath() : (ARTIST_COVERART_PREFIX + artist.getId());
-        }
-
-        @Override
-        public Instant lastModified() {
-            return coverArt != null ? FileUtil.lastModified(coverArt) : artist.getLastScanned();
         }
 
         @Override
@@ -460,18 +463,10 @@ public class CoverArtController implements LastModified {
         private final Album album;
 
         private AlbumCoverArtRequest(Album album) {
-            super(album.getCoverArtPath());
+            super(coverArtService.get(EntityType.ALBUM, album.getId()),
+                () -> ALBUM_COVERART_PREFIX + album.getId(),
+                () -> album.getLastScanned());
             this.album = album;
-        }
-
-        @Override
-        public String getKey() {
-            return album.getCoverArtPath() != null ? album.getCoverArtPath() : (ALBUM_COVERART_PREFIX + album.getId());
-        }
-
-        @Override
-        public Instant lastModified() {
-            return coverArt != null ? FileUtil.lastModified(coverArt) : album.getLastScanned();
         }
 
         @Override
@@ -495,18 +490,8 @@ public class CoverArtController implements LastModified {
         private final Playlist playlist;
 
         private PlaylistCoverArtRequest(Playlist playlist) {
-            super(null);
+            super(null, () -> PLAYLIST_COVERART_PREFIX + playlist.getId(), () -> playlist.getChanged());
             this.playlist = playlist;
-        }
-
-        @Override
-        public String getKey() {
-            return PLAYLIST_COVERART_PREFIX + playlist.getId();
-        }
-
-        @Override
-        public Instant lastModified() {
-            return playlist.getChanged();
         }
 
         @Override
@@ -561,17 +546,8 @@ public class CoverArtController implements LastModified {
         private final PodcastChannel channel;
 
         PodcastCoverArtRequest(PodcastChannel channel) {
+            super(null, () -> PODCAST_COVERART_PREFIX + channel.getId(), () -> Instant.ofEpochMilli(-1));
             this.channel = channel;
-        }
-
-        @Override
-        public String getKey() {
-            return PODCAST_COVERART_PREFIX + channel.getId();
-        }
-
-        @Override
-        public Instant lastModified() {
-            return Instant.ofEpochMilli(-1);
         }
 
         @Override
@@ -586,24 +562,19 @@ public class CoverArtController implements LastModified {
     }
 
     private class MediaFileCoverArtRequest extends CoverArtRequest {
-
-        private final MediaFile mediaFile;
         private final MediaFile dir;
+        private final Integer proxyId;
+
+        private MediaFileCoverArtRequest(MediaFile mediaFile, Integer proxyId) {
+            super(coverArtService.get(EntityType.MEDIA_FILE, mediaFile.getId()),
+                () -> mediaFile.getFolderId() + "/" + mediaFile.getPath(),
+                () -> mediaFile.getChanged());
+            this.dir = mediaFile;
+            this.proxyId = proxyId;
+        }
 
         private MediaFileCoverArtRequest(MediaFile mediaFile) {
-            this.mediaFile = mediaFile;
-            dir = mediaFile.isDirectory() ? mediaFile : mediaFileService.getParentOf(mediaFile);
-            coverArt = mediaFileService.getCoverArt(mediaFile);
-        }
-
-        @Override
-        public String getKey() {
-            return coverArt != null ? coverArt.toString() : dir.getPath();
-        }
-
-        @Override
-        public Instant lastModified() {
-            return coverArt != null ? FileUtil.lastModified(coverArt) : dir.getChanged();
+            this(mediaFile, null);
         }
 
         @Override
@@ -618,7 +589,7 @@ public class CoverArtController implements LastModified {
 
         @Override
         public String toString() {
-            return "Media file " + mediaFile.getId() + " - " + mediaFile;
+            return "Media file " + dir.getId() + " - " + dir + (proxyId == null ? "" : " (Proxy for " + proxyId + ")");
         }
     }
 
@@ -630,6 +601,8 @@ public class CoverArtController implements LastModified {
         private VideoCoverArtRequest(MediaFile mediaFile, int offset) {
             this.mediaFile = mediaFile;
             this.offset = offset;
+            keyGenerator = () -> mediaFile.getFolderId() + "/" + mediaFile.getPath() + "/" + offset;
+            lastModifiedGenerator = () -> mediaFile.getChanged();
         }
 
         @Override
@@ -641,21 +614,11 @@ public class CoverArtController implements LastModified {
                 if (result != null) {
                     return result;
                 }
-                LOG.warn("Failed to process cover art for " + mediaFile + ": {}", result);
+                LOG.warn("Failed to process cover art for {}: {}", mediaFile, result);
             } catch (Throwable x) {
-                LOG.warn("Failed to process cover art for " + mediaFile + ": " + x, x);
+                LOG.warn("Failed to process cover art for {}", mediaFile, x);
             }
             return createAutoCover(width, height);
-        }
-
-        @Override
-        public String getKey() {
-            return mediaFile.getPath() + "/" + offset;
-        }
-
-        @Override
-        public Instant lastModified() {
-            return mediaFile.getChanged();
         }
 
         @Override

@@ -122,10 +122,11 @@
                     }
 
                     if (rowNode.hasClass("selected")) {
-                        rowNode.find(".songIndex input").prop("checked", true);
+                        rowNode.find(".songIndex").prop("checked", true);
                     }
                 },
                 colReorder: true,
+                fixedHeader: true,
                 stateSave: true,
                 stateDuration: 60 * 60 * 24 * 365,
                 ordering: true,
@@ -179,9 +180,16 @@
                 columnDefs: [{ targets: "_all", orderable: false }],
                 columns: [
                     { data: "seq", className: "detail fit", visible: true },
+                    { data: null,
+                      searchable: false,
+                      name: "songcheckbox",
+                      className: "fit not-draggable centeralign",
+                      title: "<input type='checkbox' class='songSelectAll'>",
+                      defaultContent: "<input type='checkbox' class='songIndex'>"
+                    },
                     { data: "starred",
                       name: "starred",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       render(starred, type) {
                           if (type == "display") {
                               return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
@@ -192,16 +200,11 @@
                     { data: null,
                       searchable: false,
                       name: "remove",
-                      className: "fit not-draggable",
+                      className: "fit not-draggable centeralign",
                       defaultContent: "<img class='removeSong' src=\"<spring:theme code='removeImage'/>\" style='height:18px;' alt=\"<fmt:message key='playlist.remove'/>\" title=\"<fmt:message key='playlist.remove'/>\">"
                     },
-                    { data: null,
-                      searchable: false,
-                      name: "songcheckbox",
-                      className: "fit not-draggable",
-                      defaultContent: "<input type='checkbox' class='songIndex'>"
-                    },
                     { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
+                    { data: "discNumber", className: "detail fit", visible: ${model.visibility.discNumberVisible}, title: "<fmt:message key='personalsettings.discnumber'/>" },
                     { data: "title",
                       className: "detail songTitle truncate",
                       title: "<fmt:message key='edittags.songtitle'/>",
@@ -232,6 +235,17 @@
                       className: "detail truncate",
                       visible: ${model.visibility.artistVisible},
                       title: "<fmt:message key='personalsettings.artist'/>",
+                      render(artist, type) {
+                          if (type == "display" && artist != null) {
+                              return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
+                          }
+                          return artist;
+                      }
+                    },
+                    { data: "albumArtist",
+                      className: "detail truncate",
+                      visible: ${model.visibility.albumArtistVisible},
+                      title: "<fmt:message key='personalsettings.albumartist'/>",
                       render(artist, type) {
                           if (type == "display" && artist != null) {
                               return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
@@ -327,9 +341,11 @@
 
             pq.musicTable.on( 'select', function ( e, dt, type, indexes ) {
                 pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", true);
+                pq.updateSelectAllCheckboxStatus();
             } );
             pq.musicTable.on( 'deselect', function ( e, dt, type, indexes ) {
                 pq.musicTable.cells( indexes, "songcheckbox:name" ).nodes().to$().find("input").prop("checked", false);
+                pq.updateSelectAllCheckboxStatus();
             } );
             $("#playQueueMusic tbody").on( "click", ".starSong", function () {
                 pq.onToggleStar(pq.musicTable.row( $(this).parents('tr') ).index());
@@ -339,6 +355,9 @@
             } );
             $("#playQueueMusic tbody").on( "click", ".titleUrl", function () {
                 pq.onSkip(pq.musicTable.row( $(this).parents('tr') ).index());
+            } );
+            $(".songSelectAll").on( "change", function (e) {
+                pq.selectAll(e.target.checked);
             } );
             pq.musicTable.on( "row-reordered", function (e, diff, edit) {
                 if (diff.length > 0) {
@@ -406,6 +425,9 @@
             var dialogSize = getJQueryUiDialogPlaylistSize("playQueue");
             $("#dialog-select-playlist").dialog({resizable: true, height: dialogSize.height, width: dialogSize.width, autoOpen: false,
                 buttons: {
+                    "<fmt:message key="common.add"/>": function() {
+                        pq.appendPlaylists();
+                    },
                     "<fmt:message key="common.cancel"/>"() {
                         $(this).dialog("close");
                     }
@@ -847,7 +869,7 @@
             this.onSkip(this.currentSongIndex - 1);
         },
         onPlay(id) {
-            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/mediafile", JSON.stringify({id: id}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/mediafile", JSON.stringify({id: Array.isArray(id) ? id[0] : id}));
         },
         onPlayShuffle(albumListType, offset, count, genre, decade) {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/play/shuffle", JSON.stringify({albumListType: albumListType, offset: offset, count: count, genre: genre, decade: decade}));
@@ -867,9 +889,6 @@
         onPlayPodcastEpisode(id) {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/play/podcastepisode", JSON.stringify({id: id}));
         },
-        onPlayNewestPodcastEpisode(index) {
-            top.StompClient.send("/app/playqueues/" + this.player.id + "/play/podcastepisode/newest", JSON.stringify({index: index}));
-        },
         onPlayStarred() {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/play/starred", "");
         },
@@ -880,10 +899,10 @@
             top.StompClient.send("/app/playqueues/" + this.player.id + "/play/similar", JSON.stringify({id: id, count: count}));
         },
         onAdd(id) {
-            top.StompClient.send("/app/playqueues/" + this.player.id + "/add", JSON.stringify({ids: [id]}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/add", JSON.stringify({ids: Array.isArray(id) ? id : [id]}));
         },
         onAddNext(id) {
-            top.StompClient.send("/app/playqueues/" + this.player.id + "/add", JSON.stringify({ids: [id], index: this.currentSongIndex + 1}));
+            top.StompClient.send("/app/playqueues/" + this.player.id + "/add", JSON.stringify({ids: Array.isArray(id) ? id : [id], index: this.currentSongIndex + 1}));
         },
         onAddPlaylist(id) {
             top.StompClient.send("/app/playqueues/" + this.player.id + "/add/playlist", JSON.stringify({id: id}));
@@ -964,17 +983,23 @@
             for (var i = 0; i < playlists.length; i++) {
                 var playlist = playlists[i];
                 $("<p>").addClass("dense").append(
-                    $("<b>").append(
-                        $("<a>").attr("href","#").attr("onclick", "playQueue.appendPlaylist(" + playlist.id + ")").text(playlist.name)))
+                  [
+                    $("<input>").attr("type", "checkbox").attr("id", "plsel" + playlist.id).attr("name", "playlistid").attr("value", playlist.id),
+                    $("<label>").attr("for", "plsel" + playlist.id).text(playlist.name).css("font-weight", "bold").css("margin-left", "1em")
+                  ])
                 .appendTo("#dialog-select-playlist-list");
             }
             $("#dialog-select-playlist").dialog("open");
         },
-        appendPlaylist(playlistId) {
+        appendPlaylists() {
+            var pq = this;
             $("#dialog-select-playlist").dialog("close");
 
-            var mediaFileIds = this.musicTable.rows({selected:true}).data().map(function(d) { return d.id; }).toArray();
+            var mediaFileIds = this.musicTable.rows({selected:true}).data().map(d => d.id).toArray();
 
+            $("#dialog-select-playlist-list input:checked").each((i, e) => pq.appendPlaylist(e.value, mediaFileIds));
+        },
+        appendPlaylist(playlistId, mediaFileIds) {
             top.StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
         },
 
@@ -1033,8 +1058,6 @@
             $("select#moreActions #sortByTrack").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #sortByAlbum").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #sortByArtist").prop("disabled", this.internetRadioEnabled);
-            $("select#moreActions #selectAll").prop("disabled", this.internetRadioEnabled);
-            $("select#moreActions #selectNone").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #removeSelected").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #download").prop("disabled", this.internetRadioEnabled);
             $("select#moreActions #appendPlaylist").prop("disabled", this.internetRadioEnabled);
@@ -1152,10 +1175,6 @@
                 this.onSortByArtist();
             } else if (id == "sortByAlbum") {
                 this.onSortByAlbum();
-            } else if (id == "selectAll") {
-                this.selectAll(true);
-            } else if (id == "selectNone") {
-                this.selectAll(false);
             } else if (id == "removeSelected") {
                 this.onRemoveSelected();
             } else if ((selectedIndexes = this.getSelectedIndexes()).length > 0 && id == "star") { // define selectedIndexes first so it always evaluates
@@ -1163,7 +1182,7 @@
             } else if (id == "unstar" && selectedIndexes.length > 0) {
                 this.onStar(selectedIndexes, false);
             } else if (id == "download" && selectedIndexes.length > 0) {
-                location.href = "download.view?player=" + this.player.id + "&" + querize(selectedIndexes, "i");
+                location.href = "download.view?player=" + this.player.id + "&" + this.querize(selectedIndexes, "i");
             } else if (id == "appendPlaylist" && selectedIndexes.length > 0) {
                 this.onAppendPlaylist();
             }
@@ -1181,6 +1200,19 @@
                 this.musicTable.rows().select();
             } else {
                 this.musicTable.rows().deselect();
+            }
+        },
+
+        updateSelectAllCheckboxStatus() {
+            var pq = this;
+            if (pq.musicTable.rows({selected: true}).indexes().length == 0) {
+                $('.songSelectAll').prop('checked', false);
+                $('.songSelectAll').prop('indeterminate', false);
+            } else if (pq.musicTable.rows({selected: true}).indexes().length == pq.musicTable.rows().indexes().length) {
+                $('.songSelectAll').prop('checked', true);
+                $('.songSelectAll').prop('indeterminate', false);
+            } else {
+                $('.songSelectAll').prop('indeterminate', true);
             }
         },
 
@@ -1301,8 +1333,6 @@
                     <option id="sortByArtist"><fmt:message key="playlist.more.sortbyartist"/></option>
                 </optgroup>
                 <optgroup label="<fmt:message key='playlist.more.selection'/>">
-                    <option id="selectAll"><fmt:message key="playlist.more.selectall"/></option>
-                    <option id="selectNone"><fmt:message key="playlist.more.selectnone"/></option>
                     <option id="removeSelected"><fmt:message key="playlist.remove"/></option>
                   <c:if test="${model.user.downloadRole}">
                     <option id="download"><fmt:message key="common.download"/></option>
@@ -1326,7 +1356,7 @@
 
 </div>
 
-<div id="dialog-select-playlist" title="<fmt:message key='main.addtoplaylist.title'/>" style="display: none;">
+<div id="dialog-select-playlist" title="<fmt:message key='playlist.append'/>" style="display: none;">
     <p><fmt:message key="main.addtoplaylist.text"/></p>
     <div id="dialog-select-playlist-list"></div>
 </div>

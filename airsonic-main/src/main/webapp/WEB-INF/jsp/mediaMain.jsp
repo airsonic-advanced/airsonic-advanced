@@ -8,9 +8,6 @@
     <script type="text/javascript" src="<c:url value='/script/jquery.fancyzoom.js'/>"></script>
     <script type="text/javascript" src="<c:url value='/script/utils.js'/>"></script>
     <style type="text/css">
-        .tableSpacer {
-            height: 1em;
-        }
         #topSongsHeader, #filesHeader, #subDirsHeader {
             display: inline-block;
             border: dotted;
@@ -250,6 +247,9 @@
         var dialogSize = getJQueryUiDialogPlaylistSize("mediaMain");
         $("#dialog-select-playlist").dialog({resizable: true, height: dialogSize.height, width: dialogSize.width, autoOpen: false,
             buttons: {
+                "<fmt:message key="common.add"/>": function() {
+                    appendPlaylists();
+                },
                 "<fmt:message key="common.cancel"/>": function() {
                     $(this).dialog("close");
                 }
@@ -299,7 +299,7 @@
                 { data: "seq", className: "detail fit", visible: true },
                 { data: "starred",
                   name: "starred",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(starred, type) {
                       if (type == "display") {
                           return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
@@ -311,14 +311,14 @@
                   searchable: false,
                   name: "play",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='playSong' src=\"<spring:theme code='playImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.play'/>\" title=\"<fmt:message key='common.play'/>\">"
                 },
                 { data: "entryType",
                   searchable: false,
                   name: "addLast",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(entryType, type, row) {
                       if (type == "display" && entryType != "VIDEO" && entryType != "DIRECTORY" && entryType != "ALBUM") {
                           return "<img class='addSongLast' src=\"<spring:theme code='addImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.add'/>\" title=\"<fmt:message key='common.add'/>\">";
@@ -330,7 +330,7 @@
                   searchable: false,
                   name: "addNext",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(entryType, type, row) {
                       if (type == "display" && entryType != "VIDEO" && entryType != "DIRECTORY" && entryType != "ALBUM") {
                           return "<img class='addSongNext' src=\"<spring:theme code='addNextImage'/>\" style='height:18px;' alt=\"<fmt:message key='main.addnext'/>\" title=\"<fmt:message key='main.addnext'/>\">";
@@ -341,10 +341,11 @@
                 { data: null,
                   searchable: false,
                   name: "songcheckbox",
-                  className: "fit not-draggable songIndex",
+                  className: "fit not-draggable songIndex centeralign",
                   defaultContent: "<input type='checkbox'>"
                 },
                 { data: "trackNumber", className: "detail fit", visible: ${model.visibility.trackNumberVisible}, title: "<fmt:message key='personalsettings.tracknumber'/>" },
+                { data: "discNumber", className: "detail fit", visible: ${model.visibility.discNumberVisible}, title: "<fmt:message key='personalsettings.discnumber'/>" },
                 { data: "title",
                   className: "detail songTitle truncate",
                   title: "<fmt:message key='edittags.songtitle'/>",
@@ -370,6 +371,17 @@
                   className: "detail truncate",
                   visible: ${model.visibility.artistVisible},
                   title: "<fmt:message key='personalsettings.artist'/>",
+                  render: function(artist, type) {
+                      if (type == "display" && artist != null) {
+                          return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
+                      }
+                      return artist;
+                  }
+                },
+                { data: "albumArtist",
+                  className: "detail truncate",
+                  visible: ${model.visibility.albumArtistVisible},
+                  title: "<fmt:message key='personalsettings.albumartist'/>",
                   render: function(artist, type) {
                       if (type == "display" && artist != null) {
                           return $("<span>", {title: artist, alt: artist, text: artist})[0].outerHTML;
@@ -531,14 +543,14 @@
                   searchable: false,
                   name: "play",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='playSong' src=\"<spring:theme code='playImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.play'/>\" title=\"<fmt:message key='common.play'/>\">"
                 },
                 { data: "entryType",
                   searchable: false,
                   name: "addLast",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(entryType, type, row) {
                       if (type == "display") {
                           return "<img class='addSongLast' src=\"<spring:theme code='addImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.add'/>\" title=\"<fmt:message key='common.add'/>\">";
@@ -550,7 +562,7 @@
                   searchable: false,
                   name: "addNext",
                   visible: ${model.user.streamRole and not model.partyMode},
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(entryType, type, row) {
                       if (type == "display") {
                           return "<img class='addSongNext' src=\"<spring:theme code='addNextImage'/>\" style='height:18px;' alt=\"<fmt:message key='main.addnext'/>\" title=\"<fmt:message key='main.addnext'/>\">";
@@ -614,7 +626,7 @@
                 { data: "seq", className: "detail fit", visible: true },
                 { data: "starred",
                   name: "starred",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   render: function(starred, type) {
                       if (type == "display") {
                           return "<img class='starSong' src='" + (starred ? ratingOnImage : ratingOffImage) + "' style='height:18px;' alt='' title=''>";
@@ -625,19 +637,19 @@
                 { data: null,
                   searchable: false,
                   name: "play",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='playSong' src=\"<spring:theme code='playImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.play'/>\" title=\"<fmt:message key='common.play'/>\">"
                 },
                 { data: null,
                   searchable: false,
                   name: "addLast",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='addSongLast' src=\"<spring:theme code='addImage'/>\" style='height:18px;' alt=\"<fmt:message key='common.add'/>\" title=\"<fmt:message key='common.add'/>\">"
                 },
                 { data: null,
                   searchable: false,
                   name: "addNext",
-                  className: "fit not-draggable",
+                  className: "fit not-draggable centeralign",
                   defaultContent: "<img class='addSongNext' src=\"<spring:theme code='addNextImage'/>\" style='height:18px;' alt=\"<fmt:message key='main.addnext'/>\" title=\"<fmt:message key='main.addnext'/>\">"
                 },
                 { data: "title",
@@ -915,16 +927,24 @@
         $("#dialog-select-playlist-list").empty();
         for (var i = 0; i < playlists.length; i++) {
             var playlist = playlists[i];
-            $("<p class='dense'><b><a href='#' onclick='appendPlaylist(" + playlist.id + ")'>" + escapeHtml(playlist.name)
-                    + "</a></b></p>").appendTo("#dialog-select-playlist-list");
+            $("<p>").addClass("dense").append(
+                  [
+                    $("<input>").attr("type", "checkbox").attr("id", "plsel" + playlist.id).attr("name", "playlistid").attr("value", playlist.id),
+                    $("<label>").attr("for", "plsel" + playlist.id).text(playlist.name).css("font-weight", "bold").css("margin-left", "1em")
+                  ])
+                .appendTo("#dialog-select-playlist-list");
         }
         $("#dialog-select-playlist").dialog("open");
     }
-    function appendPlaylist(playlistId) {
+    function appendPlaylists() {
+        var pl = this;
         $("#dialog-select-playlist").dialog("close");
 
-        var mediaFileIds = filesTable.rows({selected:true}).data().map(function(d) { return d.id; }).toArray();
+        var mediaFileIds = filesTable.rows({selected:true}).data().map(d => d.id).toArray();
 
+        $("#dialog-select-playlist-list input:checked").each((i, e) => pl.appendPlaylist(e.value, mediaFileIds));
+    }
+    function appendPlaylist(playlistId, mediaFileIds) {
         top.StompClient.send("/app/playlists/files/append", JSON.stringify({id: playlistId, modifierIds: mediaFileIds}));
     }
 
@@ -1178,7 +1198,7 @@
 <table id="artistTopSongsTable" class="music indent hover nowrap stripe compact hide-table-header" style="width: 100%;">
 </table>
 
-<div id="dialog-select-playlist" title="<fmt:message key='main.addtoplaylist.title'/>" style="display: none;">
+<div id="dialog-select-playlist" title="<fmt:message key='playlist.append'/>" style="display: none;">
     <p><fmt:message key="main.addtoplaylist.text"/></p>
     <div id="dialog-select-playlist-list"></div>
 </div>

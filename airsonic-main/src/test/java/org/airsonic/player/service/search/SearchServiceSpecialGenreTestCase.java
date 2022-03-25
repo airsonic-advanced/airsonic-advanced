@@ -3,6 +3,7 @@ package org.airsonic.player.service.search;
 
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.RandomSearchCriteria;
 import org.airsonic.player.service.SearchService;
 import org.airsonic.player.util.MusicFolderTestData;
@@ -36,7 +37,7 @@ public class SearchServiceSpecialGenreTestCase extends AbstractAirsonicHomeTest 
         if (isEmpty(musicFolders)) {
             musicFolders = new ArrayList<>();
             Path musicDir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialGenre");
-            musicFolders.add(new MusicFolder(1, musicDir, "accessible", true, Instant.now()));
+            musicFolders.add(new MusicFolder(1, musicDir, "accessible", Type.MEDIA, true, Instant.now()));
         }
         return musicFolders;
     }

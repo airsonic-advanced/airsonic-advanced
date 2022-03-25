@@ -24,6 +24,9 @@ import org.airsonic.player.ajax.MediaFileEntry;
 import org.airsonic.player.dao.AlbumDao;
 import org.airsonic.player.dao.MediaFileDao;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.CoverArt.EntityType;
+import org.airsonic.player.domain.MediaFile.MediaType;
+import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.metadata.JaudiotaggerParser;
 import org.airsonic.player.service.metadata.MetaData;
@@ -35,9 +38,9 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -56,7 +59,6 @@ import java.util.stream.Stream;
  * @author Sindre Mehus
  */
 @Service
-@CacheConfig(cacheNames = "mediaFileMemoryCache")
 public class MediaFileService {
 
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileService.class);
@@ -68,52 +70,74 @@ public class MediaFileService {
     @Autowired
     private MediaFileDao mediaFileDao;
     @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
     private AlbumDao albumDao;
     @Autowired
     private JaudiotaggerParser parser;
     @Autowired
     private MetaDataParserFactory metaDataParserFactory;
     @Autowired
+    private CoverArtService coverArtService;
+    @Autowired
     private LocaleResolver localeResolver;
     private boolean memoryCacheEnabled = true;
 
-    /**
-     * Returns a media file instance for the given file.  If possible, a cached value is returned.
-     *
-     * @param file A file on the local file system.
-     * @return A media file instance, or null if not found.
-     * @throws SecurityException If access is denied to the given file.
-     */
-    public MediaFile getMediaFile(Path file) {
-        return getMediaFile(file, settingsService.isFastCacheEnabled());
+    public MediaFile getMediaFile(String pathName) {
+        return getMediaFile(Paths.get(pathName));
     }
 
-    /**
-     * Returns a media file instance for the given file.  If possible, a cached value is returned.
-     *
-     * @param file A file on the local file system.
-     * @return A media file instance, or null if not found.
-     * @throws SecurityException If access is denied to the given file.
-     */
-    @Cacheable(key = "#file", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
-    public MediaFile getMediaFile(Path file, boolean useFastCache) {
-        if (!securityService.isReadAllowed(file)) {
-            throw new SecurityException("Access denied to file " + file);
-        }
+    public MediaFile getMediaFile(Path fullPath) {
+        return getMediaFile(fullPath, settingsService.isFastCacheEnabled());
+    }
 
+    // This may be an expensive op
+    public MediaFile getMediaFile(Path fullPath, boolean minimizeDiskAccess) {
+        MusicFolder folder = securityService.getMusicFolderForFile(fullPath, true, true);
+        if (folder == null) {
+            // can't look outside folders and not present in folder
+            return null;
+        }
+        try {
+            Path relativePath = folder.getPath().relativize(fullPath);
+            return getMediaFile(relativePath, folder, minimizeDiskAccess);
+        } catch (Exception e) {
+            // ignore
+            return null;
+        }
+    }
+
+    public MediaFile getMediaFile(String relativePath, Integer folderId) {
+        return getMediaFile(relativePath, mediaFolderService.getMusicFolderById(folderId));
+    }
+
+    public MediaFile getMediaFile(String relativePath, MusicFolder folder) {
+        return getMediaFile(Paths.get(relativePath), folder);
+    }
+
+    public MediaFile getMediaFile(Path relativePath, MusicFolder folder) {
+        return getMediaFile(relativePath, folder, settingsService.isFastCacheEnabled());
+    }
+
+    public MediaFile getMediaFile(String relativePath, Integer folderId, boolean minimizeDiskAccess) {
+        return getMediaFile(Paths.get(relativePath), mediaFolderService.getMusicFolderById(folderId), minimizeDiskAccess);
+    }
+
+    @Cacheable(cacheNames = "mediaFilePathCache", key = "#relativePath.toString().concat('-').concat(#folder.id)", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
+    public MediaFile getMediaFile(Path relativePath, MusicFolder folder, boolean minimizeDiskAccess) {
         // Look in database.
-        MediaFile result = mediaFileDao.getMediaFile(file.toString());
+        MediaFile result = mediaFileDao.getMediaFile(relativePath.toString(), folder.getId());
         if (result != null) {
-            result = checkLastModified(result, useFastCache);
+            result = checkLastModified(result, folder, minimizeDiskAccess);
             return result;
         }
 
-        if (!Files.exists(file)) {
+        if (!Files.exists(folder.getPath().resolve(relativePath))) {
             return null;
         }
 
         // Not found in database, must read from disk.
-        result = createMediaFile(file, null);
+        result = createMediaFile(relativePath, folder, null);
 
         // Put in database.
         updateMediaFile(result);
@@ -121,47 +145,40 @@ public class MediaFileService {
         return result;
     }
 
-    /**
-     * Returns a media file instance for the given path name. If possible, a cached value is returned.
-     *
-     * @param pathName A path name for a file on the local file system.
-     * @return A media file instance.
-     * @throws SecurityException If access is denied to the given file.
-     */
-    public MediaFile getMediaFile(String pathName) {
-        return getMediaFile(Paths.get(pathName));
-    }
-
-    // TODO: Optimize with memory caching.
+    @Cacheable(cacheNames = "mediaFileIdCache", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
     public MediaFile getMediaFile(int id) {
         MediaFile mediaFile = mediaFileDao.getMediaFile(id);
         if (mediaFile == null) {
             return null;
         }
 
-        if (!securityService.isReadAllowed(mediaFile.getFile())) {
-            throw new SecurityException("Access denied to file " + mediaFile);
-        }
+        return checkLastModified(mediaFile, mediaFolderService.getMusicFolderById(mediaFile.getFolderId()), settingsService.isFastCacheEnabled());
+    }
 
-        return checkLastModified(mediaFile, settingsService.isFastCacheEnabled());
+    public List<MediaFile> getMediaFilesByRelativePath(Path relativePath) {
+        return mediaFileDao.getMediaFilesByRelativePath(relativePath.toString());
     }
 
     public MediaFile getParentOf(MediaFile mediaFile) {
+        return getParentOf(mediaFile, settingsService.isFastCacheEnabled());
+    }
+
+    public MediaFile getParentOf(MediaFile mediaFile, boolean minimizeDiskAccess) {
         if (mediaFile.getParentPath() == null) {
             return null;
         }
-        return getMediaFile(mediaFile.getParentPath());
+        return getMediaFile(mediaFile.getParentPath(), mediaFile.getFolderId(), minimizeDiskAccess);
     }
 
-    private MediaFile checkLastModified(MediaFile mediaFile, boolean useFastCache) {
-        if (useFastCache || (mediaFile.getVersion() >= MediaFileDao.VERSION
+    private MediaFile checkLastModified(MediaFile mediaFile, MusicFolder folder, boolean minimizeDiskAccess) {
+        if (minimizeDiskAccess || (mediaFile.getVersion() >= MediaFileDao.VERSION
                 && !settingsService.getFullScan()
-                && mediaFile.getChanged().compareTo(FileUtil.lastModified(mediaFile.getFile())) > -1)) {
-            LOG.debug("Detected unmodified file (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
+                && mediaFile.getChanged().compareTo(FileUtil.lastModified(mediaFile.getFullPath(folder.getPath()))) > -1)) {
+            LOG.debug("Detected unmodified file (id {}, path {} in folder {} ({}))", mediaFile.getId(), mediaFile.getPath(), folder.getId(), folder.getName());
             return mediaFile;
         }
-        LOG.debug("Updating database file from disk (id {}, path {})", mediaFile.getId(), mediaFile.getPath());
-        mediaFile = createMediaFile(mediaFile.getFile(), mediaFile);
+        LOG.debug("Updating database file from disk (id {}, path {} in folder {} ({}))", mediaFile.getId(), mediaFile.getPath(), folder.getId(), folder.getName());
+        mediaFile = createMediaFile(mediaFile.getRelativePath(), folder, mediaFile);
         updateMediaFile(mediaFile);
         return mediaFile;
     }
@@ -186,7 +203,7 @@ public class MediaFileService {
      * @param sort               Whether to sort files in the same directory.
      * @return All children media files.
      */
-    public List<MediaFile> getChildrenOf(MediaFile parent, boolean includeFiles, boolean includeDirectories, boolean sort, boolean useFastCache) {
+    public List<MediaFile> getChildrenOf(MediaFile parent, boolean includeFiles, boolean includeDirectories, boolean sort, boolean minimizeDiskAccess) {
 
         if (!parent.isDirectory()) {
             return Collections.emptyList();
@@ -195,12 +212,15 @@ public class MediaFileService {
         Stream<MediaFile> resultStream = null;
 
         // Make sure children are stored and up-to-date in the database.
-        if (!useFastCache) {
+        if (!minimizeDiskAccess) {
             resultStream = Optional.ofNullable(updateChildren(parent)).map(x -> x.parallelStream()).orElse(null);
         }
 
         if (resultStream == null) {
-            resultStream = mediaFileDao.getChildrenOf(parent.getPath()).parallelStream().map(x -> checkLastModified(x, useFastCache)).filter(x -> includeMediaFile(x));
+            MusicFolder folder = mediaFolderService.getMusicFolderById(parent.getFolderId());
+            resultStream = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), true).parallelStream()
+                    .map(x -> checkLastModified(x, folder, minimizeDiskAccess))
+                    .filter(x -> includeMediaFile(x, folder));
         }
 
         resultStream = resultStream.filter(x -> (includeDirectories && x.isDirectory()) || (includeFiles && x.isFile()));
@@ -218,7 +238,9 @@ public class MediaFileService {
      * @see MusicFolder
      */
     public boolean isRoot(MediaFile mediaFile) {
-        return settingsService.getAllMusicFolders(false, true).parallelStream().anyMatch(x -> mediaFile.getPath().equals(x.getPath().toString()));
+        return StringUtils.isEmpty(mediaFile.getPath()) &&
+                mediaFolderService.getAllMusicFolders(true, true).parallelStream()
+                        .anyMatch(x -> mediaFile.getFolderId().equals(x.getId()));
     }
 
     /**
@@ -374,19 +396,21 @@ public class MediaFileService {
             return null;
         }
 
-        Map<String, MediaFile> storedChildrenMap = mediaFileDao.getChildrenOf(parent.getPath()).parallelStream().collect(Collectors.toConcurrentMap(i -> i.getPath(), i -> i));
-
-        try (Stream<Path> children = Files.list(parent.getFile())) {
+        Map<String, MediaFile> storedChildrenMap = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), false).parallelStream().collect(Collectors.toConcurrentMap(i -> i.getPath(), i -> i));
+        MusicFolder folder = mediaFolderService.getMusicFolderById(parent.getFolderId());
+        try (Stream<Path> children = Files.list(parent.getFullPath(folder.getPath()))) {
             List<MediaFile> result = children.parallel()
                     .filter(this::includeMediaFile)
+                    .filter(x -> securityService.getMusicFolderForFile(x, true, true).getId().equals(parent.getFolderId()))
+                    .map(x -> folder.getPath().relativize(x))
                     .map(x -> {
                         MediaFile media = storedChildrenMap.remove(x.toString());
                         if (media == null) {
-                            media = createMediaFile(x, null);
+                            media = createMediaFile(x, folder, null);
                             // Add children that are not already stored.
                             updateMediaFile(media);
                         } else {
-                            media = checkLastModified(media, false); //has to be false, only time it's called
+                            media = checkLastModified(media, folder, false); // has to be false, only time it's called
                         }
 
                         return media;
@@ -394,7 +418,7 @@ public class MediaFileService {
                     .collect(Collectors.toList());
 
             // Delete children that no longer exist on disk.
-            mediaFileDao.deleteMediaFiles(storedChildrenMap.keySet());
+            mediaFileDao.deleteMediaFiles(storedChildrenMap.keySet(), parent.getFolderId());
 
             // Update timestamp in parent.
             parent.setChildrenLastUpdated(parent.getChanged());
@@ -403,14 +427,14 @@ public class MediaFileService {
 
             return result;
         } catch (IOException e) {
-            LOG.warn("Could not retrieve and update all the children for {}. Will skip", parent.getPath(), e);
+            LOG.warn("Could not retrieve and update all the children for {} in folder {}. Will skip", parent.getPath(), folder.getId(), e);
 
             return null;
         }
     }
 
-    public boolean includeMediaFile(MediaFile candidate) {
-        return includeMediaFile(candidate.getFile());
+    public boolean includeMediaFile(MediaFile candidate, MusicFolder folder) {
+        return includeMediaFile(candidate.getFullPath(folder.getPath()));
     }
 
     public boolean includeMediaFile(Path candidate) {
@@ -447,7 +471,8 @@ public class MediaFileService {
         return (name.startsWith(".") && !name.startsWith("..")) || name.startsWith("@eaDir") || "Thumbs.db".equals(name);
     }
 
-    private MediaFile createMediaFile(Path file, MediaFile existingFile) {
+    private MediaFile createMediaFile(Path relativePath, MusicFolder folder, MediaFile existingFile) {
+        Path file = folder.getPath().resolve(relativePath);
         if (!Files.exists(file)) {
             if (existingFile != null) {
                 existingFile.setPresent(false);
@@ -458,9 +483,19 @@ public class MediaFileService {
 
         MediaFile mediaFile = new MediaFile();
         Instant lastModified = FileUtil.lastModified(file);
-        mediaFile.setPath(file.toString());
-        mediaFile.setFolder(securityService.getRootFolderForFile(file));
-        mediaFile.setParentPath(file.getParent().toString());
+        mediaFile.setPath(relativePath.toString());
+        mediaFile.setFolderId(folder.getId());
+        //sanity check
+        MusicFolder folderActual = securityService.getMusicFolderForFile(file, true, true);
+        if (!folderActual.getId().equals(folder.getId())) {
+            LOG.warn("Inconsistent Mediafile folder for media file with path: {}, folder id should be {} and is instead {}", file, folderActual.getId(), folder.getId());
+        }
+        // distinguish between null (no parent, like root folder), "" (root parent), and else
+        String parentPath = null;
+        if (StringUtils.isNotEmpty(relativePath.toString())) {
+            parentPath = relativePath.getParent() == null ? "" : relativePath.getParent().toString();
+        }
+        mediaFile.setParentPath(parentPath);
         mediaFile.setChanged(lastModified);
         mediaFile.setLastScanned(Instant.now());
         mediaFile.setPlayCount(existingFile == null ? 0 : existingFile.getPlayCount());
@@ -470,6 +505,7 @@ public class MediaFileService {
         mediaFile.setCreated(lastModified);
         mediaFile.setMediaType(MediaFile.MediaType.DIRECTORY);
         mediaFile.setPresent(true);
+        mediaFile.setId(existingFile == null ? null : existingFile.getId());
 
         if (Files.isRegularFile(file)) {
 
@@ -495,7 +531,7 @@ public class MediaFileService {
             String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(mediaFile.getPath())));
             mediaFile.setFormat(format);
             mediaFile.setFileSize(FileUtil.size(file));
-            mediaFile.setMediaType(getMediaType(mediaFile));
+            mediaFile.setMediaType(getMediaType(mediaFile, folder));
 
         } else {
 
@@ -524,9 +560,9 @@ public class MediaFileService {
                         // Look for cover art.
                         Path coverArt = findCoverArt(children);
                         if (coverArt != null) {
-                            mediaFile.setCoverArtPath(coverArt.toString());
+                            // placeholder to be persisted later
+                            mediaFile.setArt(new CoverArt(-1, EntityType.MEDIA_FILE, folder.getPath().relativize(coverArt).toString(), folder.getId(), false));
                         }
-
                     } else {
                         mediaFile.setArtist(file.getFileName().toString());
                     }
@@ -536,13 +572,19 @@ public class MediaFileService {
 
                     mediaFile.setArtist(file.getFileName().toString());
                 }
+            } else {
+                // root folders need to have a title
+                mediaFile.setTitle(folder.getName());
             }
         }
 
         return mediaFile;
     }
 
-    private MediaFile.MediaType getMediaType(MediaFile mediaFile) {
+    private MediaFile.MediaType getMediaType(MediaFile mediaFile, MusicFolder folder) {
+        if (folder.getType() == Type.PODCAST) {
+            return MediaType.PODCAST;
+        }
         if (isVideoFile(mediaFile.getFormat())) {
             return MediaFile.MediaType.VIDEO;
         }
@@ -557,29 +599,18 @@ public class MediaFileService {
         return MediaFile.MediaType.MUSIC;
     }
 
-    public void refreshMediaFile(MediaFile mediaFile) {
-        mediaFile = createMediaFile(mediaFile.getFile(), mediaFile);
+    public void refreshMediaFile(MediaFile mediaFile, MusicFolder folder) {
+        mediaFile = createMediaFile(mediaFile.getRelativePath(), folder, mediaFile);
         updateMediaFile(mediaFile);
     }
 
-    @CacheEvict(allEntries = true)
+    @CacheEvict(cacheNames = { "mediaFilePathCache", "mediaFileIdCache" }, allEntries = true)
     public void setMemoryCacheEnabled(boolean memoryCacheEnabled) {
         this.memoryCacheEnabled = memoryCacheEnabled;
     }
 
     public boolean getMemoryCacheEnabled() {
         return memoryCacheEnabled;
-    }
-
-    /**
-     * Returns a cover art image for the given media file.
-     */
-    public Path getCoverArt(MediaFile mediaFile) {
-        if (mediaFile.getCoverArtFile() != null) {
-            return mediaFile.getCoverArtFile();
-        }
-        MediaFile parent = getParentOf(mediaFile);
-        return parent == null ? null : parent.getCoverArtFile();
     }
 
     /**
@@ -626,8 +657,12 @@ public class MediaFileService {
     }
 
     private Path findTagCover(Collection<Path> candidates) {
-        // Look for embedded images in audiofiles. (Only check first audio file encountered).
-        return candidates.parallelStream().filter(parser::isApplicable).findFirst().filter(c -> parser.isImageAvailable(getMediaFile(c))).orElse(null);
+        // Look for embedded images in audiofiles.
+        return candidates.stream()
+                .filter(parser::isApplicable)
+                .filter(JaudiotaggerParser::isImageAvailable)
+                .findFirst()
+                .orElse(null);
     }
 
     public void setSecurityService(SecurityService securityService) {
@@ -671,9 +706,25 @@ public class MediaFileService {
         this.metaDataParserFactory = metaDataParserFactory;
     }
 
-    @CacheEvict(key = "#mediaFile.file")
+    @Caching(evict = {
+        @CacheEvict(cacheNames = "mediaFilePathCache", key = "#mediaFile.path.concat('-').concat(#mediaFile.folderId)"),
+        @CacheEvict(cacheNames = "mediaFileIdCache", key = "#mediaFile.id", condition = "#mediaFile.id != null") })
     public void updateMediaFile(MediaFile mediaFile) {
-        mediaFileDao.createOrUpdateMediaFile(mediaFile);
+        mediaFileDao.createOrUpdateMediaFile(mediaFile, file -> {
+            // Copy values from obsolete table music_file_info if inserting for first time
+            MusicFolder folder = mediaFolderService.getMusicFolderById(mediaFile.getFolderId());
+            if (folder != null) {
+                MediaFile musicFileInfo = mediaFileDao.getMusicFileInfo(file.getFullPath(folder.getPath()).toString());
+                if (musicFileInfo != null) {
+                    file.setComment(musicFileInfo.getComment());
+                    file.setLastPlayed(musicFileInfo.getLastPlayed());
+                    file.setPlayCount(musicFileInfo.getPlayCount());
+                }
+            }
+        });
+
+        // persist cover art if not overridden
+        coverArtService.persistIfNeeded(mediaFile);
     }
 
     /**

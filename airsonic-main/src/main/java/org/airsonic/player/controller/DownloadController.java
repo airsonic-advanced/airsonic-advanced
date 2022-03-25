@@ -19,8 +19,8 @@
  */
 package org.airsonic.player.controller;
 
-import com.google.common.collect.Streams;
 import org.airsonic.player.domain.*;
+import org.airsonic.player.domain.CoverArt.EntityType;
 import org.airsonic.player.io.PipeStreams.MonitoredResource;
 import org.airsonic.player.io.PipeStreams.PipedInputStream;
 import org.airsonic.player.io.PipeStreams.PipedOutputStream;
@@ -100,6 +100,10 @@ public class DownloadController {
     private SettingsService settingsService;
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
+    @Autowired
+    private CoverArtService coverArtService;
 
     @GetMapping
     public ResponseEntity<Resource> handleRequest(Principal p,
@@ -122,33 +126,38 @@ public class DownloadController {
         };
 
         MediaFile mediaFile = id.map(mediaFileService::getMediaFile).orElse(null);
+        Collection<Pair<Path, Integer>> additionalFiles = Collections.emptyList();
 
         if (mediaFile != null) {
             if (!securityService.isFolderAccessAllowed(mediaFile, user.getUsername())) {
                 throw new AccessDeniedException("Access to file " + mediaFile.getId() + " is forbidden for user " + user.getUsername());
             }
-
             if (mediaFile.isFile()) {
-                response = prepareResponse(Collections.singletonList(mediaFile), null, statusSupplier, statusCloser, Collections.emptyList());
-                defaultDownloadName = mediaFile.getFile().getFileName().toString();
+                response = prepareResponse(Collections.singletonList(mediaFile), null, statusSupplier, statusCloser, additionalFiles);
+                defaultDownloadName = FilenameUtils.getName(mediaFile.getPath());
             } else {
-                response = prepareResponse(mediaFileService.getChildrenOf(mediaFile, true, false, true), indices,
-                        statusSupplier, statusCloser, indices == null ? Collections.singletonList(mediaFile.getCoverArtFile()) : Collections.emptyList());
+                if (indices == null) {
+                    CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, mediaFile.getId());
+                    if (!CoverArt.NULL_ART.equals(art)) {
+                        additionalFiles = Collections.singletonList(Pair.of(art.getRelativePath(), art.getFolderId()));
+                    }
+                }
+                response = prepareResponse(mediaFileService.getChildrenOf(mediaFile, true, false, true), indices, statusSupplier, statusCloser, additionalFiles);
                 defaultDownloadName = FilenameUtils.getBaseName(mediaFile.getPath()) + ".zip";
             }
         } else if (playlist != null) {
-            response = prepareResponse(playlistService.getFilesInPlaylist(playlist), indices, statusSupplier, statusCloser, Collections.emptyList());
+            response = prepareResponse(playlistService.getFilesInPlaylist(playlist), indices, statusSupplier, statusCloser, additionalFiles);
             defaultDownloadName = playlistService.getPlaylist(playlist).getName() + ".zip";
         } else if (player != null) {
-            response = prepareResponse(transferPlayer.getPlayQueue().getFiles(), indices, statusSupplier, statusCloser, Collections.emptyList());
-            defaultDownloadName = "download.zip";
+            response = prepareResponse(transferPlayer.getPlayQueue().getFiles(), indices, statusSupplier, statusCloser, additionalFiles);
+            defaultDownloadName = "player-" + transferPlayer.getId() + "-" + transferPlayer.getName() + "-" + "playqueue.zip";
         }
 
         if (response == null || swr.checkNotModified(String.valueOf(response.getSize()), response.getChanged())) {
             return null;
         }
 
-        String filename = Optional.ofNullable(response.getProposedName()).orElse(defaultDownloadName);
+        String filename = StringUtil.fileSystemSafe(Optional.ofNullable(response.getProposedName()).orElse(defaultDownloadName));
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDisposition(ContentDisposition.builder("attachment").filename(filename, StandardCharsets.UTF_8).build());
         headers.setContentType(MediaType.parseMediaType(StringUtil.getMimeType(FilenameUtils.getExtension(filename))));
@@ -181,7 +190,7 @@ public class DownloadController {
     }
 
     private ResponseDTO prepareResponse(List<MediaFile> files, List<Integer> indices,
-            Supplier<TransferStatus> statusSupplier, Consumer<TransferStatus> statusCloser, Collection<Path> additionalFiles)
+            Supplier<TransferStatus> statusSupplier, Consumer<TransferStatus> statusCloser, Collection<Pair<Path, Integer>> additionalFiles)
             throws IOException {
         if (indices == null) {
             indices = IntStream.range(0, files.size()).boxed().collect(Collectors.toList());
@@ -197,7 +206,7 @@ public class DownloadController {
         if (indices.size() == 1 && (additionalFiles == null || additionalFiles.size() == 0)) {
             // single file
             MediaFile file = files.get(indices.get(0));
-            Path path = file.getFile();
+            Path path = file.getFullPath(mediaFolderService.getMusicFolderById(file.getFolderId()).getPath());
             long changed = file.getChanged() == null ? -1 : file.getChanged().toEpochMilli();
             return new ResponseDTO(
                     new MonitoredResource(
@@ -211,27 +220,35 @@ public class DownloadController {
                     changed);
         } else {
             // get a list of all paths under the tree, plus their zip names and sizes
-            Collection<Pair<Path, Pair<String, Long>>> pathsToZip = Streams
-                    .concat(indices.stream().map(i -> files.get(i)).map(x -> x.getFile()), additionalFiles.stream())
-                    .filter(Objects::nonNull)
-                    .flatMap(p -> {
+            Collection<Pair<Path, Pair<String, Long>>> pathsToZip = Stream
+                    .concat(
+                            indices.stream().map(files::get).filter(Objects::nonNull).map(x -> Pair.of(x.getRelativePath(), x.getFolderId())),
+                            additionalFiles.stream().filter(Objects::nonNull))
+                    .flatMap(pf -> {
+                        MusicFolder mf = mediaFolderService.getMusicFolderById(pf.getRight());
+                        Path p = mf.getPath().resolve(pf.getLeft());
                         Path parent = p.getParent();
                         try (Stream<Path> paths = Files.walk(p)) {
-                            return paths.filter(f -> !f.getFileName().toString().startsWith(".")).map(f -> {
-                                String zipName = parent.relativize(f).toString();
-                                long size = 0L;
-                                if (Files.isRegularFile(f)) {
-                                    size = FileUtil.size(f);
-                                } else {
-                                    zipName = zipName + '/';
-                                }
-                                return Pair.of(f, Pair.of(zipName, size));
-                            }).collect(Collectors.toList()).stream();
+                            return paths
+                                    .filter(f -> !f.getFileName().toString().startsWith("."))
+                                    .map(f -> {
+                                        String zipName = parent.relativize(f).toString();
+                                        long size = 0L;
+                                        if (Files.isRegularFile(f)) {
+                                            size = FileUtil.size(f);
+                                        } else {
+                                            zipName = zipName + '/';
+                                        }
+                                        return Pair.of(f, Pair.of(zipName, size));
+                                    })
+                                    // need to create a new stream, because try-with-resources will close the paths stream before it exits
+                                    .collect(Collectors.toList()).stream();
                         } catch (Exception e) {
                             LOG.warn("Error retrieving file to zip", e);
                             return Stream.empty();
                         }
-                    }).filter(f -> Objects.nonNull(f))
+                    }).filter(Objects::nonNull)
+                    // need to preserve order because zip file creation needs to create folders first then files
                     .collect(Collectors.toCollection(LinkedHashSet::new));
 
             // zip to out
@@ -244,19 +261,19 @@ public class DownloadController {
                             ZipOutputStream zout = new ZipOutputStream(pout)) {
                         zout.setMethod(ZipOutputStream.STORED); // No compression.
                         pathsToZip.stream().forEach(LambdaUtils.uncheckConsumer(f -> {
-                            status.setFile(f.getKey());
-                            ZipEntry zipEntry = new ZipEntry(f.getValue().getKey());
-                            zipEntry.setSize(f.getValue().getValue());
-                            zipEntry.setCompressedSize(f.getValue().getValue());
+                            status.setExternalFile(f.getLeft());
+                            ZipEntry zipEntry = new ZipEntry(f.getRight().getKey());
+                            zipEntry.setSize(f.getRight().getValue());
+                            zipEntry.setCompressedSize(f.getRight().getValue());
 
-                            if (f.getValue().getKey().endsWith("/") && f.getValue().getValue() == 0L) {
+                            if (f.getRight().getKey().endsWith("/") && f.getRight().getValue() == 0L) {
                                 // directory
                                 zipEntry.setCrc(0);
                                 zout.putNextEntry(zipEntry);
                             } else {
-                                zipEntry.setCrc(computeCrc(f.getKey()));
+                                zipEntry.setCrc(computeCrc(f.getLeft()));
                                 zout.putNextEntry(zipEntry);
-                                Files.copy(f.getKey(), zout);
+                                Files.copy(f.getLeft(), zout);
                             }
 
                             zout.closeEntry();
@@ -272,7 +289,7 @@ public class DownloadController {
                 }
             };
 
-            long size = zipSize(pathsToZip.stream().map(e -> e.getValue()));
+            long size = zipSize(pathsToZip.stream().map(e -> e.getRight()));
 
             PipedInputStream pin = new PipedInputStream(null, 16 * 1024); // 16 Kb buffer
 

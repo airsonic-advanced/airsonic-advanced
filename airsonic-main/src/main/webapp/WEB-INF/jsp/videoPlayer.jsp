@@ -157,13 +157,13 @@
 
 	<div>
 	  <c:if test="${model.user.shareRole}">
-	    <div id="share"></div>
+	    <img id="share" src="<spring:theme code='shareImage'/>" title="<fmt:message key='main.more.share'/>" alt="<fmt:message key='main.more.share'/>">
 	  </c:if>
 	  <c:if test="${model.user.downloadRole}">
-	    <div id="download"></div>
+	    <img id="download" src="<spring:theme code='downloadImage'/>" title="<fmt:message key='common.download'/>" alt="<fmt:message key='common.download'/>">
 	  </c:if>
 	  <img id="starImage" src="<spring:theme code='${not empty model.video.starredDate ? \'ratingOnImage\' : \'ratingOffImage\'}'/>"
-	         onclick="toggleStar(${model.video.id}, '#starImage'); return false;" style="cursor:pointer; width:20px;height:20px;margin-left:5px;" alt="">
+	         onclick="toggleStar(${model.video.id}, '#starImage'); return false;" title="<fmt:message key='playlist.more.star'/> / <fmt:message key='playlist.more.unstar'/>" alt="<fmt:message key='playlist.more.star'/> / <fmt:message key='playlist.more.unstar'/>">
 	</div>
 
 	<sub:url value="main.view" var="backUrl"><sub:param name="id" value="${model.video.id}"/></sub:url>

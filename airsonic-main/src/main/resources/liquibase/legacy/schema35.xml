@@ -71,7 +71,7 @@
                 <constraints primaryKey="true" />
             </column>
             <column name="name" type="${varchar_type}" />
-            <column name="created_date" type="datetime" defaultValueComputed="${curr_date_expr}">
+            <column name="created_date" type="datetime" defaultValueComputed="current_timestamp">
                 <constraints nullable="false" />
             </column>
             <column name="mime_type" type="${varchar_type}" >
@@ -103,7 +103,7 @@
                 <constraints primaryKey="true" />
             </column>
             <column name="name" type="${varchar_type}"/>
-            <column name="created_date" type="datetime" defaultValueComputed="${curr_date_expr}">
+            <column name="created_date" type="datetime" defaultValueComputed="current_timestamp">
                 <constraints nullable="false" />
             </column>
             <column name="mime_type" type="${varchar_type}" >

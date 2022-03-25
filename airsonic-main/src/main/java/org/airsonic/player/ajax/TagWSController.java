@@ -1,7 +1,9 @@
 package org.airsonic.player.ajax;
 
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.metadata.MetaData;
 import org.airsonic.player.service.metadata.MetaDataParser;
 import org.airsonic.player.service.metadata.MetaDataParserFactory;
@@ -27,6 +29,8 @@ public class TagWSController {
     private MetaDataParserFactory metaDataParserFactory;
     @Autowired
     private MediaFileService mediaFileService;
+    @Autowired
+    private MediaFolderService mediaFolderService;
 
     /**
      * Updated tags for a given music file.
@@ -39,7 +43,9 @@ public class TagWSController {
     public String setTags(@Validated TagData data) {
         try {
             MediaFile file = mediaFileService.getMediaFile(data.getMediaFileId());
-            MetaDataParser parser = metaDataParserFactory.getParser(file.getFile());
+            MusicFolder folder = mediaFolderService.getMusicFolderById(file.getFolderId());
+
+            MetaDataParser parser = metaDataParserFactory.getParser(file.getFullPath(folder.getPath()));
 
             if (!parser.isEditingSupported()) {
                 return "Tag editing of " + FilenameUtils.getExtension(file.getPath()) + " files is not supported.";
@@ -54,7 +60,7 @@ public class TagWSController {
                 return "SKIPPED";
             }
 
-            MetaData newMetaData = parser.getMetaData(file.getFile());
+            MetaData newMetaData = parser.getMetaData(file.getFullPath(folder.getPath()));
 
             // Note: album artist is intentionally not set, as it is not user-changeable.
             newMetaData.setArtist(data.getArtist());
@@ -64,8 +70,9 @@ public class TagWSController {
             newMetaData.setGenre(data.getGenre());
             newMetaData.setTrackNumber(data.getTrack());
             parser.setMetaData(file, newMetaData);
-            mediaFileService.refreshMediaFile(file);
-            mediaFileService.refreshMediaFile(mediaFileService.getParentOf(file));
+
+            mediaFileService.refreshMediaFile(file, folder);
+            mediaFileService.refreshMediaFile(mediaFileService.getParentOf(file), folder);
             return "UPDATED";
 
         } catch (Exception x) {
