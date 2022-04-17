@@ -27,6 +27,7 @@ import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.TranscodingService;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,8 +102,8 @@ public class FFmpegParser extends MetaDataParser {
             metaData.setTitle(getData(result, "title"));
 
             String data = getData(result, "track");
-            if (data != null) {
-                metaData.setTrackNumber(Integer.valueOf(data));
+            if (NumberUtils.isCreatable(data)) {
+                metaData.setTrackNumber(NumberUtils.createInteger(data));
             }
 
             data = getData(result, "date");
