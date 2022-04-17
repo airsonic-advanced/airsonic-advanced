@@ -107,8 +107,8 @@ public class FFmpegParser extends MetaDataParser {
             }
 
             data = getData(result, "date");
-            if (data != null) {
-                metaData.setYear(Integer.valueOf(data));
+            if (NumberUtils.isCreatable(data)) {
+                metaData.setYear(NumberUtils.createInteger(data));
             }
 
             // Find the first (if any) stream that has dimensions and use those.
