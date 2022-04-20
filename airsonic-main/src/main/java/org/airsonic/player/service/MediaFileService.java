@@ -33,8 +33,15 @@ import org.airsonic.player.service.metadata.MetaData;
 import org.airsonic.player.service.metadata.MetaDataParser;
 import org.airsonic.player.service.metadata.MetaDataParserFactory;
 import org.airsonic.player.util.FileUtil;
+import org.airsonic.player.util.Util;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.digitalmediaserver.cuelib.CueParser;
+import org.digitalmediaserver.cuelib.CueSheet;
+import org.digitalmediaserver.cuelib.Position;
+import org.digitalmediaserver.cuelib.TrackData;
+import org.digitalmediaserver.cuelib.io.FLACReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +51,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,6 +60,11 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toConcurrentMap;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Provides services for instantiating and caching media files and cover art.
@@ -123,6 +136,9 @@ public class MediaFileService {
         return getMediaFile(Paths.get(relativePath), mediaFolderService.getMusicFolderById(folderId), minimizeDiskAccess);
     }
 
+    /**
+     * Does not retrieve indexed tracks!
+     */
     @Cacheable(cacheNames = "mediaFilePathCache", key = "#relativePath.toString().concat('-').concat(#folder.id)", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
     public MediaFile getMediaFile(Path relativePath, MusicFolder folder, boolean minimizeDiskAccess) {
         // Look in database.
@@ -136,13 +152,8 @@ public class MediaFileService {
             return null;
         }
 
-        // Not found in database, must read from disk.
-        result = createMediaFile(relativePath, folder, null);
-
-        // Put in database.
-        updateMediaFile(result);
-
-        return result;
+        // Not found in database, must read and persist from disk.
+        return createAndUpdateMediaFile(relativePath, folder, null, true, true);
     }
 
     @Cacheable(cacheNames = "mediaFileIdCache", condition = "#root.target.memoryCacheEnabled", unless = "#result == null")
@@ -171,16 +182,42 @@ public class MediaFileService {
     }
 
     private MediaFile checkLastModified(MediaFile mediaFile, MusicFolder folder, boolean minimizeDiskAccess) {
+        if (mediaFile.isIndexedTrack()) {
+            // check parent
+            MediaFile parent = mediaFileDao.getMediaFile(mediaFile.getPath(), mediaFile.getFolderId());
+            MediaFile checkedParent = checkLastModified(parent, folder, minimizeDiskAccess);
+            if (parent != checkedParent) { //has to be equality operator
+                // stuff's changed in the parent or index
+                return mediaFileDao.getMediaFile(mediaFile.getId());
+            } else {
+                // nothing's changed, return file as is
+                return mediaFile;
+            }
+        }
         if (minimizeDiskAccess || (mediaFile.getVersion() >= MediaFileDao.VERSION
                 && !settingsService.getFullScan()
-                && mediaFile.getChanged().compareTo(FileUtil.lastModified(mediaFile.getFullPath(folder.getPath()))) > -1)) {
+                && !mediaFile.getChanged().isBefore(FileUtil.lastModified(mediaFile.getFullPath(folder.getPath())))
+                && (!mediaFile.hasIndex() || !mediaFile.getChanged().isBefore(FileUtil.lastModified(mediaFile.getFullIndexPath(folder.getPath())))))) {
             LOG.debug("Detected unmodified file (id {}, path {} in folder {} ({}))", mediaFile.getId(), mediaFile.getPath(), folder.getId(), folder.getName());
             return mediaFile;
         }
         LOG.debug("Updating database file from disk (id {}, path {} in folder {} ({}))", mediaFile.getId(), mediaFile.getPath(), folder.getId(), folder.getName());
-        mediaFile = createMediaFile(mediaFile.getRelativePath(), folder, mediaFile);
-        updateMediaFile(mediaFile);
+        mediaFile = createAndUpdateMediaFile(mediaFile.getRelativePath(), folder, mediaFile, false, true);
         return mediaFile;
+    }
+
+    /**
+     * Returns all user-visible media files that are children of a given media file
+     *
+     * visibility depends on the return value of showMediaFile(mediaFile)
+     *
+     * @param sort               Whether to sort files in the same directory
+     * @return All children media files which pass this::showMediaFile
+     */
+    public List<MediaFile> getVisibleChildrenOf(MediaFile parent, boolean includeDirectories, boolean sort) {
+        return getChildrenOf(parent, true, includeDirectories, sort).stream()
+                .filter(this::showMediaFile)
+                .collect(toList());
     }
 
     /**
@@ -201,6 +238,7 @@ public class MediaFileService {
      * @param includeFiles       Whether files should be included in the result.
      * @param includeDirectories Whether directories should be included in the result.
      * @param sort               Whether to sort files in the same directory.
+     * @param minimizeDiskAccess Whether to refrain from checking for new or changed files
      * @return All children media files.
      */
     public List<MediaFile> getChildrenOf(MediaFile parent, boolean includeFiles, boolean includeDirectories, boolean sort, boolean minimizeDiskAccess) {
@@ -218,9 +256,15 @@ public class MediaFileService {
 
         if (resultStream == null) {
             MusicFolder folder = mediaFolderService.getMusicFolderById(parent.getFolderId());
-            resultStream = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), true).parallelStream()
-                    .map(x -> checkLastModified(x, folder, minimizeDiskAccess))
-                    .filter(x -> includeMediaFile(x, folder));
+            Stream<MediaFile> nonIndexed = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), true, false).parallelStream()
+                    .map(x -> checkLastModified(x, folder, minimizeDiskAccess));
+
+            // invoke after nonIndexed go through checkLastModified so that any changes in indexed are reflected in the DB prior to retrieval
+            Stream<MediaFile> indexed = StreamSupport.stream(
+                () -> mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), true, true).spliterator(),
+                Spliterator.SIZED, true);
+
+            resultStream = Stream.concat(nonIndexed, indexed).filter(x -> includeMediaFile(x, folder));
         }
 
         resultStream = resultStream.filter(x -> (includeDirectories && x.isDirectory()) || (includeFiles && x.isFile()));
@@ -229,7 +273,7 @@ public class MediaFileService {
             resultStream = resultStream.sorted(new MediaFileComparator(settingsService.isSortAlbumsByYear()));
         }
 
-        return resultStream.collect(Collectors.toList());
+        return resultStream.collect(toList());
     }
 
     /**
@@ -392,40 +436,56 @@ public class MediaFileService {
 
     private List<MediaFile> updateChildren(MediaFile parent) {
         // Check timestamps.
-        if (parent.getChildrenLastUpdated().compareTo(parent.getChanged()) >= 0) {
+        if (!parent.getChildrenLastUpdated().isBefore(parent.getChanged())) {
             return null;
         }
 
-        Map<String, MediaFile> storedChildrenMap = mediaFileDao.getChildrenOf(parent.getPath(), parent.getFolderId(), false).parallelStream().collect(Collectors.toConcurrentMap(i -> i.getPath(), i -> i));
+        // only get nonindexed files (indexed files are marked in their own method)
+        Map<Pair<String, BigDecimal>, MediaFile> storedChildrenMap = mediaFileDao
+                .getChildrenOf(parent.getPath(), parent.getFolderId(), false, false).parallelStream()
+                .collect(toConcurrentMap(i -> Pair.of(i.getPath(), i.getStartPosition()), i -> i));
         MusicFolder folder = mediaFolderService.getMusicFolderById(parent.getFolderId());
+
         try (Stream<Path> children = Files.list(parent.getFullPath(folder.getPath()))) {
-            List<MediaFile> result = children.parallel()
-                    .filter(this::includeMediaFile)
+            List<Path> indexFiles = new ArrayList<>();
+            List<MediaFile> nonIndexedResult = children.parallel()
+                    .filter(x -> includeMediaFile(x) || isPossibleIndexFile(x))
                     .filter(x -> securityService.getMusicFolderForFile(x, true, true).getId().equals(parent.getFolderId()))
-                    .map(x -> folder.getPath().relativize(x))
                     .map(x -> {
-                        MediaFile media = storedChildrenMap.remove(x.toString());
-                        if (media == null) {
-                            media = createMediaFile(x, folder, null);
-                            // Add children that are not already stored.
-                            updateMediaFile(media);
-                        } else {
-                            media = checkLastModified(media, folder, false); // has to be false, only time it's called
+                        MediaFile media = null;
+                        if (isPossibleIndexFile(x)) {
+                            indexFiles.add(x);
+                        }
+                        if (includeMediaFile(x)) {
+                            Path relativePath = folder.getPath().relativize(x);
+
+                            // deal with non indexed files
+                            media = storedChildrenMap.remove(Pair.of(relativePath.toString(), MediaFile.NOT_INDEXED));
+                            if (media == null) {
+                                // don't look for index files or create indexed tracks yet
+                                media = createAndUpdateMediaFile(relativePath, folder, null, false, false);
+                            } else {
+                                media = checkLastModified(media, folder, false); // has to be false, only time it's called
+                            }
                         }
 
                         return media;
                     })
-                    .collect(Collectors.toList());
+                    .filter(Objects::nonNull)
+                    .collect(toList());
+
+            // deal with indexed files
+            List<MediaFile> indexedResult = updateIndexFiles(indexFiles, folder);
 
             // Delete children that no longer exist on disk.
-            mediaFileDao.deleteMediaFiles(storedChildrenMap.keySet(), parent.getFolderId());
+            mediaFileDao.deleteMediaFilesWithIndexedTracks(storedChildrenMap.keySet(), parent.getFolderId());
 
             // Update timestamp in parent.
             parent.setChildrenLastUpdated(parent.getChanged());
             parent.setPresent(true);
             updateMediaFile(parent);
 
-            return result;
+            return Stream.of(nonIndexedResult, indexedResult).flatMap(List::stream).collect(toList());
         } catch (IOException e) {
             LOG.warn("Could not retrieve and update all the children for {} in folder {}. Will skip", parent.getPath(), folder.getId(), e);
 
@@ -433,12 +493,66 @@ public class MediaFileService {
         }
     }
 
+    public List<MediaFile> updateIndexFiles(List<Path> indexFiles, MusicFolder folder) {
+        return indexFiles.stream().map(indexPath -> {
+            Path relativeIndexPath = folder.getPath().relativize(indexPath);
+
+            // get corresponding mediafile from db
+            String baseName = FilenameUtils.getBaseName(indexPath.toString());
+            Path relativePartialPath = relativeIndexPath.resolveSibling(baseName);
+            List<MediaFile> indexParents = mediaFileDao.getPartialMatchesByPath(relativePartialPath.toString() + ".", folder.getId()).stream()
+                    .filter(x -> StringUtils.equals(baseName, FilenameUtils.getBaseName(x.getPath())))
+                    .filter(x -> !x.isIndexedTrack())
+                    .collect(toList());
+
+            if (indexParents.size() != 1) {
+                LOG.warn("Found {} file(s) corresponding to index file: {}", indexParents.size(), indexPath);
+            }
+
+            return indexParents.stream().map(indexParent -> {
+                var added = false;
+                // add index path to parent file
+                if (StringUtils.isBlank(indexParent.getIndexPath())) {
+                    indexParent.setIndexPath(relativeIndexPath.toString());
+                    Instant modified = FileUtil.lastModified(indexParent.getFullIndexPath(folder.getPath()));
+                    modified = modified.isAfter(indexParent.getChanged()) ? modified : indexParent.getChanged();
+                    indexParent.setChanged(modified);
+                    updateMediaFile(indexParent);
+                    added = true;
+                }
+                return Pair.of(indexParent, added);
+            }).map(e -> {
+                if (e.getValue()) {
+                    return createIndexedTracks(e.getKey(), folder);
+                } else {
+                    return mediaFileDao.getMediaFiles(e.getKey().getPath(), e.getKey().getFolderId(), null).stream()
+                            .filter(MediaFile::isIndexedTrack).collect(toList());
+                }
+            });
+        }).flatMap(i -> i).flatMap(List::stream).collect(toList());
+    }
+
+    /**
+     * show specific file types in player and API
+     *
+     * <pre>
+     * |                | hideIndexed=true | hideIndexed=false |
+     * |----------------|------------------|-------------------|
+     * | reg nonindexed |     true         |      true         |
+     * | index parent   |     false        |      true         |
+     * | indexed        |     true         |      true         |
+     * </pre>
+     */
+    public boolean showMediaFile(MediaFile media) {
+        return !media.hasIndex() || media.isIndexedTrack() || !settingsService.getHideIndexedFiles();
+    }
+
     public boolean includeMediaFile(MediaFile candidate, MusicFolder folder) {
         return includeMediaFile(candidate.getFullPath(folder.getPath()));
     }
 
     public boolean includeMediaFile(Path candidate) {
-        String suffix = MoreFiles.getFileExtension(candidate).toLowerCase();
+        String suffix = FilenameUtils.getExtension(candidate.toString()).toLowerCase();
         return (!isExcluded(candidate) && (Files.isDirectory(candidate) || isAudioFile(suffix) || isVideoFile(suffix)));
     }
 
@@ -448,6 +562,23 @@ public class MediaFileService {
 
     private boolean isVideoFile(String suffix) {
         return settingsService.getVideoFileTypesSet().contains(suffix.toLowerCase());
+    }
+
+    private boolean isPossibleIndexFile(Path candidate) {
+        String suffix = FilenameUtils.getExtension(candidate.toString()).toLowerCase();
+        return settingsService.getIndexFileTypesSet().contains(suffix) && Files.isRegularFile(candidate);
+    }
+
+    private String getIndexFile(MediaFile candidate, MusicFolder folder) {
+        Path filePath = candidate.getFullPath(folder.getPath());
+        String fileName = FilenameUtils.getBaseName(candidate.getPath());
+        return settingsService.getIndexFileTypesSet().stream()
+                .map(suffix -> filePath.resolveSibling(fileName + "." + suffix))
+                .filter(Files::exists)
+                .findFirst()
+                .map(i -> folder.getPath().relativize(i))
+                .map(Path::toString)
+                .orElse(null);
     }
 
     /**
@@ -483,6 +614,7 @@ public class MediaFileService {
 
         MediaFile mediaFile = new MediaFile();
         Instant lastModified = FileUtil.lastModified(file);
+        Instant now = Instant.now();
         mediaFile.setPath(relativePath.toString());
         mediaFile.setFolderId(folder.getId());
         //sanity check
@@ -497,14 +629,15 @@ public class MediaFileService {
         }
         mediaFile.setParentPath(parentPath);
         mediaFile.setChanged(lastModified);
-        mediaFile.setLastScanned(Instant.now());
+        mediaFile.setLastScanned(now);
         mediaFile.setPlayCount(existingFile == null ? 0 : existingFile.getPlayCount());
         mediaFile.setLastPlayed(existingFile == null ? null : existingFile.getLastPlayed());
         mediaFile.setComment(existingFile == null ? null : existingFile.getComment());
         mediaFile.setChildrenLastUpdated(Instant.ofEpochMilli(1)); //distant past, can't use Instant.MIN due to HSQL incompatibility
-        mediaFile.setCreated(lastModified);
+        mediaFile.setCreated(existingFile == null ? now : existingFile.getCreated());
         mediaFile.setMediaType(MediaFile.MediaType.DIRECTORY);
         mediaFile.setPresent(true);
+        mediaFile.setIndexPath(existingFile == null ? null : existingFile.getIndexPath());
         mediaFile.setId(existingFile == null ? null : existingFile.getId());
 
         if (Files.isRegularFile(file)) {
@@ -532,7 +665,6 @@ public class MediaFileService {
             mediaFile.setFormat(format);
             mediaFile.setFileSize(FileUtil.size(file));
             mediaFile.setMediaType(getMediaType(mediaFile, folder));
-
         } else {
 
             // Is this an album?
@@ -540,8 +672,8 @@ public class MediaFileService {
                 try (Stream<Path> stream = Files.list(file)) {
                     List<Path> children = stream.parallel().collect(Collectors.toList());
                     Path firstChild = children.parallelStream()
-                            .filter(x -> includeMediaFile(x))
-                            .filter(x -> Files.isRegularFile(x))
+                            .filter(this::includeMediaFile)
+                            .filter(Files::isRegularFile)
                             .findFirst().orElse(null);
 
                     if (firstChild != null) {
@@ -581,6 +713,54 @@ public class MediaFileService {
         return mediaFile;
     }
 
+    private MediaFile createIndexedTrack(CueSheet cueSheet, TrackData trackData, MediaFile indexedParent, MusicFolder folder, MediaFile existingFile, BigDecimal startPosition, BigDecimal nextStart) {
+        long wholeFileSize = indexedParent.getFileSize() != null ? indexedParent.getFileSize() : 0;
+        double wholeFileDuration = indexedParent.getDuration() != null ? indexedParent.getDuration() : 0.0;
+        MediaFile mediaFile = new MediaFile();
+        mediaFile.setPath(indexedParent.getPath());
+        mediaFile.setAlbumArtist(cueSheet.getPerformer());
+        mediaFile.setAlbumName(cueSheet.getTitle());
+        mediaFile.setTitle(trackData.getTitle());
+        mediaFile.setArtist(trackData.getPerformer());
+        mediaFile.setParentPath(indexedParent.getParentPath());
+        mediaFile.setFolderId(indexedParent.getFolderId());
+        mediaFile.setChanged(indexedParent.getChanged());
+        mediaFile.setLastScanned(Instant.now());
+        mediaFile.setChildrenLastUpdated(Instant.ofEpochMilli(1)); // distant past
+        mediaFile.setCreated(indexedParent.getCreated());
+        mediaFile.setPresent(true);
+        mediaFile.setTrackNumber(trackData.getNumber());
+        mediaFile.setDiscNumber(indexedParent.getDiscNumber());
+        mediaFile.setGenre(indexedParent.getGenre());
+        mediaFile.setYear(indexedParent.getYear());
+        mediaFile.setBitRate(indexedParent.getBitRate());
+        mediaFile.setVariableBitRate(indexedParent.isVariableBitRate());
+        mediaFile.setHeight(indexedParent.getHeight());
+        mediaFile.setWidth(indexedParent.getWidth());
+        mediaFile.setFormat(indexedParent.getFormat());
+        mediaFile.setMediaType(indexedParent.getMediaType());
+        mediaFile.setMusicBrainzReleaseId(indexedParent.getMusicBrainzReleaseId());
+        mediaFile.setMusicBrainzRecordingId(indexedParent.getMusicBrainzRecordingId());
+        mediaFile.setStartPosition(startPosition);
+        mediaFile.setDuration(nextStart.subtract(startPosition).doubleValue());
+        mediaFile.setFileSize((long) (mediaFile.getDuration() / wholeFileDuration * wholeFileSize)); // approximate
+        mediaFile.setPlayCount(existingFile == null ? 0 : existingFile.getPlayCount());
+        mediaFile.setLastPlayed(existingFile == null ? null : existingFile.getLastPlayed());
+        mediaFile.setComment(existingFile == null ? null : existingFile.getComment());
+        mediaFile.setIndexPath(existingFile == null ? indexedParent.getIndexPath() : existingFile.getIndexPath());
+        mediaFile.setId(existingFile == null ? null : existingFile.getId());
+
+        return mediaFile;
+    }
+
+    private BigDecimal getCuePosition(TrackData trackData) {
+        Position currentPosition = trackData.getIndices().get(0).getPosition();
+        // convert CUE timestamp (minutes:seconds:frames, 75 frames/second) to fractional seconds
+        double val = currentPosition.getMinutes() * 60 + currentPosition.getSeconds() + (currentPosition.getFrames() / 75.0);
+        // round to 9 decimal places for nano accuracy
+        return BigDecimal.valueOf(val).setScale(9);
+    }
+
     private MediaFile.MediaType getMediaType(MediaFile mediaFile, MusicFolder folder) {
         if (folder.getType() == Type.PODCAST) {
             return MediaType.PODCAST;
@@ -590,18 +770,87 @@ public class MediaFileService {
         }
         String path = mediaFile.getPath().toLowerCase();
         String genre = StringUtils.trimToEmpty(mediaFile.getGenre()).toLowerCase();
-        if (path.contains("podcast") || genre.contains("podcast")) {
+        if (path.contains("podcast") || genre.contains("podcast") || path.contains("netcast") || genre.contains("netcast")) {
             return MediaFile.MediaType.PODCAST;
         }
-        if (path.contains("audiobook") || genre.contains("audiobook") || path.contains("audio book") || genre.contains("audio book")) {
+        if (path.contains("audiobook") || genre.contains("audiobook")
+                || path.contains("audio book") || genre.contains("audio book")
+                || path.contains("audio/book") || path.contains("audio\\book")) {
             return MediaFile.MediaType.AUDIOBOOK;
         }
+
         return MediaFile.MediaType.MUSIC;
     }
 
     public void refreshMediaFile(MediaFile mediaFile, MusicFolder folder) {
-        mediaFile = createMediaFile(mediaFile.getRelativePath(), folder, mediaFile);
+        createAndUpdateMediaFile(mediaFile.getRelativePath(), folder, mediaFile, true, true);
+    }
+
+    private MediaFile createAndUpdateMediaFile(Path relativePath, MusicFolder folder, MediaFile existingFile, boolean searchForIndex, boolean createIndexed) {
+        MediaFile mediaFile = createMediaFile(relativePath, folder, existingFile);
+        if (searchForIndex && mediaFile.isFile() && !mediaFile.hasIndex()) {
+            mediaFile.setIndexPath(getIndexFile(mediaFile, folder));
+        }
+
+        if (mediaFile.hasIndex()) {
+            Instant modified = FileUtil.lastModified(mediaFile.getFullIndexPath(folder.getPath()));
+            modified = modified.isAfter(mediaFile.getChanged()) ? modified : mediaFile.getChanged();
+            mediaFile.setChanged(modified);
+        }
+
         updateMediaFile(mediaFile);
+
+        if (createIndexed && mediaFile.hasIndex()) {
+            createIndexedTracks(mediaFile, folder);
+        }
+
+        return mediaFile;
+    }
+
+    private List<MediaFile> createIndexedTracks(MediaFile parentIndexedFile, MusicFolder folder) {
+        var storedChildrenMap = mediaFileDao
+                .getMediaFiles(parentIndexedFile.getPath(), parentIndexedFile.getFolderId(), null).stream()
+                .filter(MediaFile::isIndexedTrack)
+                .collect(toConcurrentMap(i -> Pair.of(i.getPath(), i.getStartPosition()), i -> i));
+
+        CueSheet cue = getCueSheet(parentIndexedFile.getFullIndexPath(folder.getPath()));
+        List<MediaFile> res = emptyList();
+        if (cue == null) {
+            parentIndexedFile.setIndexPath(null);
+            parentIndexedFile.setChanged(FileUtil.lastModified(parentIndexedFile.getFullPath(folder.getPath())));
+            updateMediaFile(parentIndexedFile);
+        } else {
+            res = updateIndexedTracks(cue, parentIndexedFile, folder, storedChildrenMap);
+        }
+        mediaFileDao.deleteMediaFilesWithIndexedTracks(storedChildrenMap.keySet(), parentIndexedFile.getFolderId());
+
+        return res;
+    }
+
+    private List<MediaFile> updateIndexedTracks(CueSheet cueSheet, MediaFile indexParent, MusicFolder folder, Map<Pair<String, BigDecimal>, MediaFile> storedChildrenMap) {
+        List<MediaFile> children = new ArrayList<>();
+
+        try {
+            double wholeFileDuration = indexParent.getDuration() != null ? indexParent.getDuration() : 0.0;
+
+            for (int i = 0; i < cueSheet.getAllTrackData().size(); i++) {
+                TrackData trackData = cueSheet.getAllTrackData().get(i);
+                BigDecimal startPosition = getCuePosition(trackData);
+                BigDecimal nextStart = BigDecimal.valueOf(wholeFileDuration);
+                if (i != cueSheet.getAllTrackData().size() - 1) {
+                    nextStart = getCuePosition(cueSheet.getAllTrackData().get(i + 1));
+                }
+                MediaFile media = storedChildrenMap.remove(Pair.of(indexParent.getPath(), startPosition));
+                media = createIndexedTrack(cueSheet, trackData, indexParent, folder, media, startPosition, nextStart);
+                updateMediaFile(media);
+
+                children.add(media);
+            }
+        } catch (Exception e) {
+            LOG.warn("Error creating indexed files", e);
+        }
+
+        return children;
     }
 
     @CacheEvict(cacheNames = { "mediaFilePathCache", "mediaFileIdCache" }, allEntries = true)
@@ -611,6 +860,23 @@ public class MediaFileService {
 
     public boolean getMemoryCacheEnabled() {
         return memoryCacheEnabled;
+    }
+
+    /**
+     * Returns a parsed CueSheet for the given index
+     */
+    private CueSheet getCueSheet(Path fullIndexPath) {
+        try {
+            // is this an embedded cuesheet (currently only supports FLAC+CUE)?
+            if (StringUtils.equalsIgnoreCase("flac", MoreFiles.getFileExtension(fullIndexPath))) {
+                return FLACReader.getCueSheet(fullIndexPath);
+            } else {
+                return CueParser.parse(fullIndexPath, Util.detectCharset(fullIndexPath));
+            }
+        } catch (IOException e) {
+            LOG.warn("Error getting cuesheet for {}", fullIndexPath);
+            return null;
+        }
     }
 
     /**

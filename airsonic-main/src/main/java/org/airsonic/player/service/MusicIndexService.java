@@ -41,7 +41,6 @@ import static java.util.stream.Collectors.toList;
  */
 @Service
 public class MusicIndexService {
-
     @Autowired
     private SettingsService settingsService;
     @Autowired

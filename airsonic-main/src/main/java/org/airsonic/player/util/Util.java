@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.primitives.Ints;
+import com.ibm.icu.text.CharsetDetector;
+import com.ibm.icu.text.CharsetMatch;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,13 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -218,5 +227,24 @@ public final class Util {
             t.setName(prefixName + "-" + t.getName());
             return t;
         };
+    }
+
+    public static Charset detectCharset(Path file) {
+        Charset cs = StandardCharsets.UTF_8; // default to UTF-8
+
+        // attempt to detect encoding for file, fallback to UTF-8
+        int THRESHOLD = 35; // 0-100, the higher the more certain the guess
+        CharsetDetector cd = new CharsetDetector();
+        try (InputStream fis = Files.newInputStream(file); BufferedInputStream bis = new BufferedInputStream(fis);) {
+            cd.setText(bis);
+            CharsetMatch cm = cd.detect();
+            if (cm != null && cm.getConfidence() > THRESHOLD) {
+                cs = Charset.forName(cm.getName());
+            }
+        } catch (IOException e) {
+            LOG.warn("Defaulting to UTF-8 for file {}", file);
+        }
+
+        return cs;
     }
 }

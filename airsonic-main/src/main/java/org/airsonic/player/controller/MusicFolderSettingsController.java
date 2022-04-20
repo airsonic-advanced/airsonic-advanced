@@ -111,6 +111,7 @@ public class MusicFolderSettingsController {
         command.setUploadsFolder(settingsService.getUploadsFolder());
         command.setExcludePatternString(settingsService.getExcludePatternString());
         command.setIgnoreSymLinks(settingsService.getIgnoreSymLinks());
+        command.setHideIndexedFiles(settingsService.getHideIndexedFiles());
         command.setFullScan(settingsService.getFullScan());
         command.setClearFullScanSettingAfterScan(!settingsService.getFullScan() ? settingsService.getFullScan() : settingsService.getClearFullScanSettingAfterScan());
 
@@ -202,6 +203,7 @@ public class MusicFolderSettingsController {
         settingsService.setUploadsFolder(command.getUploadsFolder());
         settingsService.setExcludePatternString(command.getExcludePatternString());
         settingsService.setIgnoreSymLinks(command.getIgnoreSymLinks());
+        settingsService.setHideIndexedFiles(command.getHideIndexedFiles());
         settingsService.setFullScan(command.getFullScan());
         settingsService.setClearFullScanSettingAfterScan(!command.getFullScan() ? command.getFullScan() : command.getClearFullScanSettingAfterScan());
         settingsService.save();

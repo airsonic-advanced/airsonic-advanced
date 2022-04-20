@@ -37,6 +37,7 @@ import java.awt.Dimension;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -181,14 +182,17 @@ public class TranscodingService {
     }
 
     /**
-     * Creates parameters for a possibly transcoded or downsampled input stream for the given media file and player combination.
-     * <p/>
+     * Creates parameters for a possibly transcoded, downsampled or split input stream for the given media file and player combination.
+     *
      * A transcoding is applied if it is applicable for the format of the given file, and is activated for the
-     * given player.
-     * <p/>
+     * given player and either the desired format or bitrate needs changing or only a section of the file should be
+     * returned.
+     *
      * If no transcoding is applicable, the file may still be downsampled, given that the player is configured
      * with a bit rate limit which is higher than the actual bit rate of the file.
-     * <p/>
+     *
+     * If neither transcoding nor downsampling is needed the file might still be split in case of indexed tracks.
+     *
      * Otherwise, a normal input stream to the original file is returned.
      *
      * @param mediaFile                The media file.
@@ -202,6 +206,7 @@ public class TranscodingService {
                                     VideoTranscodingSettings videoTranscodingSettings) {
 
         Parameters parameters = new Parameters(mediaFile, videoTranscodingSettings);
+        String suffix = mediaFile.getFormat();
 
         TranscodeScheme transcodeScheme = getTranscodeScheme(player);
         if (maxBitRate == null && transcodeScheme != TranscodeScheme.OFF) {
@@ -219,8 +224,13 @@ public class TranscodingService {
             boolean supported = isDownsamplingSupported(mediaFile);
             Integer bitRate = mediaFile.getBitRate();
             if (supported && bitRate != null && bitRate > maxBitRate) {
-                parameters.setDownsample(true);
+                parameters.setTranscoding(new Transcoding(null, "downsample", suffix, suffix, settingsService.getDownsamplingCommand(), null, null, true));
             }
+        }
+
+        // Insert split command for indexed tracks without active transcodings
+        if (mediaFile.isIndexedTrack() && parameters.getTranscoding() == null) {
+            parameters.setTranscoding(new Transcoding(null, "split", suffix, suffix, settingsService.getSplitCommand(), null, null, true));
         }
 
         parameters.setMaxBitRate(maxBitRate);
@@ -230,14 +240,16 @@ public class TranscodingService {
     }
 
     /**
-     * Returns a possibly transcoded or downsampled input stream for the given music file and player combination.
-     * <p/>
+     * Returns a possibly transcoded, downsampled and/or split input stream for the given music file and player combination.
+     *
      * A transcoding is applied if it is applicable for the format of the given file, and is activated for the
      * given player.
-     * <p/>
+     *
      * If no transcoding is applicable, the file may still be downsampled, given that the player is configured
      * with a bit rate limit which is higher than the actual bit rate of the file.
-     * <p/>
+     *
+     * If neither transcoding nor downsampling is needed the file might still be split in case of indexed tracks.
+     *
      * Otherwise, a normal input stream to the original file is returned.
      *
      * @param parameters As returned by {@link #getParameters}.
@@ -249,10 +261,6 @@ public class TranscodingService {
 
             if (parameters.getTranscoding() != null) {
                 return createTranscodedInputStream(parameters);
-            }
-
-            if (parameters.downsample) {
-                return createDownsampledInputStream(parameters);
             }
 
         } catch (IOException x) {
@@ -318,8 +326,9 @@ public class TranscodingService {
      * <li>Replacing occurrences of "%l" with the album name of the given music file.</li>
      * <li>Replacing occurrences of "%a" with the artist name of the given music file.</li>
      * <li>Replacing occurrences of "%b" with the max bitrate.</li>
-     * <li>Replacing occurrences of "%o" with the video time offset (used for scrubbing).</li>
-     * <li>Replacing occurrences of "%d" with the video duration (used for HLS).</li>
+     * <li>Replacing occurrences of "%f" with the input file format (used for indexed tracks)</li>
+     * <li>Replacing occurrences of "%o" with the time offset (used for scrubbing video and indexed tracks).</li>
+     * <li>Replacing occurrences of "%d" with the duration (used for HLS and indexed tracks).</li>
      * <li>Replacing occurrences of "%w" with the video image width.</li>
      * <li>Replacing occurrences of "%h" with the video image height.</li>
      * <li>Prepending the path of the transcoder directory if the transcoder is found there.</li>
@@ -333,7 +342,8 @@ public class TranscodingService {
      * @return The newly created input stream.
      */
     private TranscodeInputStream createTranscodeInputStream(String command, Integer maxBitRate,
-                                                            VideoTranscodingSettings videoTranscodingSettings, MediaFile mediaFile, InputStream in) throws IOException {
+                                                            VideoTranscodingSettings videoTranscodingSettings,
+                                                            MediaFile mediaFile, InputStream in) throws IOException {
 
         // Work-around for filename character encoding problem on Windows.
         // Create temporary file, and feed this to the transcoder.
@@ -348,15 +358,31 @@ public class TranscodingService {
             pathString = tmpFile.toString();
         }
 
+        // insert split sequence for indexed tracks
+        command = command.replace("%S", (mediaFile.isIndexedTrack()) ? settingsService.getSplitOptions() : "");
+
         Map<String, String> vars = generateTranscodingSubstitutionMap(
                 Optional.ofNullable(mediaFile.getTitle()).orElse("Unknown Media"),
                 Optional.ofNullable(mediaFile.getArtist()).orElse("Unknown Artist"),
                 Optional.ofNullable(mediaFile.getAlbumName()).orElse("Unknown Album"),
                 Optional.ofNullable(maxBitRate).map(String::valueOf).orElse(null),
-                videoTranscodingSettings != null ? String.valueOf(videoTranscodingSettings.getTimeOffset()) : null,
-                videoTranscodingSettings != null ? String.valueOf(videoTranscodingSettings.getDuration()) : null,
-                videoTranscodingSettings != null ? String.valueOf(videoTranscodingSettings.getWidth()) : null,
-                videoTranscodingSettings != null ? String.valueOf(videoTranscodingSettings.getHeight()) : null,
+                Optional.ofNullable(mediaFile.getFormat()).orElse(null),
+                Optional.ofNullable(videoTranscodingSettings)
+                    .map(VideoTranscodingSettings::getTimeOffset)
+                    .map(String::valueOf)
+                    .or(() -> Optional.ofNullable(mediaFile.getStartPosition())
+                            .filter(x -> mediaFile.isIndexedTrack())
+                            .map(BigDecimal::doubleValue)
+                            .map(String::valueOf))
+                    .orElse("0"),
+                Optional.ofNullable(videoTranscodingSettings)
+                    .map(VideoTranscodingSettings::getDuration)
+                    .map(String::valueOf)
+                    .or(() -> Optional.ofNullable(mediaFile.getDuration())
+                            .map(String::valueOf))
+                    .orElse("0"),
+                Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getWidth).map(String::valueOf).orElse(null),
+                Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getHeight).map(String::valueOf).orElse(null),
                 Optional.ofNullable(maxBitRate).map(TranscodingService::getAverageVideoBitRate).map(String::valueOf).orElse(null),
                 Optional.ofNullable(maxBitRate).map(TranscodingService::getSuitableAudioBitRate).map(String::valueOf).orElse(null),
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getAudioTrackIndex).map(String::valueOf).orElse(null),
@@ -399,6 +425,7 @@ public class TranscodingService {
             String artist,
             String album,
             String maxVideoBitRate,
+            String format,
             String timeOffset,
             String duration,
             String width,
@@ -415,6 +442,7 @@ public class TranscodingService {
         result.put("%a", artist);
         result.put("%l", album);
 
+        result.put("%f", format);
         result.put("%b", maxVideoBitRate);
         result.put("%o", timeOffset);
         result.put("%d", duration);
@@ -437,64 +465,51 @@ public class TranscodingService {
      * transcoding should be done.
      */
     private Transcoding getTranscoding(MediaFile mediaFile, Player player, String preferredTargetFormat, boolean hls) {
-
-        if (hls) {
-            return new Transcoding(null, "hls", mediaFile.getFormat(), "ts", settingsService.getHlsCommand(), null, null, true);
-        }
-
-        if (FORMAT_RAW.equals(preferredTargetFormat)) {
-            return null;
-        }
-
-        List<Transcoding> applicableTranscodings = new LinkedList<Transcoding>();
+        Transcoding transcoding = null;
         String suffix = mediaFile.getFormat();
 
-        // This is what I'd like todo, but this will most likely break video transcoding as video transcoding is
-        // never expected to be null
-//        if(StringUtils.equalsIgnoreCase(preferredTargetFormat, suffix)) {
-//            LOG.debug("Target formats are the same, returning no transcoding");
-//            return null;
-//        }
+        if (hls) {
+            // HLS can not be combined with cue-indexed files
+            transcoding = new Transcoding(null, "hls", mediaFile.getFormat(), "ts", settingsService.getHlsCommand(), null, null, true);
+        } else {
+            if (FORMAT_RAW.equals(preferredTargetFormat)) {
+                // RAW and cue-indexed files can be combined since the split command does not re-encode audio or video
+                transcoding = null;
+            } else {
 
-        List<Transcoding> transcodingsForPlayer = getTranscodingsForPlayer(player);
-        for (Transcoding transcoding : transcodingsForPlayer) {
-            // special case for now as video must have a transcoding
-            if (mediaFile.isVideo() && StringUtils.equalsIgnoreCase(preferredTargetFormat, transcoding.getTargetFormat())) {
-                LOG.debug("Detected source to target format match for video");
-                return transcoding;
-            }
-            for (String sourceFormat : transcoding.getSourceFormatsAsArray()) {
-                if (sourceFormat.equalsIgnoreCase(suffix)) {
-                    if (isTranscodingInstalled(transcoding)) {
-                        applicableTranscodings.add(transcoding);
+                List<Transcoding> applicableTranscodings = new LinkedList<Transcoding>();
+
+                List<Transcoding> transcodingsForPlayer = getTranscodingsForPlayer(player);
+                for (Transcoding tr : transcodingsForPlayer) {
+                    // special case for now as video must have a transcoding
+                    if (mediaFile.isVideo() && tr.getTargetFormat().equalsIgnoreCase(preferredTargetFormat) && isTranscodingInstalled(tr)) {
+                        LOG.debug("Detected source to target format match for video");
+                        applicableTranscodings.add(tr);
+                        break;
+                    }
+                    for (String sourceFormat : tr.getSourceFormatsAsArray()) {
+                        if (sourceFormat.equalsIgnoreCase(suffix) && isTranscodingInstalled(tr)) {
+                            applicableTranscodings.add(tr);
+                        }
+                    }
+                }
+
+                if (!applicableTranscodings.isEmpty()) {
+                    for (Transcoding tr : applicableTranscodings) {
+                        if (tr.getTargetFormat().equalsIgnoreCase(preferredTargetFormat)) {
+                            transcoding = tr;
+                            break;
+                        }
+                    }
+
+                    if (transcoding == null) {
+                        transcoding = applicableTranscodings.get(0);
                     }
                 }
             }
         }
 
-        if (applicableTranscodings.isEmpty()) {
-            return null;
-        }
-
-        for (Transcoding transcoding : applicableTranscodings) {
-            if (transcoding.getTargetFormat().equalsIgnoreCase(preferredTargetFormat)) {
-                return transcoding;
-            }
-        }
-
-        return applicableTranscodings.get(0);
-    }
-
-    /**
-     * Returns a downsampled input stream to the music file.
-     *
-     * @param parameters Downsample parameters.
-     * @throws IOException If an I/O error occurs.
-     */
-    private InputStream createDownsampledInputStream(Parameters parameters) throws IOException {
-        String command = settingsService.getDownsamplingCommand();
-        return createTranscodeInputStream(command, parameters.getMaxBitRate(), parameters.getVideoTranscodingSettings(),
-                parameters.getMediaFile(), null);
+        return transcoding;
     }
 
     /**
@@ -535,9 +550,15 @@ public class TranscodingService {
     private Long getExpectedLength(Parameters parameters) {
         MediaFile file = parameters.getMediaFile();
 
-        if (!parameters.isDownsample() && !parameters.isTranscode()) {
+        if (!parameters.isTranscode()) {
             return file.getFileSize();
         }
+
+        if (StringUtils.equalsIgnoreCase("split", parameters.getTranscoding().getName())) {
+            long timePadding = Optional.ofNullable(file.getBitRate()).map(x -> settingsService.getTranscodeEstimateTimePadding() * x / 8).orElse(0L);
+            return file.getFileSize() + timePadding + settingsService.getTranscodeEstimateBytePadding();
+        }
+
         Double duration = file.getDuration();
         Integer maxBitRate = parameters.getMaxBitRate();
 
@@ -561,10 +582,8 @@ public class TranscodingService {
         List<String> steps = Arrays.asList();
         if (transcoding != null) {
             steps = Arrays.asList(transcoding.getStep3(), transcoding.getStep2(), transcoding.getStep1());
-        } else if (parameters.isDownsample()) {
-            steps = Arrays.asList(settingsService.getDownsamplingCommand());
         } else {
-            return true;  // neither transcoding nor downsampling
+            return true;  // no active transcodings
         }
 
         // Verify that were able to predict the length
@@ -572,10 +591,10 @@ public class TranscodingService {
             return false;
         }
 
-        // Check if last configured step uses the bitrate, if so, range should be pretty safe
+        // Check if last configured step uses the bitrate or if its just copied over, if so, range should be pretty safe
         for (String step : steps) {
             if (step != null) {
-                return step.contains("%b");
+                return step.contains("%b") || step.contains(" copy ");
             }
         }
         return false;
@@ -655,7 +674,6 @@ public class TranscodingService {
     }
 
     public static class Parameters {
-        private boolean downsample;
         private Long expectedLength;
         private boolean rangeAllowed;
         private final MediaFile mediaFile;
@@ -675,14 +693,6 @@ public class TranscodingService {
 
         public void setMaxBitRate(Integer maxBitRate) {
             this.maxBitRate = maxBitRate;
-        }
-
-        public boolean isDownsample() {
-            return downsample;
-        }
-
-        public void setDownsample(boolean downsample) {
-            this.downsample = downsample;
         }
 
         public boolean isTranscode() {
@@ -726,3 +736,4 @@ public class TranscodingService {
         }
     }
 }
+

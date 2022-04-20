@@ -71,6 +71,24 @@
         </tr>
         <tr>
             <td style="font-weight: bold;">
+                <fmt:message key="advancedsettings.splitoptions"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="splitoptions"/></c:import>
+            </td>
+            <td>
+                <input class="monospace" type="text" name="splitOptions" size="100" value="${model.splitOptions}"/>
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold;">
+                <fmt:message key="advancedsettings.splitcommand"/>
+                <c:import url="helpToolTip.jsp"><c:param name="topic" value="splitcommand"/></c:import>
+            </td>
+            <td>
+                <input class="monospace" type="text" name="splitCommand" size="100" value="${model.splitCommand}"/>
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold;">
                 <fmt:message key="advancedsettings.hlscommand"/>
                 <c:import url="helpToolTip.jsp"><c:param name="topic" value="hlscommand"/></c:import>
             </td>

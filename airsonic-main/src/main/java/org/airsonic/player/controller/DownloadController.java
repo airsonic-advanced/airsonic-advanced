@@ -134,7 +134,11 @@ public class DownloadController {
             }
             if (mediaFile.isFile()) {
                 response = prepareResponse(Collections.singletonList(mediaFile), null, statusSupplier, statusCloser, additionalFiles);
-                defaultDownloadName = FilenameUtils.getName(mediaFile.getPath());
+                if (mediaFile.hasIndex()) {
+                    defaultDownloadName = FilenameUtils.getBaseName(mediaFile.getPath()) + ".zip";
+                } else {
+                    defaultDownloadName = FilenameUtils.getName(mediaFile.getPath());
+                }
             } else {
                 if (indices == null) {
                     CoverArt art = coverArtService.get(EntityType.MEDIA_FILE, mediaFile.getId());
@@ -203,7 +207,7 @@ public class DownloadController {
             return new ResponseDTO(null, "emptyfile.download", 0, -1);
         }
 
-        if (indices.size() == 1 && (additionalFiles == null || additionalFiles.size() == 0)) {
+        if (indices.size() == 1 && !files.get(indices.get(0)).hasIndex() && (additionalFiles == null || additionalFiles.size() == 0)) {
             // single file
             MediaFile file = files.get(indices.get(0));
             Path path = file.getFullPath(mediaFolderService.getMusicFolderById(file.getFolderId()).getPath());
@@ -222,11 +226,13 @@ public class DownloadController {
             // get a list of all paths under the tree, plus their zip names and sizes
             Collection<Pair<Path, Pair<String, Long>>> pathsToZip = Stream
                     .concat(
-                            indices.stream().map(files::get).filter(Objects::nonNull).map(x -> Pair.of(x.getRelativePath(), x.getFolderId())),
+                            indices.stream().map(files::get).filter(Objects::nonNull).flatMap(x -> x.hasIndex() ? Stream.of(Pair.of(x.getRelativePath(), x.getFolderId()), Pair.of(x.getRelativeIndexPath(), x.getFolderId())) : Stream.of(Pair.of(x.getRelativePath(), x.getFolderId()))).distinct(),
                             additionalFiles.stream().filter(Objects::nonNull))
-                    .flatMap(pf -> {
+                    .map(pf -> {
                         MusicFolder mf = mediaFolderService.getMusicFolderById(pf.getRight());
-                        Path p = mf.getPath().resolve(pf.getLeft());
+                        return mf.getPath().resolve(pf.getLeft());
+                    })
+                    .flatMap(p -> {
                         Path parent = p.getParent();
                         try (Stream<Path> paths = Files.walk(p)) {
                             return paths

@@ -116,7 +116,7 @@ public class HLSController {
 
     @PostConstruct
     public void init() {
-        FileUtil.delete(HlsSession.getHlsRootDirectory());
+        FileUtil.delete(HlsSession.getHlsRootDirectory(), true);
     }
 
     @GetMapping("/hls.m3u8")

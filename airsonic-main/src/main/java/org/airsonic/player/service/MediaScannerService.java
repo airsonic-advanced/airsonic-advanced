@@ -298,8 +298,6 @@ public class MediaScannerService {
             LOG.info("Scanned media library with {} entries.", scanCount.get());
         }
 
-        LOG.trace("Scanning file {} in folder {} ({})", file.getPath(), musicFolder.getId(), musicFolder.getName());
-
         // Update the root folder if it has changed
         if (!musicFolder.getId().equals(file.getFolderId())) {
             file.setFolderId(musicFolder.getId());
@@ -322,10 +320,11 @@ public class MediaScannerService {
         updateGenres(file, genres);
         encountered.computeIfAbsent(file.getFolderId(), k -> ConcurrentHashMap.newKeySet()).add(file.getPath());
 
-        if (file.getDuration() != null) {
+        // don't add indexed tracks to the total duration to avoid double-counting
+        if (file.getDuration() != null && !file.isIndexedTrack()) {
             statistics.incrementTotalDurationInSeconds(file.getDuration());
         }
-        if (file.getFileSize() != null) {
+        if (file.getFileSize() != null && !file.isIndexedTrack()) {
             statistics.incrementTotalLengthInBytes(file.getFileSize());
         }
     }
