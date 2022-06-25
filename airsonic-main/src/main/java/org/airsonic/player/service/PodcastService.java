@@ -97,7 +97,7 @@ public class PodcastService {
     private static final Logger LOG = LoggerFactory.getLogger(PodcastService.class);
 
     private static final DateTimeFormatter ALTERNATIVE_RSS_DATE_FORMAT = DateTimeFormatter
-            .ofPattern("[E, ]d MMM y HH:mm:ss z");
+            .ofPattern("[E, ]d MMM y HH:mm[:ss] z");
     private static final Namespace[] ITUNES_NAMESPACES = {Namespace.getNamespace("http://www.itunes.com/DTDs/Podcast-1.0.dtd"),
         Namespace.getNamespace("http://www.itunes.com/dtds/podcast-1.0.dtd")};
 
