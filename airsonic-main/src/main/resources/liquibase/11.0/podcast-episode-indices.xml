@@ -1,0 +1,13 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="podcast-episode-indices" author="anon">
+        <createIndex tableName="podcast_episode" indexName="idx_podcast_episode_episode_guid" >
+            <column name="episode_guid"></column>
+        </createIndex>
+        <createIndex tableName="podcast_episode" indexName="idx_podcast_episode_publish_date" >
+            <column name="publish_date"></column>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

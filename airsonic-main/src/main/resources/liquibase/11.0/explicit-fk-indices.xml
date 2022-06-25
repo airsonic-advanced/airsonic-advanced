@@ -1,0 +1,61 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="explicit-fk-indices" author="anon">
+        <createIndex tableName="custom_avatar" indexName="idx_custom_avatar_username" >
+            <column name="username"></column>
+        </createIndex>
+        <createIndex tableName="music_folder_user" indexName="idx_music_folder_user_music_folder_id" >
+            <column name="music_folder_id"></column>
+        </createIndex>
+        <createIndex tableName="player_transcoding" indexName="idx_player_transcoding_transcoding_id" >
+            <column name="transcoding_id"></column>
+        </createIndex>
+        <createIndex tableName="player_transcoding" indexName="idx_player_transcoding_player_id" >
+            <column name="player_id"></column>
+        </createIndex>
+        <createIndex tableName="playlist" indexName="idx_playlist_username" >
+            <column name="username"></column>
+        </createIndex>
+        <createIndex tableName="playlist_file" indexName="idx_playlist_file_playlist_id" >
+            <column name="playlist_id"></column>
+        </createIndex>
+        <createIndex tableName="playlist_file" indexName="idx_playlist_file_media_file_id" >
+            <column name="media_file_id"></column>
+        </createIndex>
+        <createIndex tableName="playlist_user" indexName="idx_playlist_user_username" >
+            <column name="username"></column>
+        </createIndex>
+        <createIndex tableName="play_queue" indexName="idx_play_queue_username" >
+            <column name="username"></column>
+        </createIndex>
+        <createIndex tableName="play_queue_file" indexName="idx_play_queue_file_media_file_id" >
+            <column name="media_file_id"></column>
+        </createIndex>
+        <createIndex tableName="play_queue_file" indexName="idx_play_queue_file_play_queue_id" >
+            <column name="play_queue_id"></column>
+        </createIndex>
+        <createIndex tableName="podcast_channel" indexName="idx_podcast_channel_media_file_id" >
+            <column name="media_file_id"></column>
+        </createIndex>
+        <createIndex tableName="podcast_episode" indexName="idx_podcast_episode_media_file_id" >
+            <column name="media_file_id"></column>
+        </createIndex>
+        <createIndex tableName="podcast_episode" indexName="idx_podcast_episode_channel_id" >
+            <column name="channel_id"></column>
+        </createIndex>
+        <createIndex tableName="share" indexName="idx_share_username" >
+            <column name="username"></column>
+        </createIndex>
+        <createIndex tableName="share_file" indexName="idx_share_file_share_id" >
+            <column name="share_id"></column>
+        </createIndex>
+        <createIndex tableName="share_file" indexName="idx_share_file_media_file_id" >
+            <column name="media_file_id"></column>
+        </createIndex>
+        <createIndex tableName="user_credentials" indexName="idx_user_credentials_username" >
+            <column name="username"></column>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

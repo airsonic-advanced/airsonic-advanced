@@ -25,4 +25,6 @@
     <include file="cover-art-table.xml" relativeToChangelogFile="true"/>
     <include file="media-file-music-folder-link.xml" relativeToChangelogFile="true"/>
     <include file="delete-first-player.xml" relativeToChangelogFile="true"/>
+    <include file="explicit-fk-indices.xml" relativeToChangelogFile="true"/>
+    <include file="podcast-episode-indices.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
