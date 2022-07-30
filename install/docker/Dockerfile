@@ -1,4 +1,4 @@
-FROM adoptopenjdk:14-jdk-hotspot AS builder
+FROM eclipse-temurin:17-jdk-focal AS builder
 WORKDIR target
 
 COPY run.sh /usr/local/bin/run.sh
@@ -13,7 +13,7 @@ RUN mv WEB-INF/lib lib
 RUN mv WEB-INF/classes/META-INF cMETA-INF
 RUN mv WEB-INF/classes/liquibase cliquibase
 
-FROM adoptopenjdk:14-jre-hotspot
+FROM eclipse-temurin:17-jre-focal
 
 LABEL description="Airsonic-Advanced is a free, web-based media streamer, providing ubiquitous access to your music." \
       url="https://github.com/airsonic-advanced/airsonic-advanced"
