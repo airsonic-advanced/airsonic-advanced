@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
