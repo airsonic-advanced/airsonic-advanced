@@ -26,7 +26,7 @@
         }
     }
     function setGenre() {
-        var genre = $("input[name='genreAll']").val();
+        var genre = $("select[name='genreAll']").val();
         for (var i = 0; i < fileCount; i++) {
             $("input[name='genre" + i + "']").val(genre);
         }
