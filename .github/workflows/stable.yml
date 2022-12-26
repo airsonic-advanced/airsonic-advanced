@@ -82,7 +82,7 @@ jobs:
       - run: mkdir install/docker/target
       - run: copy airsonic-main/target/airsonic.war install/docker/target/airsonic-main.war
       - name: Build and push multiplatform images to Dockerhub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           file: install/docker/Dockerfile
           context: install/docker

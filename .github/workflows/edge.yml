@@ -74,7 +74,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push multiplatform images to Dockerhub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           file: install/docker/Dockerfile
           context: install/docker
