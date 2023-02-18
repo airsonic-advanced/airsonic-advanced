@@ -47,7 +47,7 @@ jobs:
           # Note this doesn't completely follow semver because docker tags do not take a + sign
           tag=$ver\.$ts;
           echo $tag;
-          echo "::set-output name=tag::$tag"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
       - name: Deploy to GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v1

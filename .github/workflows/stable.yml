@@ -43,9 +43,9 @@ jobs:
           minor=$(echo $tag | cut -d"." -f1-2);
           major=$(echo $minor | cut -d"." -f1);
           echo $tag;
-          echo "::set-output name=tag::$tag"
-          echo "::set-output name=minor::$minor"
-          echo "::set-output name=major::$major"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+          echo "minor=$minor" >> $GITHUB_OUTPUT
+          echo "major=$major" >> $GITHUB_OUTPUT
       - name: Import GPG Key for signing
         run: echo "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}" | gpg --quiet --batch --yes --import
       - name: Sign artifacts
@@ -79,8 +79,8 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - run: mkdir install/docker/target
-      - run: copy airsonic-main/target/airsonic.war install/docker/target/airsonic-main.war
+      - run: mkdir -p install/docker/target/dependency
+      - run: cp airsonic-main/target/airsonic.war install/docker/target/dependency/airsonic-main.war
       - name: Build and push multiplatform images to Dockerhub
         uses: docker/build-push-action@v4
         with:
