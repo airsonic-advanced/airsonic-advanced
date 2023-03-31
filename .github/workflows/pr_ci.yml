@@ -19,6 +19,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: ${{ matrix.cfg.jdk }}
+          distribution: 'temurin'
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
@@ -37,9 +38,6 @@ jobs:
       matrix:
         cfg:
           - jdk: 11
-            services: {}
-            env: {}
-          - jdk: 14
             services: {}
             env: {}
           - jdk: 16
