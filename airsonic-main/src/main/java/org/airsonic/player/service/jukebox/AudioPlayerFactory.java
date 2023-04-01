@@ -8,7 +8,7 @@ import java.io.InputStream;
 @Component
 public class AudioPlayerFactory {
 
-    public AudioPlayer createAudioPlayer(InputStream in, JukeboxLegacySubsonicService jukeboxLegacySubsonicService) throws Exception {
-        return new AudioPlayer(in, jukeboxLegacySubsonicService);
+    public AudioPlayer createAudioPlayer(InputStream in, String command, JukeboxLegacySubsonicService jukeboxLegacySubsonicService) throws Exception {
+        return new AudioPlayer(in, command, jukeboxLegacySubsonicService);
     }
 }

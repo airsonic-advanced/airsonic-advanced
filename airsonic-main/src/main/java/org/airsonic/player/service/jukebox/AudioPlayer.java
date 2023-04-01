@@ -25,12 +25,15 @@ import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.SourceDataLine;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.airsonic.player.service.jukebox.AudioPlayer.State.*;
 
@@ -49,16 +52,68 @@ public class AudioPlayer implements AutoCloseable {
 
     private final InputStream in;
     private final Listener listener;
-    private final SourceDataLine line;
     private final AtomicReference<State> state = new AtomicReference<State>(PAUSED);
+    private SourceDataLine line;
+    private AudioFormat format;
+    private DataLine.Info info;
     private FloatControl gainControl;
 
-    public AudioPlayer(InputStream in, Listener listener) throws Exception {
+    public AudioPlayer(InputStream in, String command, Listener listener) throws Exception {
         this.in = in;
         this.listener = listener;
 
-        AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100.0F, 16, 2, 4, 44100.0F, true);
-        line = AudioSystem.getSourceDataLine(format);
+        // SampleRate
+        String sampleRate = "";
+        Pattern r1 = Pattern.compile("\\-ar (.*?)\\ ");
+        Matcher sampleRate1 = r1.matcher(command);
+        while (sampleRate1.find()) {
+            sampleRate = sampleRate1.group(1);
+        }
+        LOG.debug("SampleRate: " + sampleRate);
+
+        // Channel
+        String channel = "";
+        Pattern r2 = Pattern.compile("\\-ac (.*?)\\ ");
+        Matcher channel2 = r2.matcher(command);
+        while (channel2.find()) {
+            channel = channel2.group(1);
+        }
+        LOG.debug("Channel: " + channel);
+
+        // Format
+        String pt = "";
+        Pattern r3 = Pattern.compile("\\-f (.*?)\\ ");
+        Matcher pt3 = r3.matcher(command);
+        while (pt3.find()) {
+            pt = pt3.group(1);
+        }
+        LOG.debug("Format: " + pt);
+
+        // Bits
+        String bits = pt.substring(1, 3);
+        LOG.debug("Bits: " + bits);
+
+        // Big/Little Endian
+        Boolean sl = true;
+        if (pt.substring(3, 5).equals("be")) {
+            sl = true;
+        }
+        if (pt.substring(3, 5).equals("le")) {
+            sl = false;
+        }
+        LOG.debug("BigEndian: " + sl);
+
+        // Try Big/Little Endian
+        try {
+            format = new AudioFormat(Integer.parseInt(sampleRate), Integer.parseInt(bits), Integer.parseInt(channel), true, sl);
+            info = new DataLine.Info(SourceDataLine.class, format);
+            line = (SourceDataLine) AudioSystem.getLine(info);
+        } catch (IllegalArgumentException e) {
+            format = new AudioFormat(Integer.parseInt(sampleRate), Integer.parseInt(bits), Integer.parseInt(channel), false, sl);
+            info = new DataLine.Info(SourceDataLine.class, format);
+            line = (SourceDataLine) AudioSystem.getLine(info);
+        }
+
         line.open(format);
         LOG.debug("Opened line " + line);
 
