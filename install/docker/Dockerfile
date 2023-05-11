@@ -1,4 +1,4 @@
-FROM adoptopenjdk:14-jdk-hotspot AS builder
+FROM eclipse-temurin:17.0.7_7-jdk AS builder
 WORKDIR target
 
 COPY run.sh /usr/local/bin/run.sh
@@ -13,7 +13,7 @@ RUN mv WEB-INF/lib lib
 RUN mv WEB-INF/classes/META-INF cMETA-INF
 RUN mv WEB-INF/classes/liquibase cliquibase
 
-FROM adoptopenjdk:14-jre-hotspot
+FROM eclipse-temurin:17.0.7_7-jre
 
 LABEL description="Airsonic-Advanced is a free, web-based media streamer, providing ubiquitous access to your music." \
       url="https://github.com/airsonic-advanced/airsonic-advanced"
@@ -32,7 +32,7 @@ RUN apt-get update && \
                        lame \
                        xmp \
                        bash \
-                       ttf-dejavu \
+                       fonts-dejavu \
                        gosu
 
 COPY --from=builder /usr/local/bin/run.sh /usr/local/bin/run.sh

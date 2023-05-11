@@ -40,7 +40,10 @@
                                     <name>${docker.container.repo}</name>
                                     <build>
                                         <dockerFile>${project.basedir}/Dockerfile</dockerFile>
-                                        <tags>latest</tags>
+                                        <tags>
+                                            <tag>latest</tag>
+                                            <tag>${project.version}</tag>
+                                        </tags>
                                     </build>
                                 </image>
                             </images>
