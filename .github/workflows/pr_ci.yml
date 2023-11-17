@@ -19,6 +19,18 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: ${{ matrix.cfg.jdk }}
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      -
+        name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          install: true
+      -
+        name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
@@ -30,7 +42,11 @@ jobs:
       - run: ${{ matrix.cfg.run }}
         if: matrix.cfg.executeManualcommand
       - name: Build with Maven
-        run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
+        run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} -Dtest=foo -Dit.test=foo -DfailIfNoTests=false verify -B -P integration-test
+      - run: docker run --rm mplatform/mquery airsonicadvanced/airsonic-advanced:latest
+      - run: docker build --platform linux/amd64,linux/arm64,linux/arm/v7 --load -f install/docker/Dockerfile -t why/why:latest install/docker
+      - run: docker run --rm mplatform/mquery why/why:latest
+      - run: docker buildx imagetools inspect why/why
 
     strategy:
       fail-fast: false
