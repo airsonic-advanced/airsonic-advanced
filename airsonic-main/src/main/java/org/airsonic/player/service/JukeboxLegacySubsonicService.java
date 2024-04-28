@@ -114,7 +114,7 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
                     String command = settingsService.getJukeboxCommand();
                     parameters.setTranscoding(new Transcoding(null, "Jukebox", null, null, command, null, null, false));
                     in = transcodingService.getTranscodedInputStream(parameters);
-                    audioPlayer = audioPlayerFactory.createAudioPlayer(in, this);
+                    audioPlayer = audioPlayerFactory.createAudioPlayer(in, command, this);
                     audioPlayer.setGain(gain);
                     audioPlayer.play();
                     onSongStart(file);

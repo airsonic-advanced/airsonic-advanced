@@ -50,8 +50,9 @@ public class PlayerTest implements AudioPlayer.Listener {
     }
 
     private void createPlayer() {
+        String command = "ffmpeg -ss %o -i %s -map 0:0 -v 0 -ar 176400 -ac 2 -f s24be -";
         try {
-            player = new AudioPlayer(new FileInputStream("/Users/sindre/Downloads/sample.au"), this);
+            player = new AudioPlayer(new FileInputStream("/Users/sindre/Downloads/sample.au"), command, this);
         } catch (Exception e) {
             player.close();
             throw new RuntimeException(e);
