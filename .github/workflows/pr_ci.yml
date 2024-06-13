@@ -31,7 +31,12 @@ jobs:
       - run: ${{ matrix.cfg.run }}
         if: matrix.cfg.executeManualcommand
       - name: Build with Maven
-        run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
+        run: mvn -DexcludedGroups=${EXCLUDED_TEST_GROUPS} -Ddocker.image.save.skip=false -Ddocker.testing.default-music-folder=${DEFAULT_MUSIC_FOLDER} verify -B -P integration-test
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: dockerimage
+          path: install/docker/target/*.tar.gz
 
     strategy:
       fail-fast: false
