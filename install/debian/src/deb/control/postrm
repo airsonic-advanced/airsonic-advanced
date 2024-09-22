@@ -1,0 +1,17 @@
+#!/bin/bash
+echo "Starting airsonic-advanced post-remove script"
+if [ -d /var/airsonic ]; then
+  while true; do
+      read -p "Folder /var/airsonic exists, do you want to removing it? " yn
+      case $yn in
+          [Yy]* )
+            echo "Removing folder";
+            rm -rf /var/airsonic;
+            break;;
+          [Nn]* ) echo "Keeping folder";
+            break;;
+          * ) echo "Please answer yes or no.";;
+      esac
+  done
+fi
+echo "Finished airsonic-advanced post-remove script"

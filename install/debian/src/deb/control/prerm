@@ -1,0 +1,13 @@
+#!/bin/bash
+echo "Starting airsonic-advanced pre-remove script"
+STATUS="$(systemctl is-active airsonic-advanced)"
+echo "Status of airsonic-advanced: ${STATUS}"
+if [ "${STATUS}" = "active" ] || [ "${STATUS}" = "inactive" ]; then
+  echo "Stopping airsonic-advanced"
+  systemctl stop airsonic
+  systemctl disable airsonic
+else
+  echo "Service airsonic-advanced not running. Continuing."
+fi
+echo "Finished airsonic-advanced pre-remove script"
+

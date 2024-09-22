@@ -1,0 +1,50 @@
+#!/bin/bash
+echo "Starting airsonic-advanced post-install script"
+
+PORT=8080
+while true; do
+  read -e -p "Enter port:" -i "$PORT" PORT
+  if [ -z "$PORT" ]; then
+    echo "Port cannot be empty. Please enter a valid port number."
+  elif ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
+    echo "Port must be a number. Please enter a valid port number."
+  elif [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+    echo "Port must be between 1 and 65535. Please enter a valid port number."
+  else
+    sed -i "s:Environment=\"PORT=8080\":Environment=\"PORT=$PORT\":g" /var/airsonic/airsonic.service
+    echo "Port=$PORT"
+    break
+  fi
+done
+
+CONTEXT_PATH=/airsonic
+while true; do
+  read -e -p "Enter context path:" -i "$CONTEXT_PATH" CONTEXT_PATH
+  if [ -z "$CONTEXT_PATH" ]; then
+    echo "Context path cannot be empty. Please enter a valid context path."
+  else
+    sed -i "s:Environment=\"CONTEXT_PATH=/airsonic\":Environment=\"CONTEXT_PATH=$CONTEXT_PATH\":g" /var/airsonic/airsonic.service
+    echo "Context path=$CONTEXT_PATH"
+    break
+  fi
+done
+
+MUSIC_FOLDER=/var/music
+while true; do
+  read -e -p "Enter music folder:" -i "$MUSIC_FOLDER" MUSIC_FOLDER
+  if [ -z "$MUSIC_FOLDER" ]; then
+    echo "Music folder cannot be empty. Please enter a valid folder."
+  else
+    sed -i "s:Environment=\"MUSIC_FOLDER=/var/music\":Environment=\"MUSIC_FOLDER=$MUSIC_FOLDER\":g" /var/airsonic/airsonic.service
+    echo "Music folder=$MUSIC_FOLDER"
+    break
+  fi
+done
+
+echo "Setting up Airsonic systemd service"
+systemctl link /var/airsonic/airsonic.service
+systemctl enable airsonic
+systemctl start airsonic
+systemctl status airsonic --no-pager
+echo "Airsonic systemd service ready"
+echo "Finished airsonic-advanced post-install script"

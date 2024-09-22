@@ -1,0 +1,8 @@
+Package: [[name]]
+Version: [[version]]
+Section: misc
+Priority: low
+Architecture: all
+Description: [[description]]
+Maintainer: Airsonic <https://airsonic.github.io/>
+Depends: default-jre | java17-runtime

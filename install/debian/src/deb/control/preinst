@@ -1,0 +1,22 @@
+#!/bin/bash
+echo "Starting airsonic-advanced pre-install script"
+
+RUN_USER="airsonic"
+while true; do
+    read -p "Do you wish to install Airsonic Advanced? " yn
+    case $yn in
+        [Yy]* ) echo "Continuing install"; break;;
+        [Nn]* ) echo "Stopping install"; exit 1;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
+
+if id "$RUN_USER" >/dev/null 2>&1; then
+    echo "User $RUN_USER exist. Continuing."
+else
+    echo "User $RUN_USER does not exist. Creating user..."
+    useradd $RUN_USER
+    UID=$(id "$RUN_USER")
+    echo "User $RUN_USER created with $UID."
+fi
+echo "Finished airsonic-advanced pre-install script"

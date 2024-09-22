@@ -157,12 +157,47 @@ Vanilla Airsonic can be downloaded from
 
 Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Advanced shares similar running instructions unless stated otherwise. Notable exceptions are available as comments or resolutions in the Issues page (please search).
 
-### Building/Compiling
+## Building/Compiling
 You may compile the code yourself by using maven. One of the repositories does not have https, so you may need to allow that for maven. A custom `settings.xml` has been put in `.mvn` folder for this purpose. A sample invocation would be (in the root):
 ```
 mvn clean compile package verify
 ```
 The main binary would be in `airsonic-main/target`
+
+### Build Docker image
+Run the following command in the terminal and the Docker image will be built and tagged as `airsonicadvanced/airsonic-advanced:latest`.
+```
+mvn clean compile package verify -P docker
+```
+To view the built image, run following in the terminal.
+```
+docker images airsonicadvanced/*
+```
+
+### Build Debian image
+The Debinan contains a systemd setup partly based on the /contrib folder.<br>
+Run the following command in the terminal and the Debian image will be built and stored in the target folder.
+```
+mvn clean compile package verify -P debian
+```
+To install the Debian image, run the following in the terminal (bash/sh).
+```
+sudo dpkg --install airsonic-advanced_11.0.0-SNAPSHOT.deb
+```
+The installation process will prompt for default port, context path and music folder and then start the Airsonic service.<br>
+The Airsonic binaries and service config will be installed under `/var/airsonic` (inherited from the /contrib setup).<br>
+To see the status of the Airsonic service after installation, run the following in the terminal (bash/sh).
+```
+sudo systemctl status airsonic
+```
+To list the installed Debian image, run the following in the terminal (bash/sh).
+```
+sudo dpkg --list airsonic-advanced
+```
+To uninstall the Debian image, run the following in the terminal (bash/sh).
+```
+sudo dpkg --purge airsonic-advanced
+```
 
 Compatibility Notes:
 ------
