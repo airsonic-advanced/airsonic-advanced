@@ -136,6 +136,21 @@
                 <artifactId>mysql-connector-j</artifactId>
                 <version>9.1.0</version>
             </dependency>
+            <dependency>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker-qual</artifactId>
+                <version>3.37.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>2.28.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-text</artifactId>
+                <version>1.13.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
