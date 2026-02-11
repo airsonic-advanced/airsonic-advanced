@@ -7,9 +7,9 @@ import org.airsonic.player.validator.CredentialsManagementValidators.CredentialC
 import org.airsonic.player.validator.CredentialsManagementValidators.CredentialUpdateChecks;
 import org.junit.Test;
 
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.groups.Default;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.groups.Default;
 
 import java.util.Collections;
 

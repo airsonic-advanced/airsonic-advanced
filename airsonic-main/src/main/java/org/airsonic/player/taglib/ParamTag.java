@@ -19,8 +19,8 @@
  */
 package org.airsonic.player.taglib;
 
-import javax.servlet.jsp.JspTagException;
-import javax.servlet.jsp.tagext.TagSupport;
+import jakarta.servlet.jsp.JspTagException;
+import jakarta.servlet.jsp.tagext.TagSupport;
 
 /**
  * A tag representing an URL query parameter.
