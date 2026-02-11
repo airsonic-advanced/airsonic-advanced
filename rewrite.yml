@@ -1,0 +1,10 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.airsonic.UpgradeToJava21AndSpringBoot33
+displayName: Upgrade to Java 21 and Spring Boot 3.3
+description: Upgrade to Java 21 and Spring Boot 3.3 with Spring Framework 6.0 and Spring Security 6.0
+recipeList:
+  - org.openrewrite.java.migrate.UpgradeToJava21
+  - org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_3
+  - org.openrewrite.java.spring.framework.UpgradeSpringFramework_6_0
+  - org.openrewrite.java.spring.security6.UpgradeSpringSecurity_6_0
