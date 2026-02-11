@@ -52,13 +52,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.cxf.xjcplugins</groupId>
-                        <artifactId>cxf-xjc-jakarta</artifactId>
-                        <version>4.0.0</version>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
     </build>
