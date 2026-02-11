@@ -40,6 +40,9 @@
                             <wsdlOptions>
                                 <wsdlOption>
                                     <wsdl>${basedir}/src/main/resources/sonos-8.4_9.2.wsdl</wsdl>
+                                    <extraargs>
+                                        <extraarg>-xjc-jakarta</extraarg>
+                                    </extraargs>
                                 </wsdlOption>
                             </wsdlOptions>
                         </configuration>
