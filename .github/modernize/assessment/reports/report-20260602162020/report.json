@@ -1,0 +1,881 @@
+{
+  "version": "1.0.0",
+  "producer": "Java AppCAT CLI",
+  "metadata": {
+    "analysisStartTime": "2026-06-02T08:20:20.429Z",
+    "analysisEndTime": "2026-06-02T08:21:37.204Z",
+    "privacyMode": "Protected",
+    "privacyModeHelpUrl": "https://aka.ms/appmod-privacy-mode",
+    "targetIds": [
+      "azure-aks",
+      "azure-appservice",
+      "azure-container-apps"
+    ],
+    "targetDisplayNames": [
+      "Azure Kubernetes Service",
+      "Azure App Service",
+      "Azure Container Apps"
+    ],
+    "capabilities": [
+      "openjdk25"
+    ],
+    "os": [
+      "windows",
+      "linux"
+    ],
+    "id": "20260602162020",
+    "name": "Report_20260602162020",
+    "status": "cancelled",
+    "domains": [
+      "java-upgrade",
+      "cloud-readiness"
+    ],
+    "mode": "issue-only",
+    "minimumCveSeverity": "high"
+  },
+  "summary": {
+    "totalProjects": 1,
+    "totalIssues": 1,
+    "totalIncidents": 30,
+    "totalEffort": 90,
+    "charts": {
+      "severity": {
+        "mandatory": 30,
+        "optional": 0,
+        "potential": 0,
+        "information": 0
+      },
+      "category": {
+        "remote-communication": 30
+      }
+    }
+  },
+  "projects": [
+    {
+      "path": ".",
+      "issues": 1,
+      "storyPoints": 90,
+      "properties": {
+        "appName": "airsonic",
+        "jdkVersion": "21",
+        "frameworks": [
+          "Spring Boot",
+          "Spring",
+          "JakartaEE"
+        ],
+        "languages": [
+          "Java",
+          "JavaScript"
+        ],
+        "tools": [
+          "Maven"
+        ]
+      },
+      "incidents": [
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "d7d1d65f-556e-45b2-8532-8d58e2678443",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_no.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "ac4f3055-cf08-4bb4-b0fd-cde2f58cb128",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_nl.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "940bbe22-03f3-4e4a-ada3-07fd4e1c558d",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_fi.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "3535bd07-fd2d-4708-9280-2ad2bce9aec2",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_is.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "fe43f506-2eac-4ac6-84de-3bff548c626b",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_es.properties",
+          "locationKind": "File",
+          "line": 474,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "30092ebb-4b25-4c33-8422-8ed13f4d8c05",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_da.properties",
+          "locationKind": "File",
+          "line": 575,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "fea98697-61fd-4a4b-a4f6-7a6ce5bc7fcd",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_et.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "594a5f30-73fa-475d-bf1e-19092c39c2cb",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_sl.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "cf43699b-5ca5-4e12-b0a3-8fdec99731b0",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_fr.properties",
+          "locationKind": "File",
+          "line": 474,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "d8528954-c31e-4b4f-8b37-a90151959c01",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_it.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "26133ca6-6acd-41e8-b8bd-3a596f29841c",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_nn.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "b05109d5-f2d8-40d4-8e0a-f44c2c03d8bb",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_pl.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "a10be3f4-9d8e-4943-a866-210232bce474",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_uk.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "b1377d6e-69b5-4520-80b7-8c5a8a64fad2",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_de.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "adaa0209-7137-484d-b877-c3fc0fed9f04",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_pt_BR.properties",
+          "locationKind": "File",
+          "line": 466,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "4ab3e663-1ea3-4f7f-b2cd-0f09e8e7285c",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_cs.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "5e73d5d5-dcb5-43b2-b537-43bd3f28c9c0",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_ko.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "629ed410-e187-4aae-b9f0-18cac32c5817",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_ca.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "18a72dd6-ae02-4ba2-a998-e57c75d4ba8e",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_sv.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "c180484b-da03-4af5-a2fb-0b542e2dd4a0",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_pt_PT.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "5bd99b7c-9beb-4fd4-b563-841afaf638fa",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_mk.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "919fceba-5378-4c46-96c0-71105676c41e",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_zh_TW.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "e0abc825-d707-4cd3-845e-f59eec688829",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_en_GB.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "890ae885-7f6f-46c6-a7c2-b31e12e58f8e",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_zh_CN.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "1b02c6fb-77dc-4908-8192-465b513dec64",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_bg.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "fd6f6e6d-6407-48b6-a39c-35d56103890c",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_ja_JP.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "151e1563-a9a8-4418-8d98-6c139509f0ab",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_el.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "d1fbb9ca-b733-4103-a281-455a4ce3ce13",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_ru.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "b26bf3bd-6bec-402e-a633-c3c00236572b",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_en.properties",
+          "locationKind": "File",
+          "line": 575,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        },
+        {
+          "ruleId": "hardcoded-ip-address",
+          "incidentId": "d4f39066-33e4-4ba8-a023-455e7abfde7d",
+          "location": "airsonic-main/src/main/resources/org/airsonic/player/i18n/ResourceBundle_pt.properties",
+          "locationKind": "File",
+          "line": 473,
+          "column": 0,
+          "targets": {
+            "azure-aks": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-appservice": {
+              "effort": 3,
+              "severity": "mandatory"
+            },
+            "azure-container-apps": {
+              "effort": 3,
+              "severity": "mandatory"
+            }
+          },
+          "labels": [
+            "type=violation",
+            "ruleset=discovery-rules"
+          ]
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "hardcoded-ip-address": {
+      "id": "hardcoded-ip-address",
+      "description": "When migrating environments, hard-coded IP addresses may need to be modified or eliminated.",
+      "title": "Hardcoded IP Address",
+      "severity": "mandatory",
+      "effort": 3,
+      "labels": [
+        "source",
+        "target=azure-aks",
+        "target=azure-container-apps",
+        "target=azure-appservice",
+        "capability=containerization",
+        "domain=cloud-readiness",
+        "category=remote-communication",
+        "containerization",
+        "os=windows",
+        "os=linux",
+        "discovery"
+      ]
+    }
+  },
+  "security": []
+}

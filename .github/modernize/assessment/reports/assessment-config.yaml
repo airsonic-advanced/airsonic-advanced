@@ -1,0 +1,15 @@
+java:
+  assessmentDomains:
+    - java-upgrade
+    - cloud-readiness
+  analysisCoverage: issue-only
+  targetRuntime: openjdk25
+  targetComputeServices:
+    - azure-aks
+    - azure-appservice
+    - azure-container-apps
+  enableContainerization: false
+  targetOS:
+    - windows
+    - linux
+  minimumCveSeverity: high
