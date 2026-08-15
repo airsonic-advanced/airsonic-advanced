@@ -1,0 +1,44 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+if [[ -n "$CONTEXT_PATH" ]]; then
+    CONTEXT_PATH="${CONTEXT_PATH#/}"
+fi
+URL_BASE="/${CONTEXT_PATH}"
+
+IFS=" " read -r -a RUN_ARRAY <<< "$JAVA_OPTS"
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]; then
+    exec \
+        s6-notifyoncheck -d -n 300 -w 1000 -c "nc -z localhost 4040" \
+        s6-setuidgid abc \
+            java \
+                -Dlog4j2.formatMsgNoLookups=true \
+                -Dairsonic.defaultMusicFolder=/music \
+                -Dairsonic.defaultPlaylistFolder=/playlists \
+                -Dairsonic.defaultPodcastFolder=/podcasts \
+                -Dairsonic.home="${AIRSONIC_ADVANCED_SETTINGS}" \
+                -Djava.awt.headless=true \
+                -Djava.io.tmpdir="/run/tomcat.4040" \
+                -Dserver.servlet.context-path="${URL_BASE}" \
+                -Dserver.host=0.0.0.0 \
+                -Dserver.port=4040 \
+                "${RUN_ARRAY[@]}" \
+                -jar "${AIRSONIC_ADVANCED_HOME}/airsonic.war"
+else
+    exec \
+        s6-notifyoncheck -d -n 300 -w 1000 -c "nc -z localhost 4040" \
+            java \
+                -Dlog4j2.formatMsgNoLookups=true \
+                -Dairsonic.defaultMusicFolder=/music \
+                -Dairsonic.defaultPlaylistFolder=/playlists \
+                -Dairsonic.defaultPodcastFolder=/podcasts \
+                -Dairsonic.home="${AIRSONIC_ADVANCED_SETTINGS}" \
+                -Djava.awt.headless=true \
+                -Djava.io.tmpdir="/run/tomcat.4040" \
+                -Dserver.servlet.context-path="${URL_BASE}" \
+                -Dserver.host=0.0.0.0 \
+                -Dserver.port=4040 \
+                "${RUN_ARRAY[@]}" \
+                -jar "${AIRSONIC_ADVANCED_HOME}/airsonic.war"
+fi

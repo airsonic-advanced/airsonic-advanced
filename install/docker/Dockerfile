@@ -1,65 +1,33 @@
-FROM eclipse-temurin:17.0.5_8-jdk AS builder
+FROM eclipse-temurin:17-jdk AS builder
 WORKDIR target
 
-COPY run.sh /usr/local/bin/run.sh
-RUN chmod +x /usr/local/bin/run.sh
-COPY entry.sh /usr/local/bin/entry.sh
-RUN chmod +x /usr/local/bin/entry.sh
-
 COPY target/dependency/airsonic-main.war airsonic.war
-RUN jar -xf ./airsonic.war
-RUN mv WEB-INF/lib-provided lib-provided
-RUN mv WEB-INF/lib lib
-RUN mv WEB-INF/classes/META-INF cMETA-INF
-RUN mv WEB-INF/classes/liquibase cliquibase
 
-FROM eclipse-temurin:17.0.5_8-jre-jammy
+FROM ghcr.io/linuxserver/baseimage-alpine:3.21
 
 LABEL description="Airsonic-Advanced is a free, web-based media streamer, providing ubiquitous access to your music." \
-      url="https://github.com/airsonic-advanced/airsonic-advanced"
+      url="https://github.com/slmingol/airsonic-advanced"
 
-ENV AIRSONIC_PORT=4040 AIRSONIC_DIR=/var CONTEXT_PATH=/ UPNP_PORT=4041 PUID=0 PGID=0
+ENV AIRSONIC_ADVANCED_HOME="/app/airsonic" \
+    AIRSONIC_ADVANCED_SETTINGS="/config" \
+    LANG="C.UTF-8"
 
-WORKDIR $AIRSONIC_DIR
+RUN apk add --no-cache \
+        curl \
+        ffmpeg \
+        flac \
+        fontconfig \
+        lame \
+        openjdk17-jre \
+        ttf-dejavu \
+        vorbis-tools \
+    && mkdir -p /app/airsonic
 
-RUN apt-get update \
-    && apt-get install -y \
-                       ffmpeg \
-                       x264 \
-                       x265 \
-                       lame \
-                       xmp \
-                       bash \
-                       fonts-dejavu \
-                       gosu \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-    
-COPY --from=builder /usr/local/bin/run.sh /usr/local/bin/run.sh
-COPY --from=builder /usr/local/bin/entry.sh /usr/local/bin/entry.sh
+COPY --from=builder target/airsonic.war /app/airsonic/airsonic.war
+COPY root/ /
 
-COPY --from=builder target/cMETA-INF /app/WEB-INF/classes/META-INF
-COPY --from=builder target/lib /app/WEB-INF/lib
-COPY --from=builder target/lib-provided /app/WEB-INF/lib-provided
-COPY --from=builder target/org /app/org
-COPY --from=builder target/sonos /app/sonos
-COPY --from=builder target/icons /app/icons
-COPY --from=builder target/style /app/style
-COPY --from=builder target/cliquibase /app/WEB-INF/classes/liquibase
-COPY --from=builder target/script /app/script
-COPY --from=builder target/META-INF /app/META-INF
-COPY --from=builder target/WEB-INF /app/WEB-INF
+EXPOSE 4040
 
-EXPOSE $AIRSONIC_PORT
+VOLUME /config /music /playlists /podcasts
 
-# Default DLNA/UPnP ports
-EXPOSE $UPNP_PORT
-EXPOSE 1900/udp
-
-USER ${PUID}:${PGID}
-
-VOLUME $AIRSONIC_DIR/airsonic $AIRSONIC_DIR/music $AIRSONIC_DIR/playlists $AIRSONIC_DIR/podcasts
-
-HEALTHCHECK --interval=15s --timeout=3s CMD curl -f http://localhost:"$AIRSONIC_PORT""$CONTEXT_PATH"rest/ping || false
-
-ENTRYPOINT ["entry.sh"]
+HEALTHCHECK --interval=15s --timeout=3s CMD curl -sf http://localhost:4040/rest/ping || false

@@ -1,0 +1,19 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+mkdir -p "${AIRSONIC_ADVANCED_SETTINGS}"/transcode
+mkdir -p /run/tomcat.4040
+
+if [[ -z ${LSIO_NON_ROOT_USER} ]]; then
+    lsiown -R abc:abc /config "${AIRSONIC_ADVANCED_SETTINGS}" /run/tomcat.4040
+fi
+
+if [[ ! -e "${AIRSONIC_ADVANCED_SETTINGS}"/transcode/ffmpeg ]]; then
+    ln -sf /usr/bin/ffmpeg "${AIRSONIC_ADVANCED_SETTINGS}"/transcode/
+fi
+if [[ ! -e "${AIRSONIC_ADVANCED_SETTINGS}"/transcode/flac ]]; then
+    ln -sf /usr/bin/flac "${AIRSONIC_ADVANCED_SETTINGS}"/transcode/
+fi
+if [[ ! -e "${AIRSONIC_ADVANCED_SETTINGS}"/transcode/lame ]]; then
+    ln -sf /usr/bin/lame "${AIRSONIC_ADVANCED_SETTINGS}"/transcode/
+fi

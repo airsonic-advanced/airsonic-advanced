@@ -152,7 +152,11 @@ public class MediaFileService {
             return null;
         }
 
-        return checkLastModified(mediaFile, mediaFolderService.getMusicFolderById(mediaFile.getFolderId()), settingsService.isFastCacheEnabled());
+        MusicFolder folder = mediaFolderService.getMusicFolderById(mediaFile.getFolderId());
+        if (folder == null) {
+            return mediaFile;
+        }
+        return checkLastModified(mediaFile, folder, settingsService.isFastCacheEnabled());
     }
 
     public List<MediaFile> getMediaFilesByRelativePath(Path relativePath) {
