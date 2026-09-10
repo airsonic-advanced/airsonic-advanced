@@ -152,6 +152,9 @@ Also note that the Docker image will by default run as user root (0), group root
   - Specifying `--user` when invoking the `docker run` command, and providing it with one or both in the format `uid:gid`
   - Specifying the `PUID` or `PGID` environment variables to the container image when invoking the `docker run` command (`-e PUID=uid -e PGID=gid`)
 
+### Easypanel
+[Easypanel](https://easypanel.io/) can deploy Airsonic-Advanced with one click using its [official template](https://easypanel.io/templates/airsonic-advanced), which runs the Docker image above and mounts the volumes for you.
+
 Vanilla Airsonic can be downloaded from
 [GitHub](https://github.com/airsonic/airsonic/releases).
 
