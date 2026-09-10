@@ -155,6 +155,8 @@ Also note that the Docker image will by default run as user root (0), group root
 ### Easypanel
 [Easypanel](https://easypanel.io/) can deploy Airsonic-Advanced with one click using its [official template](https://easypanel.io/templates/airsonic-advanced), which runs the Docker image above and mounts the volumes for you.
 
+![Airsonic Advanced deployed on Easypanel](docs/easypanel_deployed.png)
+
 Vanilla Airsonic can be downloaded from
 [GitHub](https://github.com/airsonic/airsonic/releases).
 
