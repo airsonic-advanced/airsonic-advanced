@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17.0.5_8-jdk AS builder
+FROM eclipse-temurin:25-jdk AS builder
 WORKDIR target
 
 COPY run.sh /usr/local/bin/run.sh
@@ -13,10 +13,10 @@ RUN mv WEB-INF/lib lib
 RUN mv WEB-INF/classes/META-INF cMETA-INF
 RUN mv WEB-INF/classes/liquibase cliquibase
 
-FROM eclipse-temurin:17.0.5_8-jre-jammy
+FROM eclipse-temurin:25-jre-resolute
 
 LABEL description="Airsonic-Advanced is a free, web-based media streamer, providing ubiquitous access to your music." \
-      url="https://github.com/airsonic-advanced/airsonic-advanced"
+      url="https://github.com/kagemomiji/airsonic-advanced"
 
 ENV AIRSONIC_PORT=4040 AIRSONIC_DIR=/var CONTEXT_PATH=/ UPNP_PORT=4041 PUID=0 PGID=0
 
@@ -34,7 +34,7 @@ RUN apt-get update \
                        gosu \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-    
+
 COPY --from=builder /usr/local/bin/run.sh /usr/local/bin/run.sh
 COPY --from=builder /usr/local/bin/entry.sh /usr/local/bin/entry.sh
 
